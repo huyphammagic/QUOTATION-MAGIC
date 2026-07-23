@@ -122,7 +122,6 @@ export function exportQuoteToPdf(quote: QuoteData) {
     if (locItems.length === 0) return;
 
     const locSubtotalUsd = locItems.reduce((acc, i) => acc + i.amountUsd, 0);
-    const locSubtotalVnd = locItems.reduce((acc, i) => acc + i.amountVnd, 0);
 
     // Section Header Row
     tableData.push([
@@ -133,10 +132,6 @@ export function exportQuoteToPdf(quote: QuoteData) {
       },
       {
         content: formatUSD(locSubtotalUsd),
-        styles: { fillColor: [226, 232, 240], textColor: [15, 23, 42], fontStyle: 'bold', halign: 'right' }
-      },
-      {
-        content: formatVND(locSubtotalVnd),
         styles: { fillColor: [226, 232, 240], textColor: [15, 23, 42], fontStyle: 'bold', halign: 'right' }
       }
     ]);
@@ -152,14 +147,13 @@ export function exportQuoteToPdf(quote: QuoteData) {
         item.currency,
         `${item.vatRate}%`,
         formatUSD(item.amountUsd),
-        formatVND(item.amountVnd),
       ]);
     });
   });
 
   autoTable(doc, {
     startY: y,
-    head: [['#', 'Description / Hang Muc', 'Qty', 'Unit', 'Unit Price', 'Curr', 'VAT', 'Total (USD)', 'Total (VND)']],
+    head: [['#', 'Description / Hang Muc', 'Qty', 'Unit', 'Unit Price', 'Curr', 'VAT', 'Total (USD)']],
     body: tableData,
     theme: 'grid',
     headStyles: {
@@ -176,14 +170,13 @@ export function exportQuoteToPdf(quote: QuoteData) {
     },
     columnStyles: {
       0: { halign: 'center', cellWidth: 8 },
-      1: { cellWidth: 55 },
+      1: { cellWidth: 68 },
       2: { halign: 'right', cellWidth: 12 },
       3: { halign: 'center', cellWidth: 18 },
-      4: { halign: 'right', cellWidth: 20 },
+      4: { halign: 'right', cellWidth: 22 },
       5: { halign: 'center', cellWidth: 12 },
-      6: { halign: 'center', cellWidth: 12 },
-      7: { halign: 'right', cellWidth: 22 },
-      8: { halign: 'right', cellWidth: 23 },
+      6: { halign: 'center', cellWidth: 14 },
+      7: { halign: 'right', cellWidth: 28 },
     },
     margin: { left: 14, right: 14 },
   });
@@ -193,16 +186,16 @@ export function exportQuoteToPdf(quote: QuoteData) {
 
   // 5. Totals & Exchange Rate Box
   doc.setFillColor(248, 250, 252);
-  doc.roundedRect(110, finalY, 86, 32, 2, 2, 'F');
+  doc.roundedRect(110, finalY, 86, 26, 2, 2, 'F');
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(71, 85, 105);
-  doc.text(`Subtotal / Cong tien hàng:`, 114, finalY + 6);
-  doc.text(`${formatUSD(quote.subtotalUsd)} / ${formatVND(quote.subtotalVnd)}`, 192, finalY + 6, { align: 'right' });
+  doc.text(`Subtotal / Cong tien hang:`, 114, finalY + 6);
+  doc.text(`${formatUSD(quote.subtotalUsd)}`, 192, finalY + 6, { align: 'right' });
 
   doc.text(`VAT / Thue VAT:`, 114, finalY + 12);
-  doc.text(`${formatUSD(quote.vatTotalUsd)} / ${formatVND(quote.vatTotalVnd)}`, 192, finalY + 12, { align: 'right' });
+  doc.text(`${formatUSD(quote.vatTotalUsd)}`, 192, finalY + 12, { align: 'right' });
 
   doc.setDrawColor(203, 213, 225);
   doc.line(114, finalY + 16, 192, finalY + 16);
@@ -211,10 +204,7 @@ export function exportQuoteToPdf(quote: QuoteData) {
   doc.setFontSize(9);
   doc.setTextColor(22, 78, 99);
   doc.text(`GRAND TOTAL / TONG CONG:`, 114, finalY + 22);
-  doc.text(`${formatUSD(quote.grandTotalUsd)}`, 192, finalY + 21, { align: 'right' });
-  doc.setFontSize(9);
-  doc.setTextColor(15, 23, 42);
-  doc.text(`(${formatVND(quote.grandTotalVnd)})`, 192, finalY + 27, { align: 'right' });
+  doc.text(`${formatUSD(quote.grandTotalUsd)}`, 192, finalY + 22, { align: 'right' });
 
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7.5);

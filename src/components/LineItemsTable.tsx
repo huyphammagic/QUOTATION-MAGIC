@@ -189,30 +189,6 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({ items, exchangeR
         </div>
       </div>
 
-      {/* Quick Add Presets Bar */}
-      <div className="mx-5 bg-slate-50 p-3 rounded-lg border border-slate-200">
-        <div className="flex items-center space-x-1.5 text-xs text-slate-500 font-bold uppercase tracking-wider mb-2">
-          <Zap className="w-3.5 h-3.5 text-amber-500" />
-          <span>Thêm nhanh phụ phí chuẩn ngành (Quick Presets):</span>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {PRESET_LOCAL_CHARGES.map((preset) => (
-            <button
-              key={preset.code}
-              type="button"
-              onClick={() => handleAddPreset(preset)}
-              className="bg-white hover:bg-blue-50 hover:border-blue-400 text-slate-700 text-[11px] font-semibold px-2.5 py-1 rounded border border-slate-200 shadow-2xs transition-colors flex items-center space-x-1"
-            >
-              <span className="font-bold text-blue-700">+{preset.code}</span>
-              <span className={`text-[9px] px-1 py-0.2 rounded ${getLocationBadgeClass(preset.location)}`}>
-                {preset.location || 'POL'}
-              </span>
-              <span className="text-slate-400 font-mono">({preset.currency === 'USD' ? `$${preset.priceUsd}` : `${preset.priceVnd / 1000}k`})</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Line Items Table Grid */}
       <div className="overflow-x-auto border-t border-b border-slate-200">
         <table className="w-full text-left border-collapse text-xs">
