@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { SurchargeItem, FeeCategory, SurchargeTransportMode } from '../types/logistics';
+import { SurchargeItem, FeeCategory, SurchargeTransportMode, ChargeLocation } from '../types/logistics';
 import { 
   Receipt, Plus, Search, Edit2, Trash2, Tag, Check, X, 
-  Ship, Plane, Truck, FileCheck, Layers
+  Ship, Plane, Truck, FileCheck, Layers, MapPin, Anchor, Compass
 } from 'lucide-react';
 
 interface SurchargeCatalogModalProps {
@@ -27,6 +27,7 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTransportMode, setSelectedTransportMode] = useState<string>('ALL');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [selectedLocation, setSelectedLocation] = useState<string>('ALL');
   const [isEditing, setIsEditing] = useState(false);
   const [editingItem, setEditingItem] = useState<Partial<SurchargeItem>>({});
 
@@ -50,6 +51,14 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
     { label: 'Vận Chuyển Bộ (TRUCKING)', value: 'TRUCKING' },
   ];
 
+  const locations: { label: string; value: string }[] = [
+    { label: 'Tất Cả Vị Trí / Chặng', value: 'ALL' },
+    { label: 'Cảng / Sân bay đi (POL - Phí đầu xuất)', value: 'POL' },
+    { label: 'Cước Chặng Chính (FREIGHT)', value: 'FREIGHT' },
+    { label: 'Cảng / Sân bay đến (POD - Phí đầu nhập)', value: 'POD' },
+    { label: 'Vị trí khác (OTHER)', value: 'OTHER' },
+  ];
+
   const filteredItems = surcharges.filter(item => {
     const matchesSearch = 
       item.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -57,8 +66,9 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
     
     const matchesCategory = selectedCategory === 'ALL' || item.category === selectedCategory;
     const matchesMode = selectedTransportMode === 'ALL' || item.transportMode === selectedTransportMode || item.transportMode === 'ALL';
+    const matchesLoc = selectedLocation === 'ALL' || item.location === selectedLocation || (!item.location && selectedLocation === 'POL');
 
-    return matchesSearch && matchesCategory && matchesMode;
+    return matchesSearch && matchesCategory && matchesMode && matchesLoc;
   });
 
   const handleAddNew = () => {
@@ -67,6 +77,7 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
       code: '',
       name: '',
       category: 'LOCAL_CHARGE',
+      location: 'POL',
       transportMode: 'SEA_FCL',
       unit: 'Container',
       priceUsd: 0,
@@ -91,6 +102,7 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
       code: editingItem.code.toUpperCase().trim(),
       name: editingItem.name.trim(),
       category: editingItem.category || 'LOCAL_CHARGE',
+      location: editingItem.location || 'POL',
       transportMode: editingItem.transportMode || 'SEA_FCL',
       unit: editingItem.unit || 'Container',
       priceUsd: Number(editingItem.priceUsd) || 0,
@@ -110,6 +122,16 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
       case 'CUSTOMS': return 'bg-emerald-100 text-emerald-900 border-emerald-200';
       case 'TRUCKING': return 'bg-amber-100 text-amber-900 border-amber-200';
       default: return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
+  };
+
+  const getLocationBadgeClass = (loc?: ChargeLocation) => {
+    switch (loc) {
+      case 'POL': return 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold';
+      case 'FREIGHT': return 'bg-blue-100 text-blue-900 border-blue-300 font-bold';
+      case 'POD': return 'bg-purple-100 text-purple-900 border-purple-300 font-bold';
+      case 'OTHER': return 'bg-slate-100 text-slate-800 border-slate-300 font-semibold';
+      default: return 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold';
     }
   };
 
@@ -143,10 +165,10 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
             </div>
             <div>
               <h2 className="text-sm font-bold uppercase tracking-widest text-white">
-                DANH MỤC PHỤ PHÍ MASTER THEO HÌNH THỨC VẬN CHUYỂN
+                DANH MỤC PHỤ PHÍ MASTER THEO POL / FREIGHT / POD
               </h2>
               <p className="text-xs text-slate-400">
-                Phân loại chi tiết phụ phí theo Đường biển (FCL/LCL), Hàng không, Đường bộ & Hải quan
+                Phân loại phụ phí theo Vị trí (Cảng đi POL, Chặng chính FREIGHT, Cảng đến POD) & Hình thức vận chuyển
               </p>
             </div>
           </div>
@@ -164,16 +186,27 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
           
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             {/* Search Box */}
-            <div className="relative w-full sm:w-56">
+            <div className="relative w-full sm:w-48">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Tìm mã phí, tên phụ phí..."
+                placeholder="Tìm mã phí, tên..."
                 className="w-full pl-9 pr-3 py-1.5 bg-white rounded border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
               />
             </div>
+
+            {/* Filter Location (POL / FREIGHT / POD) */}
+            <select
+              value={selectedLocation}
+              onChange={(e) => setSelectedLocation(e.target.value)}
+              className="px-3 py-1.5 bg-white rounded border border-emerald-300 text-xs text-emerald-900 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              {locations.map(loc => (
+                <option key={loc.value} value={loc.value}>{loc.label}</option>
+              ))}
+            </select>
 
             {/* Filter Transport Mode */}
             <select
@@ -255,6 +288,20 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
                     placeholder="Terminal Handling Charge (THC)..."
                     className="w-full px-2.5 py-1.5 rounded border border-slate-300 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-slate-500 font-bold mb-1">Vị Trí Phí (POL / FREIGHT / POD) *</label>
+                  <select
+                    value={editingItem.location || 'POL'}
+                    onChange={(e) => setEditingItem(prev => ({ ...prev, location: e.target.value as ChargeLocation }))}
+                    className="w-full px-2.5 py-1.5 rounded border border-emerald-300 font-bold text-emerald-950 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="POL">POL (Phí tại Cảng đi / Sân bay đi)</option>
+                    <option value="FREIGHT">FREIGHT (Cước Vận Chuyển Chặng Chính)</option>
+                    <option value="POD">POD (Phí tại Cảng đến / Sân bay đến)</option>
+                    <option value="OTHER">OTHER (Chi Phí Khác)</option>
+                  </select>
                 </div>
 
                 <div>
@@ -381,6 +428,7 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-400 font-bold uppercase text-[11px] tracking-wider">
                   <th className="p-3 w-16">Mã Phí</th>
                   <th className="p-3">Tên Hạng Mục Phí</th>
+                  <th className="p-3">Vị Trí (Leg)</th>
                   <th className="p-3">Hình Thức Vận Chuyển</th>
                   <th className="p-3">Phân Loại</th>
                   <th className="p-3">Đơn Vị</th>
@@ -393,7 +441,7 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
               <tbody className="divide-y divide-slate-200 bg-white">
                 {filteredItems.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="p-8 text-center text-slate-400 font-medium">
+                    <td colSpan={10} className="p-8 text-center text-slate-400 font-medium">
                       Chưa tìm thấy phụ phí nào phù hợp
                     </td>
                   </tr>
@@ -409,6 +457,11 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
                         </td>
                         <td className="p-3 font-bold text-slate-900">
                           {item.name}
+                        </td>
+                        <td className="p-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] uppercase border ${getLocationBadgeClass(item.location || 'POL')}`}>
+                            {item.location || 'POL'}
+                          </span>
                         </td>
                         <td className="p-3">
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${modeBadge.className}`}>

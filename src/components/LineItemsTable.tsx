@@ -1,8 +1,8 @@
 import React from 'react';
-import { LineItem, FeeCategory } from '../types/logistics';
+import { LineItem, FeeCategory, ChargeLocation } from '../types/logistics';
 import { PRESET_LOCAL_CHARGES } from '../data/presets';
 import { calculateLineItem, formatUSD, formatVND } from '../utils/formatters';
-import { Plus, Trash2, ListChecks, Zap, Receipt } from 'lucide-react';
+import { Plus, Trash2, ListChecks, Zap, Receipt, MapPin, Ship, Anchor, Compass } from 'lucide-react';
 
 interface LineItemsTableProps {
   items: LineItem[];
@@ -13,10 +13,11 @@ interface LineItemsTableProps {
 
 export const LineItemsTable: React.FC<LineItemsTableProps> = ({ items, exchangeRate, onUpdateItems, onOpenSurchargeCatalog }) => {
 
-  const handleAddItem = (category: FeeCategory = 'LOCAL_CHARGE') => {
+  const handleAddItem = (category: FeeCategory = 'LOCAL_CHARGE', defaultLocation: ChargeLocation = 'POL') => {
     const newItem: LineItem = {
       id: `item-${Date.now()}`,
       category,
+      location: defaultLocation,
       code: 'CHARGE',
       description: 'Phí dịch vụ mới / Phụ phí',
       quantity: 1,
@@ -35,6 +36,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({ items, exchangeR
     const newItem: LineItem = {
       id: `item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       category: preset.category,
+      location: preset.location || (preset.category === 'FREIGHT' ? 'FREIGHT' : 'POL'),
       code: preset.code,
       description: preset.name,
       quantity: 1,
@@ -76,6 +78,25 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({ items, exchangeR
     }
   };
 
+  const getLocationBadgeClass = (location?: ChargeLocation) => {
+    switch (location) {
+      case 'POL': return 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold';
+      case 'FREIGHT': return 'bg-blue-50 text-blue-800 border-blue-300 font-bold';
+      case 'POD': return 'bg-purple-50 text-purple-800 border-purple-300 font-bold';
+      case 'OTHER': return 'bg-slate-50 text-slate-700 border-slate-300 font-semibold';
+      default: return 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold';
+    }
+  };
+
+  // Calculate totals by Leg/Location
+  const polItems = items.filter(i => (i.location || 'POL') === 'POL');
+  const freightItems = items.filter(i => i.location === 'FREIGHT' || (!i.location && i.category === 'FREIGHT'));
+  const podItems = items.filter(i => i.location === 'POD');
+  const otherItems = items.filter(i => i.location === 'OTHER');
+
+  const sumLocationUsd = (list: LineItem[]) => list.reduce((acc, i) => acc + (i.amountUsd || 0), 0);
+  const sumLocationVnd = (list: LineItem[]) => list.reduce((acc, i) => acc + (i.amountVnd || 0), 0);
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-2xs space-y-4">
       
@@ -83,10 +104,10 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({ items, exchangeR
       <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-2">
         <div className="flex items-center space-x-2">
           <ListChecks className="w-4 h-4 text-blue-700" />
-          <span className="font-bold text-xs text-slate-500 uppercase tracking-widest">CHI TIẾT BẢNG GIÁ & PHỤ PHÍ (FREIGHT & LOCAL CHARGES)</span>
+          <span className="font-bold text-xs text-slate-500 uppercase tracking-widest">CHI TIẾT BẢNG GIÁ & PHỤ PHÍ (POL / FREIGHT / POD)</span>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 flex-wrap gap-1">
           {onOpenSurchargeCatalog && (
             <button
               type="button"
@@ -100,12 +121,71 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({ items, exchangeR
           )}
 
           <button
-            onClick={() => handleAddItem()}
+            onClick={() => handleAddItem('LOCAL_CHARGE', 'POL')}
             className="flex items-center space-x-1.5 bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Thêm Dòng Phí Mới</span>
           </button>
+        </div>
+      </div>
+
+      {/* Leg Breakdown Summary Bar */}
+      <div className="mx-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+        <div className="bg-emerald-50/70 border border-emerald-200 rounded-lg p-2.5 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Anchor className="w-4 h-4 text-emerald-700" />
+            <div>
+              <div className="text-[10px] font-bold text-emerald-800 uppercase">1. Phí Đầu Xuất (POL)</div>
+              <div className="text-[11px] text-emerald-600 font-medium">{polItems.length} hạng mục</div>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="font-mono font-bold text-emerald-950">{formatUSD(sumLocationUsd(polItems))}</div>
+            <div className="font-mono text-[10px] text-emerald-800">{formatVND(sumLocationVnd(polItems))}</div>
+          </div>
+        </div>
+
+        <div className="bg-blue-50/70 border border-blue-200 rounded-lg p-2.5 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Ship className="w-4 h-4 text-blue-700" />
+            <div>
+              <div className="text-[10px] font-bold text-blue-800 uppercase">2. Cước Chặng Chính (FREIGHT)</div>
+              <div className="text-[11px] text-blue-600 font-medium">{freightItems.length} hạng mục</div>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="font-mono font-bold text-blue-950">{formatUSD(sumLocationUsd(freightItems))}</div>
+            <div className="font-mono text-[10px] text-blue-800">{formatVND(sumLocationVnd(freightItems))}</div>
+          </div>
+        </div>
+
+        <div className="bg-purple-50/70 border border-purple-200 rounded-lg p-2.5 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <MapPin className="w-4 h-4 text-purple-700" />
+            <div>
+              <div className="text-[10px] font-bold text-purple-800 uppercase">3. Phí Đầu Nhập (POD)</div>
+              <div className="text-[11px] text-purple-600 font-medium">{podItems.length} hạng mục</div>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="font-mono font-bold text-purple-950">{formatUSD(sumLocationUsd(podItems))}</div>
+            <div className="font-mono text-[10px] text-purple-800">{formatVND(sumLocationVnd(podItems))}</div>
+          </div>
+        </div>
+
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Compass className="w-4 h-4 text-slate-600" />
+            <div>
+              <div className="text-[10px] font-bold text-slate-700 uppercase">4. Phí Khác (OTHER)</div>
+              <div className="text-[11px] text-slate-500 font-medium">{otherItems.length} hạng mục</div>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="font-mono font-bold text-slate-900">{formatUSD(sumLocationUsd(otherItems))}</div>
+            <div className="font-mono text-[10px] text-slate-600">{formatVND(sumLocationVnd(otherItems))}</div>
+          </div>
         </div>
       </div>
 
@@ -124,6 +204,9 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({ items, exchangeR
               className="bg-white hover:bg-blue-50 hover:border-blue-400 text-slate-700 text-[11px] font-semibold px-2.5 py-1 rounded border border-slate-200 shadow-2xs transition-colors flex items-center space-x-1"
             >
               <span className="font-bold text-blue-700">+{preset.code}</span>
+              <span className={`text-[9px] px-1 py-0.2 rounded ${getLocationBadgeClass(preset.location)}`}>
+                {preset.location || 'POL'}
+              </span>
               <span className="text-slate-400 font-mono">({preset.currency === 'USD' ? `$${preset.priceUsd}` : `${preset.priceVnd / 1000}k`})</span>
             </button>
           ))}
@@ -140,6 +223,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({ items, exchangeR
               <th className="p-2.5 w-8 text-center">#</th>
               <th className="p-2.5 min-w-[200px]">Diễn Giải / Tên Hạng Mục</th>
               <th className="p-2.5 w-28">Mã Phí</th>
+              <th className="p-2.5 w-28">Vị Trí (Chặng)</th>
               <th className="p-2.5 w-28">Phân Loại</th>
               <th className="p-2.5 w-16 text-right">SL</th>
               <th className="p-2.5 w-24">Đơn Vị</th>
@@ -188,6 +272,20 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({ items, exchangeR
                   />
                 </td>
 
+                {/* Location (Leg) Selector */}
+                <td className="p-2">
+                  <select
+                    value={item.location || 'POL'}
+                    onChange={(e) => handleItemChange(item.id, 'location', e.target.value as ChargeLocation)}
+                    className={`w-full px-1.5 py-1 rounded border text-[10px] uppercase focus:outline-none ${getLocationBadgeClass(item.location || 'POL')}`}
+                  >
+                    <option value="POL">POL (Đầu Xuất)</option>
+                    <option value="FREIGHT">FREIGHT (Chặng Chính)</option>
+                    <option value="POD">POD (Đầu Nhập)</option>
+                    <option value="OTHER">KHÁC</option>
+                  </select>
+                </td>
+
                 {/* Category Selector */}
                 <td className="p-2">
                   <select
@@ -195,7 +293,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({ items, exchangeR
                     onChange={(e) => handleItemChange(item.id, 'category', e.target.value as FeeCategory)}
                     className={`w-full px-1.5 py-1 rounded border text-[10px] font-bold uppercase focus:outline-none ${getCategoryBadgeClass(item.category)}`}
                   >
-                    <option value="FREIGHT">FREIGHT (Cước Chặng)</option>
+                    <option value="FREIGHT">FREIGHT (Cước)</option>
                     <option value="LOCAL_CHARGE">LOCAL CHARGE</option>
                     <option value="SURCHARGE">SURCHARGE (Phụ Phí)</option>
                     <option value="CUSTOMS">HẢI QUAN</option>
@@ -296,8 +394,8 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({ items, exchangeR
 
             {items.length === 0 && (
               <tr>
-                <td colSpan={12} className="p-8 text-center text-slate-400 italic">
-                  Chưa có hạng mục phí nào. Bấm "Thêm Hạng Mục Phí" hoặc chọn nhanh từ danh sách phụ phí ở trên.
+                <td colSpan={13} className="p-8 text-center text-slate-400 italic">
+                  Chưa có hạng mục phí nào. Bấm "Thêm Dòng Phí Mới" hoặc chọn nhanh từ danh sách phụ phí ở trên.
                 </td>
               </tr>
             )}

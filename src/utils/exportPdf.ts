@@ -106,18 +106,56 @@ export function exportQuoteToPdf(quote: QuoteData) {
 
   y += 43;
 
-  // 4. Line Items Table
-  const tableData = quote.items.map((item, idx) => [
-    (idx + 1).toString(),
-    `${removeVietnameseTones(item.description)}\n(${item.code})`,
-    formatNumber(item.quantity),
-    removeVietnameseTones(item.unit),
-    item.currency === 'USD' ? formatUSD(item.unitPrice) : formatVND(item.unitPrice),
-    item.currency,
-    `${item.vatRate}%`,
-    formatUSD(item.amountUsd),
-    formatVND(item.amountVnd),
-  ]);
+  // 4. Line Items Table (Grouped by Location: POL, FREIGHT, POD, OTHER)
+  const tableData: any[] = [];
+  
+  const locations = ['POL', 'FREIGHT', 'POD', 'OTHER'] as const;
+  const locTitleMap = {
+    POL: `I. CHI PHI TAI DAU XUAT / CANG DI (POL CHARGES - ${removeVietnameseTones(quote.shipment.pol) || 'ORIGIN'})`,
+    FREIGHT: `II. CUOC VAN CHUYEN CHANG CHINH (MAIN FREIGHT - ${quote.shipment.mode})`,
+    POD: `III. CHI PHI TAI DAU NHAP / CANG DEN (POD CHARGES - ${removeVietnameseTones(quote.shipment.pod) || 'DESTINATION'})`,
+    OTHER: 'IV. DICH VU CONG THEM & CHI PHI KHAC (OTHER SERVICES)'
+  };
+
+  locations.forEach((locKey) => {
+    const locItems = quote.items.filter(item => (item.location || 'POL') === locKey);
+    if (locItems.length === 0) return;
+
+    const locSubtotalUsd = locItems.reduce((acc, i) => acc + i.amountUsd, 0);
+    const locSubtotalVnd = locItems.reduce((acc, i) => acc + i.amountVnd, 0);
+
+    // Section Header Row
+    tableData.push([
+      {
+        content: locTitleMap[locKey],
+        colSpan: 7,
+        styles: { fillColor: [226, 232, 240], textColor: [15, 23, 42], fontStyle: 'bold', halign: 'left' }
+      },
+      {
+        content: formatUSD(locSubtotalUsd),
+        styles: { fillColor: [226, 232, 240], textColor: [15, 23, 42], fontStyle: 'bold', halign: 'right' }
+      },
+      {
+        content: formatVND(locSubtotalVnd),
+        styles: { fillColor: [226, 232, 240], textColor: [15, 23, 42], fontStyle: 'bold', halign: 'right' }
+      }
+    ]);
+
+    // Item rows
+    locItems.forEach((item, idx) => {
+      tableData.push([
+        (idx + 1).toString(),
+        `${removeVietnameseTones(item.description)}\n(${item.code})`,
+        formatNumber(item.quantity),
+        removeVietnameseTones(item.unit),
+        item.currency === 'USD' ? formatUSD(item.unitPrice) : formatVND(item.unitPrice),
+        item.currency,
+        `${item.vatRate}%`,
+        formatUSD(item.amountUsd),
+        formatVND(item.amountVnd),
+      ]);
+    });
+  });
 
   autoTable(doc, {
     startY: y,

@@ -28,22 +28,46 @@ export function exportQuoteToExcel(quote: QuoteData) {
     ['STT', 'Hạng mục chi phí / Phụ phí', 'Mã Phí', 'Phân loại', 'Số lượng', 'Đơn vị', 'Đơn giá', 'Loại tiền', 'VAT (%)', 'Thành tiền (USD)', 'Thành tiền (VND)', 'Ghi chú']
   ];
 
-  // 2. Add Line Items
-  quote.items.forEach((item, index) => {
-    excelRows.push([
-      index + 1,
-      item.description,
-      item.code,
-      item.category,
-      item.quantity,
-      item.unit,
-      item.unitPrice,
-      item.currency,
-      `${item.vatRate}%`,
-      item.amountUsd,
-      item.amountVnd,
-      item.note || ''
-    ]);
+  // 2. Add Line Items Grouped by Location (POL, FREIGHT, POD, OTHER)
+  const locations = ['POL', 'FREIGHT', 'POD', 'OTHER'] as const;
+  const locTitleMap = {
+    POL: `--- 1. CHI PHÍ TẠI CẢNG / SÂN BAY ĐI (POL CHARGES - ${quote.shipment.pol || 'ORIGIN'}) ---`,
+    FREIGHT: `--- 2. CƯỚC VẬN CHUYỂN CHẶNG CHÍNH (MAIN FREIGHT - ${quote.shipment.mode}) ---`,
+    POD: `--- 3. CHI PHÍ TẠI CẢNG / SÂN BAY ĐẾN (POD CHARGES - ${quote.shipment.pod || 'DESTINATION'}) ---`,
+    OTHER: '--- 4. DỊCH VỤ CỘNG THÊM & CHI PHÍ KHÁC (OTHER SERVICES) ---'
+  };
+
+  locations.forEach((locKey) => {
+    const locItems = quote.items.filter(item => (item.location || 'POL') === locKey);
+    if (locItems.length === 0) return;
+
+    const locSubtotalUsd = locItems.reduce((acc, i) => acc + i.amountUsd, 0);
+    const locSubtotalVnd = locItems.reduce((acc, i) => acc + i.amountVnd, 0);
+
+    // Group Header Row
+    excelRows.push([]);
+    excelRows.push(['', locTitleMap[locKey]]);
+
+    // Group items
+    locItems.forEach((item, index) => {
+      excelRows.push([
+        index + 1,
+        item.description,
+        item.code,
+        item.category,
+        item.quantity,
+        item.unit,
+        item.unitPrice,
+        item.currency,
+        `${item.vatRate}%`,
+        item.amountUsd,
+        item.amountVnd,
+        item.note || ''
+      ]);
+    });
+
+    // Subtotal Row
+    excelRows.push(['', `Cộng chặng (${locKey}):`, '', '', '', '', '', '', '', locSubtotalUsd, locSubtotalVnd]);
   });
 
   // 3. Add Totals

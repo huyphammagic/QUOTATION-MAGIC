@@ -34,6 +34,8 @@ export type FeeCategory =
   | 'HANDLING' 
   | 'OTHER';
 
+export type ChargeLocation = 'POL' | 'FREIGHT' | 'POD' | 'OTHER';
+
 export type Currency = 'USD' | 'VND';
 
 export type QuoteStatus = 'DRAFT' | 'SENT' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
@@ -43,6 +45,7 @@ export type IncotermCode = 'FOB' | 'CIF' | 'EXW' | 'DDP' | 'DAP' | 'CFR' | 'FCA'
 export interface LineItem {
   id: string;
   category: FeeCategory;
+  location?: ChargeLocation; // POL (Đầu xuất), FREIGHT (Chặng chính), POD (Đầu nhập), OTHER (Khác)
   code: string;           // E.g. THC, BL, Ocean Freight, BAF
   description: string;    // E.g. Terminal Handling Charge tại Cảng Cát Lái
   quantity: number;
@@ -71,6 +74,7 @@ export interface SurchargeItem {
   name: string;
   category: FeeCategory;
   transportMode: SurchargeTransportMode;
+  location?: ChargeLocation; // POL, FREIGHT, POD, OTHER
   unit: string;
   priceUsd: number;
   priceVnd: number;

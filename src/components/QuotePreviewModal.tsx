@@ -126,12 +126,12 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isO
 
           </div>
 
-          {/* 4. Line Items Table */}
+          {/* 4. Line Items Table Grouped By Location (POL, FREIGHT, POD, OTHER) */}
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse border border-slate-300 text-xs">
               <thead>
                 <tr className="bg-slate-900 text-white uppercase text-[10px]">
-                  <th className="p-2 border border-slate-300 text-center w-8">#</th>
+                  <th className="p-2 border border-slate-300 text-center w-8">STT</th>
                   <th className="p-2 border border-slate-300">Diễn giải hạng mục / Phụ phí</th>
                   <th className="p-2 border border-slate-300 text-center">Mã</th>
                   <th className="p-2 border border-slate-300 text-right">SL</th>
@@ -144,25 +144,65 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isO
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {quote.items.map((item, index) => (
-                  <tr key={item.id} className="hover:bg-slate-50">
-                    <td className="p-2 border border-slate-200 text-center font-mono">{index + 1}</td>
-                    <td className="p-2 border border-slate-200">
-                      <div className="font-semibold text-slate-900">{item.description}</div>
-                      {item.note && <div className="text-[10px] text-slate-500 italic">{item.note}</div>}
-                    </td>
-                    <td className="p-2 border border-slate-200 text-center font-mono font-bold text-cyan-800">{item.code}</td>
-                    <td className="p-2 border border-slate-200 text-right font-bold">{item.quantity}</td>
-                    <td className="p-2 border border-slate-200 text-center">{item.unit}</td>
-                    <td className="p-2 border border-slate-200 text-right font-mono">
-                      {item.currency === 'USD' ? formatUSD(item.unitPrice) : formatVND(item.unitPrice)}
-                    </td>
-                    <td className="p-2 border border-slate-200 text-center font-bold">{item.currency}</td>
-                    <td className="p-2 border border-slate-200 text-center">{item.vatRate}%</td>
-                    <td className="p-2 border border-slate-200 text-right font-mono font-semibold">{formatUSD(item.amountUsd)}</td>
-                    <td className="p-2 border border-slate-200 text-right font-mono font-semibold">{formatVND(item.amountVnd)}</td>
-                  </tr>
-                ))}
+                {(['POL', 'FREIGHT', 'POD', 'OTHER'] as const).map((locationKey) => {
+                  const locItems = quote.items.filter(item => (item.location || 'POL') === locationKey);
+                  if (locItems.length === 0) return null;
+
+                  const locTitleMap = {
+                    POL: `I. CHI PHÍ TẠI ĐẦU XUẤT / CẢNG ĐI (POL CHARGES - ${quote.shipment.pol || 'ORIGIN'})`,
+                    FREIGHT: `II. CƯỚC VẬN CHUYỂN CHẶNG CHÍNH (MAIN FREIGHT - ${quote.shipment.mode})`,
+                    POD: `III. CHI PHÍ TẠI ĐẦU NHẬP / CẢNG ĐẾN (POD CHARGES - ${quote.shipment.pod || 'DESTINATION'})`,
+                    OTHER: 'IV. DỊCH VỤ CỘNG THÊM & CHI PHÍ KHÁC (OTHER SERVICES)'
+                  };
+
+                  const locBgMap = {
+                    POL: 'bg-emerald-50 text-emerald-950 border-emerald-300',
+                    FREIGHT: 'bg-blue-50 text-blue-950 border-blue-300',
+                    POD: 'bg-purple-50 text-purple-950 border-purple-300',
+                    OTHER: 'bg-slate-100 text-slate-900 border-slate-300'
+                  };
+
+                  const locSubtotalUsd = locItems.reduce((acc, i) => acc + i.amountUsd, 0);
+                  const locSubtotalVnd = locItems.reduce((acc, i) => acc + i.amountVnd, 0);
+
+                  return (
+                    <React.Fragment key={locationKey}>
+                      {/* Section Header Row */}
+                      <tr className={`${locBgMap[locationKey]} font-bold border-y-2`}>
+                        <td colSpan={8} className="p-2 border border-slate-300 uppercase tracking-wide">
+                          {locTitleMap[locationKey]}
+                        </td>
+                        <td className="p-2 border border-slate-300 text-right font-mono font-bold">
+                          {formatUSD(locSubtotalUsd)}
+                        </td>
+                        <td className="p-2 border border-slate-300 text-right font-mono font-bold">
+                          {formatVND(locSubtotalVnd)}
+                        </td>
+                      </tr>
+
+                      {/* Line Items Rows */}
+                      {locItems.map((item, index) => (
+                        <tr key={item.id} className="hover:bg-slate-50">
+                          <td className="p-2 border border-slate-200 text-center font-mono">{index + 1}</td>
+                          <td className="p-2 border border-slate-200">
+                            <div className="font-semibold text-slate-900">{item.description}</div>
+                            {item.note && <div className="text-[10px] text-slate-500 italic">{item.note}</div>}
+                          </td>
+                          <td className="p-2 border border-slate-200 text-center font-mono font-bold text-cyan-800">{item.code}</td>
+                          <td className="p-2 border border-slate-200 text-right font-bold">{item.quantity}</td>
+                          <td className="p-2 border border-slate-200 text-center">{item.unit}</td>
+                          <td className="p-2 border border-slate-200 text-right font-mono">
+                            {item.currency === 'USD' ? formatUSD(item.unitPrice) : formatVND(item.unitPrice)}
+                          </td>
+                          <td className="p-2 border border-slate-200 text-center font-bold">{item.currency}</td>
+                          <td className="p-2 border border-slate-200 text-center">{item.vatRate}%</td>
+                          <td className="p-2 border border-slate-200 text-right font-mono font-semibold">{formatUSD(item.amountUsd)}</td>
+                          <td className="p-2 border border-slate-200 text-right font-mono font-semibold">{formatVND(item.amountVnd)}</td>
+                        </tr>
+                      ))}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>
