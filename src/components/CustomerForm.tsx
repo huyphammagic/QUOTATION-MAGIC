@@ -88,7 +88,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
         <div className="md:col-span-2">
           <label className="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider flex items-center space-x-1">
             <Building className="w-3.5 h-3.5 text-slate-400" />
-            <span>Tên Công Ty / Khách Hàng *</span>
+            <span>Tên Công Ty / Khách Hàng</span>
           </label>
           <input
             type="text"

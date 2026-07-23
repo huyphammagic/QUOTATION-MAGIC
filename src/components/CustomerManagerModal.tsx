@@ -62,9 +62,22 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
 
   const handleSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingCustomer.companyName || !editingCustomer.customerName) return;
+    const finalCustomer: CustomerRecord = {
+      id: editingCustomer.id || `cust-${Date.now()}`,
+      code: editingCustomer.code || `KH-${Math.floor(100 + Math.random() * 900)}`,
+      companyName: editingCustomer.companyName || editingCustomer.customerName || 'Khách hàng vãng lai',
+      customerName: editingCustomer.customerName || editingCustomer.companyName || '—',
+      contactPerson: editingCustomer.contactPerson || '',
+      taxId: editingCustomer.taxId || '',
+      address: editingCustomer.address || '',
+      email: editingCustomer.email || '',
+      phone: editingCustomer.phone || '',
+      group: editingCustomer.group || 'Chung',
+      notes: editingCustomer.notes || '',
+      createdDate: editingCustomer.createdDate || new Date().toISOString().slice(0, 10)
+    };
 
-    onSaveCustomer(editingCustomer as CustomerRecord);
+    onSaveCustomer(finalCustomer);
     setIsEditing(false);
     setEditingCustomer({});
   };
@@ -148,10 +161,9 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                 <div>
-                  <label className="block text-slate-500 font-bold mb-1">Mã Khách Hàng *</label>
+                  <label className="block text-slate-500 font-bold mb-1">Mã Khách Hàng</label>
                   <input
                     type="text"
-                    required
                     value={editingCustomer.code || ''}
                     onChange={(e) => setEditingCustomer(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
                     className="w-full px-2.5 py-1.5 rounded border border-slate-300 font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -159,10 +171,9 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-slate-500 font-bold mb-1">Tên Doanh Nghiệp / Công Ty *</label>
+                  <label className="block text-slate-500 font-bold mb-1">Tên Doanh Nghiệp / Công Ty</label>
                   <input
                     type="text"
-                    required
                     value={editingCustomer.companyName || ''}
                     onChange={(e) => setEditingCustomer(prev => ({ ...prev, companyName: e.target.value }))}
                     placeholder="CÔNG TY TNHH ABC..."
@@ -182,10 +193,9 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-500 font-bold mb-1">Người Đại Diện / Nhận Báo Giá *</label>
+                  <label className="block text-slate-500 font-bold mb-1">Người Đại Diện / Nhận Báo Giá</label>
                   <input
                     type="text"
-                    required
                     value={editingCustomer.customerName || ''}
                     onChange={(e) => setEditingCustomer(prev => ({ ...prev, customerName: e.target.value }))}
                     placeholder="Nguyễn Văn A"
@@ -205,10 +215,9 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-500 font-bold mb-1">Số Điện Thoại *</label>
+                  <label className="block text-slate-500 font-bold mb-1">Số Điện Thoại</label>
                   <input
                     type="text"
-                    required
                     value={editingCustomer.phone || ''}
                     onChange={(e) => setEditingCustomer(prev => ({ ...prev, phone: e.target.value }))}
                     placeholder="0909 123 456"
@@ -217,10 +226,9 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-500 font-bold mb-1">Email Nhận Báo Giá *</label>
+                  <label className="block text-slate-500 font-bold mb-1">Email Nhận Báo Giá</label>
                   <input
                     type="email"
-                    required
                     value={editingCustomer.email || ''}
                     onChange={(e) => setEditingCustomer(prev => ({ ...prev, email: e.target.value }))}
                     placeholder="contact@company.com"
