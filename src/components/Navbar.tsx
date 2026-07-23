@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ship, FileText, Settings, PlusCircle, RefreshCw, FileSpreadsheet, Building2, Receipt } from 'lucide-react';
+import { Ship, FileText, Settings, PlusCircle, RefreshCw, Building2, Receipt } from 'lucide-react';
 import { CompanyProfile } from '../types/logistics';
 
 interface NavbarProps {
@@ -12,7 +12,6 @@ interface NavbarProps {
   onOpenCompanyProfile: () => void;
   onOpenCustomers: () => void;
   onOpenSurchargeCatalog: () => void;
-  onOpenGoogleSheets: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -25,7 +24,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCompanyProfile,
   onOpenCustomers,
   onOpenSurchargeCatalog,
-  onOpenGoogleSheets
 }) => {
   return (
     <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-30 flex items-center justify-between px-4 sm:px-8 shadow-xs">
@@ -79,16 +77,6 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           <Receipt className="w-4 h-4 text-amber-600" />
           <span className="hidden md:inline">Danh Mục Phụ Phí</span>
-        </button>
-
-        {/* Google Sheets Export */}
-        <button
-          onClick={onOpenGoogleSheets}
-          className="flex items-center space-x-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-semibold px-3 py-2 rounded-lg transition-colors shadow-2xs"
-          title="Đồng bộ Google Sheets"
-        >
-          <FileSpreadsheet className="w-4 h-4" />
-          <span className="hidden xl:inline">Google Sheets</span>
         </button>
 
         {/* Saved Quotes List */}

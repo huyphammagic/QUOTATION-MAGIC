@@ -22,11 +22,10 @@ import { SummaryCard } from './components/SummaryCard';
 import { QuotePreviewModal } from './components/QuotePreviewModal';
 import { SavedQuotesModal } from './components/SavedQuotesModal';
 import { CompanyProfileModal } from './components/CompanyProfileModal';
-import { GoogleSheetsModal } from './components/GoogleSheetsModal';
 import { CustomerManagerModal } from './components/CustomerManagerModal';
 import { SurchargeCatalogModal } from './components/SurchargeCatalogModal';
 
-import { Check, Ship, FileText, Settings, FileSpreadsheet, LayoutDashboard, Building2, Receipt } from 'lucide-react';
+import { Check, Ship, FileText, Settings, LayoutDashboard, Building2, Receipt } from 'lucide-react';
 
 export default function App() {
   // Saved data states
@@ -44,7 +43,6 @@ export default function App() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isSavedOpen, setIsSavedOpen] = useState(false);
   const [isCompanyOpen, setIsCompanyOpen] = useState(false);
-  const [isSheetsOpen, setIsSheetsOpen] = useState(false);
   const [isCustomersOpen, setIsCustomersOpen] = useState(false);
   const [isSurchargesOpen, setIsSurchargesOpen] = useState(false);
 
@@ -373,14 +371,6 @@ export default function App() {
                   <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full animate-ping" />
                 )}
               </button>
-
-              <button 
-                onClick={() => setIsSheetsOpen(true)} 
-                className="p-2.5 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded-xl transition-colors"
-                title="Đồng Bộ Google Sheets"
-              >
-                <FileSpreadsheet className="w-5 h-5" />
-              </button>
             </nav>
           </div>
 
@@ -414,7 +404,6 @@ export default function App() {
             onOpenCompanyProfile={() => setIsCompanyOpen(true)}
             onOpenCustomers={() => setIsCustomersOpen(true)}
             onOpenSurchargeCatalog={() => setIsSurchargesOpen(true)}
-            onOpenGoogleSheets={() => setIsSheetsOpen(true)}
           />
 
           {/* Main Content Area */}
@@ -480,7 +469,6 @@ export default function App() {
                   onSaveQuote={handleSaveQuoteAction}
                   onExportPdf={() => exportQuoteToPdf(quote)}
                   onExportExcel={() => exportQuoteToExcel(quote)}
-                  onExportGoogleSheets={() => setIsSheetsOpen(true)}
                   onOpenPreview={() => setIsPreviewOpen(true)}
                 />
               </div>
@@ -551,12 +539,6 @@ export default function App() {
         isOpen={isCompanyOpen}
         onClose={() => setIsCompanyOpen(false)}
         onSaveCompany={handleSaveCompanyProfile}
-      />
-
-      <GoogleSheetsModal
-        quote={quote}
-        isOpen={isSheetsOpen}
-        onClose={() => setIsSheetsOpen(false)}
       />
 
     </div>

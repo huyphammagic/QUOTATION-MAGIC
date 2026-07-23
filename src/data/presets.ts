@@ -61,47 +61,60 @@ export const INITIAL_CUSTOMERS: CustomerRecord[] = [
 
 export const INITIAL_SURCHARGE_CATALOG: SurchargeItem[] = [
   // --- ĐƯỜNG BIỂN FCL (SEA FCL) ---
-  { id: 'sur-1', code: 'THC', name: 'Terminal Handling Charge (THC)', category: 'LOCAL_CHARGE', transportMode: 'SEA_FCL', unit: 'Container', priceUsd: 140, priceVnd: 3550000, vatRate: 8, currency: 'USD' },
-  { id: 'sur-2', code: 'BL', name: 'Bill of Lading Fee (B/L)', category: 'LOCAL_CHARGE', transportMode: 'SEA_FCL', unit: 'Bill', priceUsd: 40, priceVnd: 1000000, vatRate: 8, currency: 'USD' },
-  { id: 'sur-3', code: 'SEAL', name: 'Container Seal Fee', category: 'LOCAL_CHARGE', transportMode: 'SEA_FCL', unit: 'Container', priceUsd: 10, priceVnd: 250000, vatRate: 8, currency: 'USD' },
-  { id: 'sur-4', code: 'DO', name: 'Delivery Order Fee (D/O)', category: 'LOCAL_CHARGE', transportMode: 'SEA_FCL', unit: 'Set', priceUsd: 45, priceVnd: 1150000, vatRate: 8, currency: 'USD' },
-  { id: 'sur-5', code: 'TELEX', name: 'Telex Release / Surrender Fee', category: 'LOCAL_CHARGE', transportMode: 'SEA_FCL', unit: 'Bill', priceUsd: 30, priceVnd: 760000, vatRate: 8, currency: 'USD' },
-  { id: 'sur-6', code: 'BAF', name: 'Bunker Adjustment Factor (BAF)', category: 'SURCHARGE', transportMode: 'SEA_FCL', unit: 'Container', priceUsd: 120, priceVnd: 3040000, vatRate: 0, currency: 'USD' },
-  { id: 'sur-7', code: 'LSS', name: 'Low Sulphur Surcharge (LSS)', category: 'SURCHARGE', transportMode: 'SEA_FCL', unit: 'Container', priceUsd: 40, priceVnd: 1016000, vatRate: 0, currency: 'USD' },
-  { id: 'sur-8', code: 'CIC', name: 'Container Imbalance Charge (CIC)', category: 'SURCHARGE', transportMode: 'SEA_FCL', unit: 'Container', priceUsd: 80, priceVnd: 2032000, vatRate: 0, currency: 'USD' },
-  { id: 'sur-9', code: 'PSS', name: 'Peak Season Surcharge (PSS)', category: 'SURCHARGE', transportMode: 'SEA_FCL', unit: 'Container', priceUsd: 150, priceVnd: 3810000, vatRate: 0, currency: 'USD' },
-  { id: 'sur-10', code: 'AMS', name: 'Automated Manifest System (AMS/AFR)', category: 'LOCAL_CHARGE', transportMode: 'SEA_FCL', unit: 'Bill', priceUsd: 35, priceVnd: 890000, vatRate: 8, currency: 'USD' },
-  { id: 'sur-11', code: 'DEM_DET', name: 'Demurrage & Detention Fee', category: 'SURCHARGE', transportMode: 'SEA_FCL', unit: 'Container/Ngày', priceUsd: 50, priceVnd: 1270000, vatRate: 8, currency: 'USD' },
-  { id: 'sur-12', code: 'CLEANING', name: 'Container Cleaning Fee', category: 'LOCAL_CHARGE', transportMode: 'SEA_FCL', unit: 'Container', priceUsd: 20, priceVnd: 500000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-1', code: 'THC', name: 'Terminal Handling Charge (THC) - Phí xếp dỡ cảng FCL', category: 'LOCAL_CHARGE', transportMode: 'SEA_FCL', unit: 'Container', priceUsd: 140, priceVnd: 3550000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-2', code: 'BL', name: 'Bill of Lading Fee (B/L) - Phí phát hành vận đơn FCL', category: 'LOCAL_CHARGE', transportMode: 'SEA_FCL', unit: 'Bill', priceUsd: 40, priceVnd: 1000000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-3', code: 'SEAL', name: 'Container Seal Fee - Phí kẹp chì niêm phong', category: 'LOCAL_CHARGE', transportMode: 'SEA_FCL', unit: 'Container', priceUsd: 10, priceVnd: 250000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-4', code: 'DO', name: 'Delivery Order Fee (D/O) - Phí lệnh giao hàng nhập FCL', category: 'LOCAL_CHARGE', transportMode: 'SEA_FCL', unit: 'Set', priceUsd: 45, priceVnd: 1150000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-5', code: 'TELEX', name: 'Telex Release / Surrender Fee - Phí điện giải phóng B/L', category: 'LOCAL_CHARGE', transportMode: 'SEA_FCL', unit: 'Bill', priceUsd: 30, priceVnd: 760000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-6', code: 'BAF', name: 'Bunker Adjustment Factor (BAF) - Phụ phí nhiên liệu', category: 'SURCHARGE', transportMode: 'SEA_FCL', unit: 'Container', priceUsd: 120, priceVnd: 3040000, vatRate: 0, currency: 'USD' },
+  { id: 'sur-7', code: 'LSS', name: 'Low Sulphur Surcharge (LSS) - Phụ phí nhiên liệu sạch', category: 'SURCHARGE', transportMode: 'SEA_FCL', unit: 'Container', priceUsd: 40, priceVnd: 1016000, vatRate: 0, currency: 'USD' },
+  { id: 'sur-8', code: 'EBS', name: 'Emergency Bunker Surcharge (EBS) - Phụ phí xăng dầu khẩn cấp', category: 'SURCHARGE', transportMode: 'SEA_FCL', unit: 'Container', priceUsd: 50, priceVnd: 1270000, vatRate: 0, currency: 'USD' },
+  { id: 'sur-9', code: 'CIC', name: 'Container Imbalance Charge (CIC) - Phụ phí mất cân bằng vỏ', category: 'SURCHARGE', transportMode: 'SEA_FCL', unit: 'Container', priceUsd: 80, priceVnd: 2032000, vatRate: 0, currency: 'USD' },
+  { id: 'sur-10', code: 'PSS', name: 'Peak Season Surcharge (PSS) - Phụ phí mùa cao điểm FCL', category: 'SURCHARGE', transportMode: 'SEA_FCL', unit: 'Container', priceUsd: 150, priceVnd: 3810000, vatRate: 0, currency: 'USD' },
+  { id: 'sur-11', code: 'GRI', name: 'General Rate Increase (GRI) - Phụ phí tăng cước mùa cao điểm', category: 'SURCHARGE', transportMode: 'SEA_FCL', unit: 'Container', priceUsd: 100, priceVnd: 2540000, vatRate: 0, currency: 'USD' },
+  { id: 'sur-12', code: 'AMS', name: 'Automated Manifest System (AMS/AFR) - Phí truyền AMS đi Mỹ/Nhật', category: 'LOCAL_CHARGE', transportMode: 'SEA_FCL', unit: 'Bill', priceUsd: 35, priceVnd: 890000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-13', code: 'ENS', name: 'Entry Summary Declaration (ENS) - Phí truyền dữ liệu Hải quan EU', category: 'LOCAL_CHARGE', transportMode: 'SEA_FCL', unit: 'Bill', priceUsd: 35, priceVnd: 890000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-14', code: 'DEM_DET', name: 'Demurrage & Detention Fee - Phí lưu container bãi/kho', category: 'SURCHARGE', transportMode: 'SEA_FCL', unit: 'Container/Ngày', priceUsd: 50, priceVnd: 1270000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-15', code: 'CLEANING', name: 'Container Cleaning Fee - Phí vệ sinh vỏ container', category: 'LOCAL_CHARGE', transportMode: 'SEA_FCL', unit: 'Container', priceUsd: 20, priceVnd: 500000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-16', code: 'ISPS', name: 'International Port Security Fee (ISPS) - Phí an ninh cảng biển', category: 'SURCHARGE', transportMode: 'SEA_FCL', unit: 'Container', priceUsd: 15, priceVnd: 380000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-17', code: 'STWF', name: 'Storage & Wharfage Fee - Phí lưu bãi & cầu cảng FCL', category: 'LOCAL_CHARGE', transportMode: 'SEA_FCL', unit: 'Container/Ngày', priceUsd: 25, priceVnd: 635000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-18', code: 'PLUG_IN', name: 'Reefer Container Plug-in Fee - Phí cắm điện container lạnh', category: 'LOCAL_CHARGE', transportMode: 'SEA_FCL', unit: 'Container/Ngày', priceUsd: 45, priceVnd: 1140000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-19', code: 'COD', name: 'Change of Destination Fee (COD) - Phí thay đổi cảng đích', category: 'SURCHARGE', transportMode: 'SEA_FCL', unit: 'Shipment', priceUsd: 100, priceVnd: 2540000, vatRate: 8, currency: 'USD' },
 
   // --- ĐƯỜNG BIỂN LCL (SEA LCL) ---
-  { id: 'sur-13', code: 'CFS', name: 'Container Freight Station (CFS)', category: 'LOCAL_CHARGE', transportMode: 'SEA_LCL', unit: 'CBM', priceUsd: 15, priceVnd: 380000, vatRate: 8, currency: 'USD' },
-  { id: 'sur-14', code: 'LCL_BL', name: 'LCL Bill of Lading Fee', category: 'LOCAL_CHARGE', transportMode: 'SEA_LCL', unit: 'Bill', priceUsd: 35, priceVnd: 890000, vatRate: 8, currency: 'USD' },
-  { id: 'sur-15', code: 'LCL_DO', name: 'LCL Delivery Order Fee', category: 'LOCAL_CHARGE', transportMode: 'SEA_LCL', unit: 'Set', priceUsd: 35, priceVnd: 890000, vatRate: 8, currency: 'USD' },
-  { id: 'sur-16', code: 'LCL_HDL', name: 'LCL Handling Fee', category: 'LOCAL_CHARGE', transportMode: 'SEA_LCL', unit: 'Shipment', priceUsd: 30, priceVnd: 760000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-20', code: 'CFS', name: 'Container Freight Station (CFS) - Phí kho bãi & xếp dỡ hàng lẻ', category: 'LOCAL_CHARGE', transportMode: 'SEA_LCL', unit: 'CBM', priceUsd: 15, priceVnd: 380000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-21', code: 'LCL_BL', name: 'LCL Bill of Lading Fee (HBL) - Phí phát hành vận đơn hàng lẻ', category: 'LOCAL_CHARGE', transportMode: 'SEA_LCL', unit: 'Bill', priceUsd: 35, priceVnd: 890000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-22', code: 'LCL_DO', name: 'LCL Delivery Order Fee (D/O) - Phí lệnh giao hàng lẻ', category: 'LOCAL_CHARGE', transportMode: 'SEA_LCL', unit: 'Set', priceUsd: 35, priceVnd: 890000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-23', code: 'LCL_HDL', name: 'LCL Handling Fee - Phí dịch vụ & làm hàng lẻ', category: 'LOCAL_CHARGE', transportMode: 'SEA_LCL', unit: 'Shipment', priceUsd: 30, priceVnd: 760000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-24', code: 'DECON_STRIP', name: 'De-consolidation & Stripping Fee - Phí dỡ hàng & sang tải kho CFS', category: 'LOCAL_CHARGE', transportMode: 'SEA_LCL', unit: 'CBM', priceUsd: 12, priceVnd: 300000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-25', code: 'CFS_STORAGE', name: 'CFS Warehousing Storage Fee - Phí lưu kho CFS quá hạn', category: 'LOCAL_CHARGE', transportMode: 'SEA_LCL', unit: 'CBM/Ngày', priceUsd: 5, priceVnd: 127000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-26', code: 'LCL_PSS', name: 'LCL Peak Season Surcharge (PSS) - Phụ phí mùa cao điểm hàng lẻ', category: 'SURCHARGE', transportMode: 'SEA_LCL', unit: 'CBM', priceUsd: 10, priceVnd: 254000, vatRate: 0, currency: 'USD' },
+  { id: 'sur-27', code: 'LCL_LSS', name: 'LCL Low Sulphur Surcharge (LSS) - Phụ phí nhiên liệu sạch hàng lẻ', category: 'SURCHARGE', transportMode: 'SEA_LCL', unit: 'CBM', priceUsd: 6, priceVnd: 152000, vatRate: 0, currency: 'USD' },
+  { id: 'sur-28', code: 'LCL_AMS', name: 'LCL AMS / AFR Filing Fee - Phí truyền AMS/AFR cho hàng lẻ', category: 'LOCAL_CHARGE', transportMode: 'SEA_LCL', unit: 'Bill', priceUsd: 30, priceVnd: 760000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-29', code: 'DOC_FEE', name: 'Documentation Fee - Phí chứng từ & phân tách lô hàng LCL', category: 'LOCAL_CHARGE', transportMode: 'SEA_LCL', unit: 'Bill', priceUsd: 25, priceVnd: 635000, vatRate: 8, currency: 'USD' },
 
   // --- ĐƯỜNG HÀNG KHÔNG (AIR) ---
-  { id: 'sur-17', code: 'AWB', name: 'Air Waybill Fee (AWB)', category: 'LOCAL_CHARGE', transportMode: 'AIR', unit: 'Bill', priceUsd: 25, priceVnd: 635000, vatRate: 8, currency: 'USD' },
-  { id: 'sur-18', code: 'AIR_THC', name: 'Terminal Handling & Storage (Air THC)', category: 'LOCAL_CHARGE', transportMode: 'AIR', unit: 'KGS', priceUsd: 0.12, priceVnd: 3000, vatRate: 8, currency: 'USD' },
-  { id: 'sur-19', code: 'XRAY', name: 'X-Ray & Security Screening', category: 'LOCAL_CHARGE', transportMode: 'AIR', unit: 'KGS', priceUsd: 0.05, priceVnd: 1250, vatRate: 8, currency: 'USD' },
-  { id: 'sur-20', code: 'FSC', name: 'Fuel Surcharge Air (FSC)', category: 'SURCHARGE', transportMode: 'AIR', unit: 'KGS', priceUsd: 0.45, priceVnd: 11400, vatRate: 0, currency: 'USD' },
-  { id: 'sur-21', code: 'SSC', name: 'Security Surcharge Air (SSC)', category: 'SURCHARGE', transportMode: 'AIR', unit: 'KGS', priceUsd: 0.15, priceVnd: 3800, vatRate: 0, currency: 'USD' },
-  { id: 'sur-22', code: 'AIR_DO', name: 'Air Delivery Order (Air D/O)', category: 'LOCAL_CHARGE', transportMode: 'AIR', unit: 'Set', priceUsd: 30, priceVnd: 760000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-30', code: 'AWB', name: 'Air Waybill Fee (AWB) - Phí phát hành vận đơn hàng không', category: 'LOCAL_CHARGE', transportMode: 'AIR', unit: 'Bill', priceUsd: 25, priceVnd: 635000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-31', code: 'AIR_THC', name: 'Terminal Handling & Storage (Air THC) - Phí xếp dỡ kho bãi hàng không', category: 'LOCAL_CHARGE', transportMode: 'AIR', unit: 'KGS', priceUsd: 0.12, priceVnd: 3000, vatRate: 8, currency: 'USD' },
+  { id: 'sur-32', code: 'XRAY', name: 'X-Ray & Security Screening - Phí soi chiếu an ninh hàng không', category: 'LOCAL_CHARGE', transportMode: 'AIR', unit: 'KGS', priceUsd: 0.05, priceVnd: 1250, vatRate: 8, currency: 'USD' },
+  { id: 'sur-33', code: 'FSC', name: 'Fuel Surcharge Air (FSC) - Phụ phí nhiên liệu máy bay', category: 'SURCHARGE', transportMode: 'AIR', unit: 'KGS', priceUsd: 0.45, priceVnd: 11400, vatRate: 0, currency: 'USD' },
+  { id: 'sur-34', code: 'SSC', name: 'Security Surcharge Air (SSC) - Phụ phí an ninh hàng không', category: 'SURCHARGE', transportMode: 'AIR', unit: 'KGS', priceUsd: 0.15, priceVnd: 3800, vatRate: 0, currency: 'USD' },
+  { id: 'sur-35', code: 'AIR_DO', name: 'Air Delivery Order (Air D/O) - Phí lệnh giao hàng không', category: 'LOCAL_CHARGE', transportMode: 'AIR', unit: 'Set', priceUsd: 30, priceVnd: 760000, vatRate: 8, currency: 'USD' },
 
   // --- VẬN TẢI ĐƯỜNG BỘ / TRUCKING (ROAD) ---
-  { id: 'sur-23', code: 'TRUCKING', name: 'Vận chuyển nội địa (Inland Trucking)', category: 'TRUCKING', transportMode: 'ROAD', unit: 'Chuyến', priceUsd: 160, priceVnd: 4000000, vatRate: 8, currency: 'VND' },
-  { id: 'sur-24', code: 'LIFT', name: 'Phí nâng hạ Container (Lift On/Off)', category: 'TRUCKING', transportMode: 'ROAD', unit: 'Container', priceUsd: 35, priceVnd: 850000, vatRate: 8, currency: 'VND' },
-  { id: 'sur-25', code: 'TOLL', name: 'Phí cầu đường & Đồ gánh', category: 'TRUCKING', transportMode: 'ROAD', unit: 'Chuyến', priceUsd: 12, priceVnd: 300000, vatRate: 8, currency: 'VND' },
-  { id: 'sur-26', code: 'OVERTIME', name: 'Phí lưu xe chờ bốc xếp', category: 'TRUCKING', transportMode: 'ROAD', unit: 'Ngày', priceUsd: 48, priceVnd: 1200000, vatRate: 8, currency: 'VND' },
+  { id: 'sur-36', code: 'TRUCKING', name: 'Vận chuyển nội địa (Inland Trucking) - Cước xe container / xe tải', category: 'TRUCKING', transportMode: 'ROAD', unit: 'Chuyến', priceUsd: 160, priceVnd: 4000000, vatRate: 8, currency: 'VND' },
+  { id: 'sur-37', code: 'LIFT', name: 'Phí nâng hạ Container (Lift On/Off) - Phí cẩu nâng hạ bãi', category: 'TRUCKING', transportMode: 'ROAD', unit: 'Container', priceUsd: 35, priceVnd: 850000, vatRate: 8, currency: 'VND' },
+  { id: 'sur-38', code: 'TOLL', name: 'Phí cầu đường & Vé trạm thu phí (Toll Fee)', category: 'TRUCKING', transportMode: 'ROAD', unit: 'Chuyến', priceUsd: 12, priceVnd: 300000, vatRate: 8, currency: 'VND' },
+  { id: 'sur-39', code: 'OVERTIME', name: 'Phí lưu xe chờ bốc xếp (Truck Detention/Waiting Fee)', category: 'TRUCKING', transportMode: 'ROAD', unit: 'Ngày', priceUsd: 48, priceVnd: 1200000, vatRate: 8, currency: 'VND' },
 
   // --- THỦ TỤC HẢI QUAN (CUSTOMS) ---
-  { id: 'sur-27', code: 'CUSTOMS', name: 'Khai báo thủ tục Hải quan (Customs Clearance)', category: 'CUSTOMS', transportMode: 'CUSTOMS', unit: 'Tờ khai', priceUsd: 45, priceVnd: 1200000, vatRate: 8, currency: 'VND' },
-  { id: 'sur-28', code: 'INSPECTION', name: 'Kiểm tra thực tế hàng hóa (Customs Inspection)', category: 'CUSTOMS', transportMode: 'CUSTOMS', unit: 'Lô', priceUsd: 60, priceVnd: 1500000, vatRate: 8, currency: 'VND' },
-  { id: 'sur-29', code: 'CO', name: 'Giấy chứng nhận xuất xứ (C/O Fee)', category: 'CUSTOMS', transportMode: 'CUSTOMS', unit: 'Bộ', priceUsd: 20, priceVnd: 500000, vatRate: 8, currency: 'VND' },
-  { id: 'sur-30', code: 'QUARANTINE', name: 'Phí kiểm dịch & Khử trùng (Fumigation)', category: 'CUSTOMS', transportMode: 'CUSTOMS', unit: 'Lô', priceUsd: 32, priceVnd: 800000, vatRate: 8, currency: 'VND' },
+  { id: 'sur-40', code: 'CUSTOMS', name: 'Khai báo thủ tục Hải quan (Customs Clearance Fee)', category: 'CUSTOMS', transportMode: 'CUSTOMS', unit: 'Tờ khai', priceUsd: 45, priceVnd: 1200000, vatRate: 8, currency: 'VND' },
+  { id: 'sur-41', code: 'INSPECTION', name: 'Kiểm tra thực tế hàng hóa (Customs Inspection) - Phí luồng đỏ', category: 'CUSTOMS', transportMode: 'CUSTOMS', unit: 'Lô', priceUsd: 60, priceVnd: 1500000, vatRate: 8, currency: 'VND' },
+  { id: 'sur-42', code: 'CO', name: 'Giấy chứng nhận xuất xứ (C/O Fee) - Phí xin C/O Form A, B, E, AK, D', category: 'CUSTOMS', transportMode: 'CUSTOMS', unit: 'Bộ', priceUsd: 20, priceVnd: 500000, vatRate: 8, currency: 'VND' },
+  { id: 'sur-43', code: 'QUARANTINE', name: 'Phí kiểm dịch & Khử trùng (Fumigation & Phytosanitary)', category: 'CUSTOMS', transportMode: 'CUSTOMS', unit: 'Lô', priceUsd: 32, priceVnd: 800000, vatRate: 8, currency: 'VND' },
 
   // --- DÙNG CHUNG / TẤT CẢ (ALL) ---
-  { id: 'sur-31', code: 'HANDLING', name: 'Phí dịch vụ đại lý (Handling Service Fee)', category: 'LOCAL_CHARGE', transportMode: 'ALL', unit: 'Shipment', priceUsd: 35, priceVnd: 900000, vatRate: 8, currency: 'USD' }
+  { id: 'sur-44', code: 'HANDLING', name: 'Phí dịch vụ đại lý (Handling Service Fee)', category: 'LOCAL_CHARGE', transportMode: 'ALL', unit: 'Shipment', priceUsd: 35, priceVnd: 900000, vatRate: 8, currency: 'USD' }
 ];
 
 export const DEFAULT_EXCHANGE_RATE = 25400; // 1 USD = 25,400 VND

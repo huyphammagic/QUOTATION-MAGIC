@@ -9,7 +9,6 @@ interface SummaryCardProps {
   onSaveQuote: () => void;
   onExportPdf: () => void;
   onExportExcel: () => void;
-  onExportGoogleSheets: () => void;
   onOpenPreview: () => void;
 }
 
@@ -19,7 +18,6 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
   onSaveQuote,
   onExportPdf,
   onExportExcel,
-  onExportGoogleSheets,
   onOpenPreview
 }) => {
   return (
@@ -115,15 +113,6 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
             <span>Xuất Excel</span>
           </button>
         </div>
-
-        {/* Google Sheets Export */}
-        <button
-          onClick={onExportGoogleSheets}
-          className="w-full flex items-center justify-center space-x-2 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-800 font-semibold text-xs py-2 px-3 rounded-lg transition-colors"
-        >
-          <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-          <span>Xuất / Đồng Bộ Google Sheets</span>
-        </button>
 
       </div>
 
