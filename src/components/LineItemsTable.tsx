@@ -195,20 +195,20 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({ items, exchangeR
           
           {/* Table Header */}
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-200 text-slate-400 font-bold uppercase text-[11px] tracking-wider">
-              <th className="p-2.5 w-8 text-center">#</th>
-              <th className="p-2.5 min-w-[200px]">Diễn Giải / Tên Hạng Mục</th>
-              <th className="p-2.5 w-28">Mã Phí</th>
-              <th className="p-2.5 w-28">Vị Trí (Chặng)</th>
-              <th className="p-2.5 w-28">Phân Loại</th>
-              <th className="p-2.5 w-16 text-right">SL</th>
-              <th className="p-2.5 w-24">Đơn Vị</th>
-              <th className="p-2.5 w-28 text-right">Đơn Giá</th>
-              <th className="p-2.5 w-20 text-center">Loại Tiền</th>
-              <th className="p-2.5 w-16 text-center">VAT</th>
-              <th className="p-2.5 w-28 text-right">Thành Tiền (USD)</th>
-              <th className="p-2.5 w-32 text-right">Thành Tiền (VND)</th>
-              <th className="p-2.5 w-10 text-center">Xóa</th>
+            <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[11px] tracking-wider">
+              <th className="px-3 py-3 w-10 text-center">#</th>
+              <th className="px-3 py-3 min-w-[260px]">Diễn Giải / Tên Hạng Mục</th>
+              <th className="px-3 py-3 min-w-[130px]">Mã Phí</th>
+              <th className="px-3 py-3 min-w-[150px]">Vị Trí (Chặng)</th>
+              <th className="px-3 py-3 min-w-[150px]">Phân Loại</th>
+              <th className="px-3 py-3 min-w-[90px] text-right">SL</th>
+              <th className="px-3 py-3 min-w-[120px]">Đơn Vị</th>
+              <th className="px-3 py-3 min-w-[140px] text-right">Đơn Giá</th>
+              <th className="px-3 py-3 min-w-[90px] text-center">Loại Tiền</th>
+              <th className="px-3 py-3 min-w-[80px] text-center">VAT</th>
+              <th className="px-3 py-3 min-w-[130px] text-right">Thành Tiền (USD)</th>
+              <th className="px-3 py-3 min-w-[150px] text-right">Thành Tiền (VND)</th>
+              <th className="px-3 py-3 w-12 text-center">Xóa</th>
             </tr>
           </thead>
 
@@ -218,42 +218,42 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({ items, exchangeR
               <tr key={item.id} className="hover:bg-blue-50/30 transition-colors">
                 
                 {/* STT */}
-                <td className="p-2 text-center text-slate-400 font-mono text-[11px]">{index + 1}</td>
+                <td className="px-3 py-2.5 text-center text-slate-400 font-mono text-xs">{index + 1}</td>
 
                 {/* Description & Note */}
-                <td className="p-2 space-y-1">
+                <td className="px-3 py-2.5 space-y-1">
                   <input
                     type="text"
                     value={item.description}
                     onChange={(e) => handleItemChange(item.id, 'description', e.target.value)}
-                    className="w-full px-2 py-1 rounded border border-slate-200 font-medium text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
+                    className="w-full px-2.5 py-1.5 rounded border border-slate-200 font-medium text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
                     placeholder="Tên phí..."
                   />
                   <input
                     type="text"
                     value={item.note || ''}
                     onChange={(e) => handleItemChange(item.id, 'note', e.target.value)}
-                    className="w-full px-2 py-0.5 rounded text-[11px] text-slate-500 bg-transparent border border-transparent hover:border-slate-200 focus:bg-white focus:outline-none"
+                    className="w-full px-2.5 py-0.5 rounded text-[11px] text-slate-500 bg-transparent border border-transparent hover:border-slate-200 focus:bg-white focus:outline-none"
                     placeholder="+ Ghi chú phụ phí..."
                   />
                 </td>
 
                 {/* Code */}
-                <td className="p-2">
+                <td className="px-3 py-2.5">
                   <input
                     type="text"
                     value={item.code}
                     onChange={(e) => handleItemChange(item.id, 'code', e.target.value.toUpperCase())}
-                    className="w-full px-2 py-1 rounded border border-slate-200 font-mono uppercase text-blue-900 font-bold bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
+                    className="w-full px-2.5 py-1.5 rounded border border-slate-200 font-mono uppercase text-blue-900 font-bold bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
                   />
                 </td>
 
                 {/* Location (Leg) Selector */}
-                <td className="p-2">
+                <td className="px-3 py-2.5">
                   <select
                     value={item.location || 'POL'}
                     onChange={(e) => handleItemChange(item.id, 'location', e.target.value as ChargeLocation)}
-                    className={`w-full px-1.5 py-1 rounded border text-[10px] uppercase focus:outline-none ${getLocationBadgeClass(item.location || 'POL')}`}
+                    className={`w-full px-2 py-1.5 rounded border text-xs font-semibold uppercase focus:outline-none ${getLocationBadgeClass(item.location || 'POL')}`}
                   >
                     <option value="POL">POL (Đầu Xuất)</option>
                     <option value="FREIGHT">FREIGHT (Chặng Chính)</option>
@@ -263,11 +263,11 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({ items, exchangeR
                 </td>
 
                 {/* Category Selector */}
-                <td className="p-2">
+                <td className="px-3 py-2.5">
                   <select
                     value={item.category}
                     onChange={(e) => handleItemChange(item.id, 'category', e.target.value as FeeCategory)}
-                    className={`w-full px-1.5 py-1 rounded border text-[10px] font-bold uppercase focus:outline-none ${getCategoryBadgeClass(item.category)}`}
+                    className={`w-full px-2 py-1.5 rounded border text-xs font-bold uppercase focus:outline-none ${getCategoryBadgeClass(item.category)}`}
                   >
                     <option value="FREIGHT">FREIGHT (Cước)</option>
                     <option value="LOCAL_CHARGE">LOCAL CHARGE</option>
@@ -280,46 +280,46 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({ items, exchangeR
                 </td>
 
                 {/* Quantity */}
-                <td className="p-2">
+                <td className="px-3 py-2.5">
                   <input
                     type="number"
                     min="0"
                     step="0.01"
                     value={item.quantity}
                     onChange={(e) => handleItemChange(item.id, 'quantity', Number(e.target.value) || 0)}
-                    className="w-full px-1.5 py-1 rounded border border-slate-200 text-right font-bold text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                    className="w-full px-2.5 py-1.5 rounded border border-slate-200 text-right font-bold text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
                   />
                 </td>
 
                 {/* Unit */}
-                <td className="p-2">
+                <td className="px-3 py-2.5">
                   <input
                     type="text"
                     value={item.unit}
                     onChange={(e) => handleItemChange(item.id, 'unit', e.target.value)}
-                    className="w-full px-2 py-1 rounded border border-slate-200 text-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
+                    className="w-full px-2.5 py-1.5 rounded border border-slate-200 text-slate-900 font-medium bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
                     placeholder="Cont / Bill..."
                   />
                 </td>
 
                 {/* Unit Price */}
-                <td className="p-2">
+                <td className="px-3 py-2.5">
                   <input
                     type="number"
                     min="0"
                     step="any"
                     value={item.unitPrice}
                     onChange={(e) => handleItemChange(item.id, 'unitPrice', Number(e.target.value) || 0)}
-                    className="w-full px-2 py-1 rounded border border-slate-200 text-right font-bold text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                    className="w-full px-2.5 py-1.5 rounded border border-slate-200 text-right font-bold text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
                   />
                 </td>
 
                 {/* Currency */}
-                <td className="p-2 text-center">
+                <td className="px-3 py-2.5 text-center">
                   <button
                     type="button"
                     onClick={() => handleItemChange(item.id, 'currency', item.currency === 'USD' ? 'VND' : 'USD')}
-                    className={`px-2 py-1 rounded font-bold text-[10px] border transition-colors ${
+                    className={`w-full px-2 py-1.5 rounded font-bold text-xs border transition-colors ${
                       item.currency === 'USD'
                         ? 'bg-blue-100 text-blue-900 border-blue-300'
                         : 'bg-emerald-100 text-emerald-900 border-emerald-300'
@@ -330,11 +330,11 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({ items, exchangeR
                 </td>
 
                 {/* VAT % */}
-                <td className="p-2">
+                <td className="px-3 py-2.5">
                   <select
                     value={item.vatRate}
                     onChange={(e) => handleItemChange(item.id, 'vatRate', Number(e.target.value))}
-                    className="w-full px-1 py-1 rounded border border-slate-200 text-center font-bold bg-slate-50 focus:bg-white focus:outline-none text-xs"
+                    className="w-full px-2 py-1.5 rounded border border-slate-200 text-center font-bold bg-slate-50 focus:bg-white focus:outline-none text-xs"
                   >
                     <option value={0}>0%</option>
                     <option value={5}>5%</option>
@@ -344,21 +344,21 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({ items, exchangeR
                 </td>
 
                 {/* Calculated USD Total */}
-                <td className="p-2 text-right font-mono font-bold text-slate-900 text-xs">
+                <td className="px-3 py-2.5 text-right font-mono font-bold text-slate-900 text-xs whitespace-nowrap">
                   {formatUSD(item.amountUsd)}
                 </td>
 
                 {/* Calculated VND Total */}
-                <td className="p-2 text-right font-mono font-bold text-slate-700 text-xs">
+                <td className="px-3 py-2.5 text-right font-mono font-bold text-slate-700 text-xs whitespace-nowrap">
                   {formatVND(item.amountVnd)}
                 </td>
 
                 {/* Remove Button */}
-                <td className="p-2 text-center">
+                <td className="px-3 py-2.5 text-center">
                   <button
                     type="button"
                     onClick={() => handleRemoveItem(item.id)}
-                    className="p-1 text-slate-400 hover:text-red-600 rounded transition-colors"
+                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                     title="Xóa hạng mục"
                   >
                     <Trash2 className="w-4 h-4" />
