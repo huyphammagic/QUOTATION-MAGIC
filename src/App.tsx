@@ -150,7 +150,7 @@ export default function App() {
       vatRate: surcharge.vatRate,
       amountUsd: 0,
       amountVnd: 0,
-      note: surcharge.description || '',
+      note: '',
     };
     const calculated = calculateLineItem(rawItem, quote.exchangeRate);
     handleUpdateItems([...quote.items, calculated]);

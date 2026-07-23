@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { SurchargeItem, FeeCategory, LineItem } from '../types/logistics';
+import { SurchargeItem, FeeCategory, SurchargeTransportMode } from '../types/logistics';
 import { 
   Receipt, Plus, Search, Edit2, Trash2, Tag, Check, X, 
-  Zap, DollarSign, RefreshCw 
+  Ship, Plane, Truck, FileCheck, Layers
 } from 'lucide-react';
 
 interface SurchargeCatalogModalProps {
@@ -25,30 +25,40 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
   onAddSurchargeToQuote
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTransportMode, setSelectedTransportMode] = useState<string>('ALL');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [isEditing, setIsEditing] = useState(false);
   const [editingItem, setEditingItem] = useState<Partial<SurchargeItem>>({});
 
   if (!isOpen) return null;
 
+  const transportModes: { label: string; value: string }[] = [
+    { label: 'Tất Cả Hình Thức Vận Chuyển', value: 'ALL' },
+    { label: 'Đường biển FCL (Sea FCL)', value: 'SEA_FCL' },
+    { label: 'Đường biển LCL (Sea LCL)', value: 'SEA_LCL' },
+    { label: 'Đường hàng không (Air Freight)', value: 'AIR' },
+    { label: 'Vận tải đường bộ (Trucking)', value: 'ROAD' },
+    { label: 'Thủ tục Hải quan (Customs)', value: 'CUSTOMS' },
+  ];
+
   const categories: { label: string; value: string }[] = [
-    { label: 'Tất Cả Phụ Phí', value: 'ALL' },
-    { label: 'Phí Địa Phương (Local Charge)', value: 'LOCAL_CHARGE' },
-    { label: 'Phụ Phí Vận Tải (Surcharge)', value: 'SURCHARGE' },
-    { label: 'Cước Vận Chuyển (Freight)', value: 'FREIGHT' },
-    { label: 'Thủ Tục Hải Quan (Customs)', value: 'CUSTOMS' },
-    { label: 'Vận Chuyển Bộ (Trucking)', value: 'TRUCKING' },
+    { label: 'Tất Cả Phân Loại', value: 'ALL' },
+    { label: 'Phí Địa Phương (LOCAL_CHARGE)', value: 'LOCAL_CHARGE' },
+    { label: 'Phụ Phí Vận Tải (SURCHARGE)', value: 'SURCHARGE' },
+    { label: 'Cước Vận Chuyển (FREIGHT)', value: 'FREIGHT' },
+    { label: 'Thủ Tục Hải Quan (CUSTOMS)', value: 'CUSTOMS' },
+    { label: 'Vận Chuyển Bộ (TRUCKING)', value: 'TRUCKING' },
   ];
 
   const filteredItems = surcharges.filter(item => {
     const matchesSearch = 
       item.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()));
+      item.name.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = selectedCategory === 'ALL' || item.category === selectedCategory;
+    const matchesMode = selectedTransportMode === 'ALL' || item.transportMode === selectedTransportMode || item.transportMode === 'ALL';
 
-    return matchesSearch && matchesCategory;
+    return matchesSearch && matchesCategory && matchesMode;
   });
 
   const handleAddNew = () => {
@@ -57,12 +67,12 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
       code: '',
       name: '',
       category: 'LOCAL_CHARGE',
+      transportMode: 'SEA_FCL',
       unit: 'Container',
       priceUsd: 0,
       priceVnd: 0,
       vatRate: 8,
-      currency: 'USD',
-      description: ''
+      currency: 'USD'
     });
     setIsEditing(true);
   };
@@ -76,7 +86,18 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
     e.preventDefault();
     if (!editingItem.code || !editingItem.name) return;
 
-    onSaveSurcharge(editingItem as SurchargeItem);
+    onSaveSurcharge({
+      id: editingItem.id || `sur-${Date.now()}`,
+      code: editingItem.code.toUpperCase().trim(),
+      name: editingItem.name.trim(),
+      category: editingItem.category || 'LOCAL_CHARGE',
+      transportMode: editingItem.transportMode || 'SEA_FCL',
+      unit: editingItem.unit || 'Container',
+      priceUsd: Number(editingItem.priceUsd) || 0,
+      priceVnd: Number(editingItem.priceVnd) || 0,
+      vatRate: Number(editingItem.vatRate) ?? 8,
+      currency: editingItem.currency || 'USD',
+    });
     setIsEditing(false);
     setEditingItem({});
   };
@@ -92,6 +113,24 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
     }
   };
 
+  const getTransportModeBadge = (mode: SurchargeTransportMode) => {
+    switch (mode) {
+      case 'SEA_FCL':
+        return { label: 'Đường biển FCL', icon: Ship, className: 'bg-blue-100 text-blue-900 border-blue-200' };
+      case 'SEA_LCL':
+        return { label: 'Đường biển LCL', icon: Ship, className: 'bg-indigo-100 text-indigo-900 border-indigo-200' };
+      case 'AIR':
+        return { label: 'Hàng không (Air)', icon: Plane, className: 'bg-cyan-100 text-cyan-900 border-cyan-200' };
+      case 'ROAD':
+        return { label: 'Đường bộ (Trucking)', icon: Truck, className: 'bg-amber-100 text-amber-900 border-amber-200' };
+      case 'CUSTOMS':
+        return { label: 'Hải quan & C/O', icon: FileCheck, className: 'bg-emerald-100 text-emerald-900 border-emerald-200' };
+      case 'ALL':
+      default:
+        return { label: 'Dùng Chung', icon: Layers, className: 'bg-slate-100 text-slate-800 border-slate-200' };
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-xs p-4 overflow-y-auto">
       <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-5xl my-8 overflow-hidden flex flex-col max-h-[90vh]">
@@ -104,10 +143,10 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
             </div>
             <div>
               <h2 className="text-sm font-bold uppercase tracking-widest text-white">
-                DANH MỤC PHỤ PHÍ & LOCAL CHARGES MASTER
+                DANH MỤC PHỤ PHÍ MASTER THEO HÌNH THỨC VẬN CHUYỂN
               </h2>
               <p className="text-xs text-slate-400">
-                Bảng phí chuẩn ngành Logistics, đơn giá niêm yết & cấu trúc thuế VAT
+                Phân loại chi tiết phụ phí theo Đường biển (FCL/LCL), Hàng không, Đường bộ & Hải quan
               </p>
             </div>
           </div>
@@ -125,7 +164,7 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
           
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             {/* Search Box */}
-            <div className="relative w-full sm:w-64">
+            <div className="relative w-full sm:w-56">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
@@ -136,11 +175,22 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
               />
             </div>
 
+            {/* Filter Transport Mode */}
+            <select
+              value={selectedTransportMode}
+              onChange={(e) => setSelectedTransportMode(e.target.value)}
+              className="px-3 py-1.5 bg-white rounded border border-slate-300 text-xs text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {transportModes.map(mode => (
+                <option key={mode.value} value={mode.value}>{mode.label}</option>
+              ))}
+            </select>
+
             {/* Category Filter Select */}
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-1.5 bg-white rounded border border-slate-200 text-xs text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1.5 bg-white rounded border border-slate-200 text-xs text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {categories.map(cat => (
                 <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -196,7 +246,7 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-slate-500 font-bold mb-1">Diễn Giải / Tên Tiếng Anh & Tiếng Việt *</label>
+                  <label className="block text-slate-500 font-bold mb-1">Diễn Giải Hạng Mục Phí *</label>
                   <input
                     type="text"
                     required
@@ -205,6 +255,22 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
                     placeholder="Terminal Handling Charge (THC)..."
                     className="w-full px-2.5 py-1.5 rounded border border-slate-300 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-slate-500 font-bold mb-1">Hình Thức Vận Chuyển *</label>
+                  <select
+                    value={editingItem.transportMode || 'SEA_FCL'}
+                    onChange={(e) => setEditingItem(prev => ({ ...prev, transportMode: e.target.value as SurchargeTransportMode }))}
+                    className="w-full px-2.5 py-1.5 rounded border border-slate-300 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="SEA_FCL">Đường biển FCL (Container)</option>
+                    <option value="SEA_LCL">Đường biển LCL (Hàng lẻ)</option>
+                    <option value="AIR">Đường hàng không (Air)</option>
+                    <option value="ROAD">Vận tải đường bộ (Trucking)</option>
+                    <option value="CUSTOMS">Thủ tục Hải quan (Customs)</option>
+                    <option value="ALL">Dùng chung (Tất cả)</option>
+                  </select>
                 </div>
 
                 <div>
@@ -287,16 +353,6 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
                   </div>
                 </div>
 
-                <div className="md:col-span-4">
-                  <label className="block text-slate-500 font-bold mb-1">Ghi Chú Phạm Vi Áp Dụng (Description)</label>
-                  <input
-                    type="text"
-                    value={editingItem.description || ''}
-                    onChange={(e) => setEditingItem(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Áp dụng cho container 20/40ft tại các cảng TP.HCM..."
-                    className="w-full px-2.5 py-1.5 rounded border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
               </div>
 
               <div className="flex justify-end space-x-2 pt-2 border-t border-slate-200">
@@ -318,13 +374,14 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
             </form>
           )}
 
-          {/* Surcharge Catalog Grid */}
-          <div className="overflow-x-auto border border-slate-200 rounded-lg">
+          {/* Surcharge Catalog Table */}
+          <div className="overflow-x-auto border border-slate-200 rounded-lg shadow-2xs">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-400 font-bold uppercase text-[11px] tracking-wider">
                   <th className="p-3 w-16">Mã Phí</th>
-                  <th className="p-3">Diễn Giải Hạng Mục Phí</th>
+                  <th className="p-3">Tên Hạng Mục Phí</th>
+                  <th className="p-3">Hình Thức Vận Chuyển</th>
                   <th className="p-3">Phân Loại</th>
                   <th className="p-3">Đơn Vị</th>
                   <th className="p-3 text-right">Giá USD</th>
@@ -336,73 +393,81 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
               <tbody className="divide-y divide-slate-200 bg-white">
                 {filteredItems.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-8 text-center text-slate-400 font-medium">
+                    <td colSpan={9} className="p-8 text-center text-slate-400 font-medium">
                       Chưa tìm thấy phụ phí nào phù hợp
                     </td>
                   </tr>
                 ) : (
-                  filteredItems.map((item) => (
-                    <tr key={item.id} className="hover:bg-blue-50/30 transition-colors">
-                      <td className="p-3 font-mono font-bold text-blue-900">
-                        {item.code}
-                      </td>
-                      <td className="p-3">
-                        <div className="font-bold text-slate-900">{item.name}</div>
-                        {item.description && (
-                          <div className="text-[11px] text-slate-500 mt-0.5">{item.description}</div>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getCategoryBadgeClass(item.category)}`}>
-                          {item.category}
-                        </span>
-                      </td>
-                      <td className="p-3 font-medium text-slate-700">
-                        {item.unit}
-                      </td>
-                      <td className="p-3 text-right font-mono font-bold text-slate-900">
-                        ${item.priceUsd.toLocaleString('en-US', { minimumFractionDigits: item.priceUsd % 1 === 0 ? 0 : 2 })}
-                      </td>
-                      <td className="p-3 text-right font-mono font-semibold text-slate-700">
-                        {item.priceVnd.toLocaleString('vi-VN')} ₫
-                      </td>
-                      <td className="p-3 text-center font-mono font-bold text-slate-800">
-                        {item.vatRate}%
-                      </td>
-                      <td className="p-3 text-right space-x-1">
-                        {onAddSurchargeToQuote && (
+                  filteredItems.map((item) => {
+                    const modeBadge = getTransportModeBadge(item.transportMode || 'ALL');
+                    const ModeIcon = modeBadge.icon;
+
+                    return (
+                      <tr key={item.id} className="hover:bg-blue-50/30 transition-colors">
+                        <td className="p-3 font-mono font-bold text-blue-900">
+                          {item.code}
+                        </td>
+                        <td className="p-3 font-bold text-slate-900">
+                          {item.name}
+                        </td>
+                        <td className="p-3">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${modeBadge.className}`}>
+                            <ModeIcon className="w-3 h-3" />
+                            <span>{modeBadge.label}</span>
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getCategoryBadgeClass(item.category)}`}>
+                            {item.category}
+                          </span>
+                        </td>
+                        <td className="p-3 font-medium text-slate-700">
+                          {item.unit}
+                        </td>
+                        <td className="p-3 text-right font-mono font-bold text-slate-900">
+                          ${item.priceUsd.toLocaleString('en-US', { minimumFractionDigits: item.priceUsd % 1 === 0 ? 0 : 2 })}
+                        </td>
+                        <td className="p-3 text-right font-mono font-semibold text-slate-700">
+                          {item.priceVnd.toLocaleString('vi-VN')} ₫
+                        </td>
+                        <td className="p-3 text-center font-mono font-bold text-slate-800">
+                          {item.vatRate}%
+                        </td>
+                        <td className="p-3 text-right space-x-1 whitespace-nowrap">
+                          {onAddSurchargeToQuote && (
+                            <button
+                              onClick={() => {
+                                onAddSurchargeToQuote(item);
+                              }}
+                              className="bg-blue-700 hover:bg-blue-800 text-white font-bold text-[11px] px-2.5 py-1 rounded transition-colors inline-flex items-center gap-1 shadow-2xs"
+                              title="Thêm phụ phí này vào Báo Giá đang lập"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Thêm Vào Báo Giá</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleEdit(item)}
+                            className="p-1 text-slate-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
+                            title="Sửa"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
                           <button
                             onClick={() => {
-                              onAddSurchargeToQuote(item);
+                              if (confirm(`Xóa mã phí ${item.code} - ${item.name} khỏi danh mục?`)) {
+                                onDeleteSurcharge(item.id);
+                              }
                             }}
-                            className="bg-blue-700 hover:bg-blue-800 text-white font-bold text-[11px] px-2.5 py-1 rounded transition-colors inline-flex items-center gap-1 shadow-2xs"
-                            title="Thêm phụ phí này vào Báo Giá đang lập"
+                            className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                            title="Xóa"
                           >
-                            <Plus className="w-3.5 h-3.5" />
-                            <span>Thêm Vào Báo Giá</span>
+                            <Trash2 className="w-4 h-4" />
                           </button>
-                        )}
-                        <button
-                          onClick={() => handleEdit(item)}
-                          className="p-1 text-slate-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
-                          title="Sửa"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Xóa mã phí ${item.code} - ${item.name} khỏi danh mục?`)) {
-                              onDeleteSurcharge(item.id);
-                            }
-                          }}
-                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
-                          title="Xóa"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

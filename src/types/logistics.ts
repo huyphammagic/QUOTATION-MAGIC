@@ -63,17 +63,19 @@ export interface CustomerRecord extends CustomerInfo {
   createdDate?: string;
 }
 
+export type SurchargeTransportMode = 'SEA_FCL' | 'SEA_LCL' | 'AIR' | 'ROAD' | 'CUSTOMS' | 'ALL';
+
 export interface SurchargeItem {
   id: string;
   code: string;
   name: string;
   category: FeeCategory;
+  transportMode: SurchargeTransportMode;
   unit: string;
   priceUsd: number;
   priceVnd: number;
   vatRate: number;
   currency: Currency;
-  description?: string;
 }
 
 export interface CustomerInfo {

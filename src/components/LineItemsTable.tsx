@@ -44,7 +44,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({ items, exchangeR
       vatRate: preset.vat,
       amountUsd: 0,
       amountVnd: 0,
-      note: preset.desc,
+      note: '',
     };
     const calculated = calculateLineItem(newItem, exchangeRate);
     onUpdateItems([...items, calculated]);
