@@ -4,7 +4,7 @@ export const INITIAL_CUSTOMERS: CustomerRecord[] = [
   {
     id: 'cust-01',
     code: 'KH-001',
-    companyName: 'CÔNG TY TNHH XUẤT NHẬP KHẨU PHÁT TRUYỂN TẬP ĐOÀN',
+    companyName: 'CÔNG TY TNHH XUẤT NHẬP KHẨU PHÁT TRIỂN TẬP ĐOÀN',
     customerName: 'Trần Thị Minh Tâm',
     contactPerson: 'Ms. Minh Tâm - Phòng XNK',
     taxId: '0108923481',
@@ -50,7 +50,7 @@ export const INITIAL_CUSTOMERS: CustomerRecord[] = [
     customerName: 'Phạm Thị Ngọc Anh',
     contactPerson: 'Ms. Ngọc Anh - Trưởng Nhóm XNK',
     taxId: '1600283912',
-    address: 'Số 88 Khuu 1, P. Mỹ Thới, TP. Long Xuyên, Tỉnh An Giang',
+    address: 'Số 88 Khu 1, P. Mỹ Thới, TP. Long Xuyên, Tỉnh An Giang',
     email: 'ngocanh@angiangfood.com.vn',
     phone: '0939 111 222',
     group: 'Nông Sản & Gạo',
@@ -268,7 +268,7 @@ export const INITIAL_SAMPLE_QUOTE = {
   exchangeRate: DEFAULT_EXCHANGE_RATE,
   customer: {
     customerName: "Trần Thị Minh Tâm",
-    companyName: "CÔNG TY TNHH XUẤT NHẬP KHẨU PHÁT TRUYỂN TẬP ĐOÀN",
+    companyName: "CÔNG TY TNHH XUẤT NHẬP KHẨU PHÁT TRIỂN TẬP ĐOÀN",
     taxId: "0108923481",
     address: "Số 142 Khu Công Nghiệp Tân Bình, P. Tây Thạnh, Q. Tân Phú, TP. Hồ Chí Minh",
     email: "tam.tran@phattruyengroup.vn",

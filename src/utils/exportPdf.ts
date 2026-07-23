@@ -59,7 +59,7 @@ export function exportQuoteToPdf(quote: QuoteData) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
   doc.setTextColor(15, 23, 42);
-  doc.text('FREIGHT QUOTATION / BANG BAP GIA LOGISTICS', 14, 43);
+  doc.text('FREIGHT QUOTATION / BANG BAO GIA LOGISTICS', 14, 43);
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
@@ -77,7 +77,7 @@ export function exportQuoteToPdf(quote: QuoteData) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(22, 78, 99);
-  doc.text('CUSTOMER / KHAC HANG', 18, y + 6);
+  doc.text('CUSTOMER / KHACH HANG', 18, y + 6);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
@@ -221,7 +221,7 @@ export function exportQuoteToPdf(quote: QuoteData) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(22, 78, 99);
-  doc.text('TERMS & CONDITIONS / DIEU KHOAN BAP GIA', 14, termsY);
+  doc.text('TERMS & CONDITIONS / DIEU KHOAN BAO GIA', 14, termsY);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
