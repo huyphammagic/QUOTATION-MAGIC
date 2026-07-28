@@ -242,28 +242,6 @@ export function exportQuoteToPdf(quote: QuoteData) {
   const splitBank = doc.splitTextToSize(removeVietnameseTones(quote.terms.bankAccountInfo), 180);
   doc.text(splitBank, 14, nextY + 4);
 
-  // 7. Signatures & Footer Block
-  let sigY = nextY + 10 + splitBank.length * 3.5;
-  if (sigY > 250) {
-    doc.addPage();
-    sigY = 25;
-  }
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
-  doc.setTextColor(30, 41, 59);
-
-  doc.text('CUSTOMER ACCEPTANCE', 30, sigY);
-  doc.text('(Xac nhan dong y bao gia)', 28, sigY + 4);
-
-  doc.text('PREPARED BY (SALES EXECUTIVE)', 125, sigY);
-  doc.text(`(Nhan vien bao gia)`, 138, sigY + 4);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.text(removeVietnameseTones(quote.company.salesRepName), 130, sigY + 22);
-  doc.text(quote.company.salesRepTitle, 130, sigY + 26);
-
   // Save PDF
   doc.save(`${quote.quoteNumber}_Logistics_Quotation.pdf`);
 }

@@ -242,28 +242,7 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isO
             </div>
           </div>
 
-          {/* 7. Signatures & Stamp */}
-          <div className="pt-8 grid grid-cols-2 text-center gap-8">
-            <div className="space-y-16">
-              <div>
-                <p className="font-bold text-slate-900 uppercase">ĐẠI DIỆN KHÁCH HÀNG</p>
-                <p className="text-slate-500 text-[10px]">(Ký, ghi rõ họ tên & đóng dấu)</p>
-              </div>
-              <div className="text-slate-400 italic">________________________</div>
-            </div>
 
-            <div className="space-y-12">
-              <div>
-                <p className="font-bold text-slate-900 uppercase">CÔNG TY LOGISTICS & VẬN TẢI QUỐC TẾ</p>
-                <p className="text-slate-500 text-[10px]">(Đại diện Phòng Kinh Doanh / Pricing)</p>
-              </div>
-              <div className="space-y-1">
-                <div className="font-bold text-slate-900 text-sm">{quote.company.salesRepName}</div>
-                <div className="text-slate-500 text-xs">{quote.company.salesRepTitle}</div>
-                <div className="text-cyan-800 text-xs font-mono">{quote.company.salesRepPhone}</div>
-              </div>
-            </div>
-          </div>
 
         </div>
 

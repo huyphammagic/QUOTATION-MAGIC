@@ -407,7 +407,7 @@ export default function App() {
           />
 
           {/* Main Content Area */}
-          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+          <main className="flex-1 w-full max-w-[1800px] mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
             
             {/* Toast Alert */}
             {toastMessage && (
@@ -420,60 +420,51 @@ export default function App() {
             {/* Dashboard Stats Bar */}
             <DashboardStats quotes={savedQuotes} />
 
-            {/* Core Layout Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
-              {/* Left Column: Input Forms */}
-              <div className="lg:col-span-2 space-y-6">
-                
-                {/* Customer & Quote Meta */}
-                <CustomerForm
-                  customer={quote.customer}
-                  quoteNumber={quote.quoteNumber}
-                  createdDate={quote.createdDate}
-                  validityDate={quote.terms.validityDate}
-                  status={quote.status}
-                  salesRepName={company.salesRepName}
-                  onChangeCustomer={handleChangeCustomer}
-                  onChangeQuoteMeta={handleChangeQuoteMeta}
-                  onOpenCustomerManager={() => setIsCustomersOpen(true)}
-                />
+            {/* Top Section: Customer Info & Shipment Route Forms Side-by-Side */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <CustomerForm
+                customer={quote.customer}
+                quoteNumber={quote.quoteNumber}
+                createdDate={quote.createdDate}
+                validityDate={quote.terms.validityDate}
+                status={quote.status}
+                salesRepName={company.salesRepName}
+                onChangeCustomer={handleChangeCustomer}
+                onChangeQuoteMeta={handleChangeQuoteMeta}
+                onOpenCustomerManager={() => setIsCustomersOpen(true)}
+              />
 
-                {/* Shipment Route & Cargo Specs */}
-                <ShipmentForm
-                  shipment={quote.shipment}
-                  onChangeShipment={handleChangeShipment}
-                />
-
-                {/* Line Items Table */}
-                <LineItemsTable
-                  items={quote.items}
-                  exchangeRate={quote.exchangeRate}
-                  onUpdateItems={handleUpdateItems}
-                  onOpenSurchargeCatalog={() => setIsSurchargesOpen(true)}
-                />
-
-                {/* Terms & Conditions */}
-                <TermsForm
-                  terms={quote.terms}
-                  onChangeTerms={handleChangeTerms}
-                />
-
-              </div>
-
-              {/* Right Column: Sticky Live Totals & Action Card */}
-              <div className="lg:col-span-1">
-                <SummaryCard
-                  quote={quote}
-                  onExchangeRateChange={handleExchangeRateChange}
-                  onSaveQuote={handleSaveQuoteAction}
-                  onExportPdf={() => exportQuoteToPdf(quote)}
-                  onExportExcel={() => exportQuoteToExcel(quote)}
-                  onOpenPreview={() => setIsPreviewOpen(true)}
-                />
-              </div>
-
+              <ShipmentForm
+                shipment={quote.shipment}
+                onChangeShipment={handleChangeShipment}
+              />
             </div>
+
+            {/* Full-Width Section: Line Items Table */}
+            <div className="w-full">
+              <LineItemsTable
+                items={quote.items}
+                exchangeRate={quote.exchangeRate}
+                onUpdateItems={handleUpdateItems}
+                onOpenSurchargeCatalog={() => setIsSurchargesOpen(true)}
+              />
+            </div>
+
+            {/* Summary Card - Positioned directly below Line Items Table */}
+            <SummaryCard
+              quote={quote}
+              onExchangeRateChange={handleExchangeRateChange}
+              onSaveQuote={handleSaveQuoteAction}
+              onExportPdf={() => exportQuoteToPdf(quote)}
+              onExportExcel={() => exportQuoteToExcel(quote)}
+              onOpenPreview={() => setIsPreviewOpen(true)}
+            />
+
+            {/* Terms & Conditions */}
+            <TermsForm
+              terms={quote.terms}
+              onChangeTerms={handleChangeTerms}
+            />
 
           </main>
 
