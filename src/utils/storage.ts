@@ -160,3 +160,115 @@ export function deleteSurchargeItem(id: string): SurchargeItem[] {
   return filtered;
 }
 
+// ================= FULL BACKUP & RESTORE DATA =================
+export interface SystemBackupData {
+  version: string;
+  exportDate: string;
+  quotes: QuoteData[];
+  companySettings: any;
+  customers: CustomerRecord[];
+  surcharges: SurchargeItem[];
+}
+
+export function exportAllSystemData(): SystemBackupData {
+  return {
+    version: '2.5',
+    exportDate: new Date().toISOString(),
+    quotes: getSavedQuotes(),
+    companySettings: getCompanySettings(),
+    customers: getSavedCustomers(),
+    surcharges: getSavedSurcharges(),
+  };
+}
+
+export function downloadBackupJsonFile() {
+  const data = exportAllSystemData();
+  const jsonStr = JSON.stringify(data, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `backup_logistics_data_${dateStr}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+export function importSystemData(jsonData: any, mode: 'overwrite' | 'merge' = 'merge'): {
+  quotes: QuoteData[];
+  companySettings: any;
+  customers: CustomerRecord[];
+  surcharges: SurchargeItem[];
+} {
+  if (!jsonData || typeof jsonData !== 'object') {
+    throw new Error('File dữ liệu không hợp lệ!');
+  }
+
+  let finalQuotes: QuoteData[] = [];
+  let finalCompany: any = null;
+  let finalCustomers: CustomerRecord[] = [];
+  let finalSurcharges: SurchargeItem[] = [];
+
+  if (mode === 'overwrite') {
+    if (Array.isArray(jsonData.quotes)) {
+      finalQuotes = jsonData.quotes;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(finalQuotes));
+    }
+    if (jsonData.companySettings) {
+      finalCompany = jsonData.companySettings;
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(finalCompany));
+    }
+    if (Array.isArray(jsonData.customers)) {
+      finalCustomers = jsonData.customers;
+      localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(finalCustomers));
+    }
+    if (Array.isArray(jsonData.surcharges)) {
+      finalSurcharges = jsonData.surcharges;
+      localStorage.setItem(SURCHARGES_KEY, JSON.stringify(finalSurcharges));
+    }
+  } else {
+    // MERGE mode
+    const existingQuotes = getSavedQuotes();
+    const importedQuotes = Array.isArray(jsonData.quotes) ? jsonData.quotes : [];
+    const quoteMap = new Map<string, QuoteData>();
+    existingQuotes.forEach(q => quoteMap.set(q.id, q));
+    importedQuotes.forEach((q: QuoteData) => quoteMap.set(q.id, q));
+    finalQuotes = Array.from(quoteMap.values());
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(finalQuotes));
+
+    if (jsonData.companySettings) {
+      finalCompany = jsonData.companySettings;
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(finalCompany));
+    } else {
+      finalCompany = getCompanySettings();
+    }
+
+    const existingCustomers = getSavedCustomers();
+    const importedCustomers = Array.isArray(jsonData.customers) ? jsonData.customers : [];
+    const customerMap = new Map<string, CustomerRecord>();
+    existingCustomers.forEach(c => customerMap.set(c.id, c));
+    importedCustomers.forEach((c: CustomerRecord) => customerMap.set(c.id, c));
+    finalCustomers = Array.from(customerMap.values());
+    localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(finalCustomers));
+
+    const existingSurcharges = getSavedSurcharges();
+    const importedSurcharges = Array.isArray(jsonData.surcharges) ? jsonData.surcharges : [];
+    const surchargeMap = new Map<string, SurchargeItem>();
+    existingSurcharges.forEach(s => surchargeMap.set(s.id, s));
+    importedSurcharges.forEach((s: SurchargeItem) => surchargeMap.set(s.id, s));
+    finalSurcharges = Array.from(surchargeMap.values());
+    localStorage.setItem(SURCHARGES_KEY, JSON.stringify(finalSurcharges));
+  }
+
+  return {
+    quotes: finalQuotes,
+    companySettings: finalCompany,
+    customers: finalCustomers,
+    surcharges: finalSurcharges,
+  };
+}
+
+

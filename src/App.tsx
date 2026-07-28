@@ -24,8 +24,9 @@ import { SavedQuotesModal } from './components/SavedQuotesModal';
 import { CompanyProfileModal } from './components/CompanyProfileModal';
 import { CustomerManagerModal } from './components/CustomerManagerModal';
 import { SurchargeCatalogModal } from './components/SurchargeCatalogModal';
+import { DataBackupModal } from './components/DataBackupModal';
 
-import { Check, Ship, FileText, Settings, LayoutDashboard, Building2, Receipt } from 'lucide-react';
+import { Check, Ship, FileText, Settings, LayoutDashboard, Building2, Receipt, Database } from 'lucide-react';
 
 export default function App() {
   // Saved data states
@@ -45,6 +46,7 @@ export default function App() {
   const [isCompanyOpen, setIsCompanyOpen] = useState(false);
   const [isCustomersOpen, setIsCustomersOpen] = useState(false);
   const [isSurchargesOpen, setIsSurchargesOpen] = useState(false);
+  const [isDataBackupOpen, setIsDataBackupOpen] = useState(false);
 
   useEffect(() => {
     const quotesList = getSavedQuotes();
@@ -193,6 +195,23 @@ export default function App() {
     saveCompanySettings(updatedCompany);
     updateQuoteState({ company: updatedCompany });
     showToast('Đã lưu cấu hình doanh nghiệp!');
+  };
+
+  // Import Backup Data Handler
+  const handleDataImported = (data: {
+    quotes: QuoteData[];
+    companySettings?: CompanyProfile;
+    customers: CustomerRecord[];
+    surcharges: SurchargeItem[];
+  }) => {
+    setSavedQuotes(data.quotes);
+    if (data.companySettings) {
+      setCompany(data.companySettings);
+      updateQuoteState({ company: data.companySettings });
+    }
+    setCustomers(data.customers);
+    setSurcharges(data.surcharges);
+    showToast('Đã đồng bộ & khôi phục toàn bộ dữ liệu thành công!');
   };
 
   // Create New Blank Quote
@@ -404,6 +423,7 @@ export default function App() {
             onOpenCompanyProfile={() => setIsCompanyOpen(true)}
             onOpenCustomers={() => setIsCustomersOpen(true)}
             onOpenSurchargeCatalog={() => setIsSurchargesOpen(true)}
+            onOpenDataBackup={() => setIsDataBackupOpen(true)}
           />
 
           {/* Main Content Area */}
@@ -530,6 +550,15 @@ export default function App() {
         isOpen={isCompanyOpen}
         onClose={() => setIsCompanyOpen(false)}
         onSaveCompany={handleSaveCompanyProfile}
+      />
+
+      <DataBackupModal
+        isOpen={isDataBackupOpen}
+        onClose={() => setIsDataBackupOpen(false)}
+        onDataImported={handleDataImported}
+        savedQuotesCount={savedQuotes.length}
+        customersCount={customers.length}
+        surchargesCount={surcharges.length}
       />
 
     </div>

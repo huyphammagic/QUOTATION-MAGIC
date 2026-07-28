@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ship, FileText, Settings, PlusCircle, RefreshCw, Building2, Receipt } from 'lucide-react';
+import { Ship, FileText, Settings, PlusCircle, RefreshCw, Building2, Receipt, Database } from 'lucide-react';
 import { CompanyProfile } from '../types/logistics';
 
 interface NavbarProps {
@@ -12,6 +12,7 @@ interface NavbarProps {
   onOpenCompanyProfile: () => void;
   onOpenCustomers: () => void;
   onOpenSurchargeCatalog: () => void;
+  onOpenDataBackup: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -24,6 +25,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCompanyProfile,
   onOpenCustomers,
   onOpenSurchargeCatalog,
+  onOpenDataBackup,
 }) => {
   return (
     <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-30 flex items-center justify-between px-4 sm:px-8 shadow-xs">
@@ -59,6 +61,16 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Action Menu Buttons */}
       <div className="flex items-center space-x-2">
         
+        {/* Backup & Sync Button */}
+        <button
+          onClick={onOpenDataBackup}
+          className="flex items-center space-x-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs sm:text-sm font-semibold px-2.5 py-2 rounded-lg transition-colors"
+          title="Sao Lưu & Khôi Phục Dữ Liệu (Backup JSON for Vercel)"
+        >
+          <Database className="w-4 h-4 text-emerald-700" />
+          <span className="hidden xl:inline">Sao Lưu Dữ Liệu</span>
+        </button>
+
         {/* Customers CRM Button */}
         <button
           onClick={onOpenCustomers}
@@ -116,5 +128,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
+
 
 
