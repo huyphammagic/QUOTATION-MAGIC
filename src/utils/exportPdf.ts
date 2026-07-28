@@ -3,24 +3,34 @@ import autoTable from 'jspdf-autotable';
 import { QuoteData } from '../types/logistics';
 import { formatUSD, formatVND, formatNumber } from './formatters';
 
-// Helper to remove Vietnamese diacritics if PDF font doesn't support full unicode font face
+// Helper to remove Vietnamese diacritics and non-ASCII characters for clean PDF rendering
 export function removeVietnameseTones(str: string): string {
   if (!str) return '';
-  let result = str;
+  let result = str.toString();
+
+  // Replace non-breaking spaces and special unicode spaces with standard ASCII space
+  result = result.replace(/[\u00A0\u1680\u180E\u2000-\u200B\u202F\u205F\u3000\uFEFF]/g, " ");
+
+  // Replace currency symbols & special characters
+  result = result.replace(/₫/g, "VND").replace(/đ/g, "d").replace(/Đ/g, "D");
+
+  // Remove diacritics
   result = result.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
   result = result.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
   result = result.replace(/ì|í|ị|ỉ|ĩ/g, "i");
   result = result.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
   result = result.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
   result = result.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
-  result = result.replace(/đ/g, "d");
   result = result.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "A");
   result = result.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, "E");
   result = result.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, "I");
   result = result.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, "O");
   result = result.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, "U");
   result = result.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, "Y");
-  result = result.replace(/Đ/g, "D");
+
+  // Keep standard printable ASCII characters (32 to 126) plus newline
+  result = result.replace(/[^\x20-\x7E\n]/g, "");
+
   return result;
 }
 
@@ -138,12 +148,16 @@ export function exportQuoteToPdf(quote: QuoteData) {
 
     // Item rows
     locItems.forEach((item, idx) => {
+      const unitPriceStr = item.currency === 'USD' 
+        ? formatUSD(item.unitPrice) 
+        : removeVietnameseTones(formatVND(item.unitPrice));
+
       tableData.push([
         (idx + 1).toString(),
-        `${removeVietnameseTones(item.description)}\n(${item.code})`,
+        removeVietnameseTones(`${item.description}\n(${item.code})`),
         formatNumber(item.quantity),
         removeVietnameseTones(item.unit),
-        item.currency === 'USD' ? formatUSD(item.unitPrice) : formatVND(item.unitPrice),
+        unitPriceStr,
         item.currency,
         `${item.vatRate}%`,
         formatUSD(item.amountUsd),

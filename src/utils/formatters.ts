@@ -12,11 +12,11 @@ export function formatUSD(amount: number): string {
 
 // Format currency VND
 export function formatVND(amount: number): string {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
+  if (isNaN(amount) || amount === null || amount === undefined) return '0 ₫';
+  const formatted = new Intl.NumberFormat('vi-VN', {
     maximumFractionDigits: 0,
   }).format(amount || 0);
+  return `${formatted} ₫`.replace(/[\u00A0\u202F]/g, ' ');
 }
 
 // Format number with decimal control
