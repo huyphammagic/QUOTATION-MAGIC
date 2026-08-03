@@ -1,6 +1,6 @@
 import React from 'react';
 import { QuoteData } from '../types/logistics';
-import { formatUSD, formatVND, formatNumber } from '../utils/formatters';
+import { formatUSD, formatVND, formatNumber, formatExchangeRate } from '../utils/formatters';
 import { exportQuoteToPdf } from '../utils/exportPdf';
 import { exportQuoteToExcel } from '../utils/exportExcel';
 import { X, Printer, FileDown, FileSpreadsheet, Ship } from 'lucide-react';
@@ -85,7 +85,7 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isO
               <div className="font-bold text-slate-900 text-sm">{quote.quoteNumber}</div>
               <div className="text-slate-500 text-[11px]">Ngày tạo: {quote.createdDate}</div>
               <div className="text-amber-700 font-semibold text-[11px]">Hiệu lực: {quote.terms.validityDate}</div>
-              <div className="text-slate-500 text-[10px] mt-1">Ex.Rate: 1 USD = {formatNumber(quote.exchangeRate)} VND</div>
+              <div className="text-slate-500 text-[10px] mt-1">Ex.Rate: 1 USD = {formatExchangeRate(quote.exchangeRate)} VND</div>
             </div>
           </div>
 

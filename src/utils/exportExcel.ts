@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import { QuoteData } from '../types/logistics';
-import { formatUSD, formatVND, formatNumber } from './formatters';
+import { formatUSD, formatVND, formatNumber, formatExchangeRate } from './formatters';
 
 export function exportQuoteToExcel(quote: QuoteData) {
   const wb = XLSX.utils.book_new();
@@ -14,7 +14,7 @@ export function exportQuoteToExcel(quote: QuoteData) {
     [],
     ['BẢNG BÁO GIÁ DỊCH VỤ LOGISTICS & VẬN TẢI QUỐC TẾ'],
     [`Mã báo giá: ${quote.quoteNumber}`, '', `Ngày tạo: ${quote.createdDate}`, '', `Hiệu lực đến: ${quote.terms.validityDate}`],
-    [`Tỷ giá quy đổi: 1 USD = ${formatNumber(quote.exchangeRate)} VND`],
+    [`Tỷ giá quy đổi: 1 USD = ${formatExchangeRate(quote.exchangeRate)} VND`],
     [],
     ['I. THÔNG TIN KHÁCH HÀNG & LÔ HÀNG'],
     ['Tên khách hàng:', quote.customer.customerName, 'Công ty:', quote.customer.companyName],

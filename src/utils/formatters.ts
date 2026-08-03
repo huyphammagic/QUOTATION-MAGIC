@@ -19,6 +19,15 @@ export function formatVND(amount: number): string {
   return `${formatted} ₫`.replace(/[\u00A0\u202F]/g, ' ');
 }
 
+// Format exchange rate with full decimal precision (up to 8 decimal places)
+export function formatExchangeRate(rate: number): string {
+  if (isNaN(rate) || rate === null || rate === undefined) return '0';
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 8,
+  }).format(rate);
+}
+
 // Format number with decimal control
 export function formatNumber(val: number, decimals: number = 2): string {
   if (isNaN(val) || val === null || val === undefined) return '0';

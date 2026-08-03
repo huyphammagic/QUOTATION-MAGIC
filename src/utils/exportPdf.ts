@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { QuoteData } from '../types/logistics';
-import { formatUSD, formatVND, formatNumber } from './formatters';
+import { formatUSD, formatVND, formatNumber, formatExchangeRate } from './formatters';
 
 // Helper to remove Vietnamese diacritics and non-ASCII characters for clean PDF rendering
 export function removeVietnameseTones(str: string): string {
@@ -223,7 +223,7 @@ export function exportQuoteToPdf(quote: QuoteData) {
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139);
-  doc.text(`* Ty gia quy doi (Ex.Rate): 1 USD = ${formatNumber(quote.exchangeRate)} VND`, 14, finalY + 6);
+  doc.text(`* Ty gia quy doi (Ex.Rate): 1 USD = ${formatExchangeRate(quote.exchangeRate)} VND`, 14, finalY + 6);
 
   // 6. Terms & Conditions Block
   let termsY = finalY + 36;
