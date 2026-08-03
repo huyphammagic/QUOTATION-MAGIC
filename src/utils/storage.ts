@@ -170,6 +170,47 @@ export interface SystemBackupData {
   surcharges: SurchargeItem[];
 }
 
+// ================= ACTIVE DRAFT AUTO-SAVE STORAGE =================
+const DRAFT_KEY = 'LOGISTICS_ACTIVE_QUOTE_DRAFT_V1';
+
+export function saveActiveQuoteDraft(quote: QuoteData): string {
+  try {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('vi-VN', { hour12: false });
+    const draftData = {
+      quote,
+      savedAt: timeString,
+      timestamp: now.getTime(),
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData));
+    return timeString;
+  } catch (err) {
+    console.error('Error saving active quote draft:', err);
+    return '';
+  }
+}
+
+export function getActiveQuoteDraft(): { quote: QuoteData | null; savedAt: string | null } {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return { quote: null, savedAt: null };
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.quote) {
+      return {
+        quote: parsed.quote,
+        savedAt: parsed.savedAt || null,
+      };
+    }
+  } catch (err) {
+    console.error('Error reading active quote draft:', err);
+  }
+  return { quote: null, savedAt: null };
+}
+
+export function clearActiveQuoteDraft() {
+  localStorage.removeItem(DRAFT_KEY);
+}
+
 export function exportAllSystemData(): SystemBackupData {
   return {
     version: '2.5',

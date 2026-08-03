@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { QuoteData } from '../types/logistics';
 import { formatUSD, formatVND, formatNumber, formatExchangeRate } from '../utils/formatters';
 import { exportQuoteToPdf } from '../utils/exportPdf';
@@ -12,6 +12,17 @@ interface QuotePreviewModalProps {
 }
 
 export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isOpen, onClose }) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handlePrint = () => {

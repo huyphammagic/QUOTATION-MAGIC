@@ -1,11 +1,13 @@
 import React from 'react';
-import { Ship, FileText, Settings, PlusCircle, RefreshCw, Building2, Receipt, Database } from 'lucide-react';
+import { Ship, FileText, Settings, PlusCircle, RefreshCw, Building2, Receipt, Database, CloudCheck, CheckCircle2 } from 'lucide-react';
 import { CompanyProfile } from '../types/logistics';
 
 interface NavbarProps {
   company: CompanyProfile;
   savedCount: number;
   exchangeRate: number;
+  lastAutoSaveTime: string | null;
+  isAutoSaving?: boolean;
   onExchangeRateChange: (rate: number) => void;
   onNewQuote: () => void;
   onOpenSavedQuotes: () => void;
@@ -19,6 +21,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   company,
   savedCount,
   exchangeRate,
+  lastAutoSaveTime,
+  isAutoSaving,
   onExchangeRateChange,
   onNewQuote,
   onOpenSavedQuotes,
@@ -46,16 +50,32 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Exchange Rate Quick Adjuster */}
-      <div className="hidden lg:flex items-center bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-600 space-x-2">
-        <RefreshCw className="w-3.5 h-3.5 text-blue-600" />
-        <span className="font-semibold uppercase text-[11px] tracking-wider text-slate-500">Tỷ giá USD/VND:</span>
-        <input 
-          type="number"
-          value={exchangeRate}
-          onChange={(e) => onExchangeRateChange(Number(e.target.value) || 25400)}
-          className="w-20 bg-white text-blue-900 font-mono font-bold text-right px-2 py-0.5 rounded border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+      {/* Auto Save Indicator & Exchange Rate Quick Adjuster */}
+      <div className="hidden lg:flex items-center space-x-3">
+        
+        {/* Auto-Save Badge */}
+        <div className="flex items-center space-x-1.5 bg-emerald-50/80 border border-emerald-200/90 text-emerald-900 px-3 py-1 rounded-full text-xs font-medium shadow-2xs">
+          <span className="relative flex h-2 w-2">
+            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 ${isAutoSaving ? 'opacity-100 scale-125' : 'opacity-75'}`}></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+          <span className="text-[11px]">
+            Tự động lưu: <strong className="font-mono text-emerald-950">{lastAutoSaveTime || 'Vừa xong'}</strong>
+          </span>
+        </div>
+
+        {/* Exchange Rate Quick Adjuster */}
+        <div className="flex items-center bg-slate-50 px-3 py-1 rounded-lg border border-slate-200 text-xs text-slate-600 space-x-2">
+          <RefreshCw className="w-3.5 h-3.5 text-blue-600" />
+          <span className="font-semibold uppercase text-[11px] tracking-wider text-slate-500">Tỷ giá USD/VND:</span>
+          <input 
+            type="number"
+            value={exchangeRate}
+            onChange={(e) => onExchangeRateChange(Number(e.target.value) || 25400)}
+            className="w-20 bg-white text-blue-900 font-mono font-bold text-right px-2 py-0.5 rounded border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
       </div>
 
       {/* Action Menu Buttons */}

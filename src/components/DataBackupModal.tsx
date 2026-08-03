@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X, Download, Upload, Database, CheckCircle2, AlertTriangle, FileJson, RefreshCw, Server, ArrowRight } from 'lucide-react';
 import { downloadBackupJsonFile, importSystemData } from '../utils/storage';
 import { QuoteData, CompanyProfile, CustomerRecord, SurchargeItem } from '../types/logistics';
@@ -28,6 +28,17 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
   const [importMode, setImportMode] = useState<'merge' | 'overwrite'>('merge');
   const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

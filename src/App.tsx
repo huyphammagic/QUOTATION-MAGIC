@@ -6,7 +6,8 @@ import {
   getSavedQuotes, saveQuote, deleteQuote, cloneQuote, updateQuoteStatus, 
   getCompanySettings, saveCompanySettings,
   getSavedCustomers, saveCustomerRecord, deleteCustomerRecord,
-  getSavedSurcharges, saveSurchargeItem, deleteSurchargeItem
+  getSavedSurcharges, saveSurchargeItem, deleteSurchargeItem,
+  saveActiveQuoteDraft, getActiveQuoteDraft
 } from './utils/storage';
 import { exportQuoteToPdf } from './utils/exportPdf';
 import { exportQuoteToExcel } from './utils/exportExcel';
@@ -37,6 +38,16 @@ export default function App() {
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [surcharges, setSurcharges] = useState<SurchargeItem[]>([]);
 
+  // Auto-Save Draft States
+  const [lastAutoSaveTime, setLastAutoSaveTime] = useState<string | null>(null);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const quoteRef = React.useRef(quote);
+
+  // Keep quoteRef in sync with latest quote state
+  useEffect(() => {
+    quoteRef.current = quote;
+  }, [quote]);
+
   // Toast notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -48,6 +59,7 @@ export default function App() {
   const [isSurchargesOpen, setIsSurchargesOpen] = useState(false);
   const [isDataBackupOpen, setIsDataBackupOpen] = useState(false);
 
+  // Mount Effect: Restore saved lists & active draft
   useEffect(() => {
     const quotesList = getSavedQuotes();
     setSavedQuotes(quotesList);
@@ -59,6 +71,33 @@ export default function App() {
 
     setCustomers(getSavedCustomers());
     setSurcharges(getSavedSurcharges());
+
+    // Restore active quote draft from localStorage if available
+    const activeDraft = getActiveQuoteDraft();
+    if (activeDraft.quote) {
+      setQuote(activeDraft.quote);
+      if (activeDraft.savedAt) {
+        setLastAutoSaveTime(activeDraft.savedAt);
+      }
+    }
+  }, []);
+
+  // 30-Second Auto-Save Interval Effect
+  useEffect(() => {
+    // Initial save tick if timestamp not set
+    const initialTime = saveActiveQuoteDraft(quoteRef.current);
+    if (initialTime) setLastAutoSaveTime(initialTime);
+
+    const autoSaveTimer = setInterval(() => {
+      setIsAutoSaving(true);
+      const savedTime = saveActiveQuoteDraft(quoteRef.current);
+      if (savedTime) {
+        setLastAutoSaveTime(savedTime);
+      }
+      setTimeout(() => setIsAutoSaving(false), 800);
+    }, 30000);
+
+    return () => clearInterval(autoSaveTimer);
   }, []);
 
   const showToast = (msg: string) => {
@@ -293,6 +332,8 @@ export default function App() {
     };
 
     setQuote(freshQuote);
+    const savedTime = saveActiveQuoteDraft(freshQuote);
+    if (savedTime) setLastAutoSaveTime(savedTime);
     showToast(`Đã tạo báo giá mới: ${newRef}`);
   };
 
@@ -300,12 +341,16 @@ export default function App() {
   const handleSaveQuoteAction = () => {
     const updatedList = saveQuote(quote);
     setSavedQuotes(updatedList);
+    const savedTime = saveActiveQuoteDraft(quote);
+    if (savedTime) setLastAutoSaveTime(savedTime);
     showToast(`Đã lưu báo giá ${quote.quoteNumber} thành công!`);
   };
 
   // Select Saved Quote
   const handleSelectQuote = (selected: QuoteData) => {
     setQuote(selected);
+    const savedTime = saveActiveQuoteDraft(selected);
+    if (savedTime) setLastAutoSaveTime(savedTime);
     showToast(`Đã tải báo giá ${selected.quoteNumber}`);
   };
 
@@ -315,6 +360,8 @@ export default function App() {
     if (cloned) {
       setSavedQuotes(getSavedQuotes());
       setQuote(cloned);
+      const savedTime = saveActiveQuoteDraft(cloned);
+      if (savedTime) setLastAutoSaveTime(savedTime);
       showToast(`Đã nhân bản thành báo giá mới: ${cloned.quoteNumber}`);
     }
   };
@@ -417,6 +464,8 @@ export default function App() {
             company={company}
             savedCount={savedQuotes.length}
             exchangeRate={quote.exchangeRate}
+            lastAutoSaveTime={lastAutoSaveTime}
+            isAutoSaving={isAutoSaving}
             onExchangeRateChange={handleExchangeRateChange}
             onNewQuote={handleNewQuote}
             onOpenSavedQuotes={() => setIsSavedOpen(true)}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CustomerRecord } from '../types/logistics';
 import { 
   Users, Plus, Search, Edit2, Trash2, Building2, Phone, Mail, 
@@ -25,6 +25,17 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Partial<CustomerRecord>>({});
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

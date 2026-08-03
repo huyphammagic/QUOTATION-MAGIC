@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SurchargeItem, FeeCategory, SurchargeTransportMode, ChargeLocation } from '../types/logistics';
 import { 
   Receipt, Plus, Search, Edit2, Trash2, Tag, Check, X, 
@@ -30,6 +30,17 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
   const [selectedLocation, setSelectedLocation] = useState<string>('ALL');
   const [isEditing, setIsEditing] = useState(false);
   const [editingItem, setEditingItem] = useState<Partial<SurchargeItem>>({});
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

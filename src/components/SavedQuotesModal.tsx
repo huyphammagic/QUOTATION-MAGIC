@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { QuoteData, QuoteStatus } from '../types/logistics';
 import { formatUSD, formatVND } from '../utils/formatters';
 import { exportQuoteToPdf } from '../utils/exportPdf';
@@ -24,10 +24,21 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
   onDeleteQuote,
   onUpdateStatus
 }) => {
-  if (!isOpen) return null;
-
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
 
   const filtered = quotes.filter((q) => {
     const matchesSearch =
