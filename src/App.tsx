@@ -14,6 +14,7 @@ import { exportQuoteToExcel } from './utils/exportExcel';
 
 import { Navbar } from './components/Navbar';
 import { DashboardStats } from './components/DashboardStats';
+import { CompanyCard } from './components/CompanyCard';
 import { CustomerForm } from './components/CustomerForm';
 import { ShipmentForm } from './components/ShipmentForm';
 import { LineItemsTable } from './components/LineItemsTable';
@@ -232,8 +233,15 @@ export default function App() {
   const handleSaveCompanyProfile = (updatedCompany: CompanyProfile) => {
     setCompany(updatedCompany);
     saveCompanySettings(updatedCompany);
-    updateQuoteState({ company: updatedCompany });
-    showToast('Đã lưu cấu hình doanh nghiệp!');
+    const bankStr = `${updatedCompany.bankName}\nSố TK: ${updatedCompany.bankAccountNo}\nChủ TK: ${updatedCompany.bankAccountHolder}${updatedCompany.bankSwiftCode ? `\nSWIFT Code: ${updatedCompany.bankSwiftCode}` : ''}`;
+    updateQuoteState({
+      company: updatedCompany,
+      terms: {
+        ...quote.terms,
+        bankAccountInfo: bankStr,
+      },
+    });
+    showToast('Đã lưu thông tin doanh nghiệp & cập nhật vào báo giá!');
   };
 
   // Import Backup Data Handler
@@ -488,6 +496,12 @@ export default function App() {
 
             {/* Dashboard Stats Bar */}
             <DashboardStats quotes={savedQuotes} />
+
+            {/* Forwarder Company Information Card */}
+            <CompanyCard
+              company={quote.company || company}
+              onOpenCompanyProfile={() => setIsCompanyOpen(true)}
+            />
 
             {/* Top Section: Customer Info & Shipment Route Forms Side-by-Side */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">

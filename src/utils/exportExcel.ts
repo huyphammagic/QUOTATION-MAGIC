@@ -8,9 +8,10 @@ export function exportQuoteToExcel(quote: QuoteData) {
   // 1. Prepare Header rows
   const excelRows: any[][] = [
     [quote.company.name.toUpperCase()],
+    [quote.company.englishName ? quote.company.englishName.toUpperCase() : ''],
     [`Địa chỉ: ${quote.company.address}`],
     [`MST: ${quote.company.taxId} | Hotline: ${quote.company.phone} | Email: ${quote.company.email}`],
-    [`Website: ${quote.company.website}`],
+    [`Website: ${quote.company.website || 'N/A'}`],
     [],
     ['BẢNG BÁO GIÁ DỊCH VỤ LOGISTICS & VẬN TẢI QUỐC TẾ'],
     [`Mã báo giá: ${quote.quoteNumber}`, '', `Ngày tạo: ${quote.createdDate}`, '', `Hiệu lực đến: ${quote.terms.validityDate}`],
@@ -18,7 +19,8 @@ export function exportQuoteToExcel(quote: QuoteData) {
     [],
     ['I. THÔNG TIN KHÁCH HÀNG & LÔ HÀNG'],
     ['Tên khách hàng:', quote.customer.customerName, 'Công ty:', quote.customer.companyName],
-    ['Mã số thuế:', quote.customer.taxId, 'Điện thoại/Email:', `${quote.customer.phone} / ${quote.customer.email}`],
+    ['Người liên hệ:', quote.customer.contactPerson || 'N/A', 'Địa chỉ:', quote.customer.address],
+    ['Mã số thuế:', quote.customer.taxId || 'N/A', 'Điện thoại/Email:', `${quote.customer.phone} / ${quote.customer.email}`],
     ['Hình thức vận chuyển:', quote.shipment.mode, 'Loại Cont/Quy cách:', quote.shipment.containerType],
     ['Cảng đi (POL):', quote.shipment.pol, 'Cảng đến (POD):', quote.shipment.pod],
     ['Tên hàng hóa:', quote.shipment.commodity, 'Số lượng/Trọng lượng:', `${quote.shipment.quantity} cont / ${formatNumber(quote.shipment.grossWeightKg)} KGS / ${formatNumber(quote.shipment.volumeCbm)} CBM`],
@@ -76,14 +78,14 @@ export function exportQuoteToExcel(quote: QuoteData) {
   excelRows.push(['TỔNG THUẾ VAT:', '', '', '', '', '', '', '', '', quote.vatTotalUsd, quote.vatTotalVnd]);
   excelRows.push(['TỔNG CỘNG THANH TOÁN (GRAND TOTAL):', '', '', '', '', '', '', '', '', quote.grandTotalUsd, quote.grandTotalVnd]);
 
-  // 4. Add Terms & Conditions
+  // 4. Add Terms & Conditions & Banking
   excelRows.push([]);
   excelRows.push(['III. ĐIỀU KHOẢN VÀ THÔNG TIN CHUYỂN KHOAN']);
   excelRows.push(['Điều kiện giao hàng (Incoterm):', quote.terms.incoterm]);
   excelRows.push(['Điều khoản thanh toán:', quote.terms.paymentTerm]);
   excelRows.push(['Ngoại trừ & Ghi chú:', quote.terms.exclusionsNotes]);
   excelRows.push(['Thông tin tài khoản ngân hàng:', quote.terms.bankAccountInfo]);
-  excelRows.push(['Người lập báo giá:', `${quote.company.salesRepName} (${quote.company.salesRepTitle}) - Tel: ${quote.company.salesRepPhone}`]);
+  excelRows.push(['Người lập báo giá:', `${quote.company.salesRepName} (${quote.company.salesRepTitle}) - Hotline/Zalo: ${quote.company.salesRepPhone} - Email: ${quote.company.salesRepEmail}`]);
 
   // Create Worksheet
   const ws = XLSX.utils.aoa_to_sheet(excelRows);

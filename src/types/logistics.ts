@@ -119,6 +119,7 @@ export interface TermsAndConditions {
 export interface CompanyProfile {
   name: string;
   englishName: string;
+  shortName?: string;
   taxId: string;
   address: string;
   phone: string;

@@ -3,7 +3,7 @@ import { QuoteData } from '../types/logistics';
 import { formatUSD, formatVND, formatNumber, formatExchangeRate } from '../utils/formatters';
 import { exportQuoteToPdf } from '../utils/exportPdf';
 import { exportQuoteToExcel } from '../utils/exportExcel';
-import { X, Printer, FileDown, FileSpreadsheet, Ship } from 'lucide-react';
+import { X, Printer, FileDown, FileSpreadsheet, Ship, Building2 } from 'lucide-react';
 
 interface QuotePreviewModalProps {
   quote: QuoteData;
@@ -27,6 +27,21 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isO
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const locations = ['POL', 'FREIGHT', 'POD', 'OTHER'] as const;
+  const locTitleMap = {
+    POL: `1. CHI PHÍ ĐẦU XUẤT / CẢNG ĐI (POL CHARGES - ${quote.shipment.pol || 'ORIGIN'})`,
+    FREIGHT: `2. CƯỚC VẬN CHUYỂN CHẶNG CHÍNH (MAIN FREIGHT - ${quote.shipment.mode})`,
+    POD: `3. CHI PHÍ ĐẦU NHẬP / CẢNG ĐÍCH (POD CHARGES - ${quote.shipment.pod || 'DESTINATION'})`,
+    OTHER: '4. DỊCH VỤ CỘNG THÊM & THỦ TỤC KHÁC (OTHER SERVICES)'
+  };
+
+  const locBgMap = {
+    POL: 'bg-blue-50/70 text-blue-900 border-blue-200',
+    FREIGHT: 'bg-cyan-50/70 text-cyan-900 border-cyan-200',
+    POD: 'bg-indigo-50/70 text-indigo-900 border-indigo-200',
+    OTHER: 'bg-slate-100 text-slate-800 border-slate-300'
   };
 
   return (
@@ -80,29 +95,42 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isO
           
           {/* 1. Corporate Header */}
           <div className="border-b-2 border-cyan-800 pb-4 flex flex-col sm:flex-row justify-between items-start gap-4">
-            <div>
-              <h1 className="font-extrabold text-slate-900 text-lg uppercase tracking-tight text-cyan-900">
-                {quote.company.name}
-              </h1>
-              <p className="text-slate-500 font-medium text-[11px]">{quote.company.englishName}</p>
-              <p className="text-slate-600 mt-1">ĐC: {quote.company.address}</p>
+            <div className="space-y-1 max-w-xl">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-blue-700 rounded-lg flex items-center justify-center text-white font-bold shrink-0">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h1 className="font-extrabold text-slate-900 text-base sm:text-lg uppercase tracking-tight text-cyan-950 leading-tight">
+                    {quote.company.name}
+                  </h1>
+                  {quote.company.englishName && (
+                    <p className="text-slate-500 font-medium text-[11px] italic">{quote.company.englishName}</p>
+                  )}
+                </div>
+              </div>
+              <p className="text-slate-600 mt-2"><strong>Trụ sở:</strong> {quote.company.address}</p>
               <p className="text-slate-600">
-                MST: <span className="font-mono font-semibold">{quote.company.taxId}</span> | Tel: {quote.company.phone} | Email: {quote.company.email}
+                <strong>MST:</strong> <span className="font-mono font-bold text-slate-900">{quote.company.taxId}</span> | <strong>Tel:</strong> {quote.company.phone} | <strong>Email:</strong> {quote.company.email}
               </p>
-              <p className="text-slate-600">Website: {quote.company.website}</p>
+              {quote.company.website && (
+                <p className="text-slate-600"><strong>Website:</strong> {quote.company.website}</p>
+              )}
             </div>
 
-            <div className="text-left sm:text-right bg-slate-50 p-3 rounded-lg border border-slate-200 min-w-[200px]">
-              <div className="font-bold text-slate-900 text-sm">{quote.quoteNumber}</div>
+            <div className="text-left sm:text-right bg-slate-50 p-3 rounded-lg border border-slate-200 min-w-[210px]">
+              <div className="font-bold text-slate-900 text-sm font-mono">{quote.quoteNumber}</div>
               <div className="text-slate-500 text-[11px]">Ngày tạo: {quote.createdDate}</div>
-              <div className="text-amber-700 font-semibold text-[11px]">Hiệu lực: {quote.terms.validityDate}</div>
-              <div className="text-slate-500 text-[10px] mt-1">Ex.Rate: 1 USD = {formatExchangeRate(quote.exchangeRate)} VND</div>
+              <div className="text-amber-700 font-semibold text-[11px]">Hiệu lực đến: {quote.terms.validityDate}</div>
+              <div className="text-slate-600 text-[10px] mt-1 pt-1 border-t border-slate-200">
+                Tỷ giá: 1 USD = <strong className="font-mono">{formatExchangeRate(quote.exchangeRate)}</strong> VND
+              </div>
             </div>
           </div>
 
           {/* 2. Document Title */}
           <div className="text-center py-2">
-            <h2 className="text-xl font-bold text-slate-900 tracking-wide uppercase">
+            <h2 className="text-xl font-extrabold text-slate-900 tracking-wide uppercase text-cyan-950">
               BẢNG BÁO GIÁ DỊCH VỤ LOGISTICS & CƯỚC VẬN TẢI
             </h2>
             <p className="text-slate-500 text-xs italic">FREIGHT FORWARDING & LOCAL CHARGES QUOTATION</p>
@@ -137,41 +165,27 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isO
 
           </div>
 
-          {/* 4. Line Items Table Grouped By Location (POL, FREIGHT, POD, OTHER) */}
+          {/* 4. Line Items Table Grouped By Location */}
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse border border-slate-300 text-xs">
               <thead>
-                <tr className="bg-slate-900 text-white uppercase text-[10px]">
-                  <th className="p-2 border border-slate-300 text-center w-8">STT</th>
-                  <th className="p-2 border border-slate-300">Diễn giải hạng mục / Phụ phí</th>
-                  <th className="p-2 border border-slate-300 text-center">Mã</th>
-                  <th className="p-2 border border-slate-300 text-right">SL</th>
-                  <th className="p-2 border border-slate-300 text-center">Đơn vị</th>
-                  <th className="p-2 border border-slate-300 text-right">Đơn giá</th>
-                  <th className="p-2 border border-slate-300 text-center">Loại tiền</th>
-                  <th className="p-2 border border-slate-300 text-center">VAT</th>
-                  <th className="p-2 border border-slate-300 text-right">Thành tiền (USD)</th>
-                  <th className="p-2 border border-slate-300 text-right">Thành tiền (VND)</th>
+                <tr className="bg-slate-800 text-white font-bold text-[11px]">
+                  <th className="p-2 border border-slate-600 text-center w-8">STT</th>
+                  <th className="p-2 border border-slate-600">Hạng Mục Chi Phí (Description)</th>
+                  <th className="p-2 border border-slate-600 text-center w-16">Mã Phí</th>
+                  <th className="p-2 border border-slate-600 text-right w-12">SL</th>
+                  <th className="p-2 border border-slate-600 text-center w-16">ĐVT</th>
+                  <th className="p-2 border border-slate-600 text-right w-24">Đơn Giá</th>
+                  <th className="p-2 border border-slate-600 text-center w-12">Loại</th>
+                  <th className="p-2 border border-slate-600 text-center w-12">VAT</th>
+                  <th className="p-2 border border-slate-600 text-right w-24">Thành Tiền (USD)</th>
+                  <th className="p-2 border border-slate-600 text-right w-28">Thành Tiền (VND)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
-                {(['POL', 'FREIGHT', 'POD', 'OTHER'] as const).map((locationKey) => {
+              <tbody>
+                {locations.map((locationKey) => {
                   const locItems = quote.items.filter(item => (item.location || 'POL') === locationKey);
                   if (locItems.length === 0) return null;
-
-                  const locTitleMap = {
-                    POL: `I. CHI PHÍ TẠI ĐẦU XUẤT / CẢNG ĐI (POL CHARGES - ${quote.shipment.pol || 'ORIGIN'})`,
-                    FREIGHT: `II. CƯỚC VẬN CHUYỂN CHẶNG CHÍNH (MAIN FREIGHT - ${quote.shipment.mode})`,
-                    POD: `III. CHI PHÍ TẠI ĐẦU NHẬP / CẢNG ĐẾN (POD CHARGES - ${quote.shipment.pod || 'DESTINATION'})`,
-                    OTHER: 'IV. DỊCH VỤ CỘNG THÊM & CHI PHÍ KHÁC (OTHER SERVICES)'
-                  };
-
-                  const locBgMap = {
-                    POL: 'bg-emerald-50 text-emerald-950 border-emerald-300',
-                    FREIGHT: 'bg-blue-50 text-blue-950 border-blue-300',
-                    POD: 'bg-purple-50 text-purple-950 border-purple-300',
-                    OTHER: 'bg-slate-100 text-slate-900 border-slate-300'
-                  };
 
                   const locSubtotalUsd = locItems.reduce((acc, i) => acc + i.amountUsd, 0);
                   const locSubtotalVnd = locItems.reduce((acc, i) => acc + i.amountVnd, 0);
@@ -239,7 +253,7 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isO
             </div>
           </div>
 
-          {/* 6. Terms & Conditions */}
+          {/* 6. Terms & Conditions & Banking */}
           <div className="border-t border-slate-200 pt-4 space-y-2 text-slate-700 text-[11px]">
             <p className="font-bold text-slate-900 uppercase">ĐIỀU KHOẢN VÀ QUY ĐỊNH BÁO GIÁ (TERMS & CONDITIONS):</p>
             <p>• Điều kiện giao hàng (Incoterm): <span className="font-bold">{quote.terms.incoterm}</span></p>
@@ -253,7 +267,43 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isO
             </div>
           </div>
 
+          {/* 7. Corporate Dual Signature Block */}
+          <div className="pt-6 border-t-2 border-slate-200 grid grid-cols-2 gap-8 text-xs text-center">
+            
+            {/* Left: Customer Acceptance */}
+            <div className="space-y-1">
+              <p className="font-bold text-slate-900 uppercase tracking-wide">
+                ĐẠI DIỆN KHÁCH HÀNG (CUSTOMER ACCEPTANCE)
+              </p>
+              <p className="text-slate-400 italic text-[11px]">(Ký tên, đóng dấu & ghi rõ họ tên)</p>
+              <div className="h-20 flex items-center justify-center text-slate-300 italic text-[10px]">
+                [Chữ ký & Dấu tròn khách hàng]
+              </div>
+              <p className="font-semibold text-slate-700">
+                {quote.customer.contactPerson || quote.customer.customerName || 'Đại diện có thẩm quyền'}
+              </p>
+              <p className="text-slate-400 text-[10px]">Ngày: ...... / ...... / 202...</p>
+            </div>
 
+            {/* Right: Forwarding Company Sign-off */}
+            <div className="space-y-1">
+              <p className="font-bold text-cyan-950 uppercase tracking-wide">
+                ĐẠI DIỆN CÔNG TY BÁO GIÁ (FOR AND ON BEHALF OF)
+              </p>
+              <p className="text-slate-500 font-medium text-[11px] truncate">
+                {quote.company.shortName || quote.company.name}
+              </p>
+              <div className="h-20 flex items-center justify-center text-blue-300 italic text-[10px]">
+                [Chữ ký & Xác nhận của Sales Executive]
+              </div>
+              <p className="font-bold text-slate-900 text-sm">{quote.company.salesRepName}</p>
+              <p className="text-slate-600 text-[11px]">{quote.company.salesRepTitle}</p>
+              <p className="text-slate-500 text-[10px]">
+                Hotline/Zalo: {quote.company.salesRepPhone} | Email: {quote.company.salesRepEmail}
+              </p>
+            </div>
+
+          </div>
 
         </div>
 

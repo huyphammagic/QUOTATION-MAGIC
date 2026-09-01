@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ship, FileText, Settings, PlusCircle, RefreshCw, Building2, Receipt, Database, CloudCheck, CheckCircle2 } from 'lucide-react';
+import { Ship, FileText, Settings, RefreshCw, Building2, Receipt, Database, CheckCircle2 } from 'lucide-react';
 import { CompanyProfile } from '../types/logistics';
 
 interface NavbarProps {
@@ -32,26 +32,30 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenDataBackup,
 }) => {
   return (
-    <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-30 flex items-center justify-between px-4 sm:px-8 shadow-xs">
+    <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-30 flex items-center justify-between px-3 sm:px-6 lg:px-8 shadow-xs">
       
-      {/* Brand Title & Badge */}
-      <div className="flex items-center space-x-3">
-        <div className="w-10 h-10 bg-blue-700 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-sm">
+      {/* Brand Title & Company Badge */}
+      <div className="flex items-center space-x-3 min-w-0">
+        <div className="w-10 h-10 bg-blue-700 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0">
           <Ship className="w-5 h-5 text-white" />
         </div>
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center space-x-2">
-            <h1 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight uppercase">LOGISTICS QUOTATION PRO</h1>
-            <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] sm:text-xs font-bold rounded uppercase tracking-wider border border-blue-200">
+            <h1 className="text-sm sm:text-base lg:text-lg font-extrabold text-slate-900 tracking-tight uppercase truncate">
+              LOGISTICS QUOTATION PRO
+            </h1>
+            <span className="hidden sm:inline-block px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded uppercase tracking-wider border border-blue-200">
               v2.5 Master
             </span>
           </div>
-          <p className="text-[11px] text-slate-500 font-medium truncate max-w-xs sm:max-w-md">{company.name}</p>
+          <p className="text-[11px] text-slate-500 font-medium truncate max-w-[200px] sm:max-w-xs md:max-w-md">
+            {company.name}
+          </p>
         </div>
       </div>
 
       {/* Auto Save Indicator & Exchange Rate Quick Adjuster */}
-      <div className="hidden lg:flex items-center space-x-3">
+      <div className="hidden xl:flex items-center space-x-3">
         
         {/* Auto-Save Badge */}
         <div className="flex items-center space-x-1.5 bg-emerald-50/80 border border-emerald-200/90 text-emerald-900 px-3 py-1 rounded-full text-xs font-medium shadow-2xs">
@@ -79,45 +83,56 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Action Menu Buttons */}
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-1.5 sm:space-x-2">
         
-        {/* Backup & Sync Button */}
+        {/* Company Settings Button - Prominent */}
         <button
-          onClick={onOpenDataBackup}
-          className="flex items-center space-x-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs sm:text-sm font-semibold px-2.5 py-2 rounded-lg transition-colors"
-          title="Sao Lưu & Khôi Phục Dữ Liệu (Backup JSON for Vercel)"
+          onClick={onOpenCompanyProfile}
+          className="flex items-center space-x-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs sm:text-sm font-semibold px-2.5 sm:px-3 py-2 rounded-lg transition-colors shadow-2xs"
+          title="Quản lý thông tin doanh nghiệp (Công ty Forwarding)"
         >
-          <Database className="w-4 h-4 text-emerald-700" />
-          <span className="hidden xl:inline">Sao Lưu Dữ Liệu</span>
+          <Building2 className="w-4 h-4 text-blue-700" />
+          <span className="hidden md:inline">Thông Tin Công Ty</span>
         </button>
 
         {/* Customers CRM Button */}
         <button
           onClick={onOpenCustomers}
-          className="flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs sm:text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
+          className="flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs sm:text-sm font-semibold px-2.5 sm:px-3 py-2 rounded-lg transition-colors"
           title="Quản lý Data Khách Hàng (CRM)"
         >
-          <Building2 className="w-4 h-4 text-blue-700" />
-          <span className="hidden md:inline">Khách Hàng (CRM)</span>
+          <span className="hidden lg:inline">Khách Hàng</span>
+          <span className="lg:hidden">CRM</span>
         </button>
 
         {/* Surcharge Catalog Button */}
         <button
           onClick={onOpenSurchargeCatalog}
-          className="flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs sm:text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
+          className="flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs sm:text-sm font-semibold px-2.5 sm:px-3 py-2 rounded-lg transition-colors"
           title="Danh Mục Phụ Phí & Local Charges"
         >
           <Receipt className="w-4 h-4 text-amber-600" />
-          <span className="hidden md:inline">Danh Mục Phụ Phí</span>
+          <span className="hidden xl:inline">Danh Mục Phụ Phí</span>
+        </button>
+
+        {/* Backup & Sync Button */}
+        <button
+          onClick={onOpenDataBackup}
+          className="flex items-center space-x-1.5 bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-300 text-xs sm:text-sm font-semibold px-2.5 py-2 rounded-lg transition-colors"
+          title="Sao Lưu & Khôi Phục Dữ Liệu (Backup JSON)"
+        >
+          <Database className="w-4 h-4 text-emerald-700" />
+          <span className="hidden 2xl:inline">Sao Lưu</span>
         </button>
 
         {/* Saved Quotes List */}
         <button
           onClick={onOpenSavedQuotes}
-          className="relative flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs sm:text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
+          className="relative flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs sm:text-sm font-semibold px-2.5 sm:px-3 py-2 rounded-lg transition-colors"
+          title="Danh sách báo giá đã lưu"
         >
           <FileText className="w-4 h-4 text-blue-600" />
-          <span className="hidden lg:inline">Báo Giá Đã Lưu</span>
+          <span className="hidden md:inline">Báo Giá Đã Lưu</span>
           {savedCount > 0 && (
             <span className="bg-blue-600 text-white font-bold text-[10px] px-1.5 py-0.2 rounded-full min-w-[18px] text-center">
               {savedCount}
@@ -125,29 +140,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </button>
 
-        {/* Company Settings */}
-        <button
-          onClick={onOpenCompanyProfile}
-          className="p-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-lg border border-slate-300 transition-colors"
-          title="Cấu hình Công ty Forwarding"
-        >
-          <Settings className="w-4 h-4" />
-        </button>
-
         {/* New Quote */}
         <button
           onClick={onNewQuote}
-          className="flex items-center space-x-1.5 bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-lg shadow-2xs transition-colors"
+          className="flex items-center space-x-1.5 bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs sm:text-sm px-3 sm:px-3.5 py-2 rounded-lg shadow-2xs transition-colors"
+          title="Tạo báo giá mới"
         >
-          <PlusCircle className="w-4 h-4" />
-          <span className="hidden sm:inline">Tạo Báo Giá Mới</span>
+          <span>Tạo Báo Giá</span>
         </button>
 
       </div>
-
     </header>
   );
 };
-
-
-
