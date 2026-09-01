@@ -1,20 +1,63 @@
-import React, { useState, useEffect } from 'react';
-import { QuoteData, CompanyProfile, LineItem, CustomerInfo, ShipmentDetails, TermsAndConditions, QuoteStatus, CustomerRecord, SurchargeItem } from './types/logistics';
-import { DEFAULT_COMPANY_PROFILE, INITIAL_SAMPLE_QUOTE, DEFAULT_EXCHANGE_RATE } from './data/presets';
-import { calculateQuoteTotals, generateQuoteNumber, calculateLineItem } from './utils/formatters';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
-  getSavedQuotes, saveQuote, deleteQuote, cloneQuote, updateQuoteStatus, 
-  getCompanySettings, saveCompanySettings,
-  getSavedCustomers, saveCustomerRecord, deleteCustomerRecord,
-  getSavedSurcharges, saveSurchargeItem, deleteSurchargeItem,
-  saveActiveQuoteDraft, getActiveQuoteDraft
+  QuoteData, 
+  CompanyProfile, 
+  LineItem, 
+  CustomerInfo, 
+  ShipmentDetails, 
+  TermsAndConditions, 
+  QuoteStatus, 
+  CustomerRecord, 
+  SurchargeItem 
+} from './types/logistics';
+import { RateMasterItem, ChargeMasterItem, RateHistoryItem } from './types/masterRate';
+import { DEFAULT_COMPANY_PROFILE, INITIAL_SAMPLE_QUOTE, DEFAULT_EXCHANGE_RATE } from './data/presets';
+import { generateQuoteNumber, calculateLineItem } from './utils/formatters';
+import { calculateQuote } from './services/pricing';
+import { 
+  convertRateToLineItemSnapshot, 
+  checkQuoteForRateUpdates, 
+  applyLiveRateToLineItem 
+} from './services/masterRate/rateSnapshot';
+import { 
+  saveQuoteToFirestore, 
+  getQuotesFromFirestore, 
+  deleteQuoteFromFirestore,
+  saveCustomerToFirestore,
+  getCustomersFromFirestore,
+  deleteCustomerFromFirestore,
+  saveSurchargeToFirestore,
+  getSurchargesFromFirestore,
+  deleteSurchargeFromFirestore,
+  saveCompanyProfileToFirestore,
+  getCompanyProfileFromFirestore,
+  saveRateMasterToFirestore,
+  getRateMastersFromFirestore,
+  deleteRateMasterFromFirestore,
+  saveChargeMasterToFirestore,
+  getChargeMastersFromFirestore,
+  deleteChargeMasterFromFirestore,
+  getRateHistoriesFromFirestore
+} from './services/firebase/firestoreService';
+import { 
+  getSavedQuotes, 
+  getCompanySettings, 
+  getSavedCustomers, 
+  getSavedSurcharges, 
+  getSavedRateMasters,
+  getSavedChargeMasters,
+  getSavedRateHistories,
+  saveActiveQuoteDraft, 
+  getActiveQuoteDraft, 
+  cloneQuote, 
+  updateQuoteStatus 
 } from './utils/storage';
 import { exportQuoteToPdf } from './utils/exportPdf';
 import { exportQuoteToExcel } from './utils/exportExcel';
 
 import { Navbar } from './components/Navbar';
+import { Sidebar } from './components/Sidebar';
 import { DashboardStats } from './components/DashboardStats';
-import { CompanyCard } from './components/CompanyCard';
 import { CustomerForm } from './components/CustomerForm';
 import { ShipmentForm } from './components/ShipmentForm';
 import { LineItemsTable } from './components/LineItemsTable';
@@ -26,23 +69,33 @@ import { SavedQuotesModal } from './components/SavedQuotesModal';
 import { CompanyProfileModal } from './components/CompanyProfileModal';
 import { CustomerManagerModal } from './components/CustomerManagerModal';
 import { SurchargeCatalogModal } from './components/SurchargeCatalogModal';
+import { MasterRateHubModal } from './components/MasterRateHubModal';
+import { RateSearchModal } from './components/RateSearchModal';
+import { SmartRateAssistantModal } from './components/SmartRateAssistantModal';
+import { RateComparisonModal } from './components/RateComparisonModal';
 import { DataBackupModal } from './components/DataBackupModal';
 
-import { Check, Ship, FileText, Settings, LayoutDashboard, Building2, Receipt, Database } from 'lucide-react';
+import { Check, Ship, ShieldCheck } from 'lucide-react';
 
 export default function App() {
   // Saved data states
   const [savedQuotes, setSavedQuotes] = useState<QuoteData[]>([]);
   const [company, setCompany] = useState<CompanyProfile>(DEFAULT_COMPANY_PROFILE);
-  const [quote, setQuote] = useState<QuoteData>(INITIAL_SAMPLE_QUOTE);
+  const [quote, setQuote] = useState<QuoteData>(() => {
+    const { calculatedQuote } = calculateQuote(INITIAL_SAMPLE_QUOTE);
+    return calculatedQuote;
+  });
   
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [surcharges, setSurcharges] = useState<SurchargeItem[]>([]);
+  const [rates, setRates] = useState<RateMasterItem[]>([]);
+  const [chargeMasters, setChargeMasters] = useState<ChargeMasterItem[]>([]);
+  const [rateHistories, setRateHistories] = useState<RateHistoryItem[]>([]);
 
   // Auto-Save Draft States
   const [lastAutoSaveTime, setLastAutoSaveTime] = useState<string | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const quoteRef = React.useRef(quote);
+  const quoteRef = useRef(quote);
 
   // Keep quoteRef in sync with latest quote state
   useEffect(() => {
@@ -56,36 +109,94 @@ export default function App() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isSavedOpen, setIsSavedOpen] = useState(false);
   const [isCompanyOpen, setIsCompanyOpen] = useState(false);
+  const [companyModalTab, setCompanyModalTab] = useState<'profile' | 'sales' | 'bank' | 'preview'>('profile');
   const [isCustomersOpen, setIsCustomersOpen] = useState(false);
   const [isSurchargesOpen, setIsSurchargesOpen] = useState(false);
+  const [isMasterRateHubOpen, setIsMasterRateHubOpen] = useState(false);
+  const [masterRateHubTab, setMasterRateHubTab] = useState<'RATES' | 'CHARGES' | 'AUDIT'>('RATES');
+  const [isRateSearchOpen, setIsRateSearchOpen] = useState(false);
+  const [isSmartAssistantOpen, setIsSmartAssistantOpen] = useState(false);
+  const [isComparisonModalOpen, setIsComparisonModalOpen] = useState(false);
   const [isDataBackupOpen, setIsDataBackupOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  // Mount Effect: Restore saved lists & active draft
+  // Compute live diffs between quote snapshots and master rates database
+  const outdatedRatesDiffs = useMemo(() => {
+    return checkQuoteForRateUpdates(quote.items, rates);
+  }, [quote.items, rates]);
+
+  const handleOpenCompanyProfile = (tab: 'profile' | 'sales' | 'bank' | 'preview' = 'profile') => {
+    setCompanyModalTab(tab);
+    setIsCompanyOpen(true);
+  };
+
+  const handleOpenMasterRateHub = (tab: 'RATES' | 'CHARGES' | 'AUDIT' = 'RATES') => {
+    setMasterRateHubTab(tab);
+    setIsMasterRateHubOpen(true);
+  };
+
+  // Mount Effect: Restore saved lists & active draft with Firestore Sync
   useEffect(() => {
-    const quotesList = getSavedQuotes();
-    setSavedQuotes(quotesList);
-
+    // 1. Initial Local Cache Load
+    setSavedQuotes(getSavedQuotes());
     const companySettings = getCompanySettings();
-    if (companySettings) {
-      setCompany(companySettings);
-    }
-
+    if (companySettings) setCompany(companySettings);
     setCustomers(getSavedCustomers());
     setSurcharges(getSavedSurcharges());
+    setRates(getSavedRateMasters());
+    setChargeMasters(getSavedChargeMasters());
+    setRateHistories(getSavedRateHistories());
 
-    // Restore active quote draft from localStorage if available
+    // Restore active quote draft from local draft if available
     const activeDraft = getActiveQuoteDraft();
     if (activeDraft.quote) {
-      setQuote(activeDraft.quote);
+      const { calculatedQuote } = calculateQuote(activeDraft.quote);
+      setQuote(calculatedQuote);
       if (activeDraft.savedAt) {
         setLastAutoSaveTime(activeDraft.savedAt);
       }
     }
+
+    // 2. Async Sync with Firebase Firestore
+    async function syncFirestoreData() {
+      try {
+        const [
+          cloudQuotes, 
+          cloudCustomers, 
+          cloudSurcharges, 
+          cloudCompany,
+          cloudRates,
+          cloudChargeMasters,
+          cloudHistories
+        ] = await Promise.all([
+          getQuotesFromFirestore(),
+          getCustomersFromFirestore(),
+          getSurchargesFromFirestore(),
+          getCompanyProfileFromFirestore(),
+          getRateMastersFromFirestore(),
+          getChargeMastersFromFirestore(),
+          getRateHistoriesFromFirestore(),
+        ]);
+
+        if (cloudQuotes && cloudQuotes.length > 0) setSavedQuotes(cloudQuotes);
+        if (cloudCustomers && cloudCustomers.length > 0) setCustomers(cloudCustomers);
+        if (cloudSurcharges && cloudSurcharges.length > 0) setSurcharges(cloudSurcharges);
+        if (cloudCompany) {
+          setCompany(cloudCompany);
+        }
+        if (cloudRates && cloudRates.length > 0) setRates(cloudRates);
+        if (cloudChargeMasters && cloudChargeMasters.length > 0) setChargeMasters(cloudChargeMasters);
+        if (cloudHistories && cloudHistories.length > 0) setRateHistories(cloudHistories);
+      } catch (err) {
+        console.warn('Firestore initial background sync notice:', err);
+      }
+    }
+
+    syncFirestoreData();
   }, []);
 
   // 30-Second Auto-Save Interval Effect
   useEffect(() => {
-    // Initial save tick if timestamp not set
     const initialTime = saveActiveQuoteDraft(quoteRef.current);
     if (initialTime) setLastAutoSaveTime(initialTime);
 
@@ -95,7 +206,7 @@ export default function App() {
       if (savedTime) {
         setLastAutoSaveTime(savedTime);
       }
-      setTimeout(() => setIsAutoSaving(false), 800);
+      setTimeout(() => setIsAutoSaving(false), 600);
     }, 30000);
 
     return () => clearInterval(autoSaveTimer);
@@ -106,24 +217,23 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Helper to re-compute totals and update active quote state
+  // Helper to re-compute totals through the Logistics Pricing Engine
   const updateQuoteState = (partialQuote: Partial<QuoteData>) => {
     setQuote((prev) => {
-      const merged = { ...prev, ...partialQuote };
-      const totals = calculateQuoteTotals(merged.items, merged.exchangeRate);
-      return {
-        ...merged,
-        ...totals,
+      const merged = { 
+        ...prev, 
+        ...partialQuote,
         updatedDate: new Date().toISOString().slice(0, 10),
       };
+      const { calculatedQuote } = calculateQuote(merged);
+      return calculatedQuote;
     });
   };
 
   // Exchange Rate change handler
   const handleExchangeRateChange = (rate: number) => {
     const validRate = rate > 0 ? rate : DEFAULT_EXCHANGE_RATE;
-    const recomputedItems = quote.items.map((item) => calculateLineItem(item, validRate));
-    updateQuoteState({ exchangeRate: validRate, items: recomputedItems });
+    updateQuoteState({ exchangeRate: validRate });
     showToast(`Đã cập nhật tỷ giá: 1 USD = ${validRate.toLocaleString('vi-VN')} VND`);
   };
 
@@ -150,49 +260,146 @@ export default function App() {
     showToast(`Đã chọn áp dụng khách hàng [${cust.code}] ${cust.companyName}`);
   };
 
-  // Customer Manager CRUD
-  const handleSaveCustomer = (cust: CustomerRecord) => {
-    const updated = saveCustomerRecord(cust);
+  // Customer Manager CRUD with Firestore
+  const handleSaveCustomer = async (cust: CustomerRecord) => {
+    await saveCustomerToFirestore(cust);
+    const updated = await getCustomersFromFirestore();
     setCustomers(updated);
     showToast(`Đã lưu dữ liệu khách hàng [${cust.code}] thành công!`);
   };
 
-  const handleDeleteCustomer = (id: string) => {
-    const updated = deleteCustomerRecord(id);
+  const handleDeleteCustomer = async (id: string) => {
+    await deleteCustomerFromFirestore(id);
+    const updated = await getCustomersFromFirestore();
     setCustomers(updated);
     showToast('Đã xóa thông tin khách hàng khỏi hệ thống!');
   };
 
-  // Surcharge Catalog CRUD & Selection
-  const handleSaveSurcharge = (item: SurchargeItem) => {
-    const updated = saveSurchargeItem(item);
+  // Surcharge Catalog CRUD with Firestore
+  const handleSaveSurcharge = async (item: SurchargeItem) => {
+    await saveSurchargeToFirestore(item);
+    const updated = await getSurchargesFromFirestore();
     setSurcharges(updated);
     showToast(`Đã lưu mã phụ phí [${item.code}] vào danh mục!`);
   };
 
-  const handleDeleteSurcharge = (id: string) => {
-    const updated = deleteSurchargeItem(id);
+  const handleDeleteSurcharge = async (id: string) => {
+    await deleteSurchargeFromFirestore(id);
+    const updated = await getSurchargesFromFirestore();
     setSurcharges(updated);
     showToast('Đã xóa mã phí khỏi danh mục master!');
   };
 
+  // Master Rate CRUD with Firestore & Audit Logging
+  const handleSaveRate = async (rate: RateMasterItem) => {
+    await saveRateMasterToFirestore(rate, company.salesRepName || 'Admin');
+    const [updatedRates, updatedHistories] = await Promise.all([
+      getRateMastersFromFirestore(),
+      getRateHistoriesFromFirestore()
+    ]);
+    setRates(updatedRates);
+    setRateHistories(updatedHistories);
+    showToast(`Đã lưu bảng giá [${rate.rateCode}] vào Master Rate Database!`);
+  };
+
+  const handleDeleteRate = async (id: string, softDelete: boolean = true) => {
+    await deleteRateMasterFromFirestore(id, softDelete);
+    const [updatedRates, updatedHistories] = await Promise.all([
+      getRateMastersFromFirestore(),
+      getRateHistoriesFromFirestore()
+    ]);
+    setRates(updatedRates);
+    setRateHistories(updatedHistories);
+    showToast('Đã cập nhật trạng thái bảng giá!');
+  };
+
+  // Charge Master CRUD with Firestore
+  const handleSaveCharge = async (charge: ChargeMasterItem) => {
+    await saveChargeMasterToFirestore(charge);
+    const updated = await getChargeMastersFromFirestore();
+    setChargeMasters(updated);
+    showToast(`Đã lưu phí chuẩn [${charge.chargeCode}] vào Charge Master!`);
+  };
+
+  const handleDeleteCharge = async (id: string) => {
+    await deleteChargeMasterFromFirestore(id);
+    const updated = await getChargeMastersFromFirestore();
+    setChargeMasters(updated);
+    showToast('Đã ngừng áp dụng mã phí chuẩn!');
+  };
+
+  // Bulk Import Master Rates
+  const handleBulkImportRates = async (importedRates: RateMasterItem[]) => {
+    for (const r of importedRates) {
+      await saveRateMasterToFirestore(r, company.salesRepName || 'Bulk Import');
+    }
+    const [updatedRates, updatedHistories] = await Promise.all([
+      getRateMastersFromFirestore(),
+      getRateHistoriesFromFirestore()
+    ]);
+    setRates(updatedRates);
+    setRateHistories(updatedHistories);
+    showToast(`Đã nhập thành công ${importedRates.length} bảng giá vào hệ thống!`);
+  };
+
+  // Apply Master Rate to Current Quote as an Immutable Snapshot
+  const handleSelectRateForQuote = (selectedRate: RateMasterItem) => {
+    const snapshotLineItem = convertRateToLineItemSnapshot(
+      selectedRate,
+      quote.shipment,
+      quote.exchangeRate
+    );
+    handleUpdateItems([...quote.items, snapshotLineItem]);
+    showToast(`Đã áp dụng bảng giá [${selectedRate.rateCode}] (Snapshot v${selectedRate.version}) vào báo giá!`);
+  };
+
+  // Bulk Apply Rates from Smart Assistant
+  const handleAddSmartRates = (selectedRates: RateMasterItem[]) => {
+    const newItems = selectedRates.map(r => 
+      convertRateToLineItemSnapshot(r, quote.shipment, quote.exchangeRate)
+    );
+    handleUpdateItems([...quote.items, ...newItems]);
+    showToast(`Đã thêm thành công ${newItems.length} bảng giá vào báo giá!`);
+  };
+
+  // Confirm Rate Updates from Rate Comparison Modal
+  const handleConfirmRateUpdates = (selectedLineItemIds: string[]) => {
+    const ratesMap = new Map<string, RateMasterItem>();
+    rates.forEach(r => ratesMap.set(r.id, r));
+
+    const updated = quote.items.map(item => {
+      if (selectedLineItemIds.includes(item.id) && item.rateId && ratesMap.has(item.rateId)) {
+        return applyLiveRateToLineItem(item, ratesMap.get(item.rateId)!, quote.shipment, quote.exchangeRate);
+      }
+      return item;
+    });
+
+    handleUpdateItems(updated);
+    showToast(`Đã cập nhật ${selectedLineItemIds.length} mục theo Master Rate mới nhất!`);
+  };
+
   const handleAddSurchargeToQuote = (surcharge: SurchargeItem) => {
     const unitPrice = surcharge.currency === 'USD' ? surcharge.priceUsd : surcharge.priceVnd;
+    const costPrice = Math.round(unitPrice * 0.8 * 100) / 100;
+    
     const rawItem: LineItem = {
       id: `item-${Date.now()}`,
       category: surcharge.category,
+      location: surcharge.location || 'POL',
       code: surcharge.code,
       description: surcharge.name,
+      basis: 'PER_CONTAINER',
       quantity: 1,
       unit: surcharge.unit,
       unitPrice: unitPrice,
+      costPrice: costPrice,
       currency: surcharge.currency,
       vatRate: surcharge.vatRate,
       amountUsd: 0,
       amountVnd: 0,
       note: '',
     };
-    const calculated = calculateLineItem(rawItem, quote.exchangeRate);
+    const calculated = calculateLineItem(rawItem, quote.exchangeRate, quote.shipment);
     handleUpdateItems([...quote.items, calculated]);
     showToast(`Đã thêm phụ phí [${surcharge.code}] vào báo giá hiện tại!`);
   };
@@ -229,10 +436,10 @@ export default function App() {
     });
   };
 
-  // Company Settings Save
-  const handleSaveCompanyProfile = (updatedCompany: CompanyProfile) => {
+  // Company Settings Save with Firestore
+  const handleSaveCompanyProfile = async (updatedCompany: CompanyProfile) => {
     setCompany(updatedCompany);
-    saveCompanySettings(updatedCompany);
+    await saveCompanyProfileToFirestore(updatedCompany);
     const bankStr = `${updatedCompany.bankName}\nSố TK: ${updatedCompany.bankAccountNo}\nChủ TK: ${updatedCompany.bankAccountHolder}${updatedCompany.bankSwiftCode ? `\nSWIFT Code: ${updatedCompany.bankSwiftCode}` : ''}`;
     updateQuoteState({
       company: updatedCompany,
@@ -241,7 +448,7 @@ export default function App() {
         bankAccountInfo: bankStr,
       },
     });
-    showToast('Đã lưu thông tin doanh nghiệp & cập nhật vào báo giá!');
+    showToast('Đã lưu thông tin doanh nghiệp & đồng bộ vào báo giá!');
   };
 
   // Import Backup Data Handler
@@ -264,7 +471,7 @@ export default function App() {
   // Create New Blank Quote
   const handleNewQuote = () => {
     const newRef = generateQuoteNumber();
-    const freshQuote: QuoteData = {
+    const rawFreshQuote: Partial<QuoteData> = {
       id: `quote-${Date.now()}`,
       quoteNumber: newRef,
       createdDate: new Date().toISOString().slice(0, 10),
@@ -297,31 +504,54 @@ export default function App() {
         {
           id: `item-${Date.now()}-1`,
           category: 'FREIGHT',
+          location: 'FREIGHT',
           code: 'OCEAN_FREIGHT',
           description: 'Cước vận tải đường biển (Ocean Freight)',
+          basis: 'PER_CONTAINER',
           quantity: 1,
           unit: "Container 40'HC",
           unitPrice: 1800,
+          costPrice: 1450,
           currency: 'USD',
           vatRate: 0,
-          amountUsd: 1800,
-          amountVnd: Math.round(1800 * quote.exchangeRate),
-          note: 'Trực tiếp không qua trung chuyển',
+          amountUsd: 0,
+          amountVnd: 0,
+          note: 'Direct service / Tuyến trực tiếp',
         },
         {
           id: `item-${Date.now()}-2`,
           category: 'LOCAL_CHARGE',
+          location: 'POL',
           code: 'THC',
           description: 'Phí xếp dỡ tại cảng (Terminal Handling Charge)',
+          basis: 'PER_CONTAINER',
           quantity: 1,
           unit: 'Container',
           unitPrice: 140,
+          costPrice: 110,
           currency: 'USD',
           vatRate: 8,
-          amountUsd: 140,
-          amountVnd: Math.round(140 * quote.exchangeRate),
-          note: 'Cảng bốc hàng',
+          amountUsd: 0,
+          amountVnd: 0,
+          note: 'Cảng bốc hàng (POL)',
         },
+        {
+          id: `item-${Date.now()}-3`,
+          category: 'LOCAL_CHARGE',
+          location: 'POL',
+          code: 'BL_FEE',
+          description: 'Phí phát hành vận đơn (Bill of Lading Fee)',
+          basis: 'PER_BL',
+          quantity: 1,
+          unit: 'Bill',
+          unitPrice: 1000000,
+          costPrice: 750000,
+          currency: 'VND',
+          vatRate: 8,
+          amountUsd: 0,
+          amountVnd: 0,
+          note: 'Vận đơn đường biển gốc',
+        }
       ],
       terms: {
         incoterm: 'FOB',
@@ -331,62 +561,71 @@ export default function App() {
         bankAccountInfo: `${company.bankName}\nSố TK (VND): ${company.bankAccountNo}\nChủ TK: ${company.bankAccountHolder}`,
       },
       company: company,
-      subtotalUsd: 1940,
-      subtotalVnd: Math.round(1940 * quote.exchangeRate),
-      vatTotalUsd: 11.2,
-      vatTotalVnd: Math.round(11.2 * quote.exchangeRate),
-      grandTotalUsd: 1951.2,
-      grandTotalVnd: Math.round(1951.2 * quote.exchangeRate),
     };
 
-    setQuote(freshQuote);
-    const savedTime = saveActiveQuoteDraft(freshQuote);
+    const { calculatedQuote } = calculateQuote(rawFreshQuote);
+    setQuote(calculatedQuote);
+    const savedTime = saveActiveQuoteDraft(calculatedQuote);
     if (savedTime) setLastAutoSaveTime(savedTime);
     showToast(`Đã tạo báo giá mới: ${newRef}`);
   };
 
-  // Save Quote Handler
-  const handleSaveQuoteAction = () => {
-    const updatedList = saveQuote(quote);
-    setSavedQuotes(updatedList);
-    const savedTime = saveActiveQuoteDraft(quote);
+  // Save Quote Handler with Firestore Sync
+  const handleSaveQuoteAction = async () => {
+    const { calculatedQuote } = calculateQuote(quote);
+    setQuote(calculatedQuote);
+    await saveQuoteToFirestore(calculatedQuote);
+    const updated = await getQuotesFromFirestore();
+    setSavedQuotes(updated);
+    const savedTime = saveActiveQuoteDraft(calculatedQuote);
     if (savedTime) setLastAutoSaveTime(savedTime);
-    showToast(`Đã lưu báo giá ${quote.quoteNumber} thành công!`);
+    showToast(`Đã lưu báo giá ${calculatedQuote.quoteNumber} thành công!`);
   };
 
   // Select Saved Quote
   const handleSelectQuote = (selected: QuoteData) => {
-    setQuote(selected);
-    const savedTime = saveActiveQuoteDraft(selected);
+    const { calculatedQuote } = calculateQuote(selected);
+    setQuote(calculatedQuote);
+    const savedTime = saveActiveQuoteDraft(calculatedQuote);
     if (savedTime) setLastAutoSaveTime(savedTime);
     showToast(`Đã tải báo giá ${selected.quoteNumber}`);
   };
 
   // Clone Saved Quote
-  const handleCloneQuote = (id: string) => {
+  const handleCloneQuote = async (id: string) => {
     const cloned = cloneQuote(id);
     if (cloned) {
-      setSavedQuotes(getSavedQuotes());
-      setQuote(cloned);
-      const savedTime = saveActiveQuoteDraft(cloned);
+      const { calculatedQuote } = calculateQuote(cloned);
+      await saveQuoteToFirestore(calculatedQuote);
+      const updated = await getQuotesFromFirestore();
+      setSavedQuotes(updated);
+      setQuote(calculatedQuote);
+      const savedTime = saveActiveQuoteDraft(calculatedQuote);
       if (savedTime) setLastAutoSaveTime(savedTime);
-      showToast(`Đã nhân bản thành báo giá mới: ${cloned.quoteNumber}`);
+      showToast(`Đã nhân bản thành báo giá mới: ${calculatedQuote.quoteNumber}`);
     }
   };
 
-  // Delete Saved Quote
-  const handleDeleteQuote = (id: string) => {
-    const updated = deleteQuote(id);
+  // Delete Saved Quote with Firestore
+  const handleDeleteQuote = async (id: string) => {
+    await deleteQuoteFromFirestore(id);
+    const updated = await getQuotesFromFirestore();
     setSavedQuotes(updated);
     showToast('Đã xóa báo giá khỏi danh sách!');
   };
 
-  // Update Status
-  const handleUpdateStatus = (id: string, status: QuoteStatus) => {
-    const updated = updateQuoteStatus(id, status);
-    setSavedQuotes(updated);
+  // Update Status with Firestore
+  const handleUpdateStatus = async (id: string, status: QuoteStatus) => {
+    updateQuoteStatus(id, status);
+    const target = savedQuotes.find(q => q.id === id);
+    if (target) {
+      const updatedQuote = { ...target, status };
+      await saveQuoteToFirestore(updatedQuote);
+    }
+    const updatedList = await getQuotesFromFirestore();
+    setSavedQuotes(updatedList);
     if (quote.id === id) {
-      setQuote({ ...quote, status });
+      setQuote(prev => ({ ...prev, status }));
     }
     showToast(`Đã cập nhật trạng thái báo giá thành ${status}`);
   };
@@ -396,73 +635,30 @@ export default function App() {
       
       <div className="flex flex-1">
         
-        {/* Left Dark Sidebar Dock */}
-        <aside className="w-16 bg-slate-900 border-r border-slate-800 flex flex-col justify-between py-4 items-center hidden sm:flex shrink-0">
-          
-          <div className="flex flex-col items-center gap-6">
-            {/* Top Logo Action */}
-            <button 
-              onClick={handleNewQuote}
-              className="w-10 h-10 bg-blue-700 hover:bg-blue-800 rounded-xl flex items-center justify-center text-white font-bold transition-colors shadow-2xs"
-              title="Tạo Báo Giá Mới"
-            >
-              <Ship className="w-5 h-5 text-white" />
-            </button>
-
-            {/* Navigation Icons */}
-            <nav className="flex flex-col gap-3">
-              <button 
-                onClick={() => setIsSavedOpen(false)} 
-                className="p-2.5 bg-blue-600/20 text-blue-400 rounded-xl hover:bg-blue-600/30 transition-colors"
-                title="Bảng Báo Giá Hiện Tại"
-              >
-                <LayoutDashboard className="w-5 h-5" />
-              </button>
-
-              <button 
-                onClick={() => setIsCustomersOpen(true)} 
-                className="p-2.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors"
-                title="Quản Lý Data Khách Hàng (CRM)"
-              >
-                <Building2 className="w-5 h-5" />
-              </button>
-
-              <button 
-                onClick={() => setIsSurchargesOpen(true)} 
-                className="p-2.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-xl transition-colors"
-                title="Danh Mục Phụ Phí Master"
-              >
-                <Receipt className="w-5 h-5" />
-              </button>
-
-              <button 
-                onClick={() => setIsSavedOpen(true)} 
-                className="p-2.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors relative"
-                title="Danh Sách Báo Giá Đã Lưu"
-              >
-                <FileText className="w-5 h-5" />
-                {savedQuotes.length > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full animate-ping" />
-                )}
-              </button>
-            </nav>
-          </div>
-
-          {/* Bottom Controls */}
-          <div className="flex flex-col items-center gap-3">
-            <button 
-              onClick={() => setIsCompanyOpen(true)} 
-              className="p-2.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors"
-              title="Cấu Hình Doanh Nghiệp"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
-            <div className="w-8 h-8 rounded-full bg-blue-900 border border-blue-700 flex items-center justify-center text-xs font-bold text-blue-200">
-              LQ
-            </div>
-          </div>
-
-        </aside>
+        {/* Left Sidebar containing Directory Folders and Navigation */}
+        <Sidebar
+          company={quote.company || company}
+          savedQuotes={savedQuotes}
+          customersCount={customers.length}
+          surchargesCount={surcharges.length}
+          rateMastersCount={rates.length}
+          chargeMastersCount={chargeMasters.length}
+          exchangeRate={quote.exchangeRate}
+          lastAutoSaveTime={lastAutoSaveTime}
+          isAutoSaving={isAutoSaving}
+          isOpenMobile={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
+          onNewQuote={handleNewQuote}
+          onOpenSavedQuotes={() => setIsSavedOpen(true)}
+          onOpenCompanyProfile={handleOpenCompanyProfile}
+          onOpenCustomers={() => setIsCustomersOpen(true)}
+          onOpenSurchargeCatalog={() => setIsSurchargesOpen(true)}
+          onOpenMasterRateHub={handleOpenMasterRateHub}
+          onOpenRateSearch={() => setIsRateSearchOpen(true)}
+          onOpenSmartAssistant={() => setIsSmartAssistantOpen(true)}
+          onOpenDataBackup={() => setIsDataBackupOpen(true)}
+          onOpenPreview={() => setIsPreviewOpen(true)}
+        />
 
         {/* Right Main Application Workspace */}
         <div className="flex-1 flex flex-col min-w-0">
@@ -470,17 +666,12 @@ export default function App() {
           {/* Navbar */}
           <Navbar
             company={company}
-            savedCount={savedQuotes.length}
             exchangeRate={quote.exchangeRate}
             lastAutoSaveTime={lastAutoSaveTime}
             isAutoSaving={isAutoSaving}
+            onToggleSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
             onExchangeRateChange={handleExchangeRateChange}
             onNewQuote={handleNewQuote}
-            onOpenSavedQuotes={() => setIsSavedOpen(true)}
-            onOpenCompanyProfile={() => setIsCompanyOpen(true)}
-            onOpenCustomers={() => setIsCustomersOpen(true)}
-            onOpenSurchargeCatalog={() => setIsSurchargesOpen(true)}
-            onOpenDataBackup={() => setIsDataBackupOpen(true)}
           />
 
           {/* Main Content Area */}
@@ -496,12 +687,6 @@ export default function App() {
 
             {/* Dashboard Stats Bar */}
             <DashboardStats quotes={savedQuotes} />
-
-            {/* Forwarder Company Information Card */}
-            <CompanyCard
-              company={quote.company || company}
-              onOpenCompanyProfile={() => setIsCompanyOpen(true)}
-            />
 
             {/* Top Section: Customer Info & Shipment Route Forms Side-by-Side */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -523,13 +708,17 @@ export default function App() {
               />
             </div>
 
-            {/* Full-Width Section: Line Items Table */}
+            {/* Full-Width Section: Line Items Table (Pricing Engine Integration) */}
             <div className="w-full">
               <LineItemsTable
                 items={quote.items}
                 exchangeRate={quote.exchangeRate}
                 onUpdateItems={handleUpdateItems}
                 onOpenSurchargeCatalog={() => setIsSurchargesOpen(true)}
+                onOpenRateSearch={() => setIsRateSearchOpen(true)}
+                onOpenSmartAssistant={() => setIsSmartAssistantOpen(true)}
+                onCheckRateUpdates={() => setIsComparisonModalOpen(true)}
+                outdatedRatesCount={outdatedRatesDiffs.length}
               />
             </div>
 
@@ -556,15 +745,15 @@ export default function App() {
             <div className="flex items-center space-x-4">
               <span>Ex.Rate: 1 USD = {quote.exchangeRate.toLocaleString()} VND</span>
               <span className="hidden md:inline text-slate-700">|</span>
-              <span className="hidden md:inline">LogiQuote Pro Engine</span>
+              <span className="hidden md:inline text-cyan-400">Pricing Engine Active</span>
             </div>
             <div className="flex items-center space-x-2">
               <span className="flex items-center gap-1.5 font-bold text-emerald-400">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                System Online
+                Firestore Synced
               </span>
               <span className="hidden sm:inline text-slate-700">|</span>
-              <span className="hidden sm:inline">Forwarding Logistics Management</span>
+              <span className="hidden sm:inline">Logistics Freight Management</span>
             </div>
           </footer>
 
@@ -598,6 +787,57 @@ export default function App() {
         onAddSurchargeToQuote={handleAddSurchargeToQuote}
       />
 
+      <MasterRateHubModal
+        isOpen={isMasterRateHubOpen}
+        onClose={() => setIsMasterRateHubOpen(false)}
+        initialTab={masterRateHubTab}
+        rates={rates}
+        charges={chargeMasters}
+        histories={rateHistories}
+        exchangeRate={quote.exchangeRate}
+        currentUser={company.salesRepName || 'Pricing Manager'}
+        onSaveRate={handleSaveRate}
+        onDeleteRate={handleDeleteRate}
+        onSaveCharge={handleSaveCharge}
+        onDeleteCharge={handleDeleteCharge}
+        onBulkImportRates={handleBulkImportRates}
+        onSelectRateForQuote={handleSelectRateForQuote}
+      />
+
+      <RateSearchModal
+        isOpen={isRateSearchOpen}
+        onClose={() => setIsRateSearchOpen(false)}
+        rates={rates}
+        exchangeRate={quote.exchangeRate}
+        shipment={quote.shipment}
+        onSelectRate={(selectedRate) => {
+          handleSelectRateForQuote(selectedRate);
+          setIsRateSearchOpen(false);
+        }}
+      />
+
+      <SmartRateAssistantModal
+        isOpen={isSmartAssistantOpen}
+        onClose={() => setIsSmartAssistantOpen(false)}
+        shipment={quote.shipment}
+        customer={quote.customer}
+        rates={rates}
+        exchangeRate={quote.exchangeRate}
+        existingItemRateIds={quote.items.map(i => i.rateId).filter(Boolean) as string[]}
+        onAddSelectedRates={handleAddSmartRates}
+        onAddSingleRate={handleSelectRateForQuote}
+        onOpenManualAdd={() => {
+          setIsSmartAssistantOpen(false);
+        }}
+      />
+
+      <RateComparisonModal
+        isOpen={isComparisonModalOpen}
+        onClose={() => setIsComparisonModalOpen(false)}
+        diffs={outdatedRatesDiffs}
+        onConfirmUpdate={handleConfirmRateUpdates}
+      />
+
       <SavedQuotesModal
         quotes={savedQuotes}
         isOpen={isSavedOpen}
@@ -611,6 +851,7 @@ export default function App() {
       <CompanyProfileModal
         company={company}
         isOpen={isCompanyOpen}
+        initialTab={companyModalTab}
         onClose={() => setIsCompanyOpen(false)}
         onSaveCompany={handleSaveCompanyProfile}
       />

@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Default rule for application collections
+    // Quotes collection: Read, Write for authenticated users (or public for demo with validation)
+    match /quotes/{quoteId} {
+      allow read, write: if true;
+    }
+
+    // Customers directory
+    match /customers/{customerId} {
+      allow read, write: if true;
+    }
+
+    // Surcharges catalog
+    match /surcharges/{surchargeId} {
+      allow read, write: if true;
+    }
+
+    // Company Settings
+    match /settings/{settingId} {
+      allow read, write: if true;
+    }
+
+    // Logistics Master Rates
+    match /rateMasters/{rateId} {
+      allow read, write: if true;
+    }
+
+    // Master Charges (Standard Charge Codes)
+    match /chargeMasters/{chargeId} {
+      allow read, write: if true;
+    }
+
+    // Master Rate Audit Histories
+    match /rateHistories/{historyId} {
+      allow read, write: if true;
+    }
+  }
+}

@@ -5,6 +5,7 @@ import { Building2, X, Save, CreditCard, UserCheck, ShieldCheck, Eye, Sparkles, 
 interface CompanyProfileModalProps {
   company: CompanyProfile;
   isOpen: boolean;
+  initialTab?: 'profile' | 'sales' | 'bank' | 'preview';
   onClose: () => void;
   onSaveCompany: (updated: CompanyProfile) => void;
 }
@@ -78,6 +79,7 @@ const PRESET_COMPANIES: { title: string; profile: CompanyProfile }[] = [
 export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
   company,
   isOpen,
+  initialTab = 'profile',
   onClose,
   onSaveCompany
 }) => {
@@ -87,8 +89,11 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setFormData({ ...company });
+      if (initialTab) {
+        setActiveTab(initialTab);
+      }
     }
-  }, [isOpen, company]);
+  }, [isOpen, company, initialTab]);
 
   useEffect(() => {
     if (!isOpen) return;

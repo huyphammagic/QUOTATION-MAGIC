@@ -1,4 +1,5 @@
 import { QuoteData, CustomerRecord, SurchargeItem } from '../types/logistics';
+import { RateMasterItem, ChargeMasterItem, RateHistoryItem } from '../types/masterRate';
 import { INITIAL_SAMPLE_QUOTE, INITIAL_CUSTOMERS, INITIAL_SURCHARGE_CATALOG } from '../data/presets';
 import { generateQuoteNumber } from './formatters';
 
@@ -6,6 +7,9 @@ const STORAGE_KEY = 'LOGISTICS_SAVED_QUOTES_V1';
 const SETTINGS_KEY = 'LOGISTICS_COMPANY_SETTINGS_V1';
 const CUSTOMERS_KEY = 'LOGISTICS_CUSTOMERS_V1';
 const SURCHARGES_KEY = 'LOGISTICS_SURCHARGES_CATALOG_V1';
+const RATE_MASTERS_KEY = 'LOGISTICS_RATE_MASTERS_V1';
+const CHARGE_MASTERS_KEY = 'LOGISTICS_CHARGE_MASTERS_V1';
+const RATE_HISTORIES_KEY = 'LOGISTICS_RATE_HISTORIES_V1';
 
 export function getSavedQuotes(): QuoteData[] {
   try {
@@ -160,6 +164,118 @@ export function deleteSurchargeItem(id: string): SurchargeItem[] {
   return filtered;
 }
 
+// ================= MASTER RATES STORAGE =================
+export function getSavedRateMasters(): RateMasterItem[] {
+  try {
+    const raw = localStorage.getItem(RATE_MASTERS_KEY);
+    if (!raw) {
+      return [];
+    }
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error('Error loading master rates', e);
+    return [];
+  }
+}
+
+export function saveRateMasterItem(rate: RateMasterItem): RateMasterItem[] {
+  const existing = getSavedRateMasters();
+  const index = existing.findIndex((r) => r.id === rate.id);
+  const updatedRate = {
+    ...rate,
+    updatedAt: new Date().toISOString().slice(0, 10),
+  };
+
+  if (index >= 0) {
+    existing[index] = updatedRate;
+  } else {
+    existing.unshift(updatedRate);
+  }
+  localStorage.setItem(RATE_MASTERS_KEY, JSON.stringify(existing));
+  return existing;
+}
+
+export function deleteRateMasterItem(id: string, softDelete: boolean = true): RateMasterItem[] {
+  const existing = getSavedRateMasters();
+  if (softDelete) {
+    // Soft delete: mark INACTIVE
+    const target = existing.find(r => r.id === id);
+    if (target) {
+      target.status = 'INACTIVE';
+      target.updatedAt = new Date().toISOString().slice(0, 10);
+      localStorage.setItem(RATE_MASTERS_KEY, JSON.stringify(existing));
+    }
+    return existing;
+  } else {
+    const filtered = existing.filter((r) => r.id !== id);
+    localStorage.setItem(RATE_MASTERS_KEY, JSON.stringify(filtered));
+    return filtered;
+  }
+}
+
+// ================= CHARGE MASTERS STORAGE =================
+export function getSavedChargeMasters(): ChargeMasterItem[] {
+  try {
+    const raw = localStorage.getItem(CHARGE_MASTERS_KEY);
+    if (!raw) {
+      return [];
+    }
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error('Error loading charge masters', e);
+    return [];
+  }
+}
+
+export function saveChargeMasterItem(charge: ChargeMasterItem): ChargeMasterItem[] {
+  const existing = getSavedChargeMasters();
+  const index = existing.findIndex((c) => c.id === charge.id || c.chargeCode === charge.chargeCode);
+  const updatedCharge = {
+    ...charge,
+    updatedAt: new Date().toISOString().slice(0, 10),
+  };
+
+  if (index >= 0) {
+    existing[index] = updatedCharge;
+  } else {
+    existing.unshift(updatedCharge);
+  }
+  localStorage.setItem(CHARGE_MASTERS_KEY, JSON.stringify(existing));
+  return existing;
+}
+
+export function deleteChargeMasterItem(id: string): ChargeMasterItem[] {
+  const existing = getSavedChargeMasters();
+  const target = existing.find(c => c.id === id);
+  if (target) {
+    target.status = 'INACTIVE';
+    target.updatedAt = new Date().toISOString().slice(0, 10);
+    localStorage.setItem(CHARGE_MASTERS_KEY, JSON.stringify(existing));
+  }
+  return existing;
+}
+
+// ================= RATE HISTORIES / AUDIT STORAGE =================
+export function getSavedRateHistories(): RateHistoryItem[] {
+  try {
+    const raw = localStorage.getItem(RATE_HISTORIES_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error('Error loading rate histories', e);
+    return [];
+  }
+}
+
+export function addRateHistoryItem(history: RateHistoryItem): RateHistoryItem[] {
+  const existing = getSavedRateHistories();
+  existing.unshift(history);
+  // Keep last 500 audit entries
+  const trimmed = existing.slice(0, 500);
+  localStorage.setItem(RATE_HISTORIES_KEY, JSON.stringify(trimmed));
+  return trimmed;
+}
+
 // ================= FULL BACKUP & RESTORE DATA =================
 export interface SystemBackupData {
   version: string;
@@ -168,6 +284,9 @@ export interface SystemBackupData {
   companySettings: any;
   customers: CustomerRecord[];
   surcharges: SurchargeItem[];
+  rateMasters?: RateMasterItem[];
+  chargeMasters?: ChargeMasterItem[];
+  rateHistories?: RateHistoryItem[];
 }
 
 // ================= ACTIVE DRAFT AUTO-SAVE STORAGE =================
@@ -210,6 +329,16 @@ export function getActiveQuoteDraft(): { quote: QuoteData | null; savedAt: strin
 export function clearActiveQuoteDraft() {
   localStorage.removeItem(DRAFT_KEY);
 }
+
+// Aliases for unified terminology across Firestore sync service
+export const loadSavedQuotes = getSavedQuotes;
+export const saveQuotesList = (quotes: QuoteData[]) => localStorage.setItem(STORAGE_KEY, JSON.stringify(quotes));
+export const loadSavedCustomers = getSavedCustomers;
+export const saveCustomersList = (customers: CustomerRecord[]) => localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
+export const loadSavedSurcharges = getSavedSurcharges;
+export const saveSurchargesList = (surcharges: SurchargeItem[]) => localStorage.setItem(SURCHARGES_KEY, JSON.stringify(surcharges));
+export const loadCompanyProfile = getCompanySettings;
+export const saveCompanyProfile = saveCompanySettings;
 
 export function exportAllSystemData(): SystemBackupData {
   return {

@@ -42,20 +42,83 @@ export type QuoteStatus = 'DRAFT' | 'SENT' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED'
 
 export type IncotermCode = 'FOB' | 'CIF' | 'EXW' | 'DDP' | 'DAP' | 'CFR' | 'FCA' | 'CPT' | 'CIP' | 'DPU';
 
+export type ChargeBasis = 
+  | 'PER_SHIPMENT'
+  | 'PER_CONTAINER'
+  | 'PER_BL'
+  | 'PER_DOCUMENT'
+  | 'PER_TRUCK'
+  | 'PER_TRIP'
+  | 'PER_KG'
+  | 'PER_CHARGEABLE_KG'
+  | 'PER_CBM'
+  | 'PER_WM'
+  | 'PER_PACKAGE'
+  | 'PER_PALLET'
+  | 'PER_CARTON'
+  | 'PER_UNIT'
+  | 'PERCENTAGE'
+  | 'FIXED';
+
+export type PercentageBase = 
+  | 'FREIGHT' 
+  | 'OCEAN_FREIGHT' 
+  | 'AIR_FREIGHT' 
+  | 'TOTAL_ORIGIN' 
+  | 'TOTAL_DESTINATION' 
+  | 'SUBTOTAL' 
+  | 'CUSTOMS' 
+  | 'TRUCKING';
+
 export interface LineItem {
   id: string;
   category: FeeCategory;
   location?: ChargeLocation; // POL (Đầu xuất), FREIGHT (Chặng chính), POD (Đầu nhập), OTHER (Khác)
   code: string;           // E.g. THC, BL, Ocean Freight, BAF
   description: string;    // E.g. Terminal Handling Charge tại Cảng Cát Lái
+  basis?: ChargeBasis;    // E.g. PER_CONTAINER, PER_BL, PER_WM, etc.
+  percentageBase?: PercentageBase;
+  percentageRate?: number;
   quantity: number;
   unit: string;           // Container, Bill, Set, CBM, KGS, Trip, Shipment
-  unitPrice: number;      // Price per unit
+  unitPrice: number;      // Selling price per unit
+  costPrice?: number;     // Cost price per unit (Giá vốn)
   currency: Currency;     // USD or VND
   vatRate: number;        // Percentage: 0, 5, 8, 10
-  amountUsd: number;      // Calculated total in USD
-  amountVnd: number;      // Calculated total in VND
+  vatAmountUsd?: number;  // Computed VAT in USD
+  vatAmountVnd?: number;  // Computed VAT in VND
+  amountUsd: number;      // Calculated total selling in USD (before VAT)
+  amountVnd: number;      // Calculated total selling in VND (before VAT)
+  totalWithVatUsd?: number; // Total selling + VAT (USD)
+  totalWithVatVnd?: number; // Total selling + VAT (VND)
+  costTotalUsd?: number;  // Total cost in USD
+  costTotalVnd?: number;  // Total cost in VND
+  profitUsd?: number;     // amountUsd - costTotalUsd
+  profitVnd?: number;     // amountVnd - costTotalVnd
+  marginPercent?: number; // (profit / amount) * 100
   note?: string;
+
+  // Master Rate Snapshot Preservation Fields
+  rateId?: string;
+  rateCode?: string;
+  rateVersion?: number;
+  carrier?: string;
+  origin?: string;
+  destination?: string;
+  effectiveFrom?: string;
+  effectiveTo?: string;
+  minimumAmount?: number; // Minimum charge rule (e.g. Min $100)
+  maximumAmount?: number; // Maximum charge rule if set
+  transitTime?: string;
+  freeTime?: string;
+
+  // Manual Override Tracking Fields (Phase C)
+  isOverridden?: boolean;
+  originalUnitPrice?: number;
+  originalCostPrice?: number;
+  overrideReason?: string;
+  overriddenAt?: string;
+  overriddenBy?: string;
 }
 
 export interface CustomerRecord extends CustomerInfo {
@@ -148,11 +211,17 @@ export interface QuoteData {
   items: LineItem[];
   terms: TermsAndConditions;
   company: CompanyProfile;
-  // Computed summaries
+  // Computed summaries (Selling)
   subtotalUsd: number;
   subtotalVnd: number;
   vatTotalUsd: number;
   vatTotalVnd: number;
   grandTotalUsd: number;
   grandTotalVnd: number;
+  // Computed cost & profitability
+  totalCostUsd?: number;
+  totalCostVnd?: number;
+  totalProfitUsd?: number;
+  totalProfitVnd?: number;
+  overallMarginPercent?: number;
 }
