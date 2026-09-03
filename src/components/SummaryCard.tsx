@@ -1,20 +1,22 @@
 import React from 'react';
-import { QuoteData } from '../types/logistics';
+import { QuoteData, QuoteCurrency } from '../types/logistics';
 import { formatUSD, formatVND, formatPercent } from '../utils/formatters';
-import { FileDown, FileSpreadsheet, Save, Eye, Calculator, RefreshCw, TrendingUp, DollarSign, ShieldCheck } from 'lucide-react';
+import { FileDown, FileSpreadsheet, Save, Eye, Calculator, RefreshCw, TrendingUp, DollarSign, ShieldCheck, Coins } from 'lucide-react';
 
 interface SummaryCardProps {
   quote: QuoteData;
   onExchangeRateChange: (rate: number) => void;
+  onCurrencyChange?: (currency: QuoteCurrency) => void;
   onSaveQuote: () => void;
-  onExportPdf: () => void;
-  onExportExcel: () => void;
+  onExportPdf: (currency?: QuoteCurrency) => void;
+  onExportExcel: (currency?: QuoteCurrency) => void;
   onOpenPreview: () => void;
 }
 
 export const SummaryCard: React.FC<SummaryCardProps> = ({
   quote,
   onExchangeRateChange,
+  onCurrencyChange,
   onSaveQuote,
   onExportPdf,
   onExportExcel,
@@ -22,26 +24,63 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
 }) => {
   const margin = quote.overallMarginPercent || 0;
   const isHealthyMargin = margin >= 15;
+  const activeCurrency: QuoteCurrency = quote.quoteCurrency || 'USD';
+  const isVnd = activeCurrency === 'VND';
 
   return (
     <div id="summary-card" className="bg-slate-900 text-white p-5 lg:p-6 rounded-2xl shadow-xl border border-slate-800 space-y-4">
       
-      {/* Top Header Row: Title & Rate */}
+      {/* Top Header Row: Title, Currency Switcher & Rate */}
       <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 gap-3">
         <div className="flex items-center space-x-2 text-cyan-400 font-bold text-xs uppercase tracking-widest">
           <Calculator className="w-4 h-4" />
           <span>TỔNG HỢP CHI PHÍ & LỢI NHUẬN (PRICING BREAKDOWN)</span>
         </div>
         
-        <div className="flex items-center space-x-2 text-xs text-slate-300 font-mono bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
-          <RefreshCw className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Tỷ giá (USD/VND):</span>
-          <input
-            type="number"
-            value={quote.exchangeRate}
-            onChange={(e) => onExchangeRateChange(Number(e.target.value) || 25400)}
-            className="w-28 bg-slate-900 text-cyan-300 font-mono font-bold text-right px-2 py-0.5 rounded border border-slate-700 text-xs focus:outline-none focus:border-cyan-500"
-          />
+        <div className="flex flex-wrap items-center gap-3">
+          {/* File Currency Presentation Selector */}
+          <div className="flex items-center space-x-1.5 bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800">
+            <Coins className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="text-[11px] font-semibold text-slate-400">Đồng tiền file báo giá:</span>
+            <div className="flex items-center bg-slate-900 p-0.5 rounded-lg border border-slate-700">
+              <button
+                type="button"
+                onClick={() => onCurrencyChange?.('USD')}
+                className={`px-2.5 py-0.5 rounded text-xs font-bold transition-all ${
+                  !isVnd
+                    ? 'bg-cyan-500 text-slate-950 shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Báo giá sẽ hiển thị đơn vị chính là USD"
+              >
+                $ USD
+              </button>
+              <button
+                type="button"
+                onClick={() => onCurrencyChange?.('VND')}
+                className={`px-2.5 py-0.5 rounded text-xs font-bold transition-all ${
+                  isVnd
+                    ? 'bg-emerald-500 text-slate-950 shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Báo giá sẽ hiển thị đơn vị chính là VNĐ"
+              >
+                ₫ VNĐ
+              </button>
+            </div>
+          </div>
+
+          {/* Exchange Rate Input */}
+          <div className="flex items-center space-x-2 text-xs text-slate-300 font-mono bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+            <RefreshCw className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Tỷ giá (USD/VND):</span>
+            <input
+              type="number"
+              value={quote.exchangeRate}
+              onChange={(e) => onExchangeRateChange(Number(e.target.value) || 25400)}
+              className="w-28 bg-slate-900 text-cyan-300 font-mono font-bold text-right px-2 py-0.5 rounded border border-slate-700 text-xs focus:outline-none focus:border-cyan-500"
+            />
+          </div>
         </div>
       </div>
 
@@ -54,15 +93,23 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
           {/* 1. Doanh thu (Subtotal) */}
           <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
             <span className="text-slate-400 font-medium text-[11px] block">Doanh Thu (Subtotal):</span>
-            <div className="font-bold text-slate-100 text-sm font-mono mt-0.5">{formatUSD(quote.subtotalUsd)}</div>
-            <div className="text-[10px] text-slate-400 font-mono">{formatVND(quote.subtotalVnd)}</div>
+            <div className="font-bold text-slate-100 text-sm font-mono mt-0.5">
+              {isVnd ? formatVND(quote.subtotalVnd) : formatUSD(quote.subtotalUsd)}
+            </div>
+            <div className="text-[10px] text-slate-400 font-mono">
+              {isVnd ? `~ ${formatUSD(quote.subtotalUsd)}` : `~ ${formatVND(quote.subtotalVnd)}`}
+            </div>
           </div>
 
           {/* 2. Giá vốn (Cost) */}
           <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
             <span className="text-amber-400/90 font-medium text-[11px] block">Giá Vốn (Total Cost):</span>
-            <div className="font-bold text-amber-200 text-sm font-mono mt-0.5">{formatUSD(quote.totalCostUsd || 0)}</div>
-            <div className="text-[10px] text-amber-400/70 font-mono">{formatVND(quote.totalCostVnd || 0)}</div>
+            <div className="font-bold text-amber-200 text-sm font-mono mt-0.5">
+              {isVnd ? formatVND(quote.totalCostVnd || 0) : formatUSD(quote.totalCostUsd || 0)}
+            </div>
+            <div className="text-[10px] text-amber-400/70 font-mono">
+              {isVnd ? `~ ${formatUSD(quote.totalCostUsd || 0)}` : `~ ${formatVND(quote.totalCostVnd || 0)}`}
+            </div>
           </div>
 
           {/* 3. Lợi Nhuận Gộp (Profit) */}
@@ -71,8 +118,12 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
               <span className="text-emerald-400 font-medium text-[11px]">Lợi Nhuận (Profit):</span>
               <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
             </div>
-            <div className="font-bold text-emerald-300 text-sm font-mono mt-0.5">+{formatUSD(quote.totalProfitUsd || 0)}</div>
-            <div className="text-[10px] text-emerald-400/70 font-mono">+{formatVND(quote.totalProfitVnd || 0)}</div>
+            <div className="font-bold text-emerald-300 text-sm font-mono mt-0.5">
+              +{isVnd ? formatVND(quote.totalProfitVnd || 0) : formatUSD(quote.totalProfitUsd || 0)}
+            </div>
+            <div className="text-[10px] text-emerald-400/70 font-mono">
+              {isVnd ? `~ +${formatUSD(quote.totalProfitUsd || 0)}` : `~ +${formatVND(quote.totalProfitVnd || 0)}`}
+            </div>
           </div>
 
           {/* 4. Margin % & VAT */}
@@ -87,23 +138,31 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
             </div>
             <div className="text-right font-mono mt-1">
               <span className="text-slate-400 text-[10px]">VAT: </span>
-              <span className="font-bold text-slate-300 text-xs">{formatUSD(quote.vatTotalUsd)}</span>
+              <span className="font-bold text-slate-300 text-xs">
+                {isVnd ? formatVND(quote.vatTotalVnd) : formatUSD(quote.vatTotalUsd)}
+              </span>
             </div>
           </div>
 
         </div>
 
         {/* Center 4 Cols: Grand Total Highlight Card */}
-        <div className="lg:col-span-4 bg-gradient-to-br from-slate-950 to-cyan-950/60 p-5 rounded-2xl border border-cyan-800/60 flex flex-col justify-center space-y-1.5 text-center shadow-lg">
-          <div className="text-[11px] uppercase tracking-widest font-bold text-cyan-400 flex items-center justify-center space-x-1.5">
-            <ShieldCheck className="w-4 h-4 text-cyan-400" />
-            <span>TỔNG CỘNG THANH TOÁN (GRAND TOTAL)</span>
+        <div className={`lg:col-span-4 p-5 rounded-2xl border flex flex-col justify-center space-y-1.5 text-center shadow-lg transition-all ${
+          isVnd 
+            ? 'bg-gradient-to-br from-slate-950 to-emerald-950/60 border-emerald-700/60' 
+            : 'bg-gradient-to-br from-slate-950 to-cyan-950/60 border-cyan-800/60'
+        }`}>
+          <div className={`text-[11px] uppercase tracking-widest font-bold flex items-center justify-center space-x-1.5 ${
+            isVnd ? 'text-emerald-400' : 'text-cyan-400'
+          }`}>
+            <ShieldCheck className="w-4 h-4" />
+            <span>TỔNG CỘNG ({isVnd ? 'VNĐ' : 'USD'})</span>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight">
-            {formatUSD(quote.grandTotalUsd)}
+            {isVnd ? formatVND(quote.grandTotalVnd) : formatUSD(quote.grandTotalUsd)}
           </div>
-          <div className="text-xs font-bold text-emerald-400 font-mono">
-            ≈ {formatVND(quote.grandTotalVnd)}
+          <div className={`text-xs font-bold font-mono ${isVnd ? 'text-cyan-400' : 'text-emerald-400'}`}>
+            ≈ {isVnd ? formatUSD(quote.grandTotalUsd) : formatVND(quote.grandTotalVnd)}
           </div>
         </div>
 
@@ -122,24 +181,26 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
             className="w-full flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs py-2 px-3 rounded-xl border border-slate-700 transition-colors"
           >
             <Eye className="w-4 h-4 text-cyan-400" />
-            <span>Xem Trước Form A4 Chuẩn In</span>
+            <span>Xem Trước Form ({activeCurrency})</span>
           </button>
 
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={onExportPdf}
-              className="flex items-center justify-center space-x-1.5 bg-rose-800 hover:bg-rose-700 text-white text-xs font-semibold py-2 px-2 rounded-xl transition-colors"
+              onClick={() => onExportPdf(activeCurrency)}
+              className="flex items-center justify-center space-x-1.5 bg-rose-800 hover:bg-rose-700 text-white text-xs font-semibold py-2 px-2 rounded-xl transition-colors shadow-xs"
+              title={`Xuất file PDF với đồng tiền ${activeCurrency}`}
             >
               <FileDown className="w-3.5 h-3.5" />
-              <span>Xuất PDF</span>
+              <span>PDF ({activeCurrency})</span>
             </button>
 
             <button
-              onClick={onExportExcel}
-              className="flex items-center justify-center space-x-1.5 bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-semibold py-2 px-2 rounded-xl transition-colors"
+              onClick={() => onExportExcel(activeCurrency)}
+              className="flex items-center justify-center space-x-1.5 bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-semibold py-2 px-2 rounded-xl transition-colors shadow-xs"
+              title={`Xuất file Excel với đồng tiền ${activeCurrency}`}
             >
               <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>Xuất Excel</span>
+              <span>Excel ({activeCurrency})</span>
             </button>
           </div>
         </div>

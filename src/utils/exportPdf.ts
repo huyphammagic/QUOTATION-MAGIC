@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { QuoteData } from '../types/logistics';
-import { formatUSD, formatVND, formatNumber, formatExchangeRate } from './formatters';
+import { formatUSD, formatVND, formatNumberVND, formatNumber, formatExchangeRate } from './formatters';
 
 // Helper to remove Vietnamese diacritics and non-ASCII characters for clean PDF rendering
 export function removeVietnameseTones(str: string): string {
@@ -12,7 +12,7 @@ export function removeVietnameseTones(str: string): string {
   result = result.replace(/[\u00A0\u1680\u180E\u2000-\u200B\u202F\u205F\u3000\uFEFF]/g, " ");
 
   // Replace currency symbols & special characters
-  result = result.replace(/₫/g, "VND").replace(/đ/g, "d").replace(/Đ/g, "D");
+  result = result.replace(/₫/g, " VND").replace(/đ/g, "d").replace(/Đ/g, "D");
 
   // Remove diacritics
   result = result.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
@@ -34,7 +34,10 @@ export function removeVietnameseTones(str: string): string {
   return result;
 }
 
-export function exportQuoteToPdf(quote: QuoteData) {
+export function exportQuoteToPdf(quote: QuoteData, targetCurrency?: 'USD' | 'VND') {
+  const currency: 'USD' | 'VND' = targetCurrency || quote.quoteCurrency || 'USD';
+  const isVnd = currency === 'VND';
+
   const doc = new jsPDF({
     orientation: 'p',
     unit: 'mm',
@@ -50,13 +53,20 @@ export function exportQuoteToPdf(quote: QuoteData) {
   doc.rect(0, 0, 210, 6, 'F');
 
   // Company Header
+  const companyName = quote.company?.name || 'LOGISTICS & FREIGHT FORWARDING';
+  const companyAddress = quote.company?.address || '';
+  const companyTaxId = quote.company?.taxId || '';
+  const companyPhone = quote.company?.phone || '';
+  const companyEmail = quote.company?.email || '';
+  const companyWebsite = quote.company?.website || '';
+
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
   doc.setTextColor(22, 78, 99);
-  doc.text(removeVietnameseTones(quote.company.name), 14, 16);
+  doc.text(removeVietnameseTones(companyName), 14, 16);
 
   let currentHeaderY = 20;
-  if (quote.company.englishName) {
+  if (quote.company?.englishName) {
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(8);
     doc.setTextColor(100, 116, 139);
@@ -67,12 +77,21 @@ export function exportQuoteToPdf(quote: QuoteData) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(71, 85, 105);
-  doc.text(`Address: ${removeVietnameseTones(quote.company.address)}`, 14, currentHeaderY, { maxWidth: 182 });
-  currentHeaderY += 4;
-  doc.text(`Tax ID: ${quote.company.taxId} | Tel: ${quote.company.phone} | Email: ${quote.company.email}`, 14, currentHeaderY);
-  if (quote.company.website) {
+  if (companyAddress) {
+    doc.text(`Address: ${removeVietnameseTones(companyAddress)}`, 14, currentHeaderY, { maxWidth: 182 });
     currentHeaderY += 4;
-    doc.text(`Website: ${quote.company.website}`, 14, currentHeaderY);
+  }
+  const contactParts = [
+    companyTaxId ? `Tax ID: ${companyTaxId}` : '',
+    companyPhone ? `Tel: ${companyPhone}` : '',
+    companyEmail ? `Email: ${companyEmail}` : ''
+  ].filter(Boolean).join(' | ');
+  if (contactParts) {
+    doc.text(contactParts, 14, currentHeaderY);
+  }
+  if (companyWebsite) {
+    currentHeaderY += 4;
+    doc.text(`Website: ${companyWebsite}`, 14, currentHeaderY);
   }
 
   currentHeaderY += 2;
@@ -91,8 +110,11 @@ export function exportQuoteToPdf(quote: QuoteData) {
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 116, 139);
   doc.text(`Quote Ref: ${quote.quoteNumber}`, 14, titleY + 5);
-  doc.text(`Date: ${quote.createdDate}`, 80, titleY + 5);
-  doc.text(`Valid Until: ${quote.terms.validityDate}`, 135, titleY + 5);
+  doc.text(`Date: ${quote.createdDate}`, 72, titleY + 5);
+  doc.text(`Valid Until: ${quote.terms.validityDate}`, 118, titleY + 5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(isVnd ? 16 : 14, isVnd ? 117 : 116, isVnd ? 76 : 144);
+  doc.text(`Currency: ${isVnd ? 'VND' : 'USD'}`, 170, titleY + 5);
 
   // 3. Customer & Shipment Boxes (Two-column layout)
   const y = titleY + 9;
@@ -147,11 +169,16 @@ export function exportQuoteToPdf(quote: QuoteData) {
     if (locItems.length === 0) return;
 
     const locSubtotalUsd = locItems.reduce((acc, i) => acc + i.amountUsd, 0);
+    const locSubtotalVnd = locItems.reduce((acc, i) => acc + i.amountVnd, 0);
+
+    const groupSubtotalText = isVnd
+      ? `${formatNumberVND(locSubtotalVnd)} VND`
+      : formatUSD(locSubtotalUsd);
 
     // Group Header Row
     tableBody.push([
       {
-        content: `${locTitleMap[locKey]} - Subtotal: ${formatUSD(locSubtotalUsd)}`,
+        content: `${locTitleMap[locKey]} - Subtotal: ${groupSubtotalText}`,
         colSpan: 8,
         styles: {
           fillColor: [241, 245, 249],
@@ -164,26 +191,37 @@ export function exportQuoteToPdf(quote: QuoteData) {
 
     // Line item rows
     locItems.forEach((item) => {
+      // Unit Price: format as pure ASCII string. For USD: $50.00; for VND: 1.500.000 (no ₫ symbol to prevent PDF font corruption)
+      const unitPriceFormatted = item.currency === 'USD' 
+        ? formatUSD(item.unitPrice) 
+        : formatNumberVND(item.unitPrice);
+
+      const amountFormatted = isVnd
+        ? formatNumberVND(item.amountVnd)
+        : formatUSD(item.amountUsd);
+
       tableBody.push([
         itemCounter++,
-        `${removeVietnameseTones(item.description)}${item.note ? `\n(${removeVietnameseTones(item.note)})` : ''}`,
+        removeVietnameseTones(`${item.description}${item.note ? `\n(${item.note})` : ''}`),
         item.quantity,
         removeVietnameseTones(item.unit),
-        item.currency === 'USD' ? formatUSD(item.unitPrice) : formatVND(item.unitPrice),
+        unitPriceFormatted,
         item.currency,
         `${item.vatRate}%`,
-        formatUSD(item.amountUsd)
+        amountFormatted
       ]);
     });
   });
 
+  const amountColHeader = isVnd ? 'Amount (VND)' : 'Amount (USD)';
+
   autoTable(doc, {
     startY: y + 43,
-    head: [['No', 'Description / Hang Muc Chi Phi', 'Qty', 'Unit', 'Unit Price', 'Curr', 'VAT', 'Amount (USD)']],
+    head: [['No', 'Description / Hang Muc Chi Phi', 'Qty', 'Unit', 'Unit Price', 'Curr', 'VAT', amountColHeader]],
     body: tableBody,
     theme: 'grid',
     headStyles: {
-      fillColor: [22, 78, 99],
+      fillColor: isVnd ? [6, 95, 70] : [22, 78, 99], // Emerald for VND, Cyan for USD
       textColor: [255, 255, 255],
       fontSize: 8,
       fontStyle: 'bold',
@@ -196,13 +234,13 @@ export function exportQuoteToPdf(quote: QuoteData) {
     },
     columnStyles: {
       0: { halign: 'center', cellWidth: 8 },
-      1: { cellWidth: 68 },
+      1: { cellWidth: 'auto' },
       2: { halign: 'right', cellWidth: 12 },
-      3: { halign: 'center', cellWidth: 18 },
-      4: { halign: 'right', cellWidth: 22 },
+      3: { halign: 'center', cellWidth: isVnd ? 16 : 18 },
+      4: { halign: 'right', cellWidth: 24 },
       5: { halign: 'center', cellWidth: 12 },
-      6: { halign: 'center', cellWidth: 14 },
-      7: { halign: 'right', cellWidth: 28 },
+      6: { halign: 'center', cellWidth: 12 },
+      7: { halign: 'right', cellWidth: isVnd ? 28 : 26 },
     },
     margin: { left: 14, right: 14 },
   });
@@ -212,30 +250,50 @@ export function exportQuoteToPdf(quote: QuoteData) {
 
   // 5. Totals & Exchange Rate Box
   doc.setFillColor(248, 250, 252);
-  doc.roundedRect(110, finalY, 86, 26, 2, 2, 'F');
+  doc.roundedRect(106, finalY, 90, 26, 2, 2, 'F');
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(71, 85, 105);
-  doc.text(`Subtotal / Cong tien hang:`, 114, finalY + 6);
-  doc.text(`${formatUSD(quote.subtotalUsd)}`, 192, finalY + 6, { align: 'right' });
+  doc.text(`Subtotal / Cong tien hang:`, 110, finalY + 6);
+  doc.text(
+    isVnd ? `${formatNumberVND(quote.subtotalVnd)} VND` : formatUSD(quote.subtotalUsd),
+    192,
+    finalY + 6,
+    { align: 'right' }
+  );
 
-  doc.text(`VAT / Thue VAT:`, 114, finalY + 12);
-  doc.text(`${formatUSD(quote.vatTotalUsd)}`, 192, finalY + 12, { align: 'right' });
+  doc.text(`VAT / Thue VAT:`, 110, finalY + 12);
+  doc.text(
+    isVnd ? `${formatNumberVND(quote.vatTotalVnd)} VND` : formatUSD(quote.vatTotalUsd),
+    192,
+    finalY + 12,
+    { align: 'right' }
+  );
 
   doc.setDrawColor(203, 213, 225);
-  doc.line(114, finalY + 16, 192, finalY + 16);
+  doc.line(110, finalY + 16, 192, finalY + 16);
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.setTextColor(22, 78, 99);
-  doc.text(`GRAND TOTAL / TONG CONG:`, 114, finalY + 22);
-  doc.text(`${formatUSD(quote.grandTotalUsd)}`, 192, finalY + 22, { align: 'right' });
+  doc.setFontSize(8.5);
+  doc.setTextColor(isVnd ? 6 : 22, isVnd ? 95 : 78, isVnd ? 70 : 99);
+  doc.text(`GRAND TOTAL (${isVnd ? 'VND' : 'USD'}):`, 110, finalY + 22);
+  doc.text(
+    isVnd ? `${formatNumberVND(quote.grandTotalVnd)} VND` : formatUSD(quote.grandTotalUsd),
+    192,
+    finalY + 22,
+    { align: 'right' }
+  );
 
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139);
   doc.text(`* Ty gia quy doi (Ex.Rate): 1 USD = ${formatExchangeRate(quote.exchangeRate)} VND`, 14, finalY + 6);
+  if (isVnd) {
+    doc.text(`* Quy doi tuong duong USD: ~ ${formatUSD(quote.grandTotalUsd)}`, 14, finalY + 11);
+  } else if (quote.grandTotalVnd) {
+    doc.text(`* Tong thanh toan quy doi: ~ ${formatNumberVND(quote.grandTotalVnd)} VND`, 14, finalY + 11);
+  }
 
   // 6. Terms & Conditions Block
   let termsY = finalY + 32;
@@ -300,16 +358,22 @@ export function exportQuoteToPdf(quote: QuoteData) {
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7);
   doc.setTextColor(100, 116, 139);
-  doc.text(removeVietnameseTones(quote.company.shortName || quote.company.name), 114, signY + 4);
+  doc.text(removeVietnameseTones(quote.company?.shortName || quote.company?.name || 'LOGISTICS COMPANY'), 114, signY + 4);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8);
   doc.setTextColor(15, 23, 42);
-  doc.text(removeVietnameseTones(quote.company.salesRepName), 114, signY + 20);
+  doc.text(removeVietnameseTones(quote.company?.salesRepName || 'SALES REPRESENTATIVE'), 114, signY + 20);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7);
   doc.setTextColor(100, 116, 139);
-  doc.text(`${removeVietnameseTones(quote.company.salesRepTitle)} | Tel: ${quote.company.salesRepPhone}`, 114, signY + 24);
+  const repContact = [
+    quote.company?.salesRepTitle ? removeVietnameseTones(quote.company.salesRepTitle) : '',
+    quote.company?.salesRepPhone ? `Tel: ${quote.company.salesRepPhone}` : ''
+  ].filter(Boolean).join(' | ');
+  if (repContact) {
+    doc.text(repContact, 114, signY + 24);
+  }
 
   // Save PDF
-  doc.save(`${quote.quoteNumber}_Logistics_Quotation.pdf`);
+  doc.save(`${quote.quoteNumber}_Logistics_Quotation_${currency}.pdf`);
 }

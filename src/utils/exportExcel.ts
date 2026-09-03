@@ -2,7 +2,9 @@ import * as XLSX from 'xlsx';
 import { QuoteData } from '../types/logistics';
 import { formatUSD, formatVND, formatNumber, formatExchangeRate } from './formatters';
 
-export function exportQuoteToExcel(quote: QuoteData) {
+export function exportQuoteToExcel(quote: QuoteData, targetCurrency?: 'USD' | 'VND') {
+  const currency: 'USD' | 'VND' = targetCurrency || quote.quoteCurrency || 'USD';
+  const isVnd = currency === 'VND';
   const wb = XLSX.utils.book_new();
 
   // 1. Prepare Header rows
@@ -13,9 +15,9 @@ export function exportQuoteToExcel(quote: QuoteData) {
     [`MST: ${quote.company.taxId} | Hotline: ${quote.company.phone} | Email: ${quote.company.email}`],
     [`Website: ${quote.company.website || 'N/A'}`],
     [],
-    ['BẢNG BÁO GIÁ DỊCH VỤ LOGISTICS & VẬN TẢI QUỐC TẾ'],
+    [`BẢNG BÁO GIÁ DỊCH VỤ LOGISTICS & VẬN TẢI QUỐC TẾ (ĐỒNG TIỀN: ${isVnd ? 'VNĐ' : 'USD'})`],
     [`Mã báo giá: ${quote.quoteNumber}`, '', `Ngày tạo: ${quote.createdDate}`, '', `Hiệu lực đến: ${quote.terms.validityDate}`],
-    [`Tỷ giá quy đổi: 1 USD = ${formatExchangeRate(quote.exchangeRate)} VND`],
+    [`Đồng tiền chính: ${isVnd ? 'VNĐ (Việt Nam Đồng)' : 'USD (Đô la Mỹ)'}`, '', `Tỷ giá quy đổi: 1 USD = ${formatExchangeRate(quote.exchangeRate)} VND`],
     [],
     ['I. THÔNG TIN KHÁCH HÀNG & LÔ HÀNG'],
     ['Tên khách hàng:', quote.customer.customerName, 'Công ty:', quote.customer.companyName],
@@ -27,7 +29,9 @@ export function exportQuoteToExcel(quote: QuoteData) {
     ['Thời gian vận chuyển:', quote.shipment.transitTime || 'N/A', 'Free time Dem/Det:', quote.shipment.freeTime || 'N/A'],
     [],
     ['II. CHI TIẾT CÁC HẠNG MỤC CƯỚC PHÍ (LOGISTICS BREAKDOWN)'],
-    ['STT', 'Hạng mục chi phí / Phụ phí', 'Mã Phí', 'Phân loại', 'Số lượng', 'Đơn vị', 'Đơn giá', 'Loại tiền', 'VAT (%)', 'Thành tiền (USD)', 'Thành tiền (VND)', 'Ghi chú']
+    isVnd
+      ? ['STT', 'Hạng mục chi phí / Phụ phí', 'Mã Phí', 'Phân loại', 'Số lượng', 'Đơn vị', 'Đơn giá gốc', 'Loại tiền', 'VAT (%)', 'Thành tiền (VND)', 'Quy đổi (USD)', 'Ghi chú']
+      : ['STT', 'Hạng mục chi phí / Phụ phí', 'Mã Phí', 'Phân loại', 'Số lượng', 'Đơn vị', 'Đơn giá gốc', 'Loại tiền', 'VAT (%)', 'Thành tiền (USD)', 'Quy đổi (VND)', 'Ghi chú']
   ];
 
   // 2. Add Line Items Grouped by Location (POL, FREIGHT, POD, OTHER)
@@ -62,25 +66,43 @@ export function exportQuoteToExcel(quote: QuoteData) {
         item.unitPrice,
         item.currency,
         `${item.vatRate}%`,
-        item.amountUsd,
-        item.amountVnd,
+        isVnd ? item.amountVnd : item.amountUsd,
+        isVnd ? item.amountUsd : item.amountVnd,
         item.note || ''
       ]);
     });
 
     // Subtotal Row
-    excelRows.push(['', `Cộng chặng (${locKey}):`, '', '', '', '', '', '', '', locSubtotalUsd, locSubtotalVnd]);
+    excelRows.push([
+      '',
+      `Cộng chặng (${locKey}):`,
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      isVnd ? locSubtotalVnd : locSubtotalUsd,
+      isVnd ? locSubtotalUsd : locSubtotalVnd
+    ]);
   });
 
   // 3. Add Totals
   excelRows.push([]);
-  excelRows.push(['TỔNG CỘNG CHƯA VAT:', '', '', '', '', '', '', '', '', quote.subtotalUsd, quote.subtotalVnd]);
-  excelRows.push(['TỔNG THUẾ VAT:', '', '', '', '', '', '', '', '', quote.vatTotalUsd, quote.vatTotalVnd]);
-  excelRows.push(['TỔNG CỘNG THANH TOÁN (GRAND TOTAL):', '', '', '', '', '', '', '', '', quote.grandTotalUsd, quote.grandTotalVnd]);
+  if (isVnd) {
+    excelRows.push(['TỔNG CỘNG CHƯA VAT (VNĐ):', '', '', '', '', '', '', '', '', quote.subtotalVnd, quote.subtotalUsd]);
+    excelRows.push(['TỔNG THUẾ VAT (VNĐ):', '', '', '', '', '', '', '', '', quote.vatTotalVnd, quote.vatTotalUsd]);
+    excelRows.push(['TỔNG CỘNG THANH TOÁN (GRAND TOTAL VNĐ):', '', '', '', '', '', '', '', '', quote.grandTotalVnd, quote.grandTotalUsd]);
+  } else {
+    excelRows.push(['TỔNG CỘNG CHƯA VAT (USD):', '', '', '', '', '', '', '', '', quote.subtotalUsd, quote.subtotalVnd]);
+    excelRows.push(['TỔNG THUẾ VAT (USD):', '', '', '', '', '', '', '', '', quote.vatTotalUsd, quote.vatTotalVnd]);
+    excelRows.push(['TỔNG CỘNG THANH TOÁN (GRAND TOTAL USD):', '', '', '', '', '', '', '', '', quote.grandTotalUsd, quote.grandTotalVnd]);
+  }
 
   // 4. Add Terms & Conditions & Banking
   excelRows.push([]);
-  excelRows.push(['III. ĐIỀU KHOẢN VÀ THÔNG TIN CHUYỂN KHOAN']);
+  excelRows.push(['III. ĐIỀU KHOẢN VÀ THÔNG TIN CHUYỂN KHOẢN']);
   excelRows.push(['Điều kiện giao hàng (Incoterm):', quote.terms.incoterm]);
   excelRows.push(['Điều khoản thanh toán:', quote.terms.paymentTerm]);
   excelRows.push(['Ngoại trừ & Ghi chú:', quote.terms.exclusionsNotes]);
@@ -101,13 +123,13 @@ export function exportQuoteToExcel(quote: QuoteData) {
     { wch: 15 }, // Unit Price
     { wch: 10 }, // Currency
     { wch: 10 }, // VAT
-    { wch: 18 }, // Total USD
-    { wch: 20 }, // Total VND
+    { wch: 20 }, // Primary Amount
+    { wch: 18 }, // Converted Amount
     { wch: 30 }  // Note
   ];
 
   XLSX.utils.book_append_sheet(wb, ws, 'Báo Giá Logistics');
 
   // Save Excel file
-  XLSX.writeFile(wb, `${quote.quoteNumber}_Logistics_Quotation.xlsx`);
+  XLSX.writeFile(wb, `${quote.quoteNumber}_Logistics_Quotation_${currency}.xlsx`);
 }

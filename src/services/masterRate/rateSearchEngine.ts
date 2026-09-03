@@ -1,4 +1,4 @@
-import { RateMasterItem, RateSearchParams, RateSearchResult } from '../../types/masterRate';
+import { RateMasterItem, RateSearchParams, RateSearchResult, MatchQuality, MatchingPriorityLevel } from '../../types/masterRate';
 
 /**
  * Normalizes string for fuzzy/case-insensitive comparison
@@ -144,8 +144,9 @@ export function searchMatchingRates(
 
     const isValidForDate = isValidWindow && rate.status === 'ACTIVE';
     const roundedScore = Math.round(score);
-    const matchQuality = roundedScore >= 80 ? 'EXACT' : roundedScore >= 50 ? 'HIGH' : roundedScore >= 30 ? 'MEDIUM' : 'LOW';
-    const isExpiringSoon = isValidForDate && Boolean(rate.validTo && (new Date(rate.validTo).getTime() - new Date().getTime() <= 7 * 86400000));
+    const matchQuality: MatchQuality = roundedScore >= 80 ? 'EXACT_MATCH' : roundedScore >= 50 ? 'ROUTE_MATCH' : 'GENERAL_RATE';
+    const isExpiringSoon = isValidForDate && Boolean(rate.effectiveTo && (new Date(rate.effectiveTo).getTime() - new Date().getTime() <= 7 * 86400000));
+    const priorityLevel: MatchingPriorityLevel = (Math.min(5, Math.max(1, Math.round((rate.priority || 10) / 2))) as MatchingPriorityLevel);
 
     results.push({
       rate,
@@ -156,7 +157,7 @@ export function searchMatchingRates(
       isExpired,
       isValidForDate,
       isExpiringSoon,
-      priorityLevel: rate.priority || 10,
+      priorityLevel,
     });
   });
 

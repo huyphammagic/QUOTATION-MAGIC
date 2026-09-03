@@ -1,16 +1,23 @@
 import React from 'react';
-import { TermsAndConditions, IncotermCode } from '../types/logistics';
+import { TermsAndConditions, IncotermCode, QuoteCurrency } from '../types/logistics';
 import { INCOTERMS_LIST } from '../data/presets';
-import { FileText, ShieldAlert, CreditCard, Info, Anchor, Ship, MapPin, Scale } from 'lucide-react';
+import { FileText, ShieldAlert, CreditCard, Info, Anchor, Ship, MapPin, Scale, Coins } from 'lucide-react';
 
 interface TermsFormProps {
   terms: TermsAndConditions;
+  quoteCurrency?: QuoteCurrency;
   onChangeTerms: (updated: Partial<TermsAndConditions>) => void;
+  onChangeCurrency?: (currency: QuoteCurrency) => void;
 }
 
-export const TermsForm: React.FC<TermsFormProps> = ({ terms, onChangeTerms }) => {
-
+export const TermsForm: React.FC<TermsFormProps> = ({
+  terms,
+  quoteCurrency,
+  onChangeTerms,
+  onChangeCurrency,
+}) => {
   const selectedIncotermObj = INCOTERMS_LIST.find((i) => i.code === terms.incoterm);
+  const currentCurrency = quoteCurrency || terms.currency || 'USD';
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-2xs space-y-4">
@@ -107,6 +114,76 @@ export const TermsForm: React.FC<TermsFormProps> = ({ terms, onChangeTerms }) =>
               </div>
             </div>
           )}
+        </div>
+
+        {/* Presentation Currency Selector for Quotation */}
+        <div className="space-y-2 md:col-span-2 bg-slate-50 p-3.5 rounded-lg border border-slate-200">
+          <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+            <span className="flex items-center space-x-1.5">
+              <Coins className="w-4 h-4 text-cyan-700" />
+              <span>Đồng Tiền Thể Hiện Chính Trên File Báo Giá (PDF & Excel) *</span>
+            </span>
+            <span className="text-[10px] font-normal text-slate-500 italic">
+              (Có thể chuyển đổi linh hoạt khi xuất file hoặc xem trước)
+            </span>
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                onChangeTerms({ currency: 'USD' });
+                onChangeCurrency?.('USD');
+              }}
+              className={`p-3 rounded-xl border text-left flex items-start space-x-3 transition-all ${
+                currentCurrency === 'USD'
+                  ? 'bg-cyan-50/70 border-cyan-500 shadow-xs text-cyan-950 ring-1 ring-cyan-500'
+                  : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-full border flex items-center justify-center mt-0.5 shrink-0 ${
+                currentCurrency === 'USD' ? 'border-cyan-600 bg-cyan-600 text-white' : 'border-slate-400 bg-white'
+              }`}>
+                {currentCurrency === 'USD' && <div className="w-2 h-2 rounded-full bg-white" />}
+              </div>
+              <div className="space-y-0.5">
+                <div className="font-bold text-xs flex items-center space-x-1">
+                  <span>Tiền Đô La Mỹ (USD - $)</span>
+                  <span className="px-1.5 py-0.2 bg-cyan-100 text-cyan-800 rounded text-[10px] font-mono font-bold">Standard</span>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Thích hợp cho tuyến vận chuyển quốc tế (Ocean Freight/Air Freight) và khách hàng doanh nghiệp FDI.
+                </p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onChangeTerms({ currency: 'VND' });
+                onChangeCurrency?.('VND');
+              }}
+              className={`p-3 rounded-xl border text-left flex items-start space-x-3 transition-all ${
+                currentCurrency === 'VND'
+                  ? 'bg-emerald-50/70 border-emerald-500 shadow-xs text-emerald-950 ring-1 ring-emerald-500'
+                  : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-full border flex items-center justify-center mt-0.5 shrink-0 ${
+                currentCurrency === 'VND' ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-slate-400 bg-white'
+              }`}>
+                {currentCurrency === 'VND' && <div className="w-2 h-2 rounded-full bg-white" />}
+              </div>
+              <div className="space-y-0.5">
+                <div className="font-bold text-xs flex items-center space-x-1">
+                  <span>Tiền Việt Nam Đồng (VNĐ - ₫)</span>
+                  <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 rounded text-[10px] font-mono font-bold">Domestic</span>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Thích hợp cho khách hàng nội địa Việt Nam, xuất hóa đơn VAT điện tử và thanh toán chuyển khoản VNĐ.
+                </p>
+              </div>
+            </button>
+          </div>
         </div>
 
         {/* Payment Term */}

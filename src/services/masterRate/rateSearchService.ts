@@ -343,42 +343,42 @@ export function scanSmartRatesForQuote(
 
   const groups: SmartRateCategoryGroup[] = [
     {
-      categoryKey: 'MAIN_FREIGHT',
+      categoryKey: 'MAIN_FREIGHT' as const,
       titleVi: '1. Cước Vận Tải Chính (Main Freight)',
       titleEn: '1. Main Freight Charges',
       items: freightItems,
       selectedCount: 0,
     },
     {
-      categoryKey: 'POL_LOCAL',
+      categoryKey: 'POL_LOCAL' as const,
       titleVi: '2. Phụ Phí Đầu Xuất (POL Local Charges)',
       titleEn: '2. Origin / POL Local Charges',
       items: polItems,
       selectedCount: 0,
     },
     {
-      categoryKey: 'POD_LOCAL',
+      categoryKey: 'POD_LOCAL' as const,
       titleVi: '3. Phụ Phí Đầu Nhập (POD Local Charges)',
       titleEn: '3. Destination / POD Local Charges',
       items: podItems,
       selectedCount: 0,
     },
     {
-      categoryKey: 'TRUCKING',
+      categoryKey: 'TRUCKING' as const,
       titleVi: '4. Vận Chuyển Nội Địa (Inland Trucking)',
       titleEn: '4. Inland Trucking Services',
       items: truckingItems,
       selectedCount: 0,
     },
     {
-      categoryKey: 'CUSTOMS',
+      categoryKey: 'CUSTOMS' as const,
       titleVi: '5. Thủ Tục Hải Quan (Customs Clearance)',
       titleEn: '5. Customs Clearance Services',
       items: customsItems,
       selectedCount: 0,
     },
     {
-      categoryKey: 'OTHER',
+      categoryKey: 'OTHER' as const,
       titleVi: '6. Dịch Vụ & Phụ Phí Khác (Other Services)',
       titleEn: '6. Other Surcharges & Services',
       items: otherItems,

@@ -1,17 +1,36 @@
-import React, { useEffect } from 'react';
-import { QuoteData } from '../types/logistics';
+import React, { useState, useEffect } from 'react';
+import { QuoteData, QuoteCurrency } from '../types/logistics';
 import { formatUSD, formatVND, formatNumber, formatExchangeRate } from '../utils/formatters';
 import { exportQuoteToPdf } from '../utils/exportPdf';
 import { exportQuoteToExcel } from '../utils/exportExcel';
-import { X, Printer, FileDown, FileSpreadsheet, Ship, Building2 } from 'lucide-react';
+import { X, Printer, FileDown, FileSpreadsheet, Ship, Building2, Coins } from 'lucide-react';
 
 interface QuotePreviewModalProps {
   quote: QuoteData;
   isOpen: boolean;
   onClose: () => void;
+  onCurrencyChange?: (currency: QuoteCurrency) => void;
 }
 
-export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isOpen, onClose }) => {
+export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({
+  quote,
+  isOpen,
+  onClose,
+  onCurrencyChange,
+}) => {
+  const [selectedCurrency, setSelectedCurrency] = useState<QuoteCurrency>(quote.quoteCurrency || 'USD');
+
+  useEffect(() => {
+    if (quote.quoteCurrency) {
+      setSelectedCurrency(quote.quoteCurrency);
+    }
+  }, [quote.quoteCurrency, isOpen]);
+
+  const handleSelectCurrency = (curr: QuoteCurrency) => {
+    setSelectedCurrency(curr);
+    onCurrencyChange?.(curr);
+  };
+
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -28,6 +47,8 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isO
   const handlePrint = () => {
     window.print();
   };
+
+  const isVnd = selectedCurrency === 'VND';
 
   const locations = ['POL', 'FREIGHT', 'POD', 'OTHER'] as const;
   const locTitleMap = {
@@ -50,13 +71,41 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isO
       <div className="bg-white text-slate-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col border border-slate-200">
         
         {/* Modal Top Control Bar */}
-        <div className="bg-slate-900 text-white px-6 py-4 rounded-t-2xl flex items-center justify-between border-b border-slate-800 print:hidden">
+        <div className="bg-slate-900 text-white px-6 py-3.5 rounded-t-2xl flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 print:hidden">
           <div className="flex items-center space-x-2">
-            <Ship className="w-5 h-5 text-cyan-400" />
-            <span className="font-bold text-sm">Xem Trước Bản Báo Giá Formal (A4 Corporate View)</span>
+            <Ship className="w-5 h-5 text-cyan-400 shrink-0" />
+            <span className="font-bold text-sm truncate">Xem Trước Bản Báo Giá Formal (A4 Corporate View)</span>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center flex-wrap gap-2">
+            {/* Currency Selector */}
+            <div className="flex items-center space-x-1 bg-slate-800 p-1 rounded-xl border border-slate-700">
+              <Coins className="w-3.5 h-3.5 text-cyan-400 ml-1.5" />
+              <span className="text-[11px] font-medium text-slate-400 px-1">Tiền tệ file:</span>
+              <button
+                type="button"
+                onClick={() => handleSelectCurrency('USD')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                  selectedCurrency === 'USD'
+                    ? 'bg-cyan-500 text-slate-950 shadow-xs'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                $ USD
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectCurrency('VND')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                  selectedCurrency === 'VND'
+                    ? 'bg-emerald-500 text-slate-950 shadow-xs'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                ₫ VNĐ
+              </button>
+            </div>
+
             <button
               onClick={handlePrint}
               className="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-700 transition-all"
@@ -66,24 +115,26 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isO
             </button>
 
             <button
-              onClick={() => exportQuoteToPdf(quote)}
-              className="flex items-center space-x-1.5 bg-rose-700 hover:bg-rose-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+              onClick={() => exportQuoteToPdf(quote, selectedCurrency)}
+              className="flex items-center space-x-1.5 bg-rose-700 hover:bg-rose-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all shadow-xs"
+              title={`Xuất PDF theo tiền tệ ${selectedCurrency}`}
             >
               <FileDown className="w-3.5 h-3.5" />
-              <span>PDF</span>
+              <span>PDF ({selectedCurrency})</span>
             </button>
 
             <button
-              onClick={() => exportQuoteToExcel(quote)}
-              className="flex items-center space-x-1.5 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+              onClick={() => exportQuoteToExcel(quote, selectedCurrency)}
+              className="flex items-center space-x-1.5 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all shadow-xs"
+              title={`Xuất Excel theo tiền tệ ${selectedCurrency}`}
             >
               <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>Excel</span>
+              <span>Excel ({selectedCurrency})</span>
             </button>
 
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors"
+              className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors ml-1"
             >
               <X className="w-5 h-5" />
             </button>
@@ -125,6 +176,13 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isO
               <div className="text-slate-600 text-[10px] mt-1 pt-1 border-t border-slate-200">
                 Tỷ giá: 1 USD = <strong className="font-mono">{formatExchangeRate(quote.exchangeRate)}</strong> VND
               </div>
+              <div className="mt-1">
+                <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                  isVnd ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-cyan-100 text-cyan-900 border border-cyan-300'
+                }`}>
+                  Đồng tiền: {isVnd ? 'VNĐ (Việt Nam Đồng)' : 'USD (Đô la Mỹ)'}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -133,7 +191,9 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isO
             <h2 className="text-xl font-extrabold text-slate-900 tracking-wide uppercase text-cyan-950">
               BẢNG BÁO GIÁ DỊCH VỤ LOGISTICS & CƯỚC VẬN TẢI
             </h2>
-            <p className="text-slate-500 text-xs italic">FREIGHT FORWARDING & LOCAL CHARGES QUOTATION</p>
+            <p className="text-slate-500 text-xs italic">
+              FREIGHT FORWARDING & LOCAL CHARGES QUOTATION ({isVnd ? 'CURRENCY: VND' : 'CURRENCY: USD'})
+            </p>
           </div>
 
           {/* 3. Customer & Shipment 2-Column Boxes */}
@@ -175,11 +235,28 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isO
                   <th className="p-2 border border-slate-600 text-center w-16">Mã Phí</th>
                   <th className="p-2 border border-slate-600 text-right w-12">SL</th>
                   <th className="p-2 border border-slate-600 text-center w-16">ĐVT</th>
-                  <th className="p-2 border border-slate-600 text-right w-24">Đơn Giá</th>
+                  <th className="p-2 border border-slate-600 text-right w-24">Đơn Giá Gốc</th>
                   <th className="p-2 border border-slate-600 text-center w-12">Loại</th>
                   <th className="p-2 border border-slate-600 text-center w-12">VAT</th>
-                  <th className="p-2 border border-slate-600 text-right w-24">Thành Tiền (USD)</th>
-                  <th className="p-2 border border-slate-600 text-right w-28">Thành Tiền (VND)</th>
+                  {isVnd ? (
+                    <>
+                      <th className="p-2 border border-slate-600 text-right w-28 bg-emerald-900 text-emerald-100">
+                        Thành Tiền (VND)
+                      </th>
+                      <th className="p-2 border border-slate-600 text-right w-24 text-slate-300 font-normal">
+                        Quy đổi (USD)
+                      </th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="p-2 border border-slate-600 text-right w-24 bg-cyan-900 text-cyan-100">
+                        Thành Tiền (USD)
+                      </th>
+                      <th className="p-2 border border-slate-600 text-right w-28 text-slate-300 font-normal">
+                        Quy đổi (VND)
+                      </th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -197,12 +274,25 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isO
                         <td colSpan={8} className="p-2 border border-slate-300 uppercase tracking-wide">
                           {locTitleMap[locationKey]}
                         </td>
-                        <td className="p-2 border border-slate-300 text-right font-mono font-bold">
-                          {formatUSD(locSubtotalUsd)}
-                        </td>
-                        <td className="p-2 border border-slate-300 text-right font-mono font-bold">
-                          {formatVND(locSubtotalVnd)}
-                        </td>
+                        {isVnd ? (
+                          <>
+                            <td className="p-2 border border-slate-300 text-right font-mono font-bold text-emerald-900">
+                              {formatVND(locSubtotalVnd)}
+                            </td>
+                            <td className="p-2 border border-slate-300 text-right font-mono text-slate-500 font-normal">
+                              {formatUSD(locSubtotalUsd)}
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="p-2 border border-slate-300 text-right font-mono font-bold text-cyan-900">
+                              {formatUSD(locSubtotalUsd)}
+                            </td>
+                            <td className="p-2 border border-slate-300 text-right font-mono text-slate-500 font-normal">
+                              {formatVND(locSubtotalVnd)}
+                            </td>
+                          </>
+                        )}
                       </tr>
 
                       {/* Line Items Rows */}
@@ -221,8 +311,25 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isO
                           </td>
                           <td className="p-2 border border-slate-200 text-center font-bold">{item.currency}</td>
                           <td className="p-2 border border-slate-200 text-center">{item.vatRate}%</td>
-                          <td className="p-2 border border-slate-200 text-right font-mono font-semibold">{formatUSD(item.amountUsd)}</td>
-                          <td className="p-2 border border-slate-200 text-right font-mono font-semibold">{formatVND(item.amountVnd)}</td>
+                          {isVnd ? (
+                            <>
+                              <td className="p-2 border border-slate-200 text-right font-mono font-bold text-slate-900 bg-emerald-50/40">
+                                {formatVND(item.amountVnd)}
+                              </td>
+                              <td className="p-2 border border-slate-200 text-right font-mono text-slate-500">
+                                {formatUSD(item.amountUsd)}
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="p-2 border border-slate-200 text-right font-mono font-bold text-slate-900 bg-cyan-50/40">
+                                {formatUSD(item.amountUsd)}
+                              </td>
+                              <td className="p-2 border border-slate-200 text-right font-mono text-slate-500">
+                                {formatVND(item.amountVnd)}
+                              </td>
+                            </>
+                          )}
                         </tr>
                       ))}
                     </React.Fragment>
@@ -237,18 +344,24 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({ quote, isO
             <div className="w-full sm:w-80 bg-slate-50 p-4 rounded-xl border border-slate-300 space-y-2 text-xs">
               <div className="flex justify-between text-slate-600">
                 <span>Cộng tiền hàng (Subtotal):</span>
-                <span className="font-semibold">{formatUSD(quote.subtotalUsd)} / {formatVND(quote.subtotalVnd)}</span>
+                <span className="font-semibold font-mono">
+                  {isVnd ? `${formatVND(quote.subtotalVnd)} (~${formatUSD(quote.subtotalUsd)})` : `${formatUSD(quote.subtotalUsd)} (~${formatVND(quote.subtotalVnd)})`}
+                </span>
               </div>
               <div className="flex justify-between text-slate-600">
                 <span>Tiền thuế VAT:</span>
-                <span className="font-semibold">{formatUSD(quote.vatTotalUsd)} / {formatVND(quote.vatTotalVnd)}</span>
+                <span className="font-semibold font-mono">
+                  {isVnd ? `${formatVND(quote.vatTotalVnd)} (~${formatUSD(quote.vatTotalUsd)})` : `${formatUSD(quote.vatTotalUsd)} (~${formatVND(quote.vatTotalVnd)})`}
+                </span>
               </div>
               <div className="border-t border-slate-300 pt-2 flex justify-between font-bold text-slate-900 text-sm">
-                <span>TỔNG CỘNG THANH TOÁN:</span>
-                <span className="text-cyan-900">{formatUSD(quote.grandTotalUsd)}</span>
+                <span>TỔNG CỘNG ({isVnd ? 'VNĐ' : 'USD'}):</span>
+                <span className={isVnd ? 'text-emerald-800 text-base font-mono' : 'text-cyan-900 text-base font-mono'}>
+                  {isVnd ? formatVND(quote.grandTotalVnd) : formatUSD(quote.grandTotalUsd)}
+                </span>
               </div>
-              <div className="text-right text-emerald-700 font-extrabold text-xs">
-                ({formatVND(quote.grandTotalVnd)})
+              <div className="text-right text-slate-500 font-medium text-xs font-mono">
+                (Quy đổi tương đương: {isVnd ? formatUSD(quote.grandTotalUsd) : formatVND(quote.grandTotalVnd)})
               </div>
             </div>
           </div>

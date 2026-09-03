@@ -171,12 +171,15 @@ export interface ShipmentDetails {
   freeTime?: string;       // Thời gian lưu bãi/lưu vỏ (VD: 7 days Dem/Det)
 }
 
+export type QuoteCurrency = 'USD' | 'VND';
+
 export interface TermsAndConditions {
   incoterm: IncotermCode;
   validityDate: string;     // Hiệu lực báo giá
   paymentTerm: string;      // Điều khoản thanh toán (VD: Thanh toán trước khi phát hành B/L)
   exclusionsNotes: string;  // Ngoại trừ & Ghi chú (VD: Không bao gồm thuế nhập khẩu, phí lưu kho bãi quá hạn)
   bankAccountInfo: string;  // Thông tin chuyển khoản công ty
+  currency?: QuoteCurrency; // Loại tiền thể hiện chính trên báo giá ('USD' hoặc 'VND')
 }
 
 export interface CompanyProfile {
@@ -205,6 +208,7 @@ export interface QuoteData {
   createdDate: string;
   updatedDate: string;
   status: QuoteStatus;
+  quoteCurrency?: QuoteCurrency; // 'USD' | 'VND' - Loại tiền chính hiển thị trên file báo giá (Mặc định USD)
   exchangeRate: number;     // E.g. 25400 VND/USD
   customer: CustomerInfo;
   shipment: ShipmentDetails;

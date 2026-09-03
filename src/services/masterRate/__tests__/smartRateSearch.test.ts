@@ -72,7 +72,7 @@ const expect = (actual: any) => ({
 });
 
 // Sample Test Rates
-const sampleRates: RateMasterItem[] = [
+const sampleRates: any[] = [
   // 1. Customer-Specific Rate (Samsung)
   {
     id: 'rate-cust-sam-01',
@@ -355,7 +355,7 @@ const sampleRates: RateMasterItem[] = [
     chargeName: 'Customs Clearance',
     transportMode: 'CUSTOMS_CLEARANCE',
     origin: 'Cat Lai Port, Vietnam',
-    basis: 'PER_SET',
+    basis: 'PER_SHIPMENT',
     unit: 'Bộ tờ khai',
     costAmount: 600000,
     costCurrency: 'VND',
@@ -572,6 +572,7 @@ describe('Phase C: Smart Rate Search & Auto Quote Building Tests', () => {
       mode: 'SEA_FCL',
       pol: 'Cat Lai Port, Vietnam',
       pod: 'Los Angeles, USA',
+      commodity: 'Electronics',
       containerType: "40'HC",
       quantity: 2,
       grossWeightKg: 20000,
@@ -599,6 +600,8 @@ describe('Phase C: Smart Rate Search & Auto Quote Building Tests', () => {
       code: 'O/F',
       description: 'Ocean Freight',
       quantity: 1,
+      unit: "Cont 40'HC",
+      vatRate: 0,
       unitPrice: 1450, // Old price
       costPrice: 1200,
       currency: 'USD',
@@ -637,6 +640,8 @@ describe('Phase C: Smart Rate Search & Auto Quote Building Tests', () => {
       code: 'O/F',
       description: 'Ocean Freight',
       quantity: 1,
+      unit: "Cont 40'HC",
+      vatRate: 0,
       unitPrice: 1450,
       costPrice: 1200,
       currency: 'USD',

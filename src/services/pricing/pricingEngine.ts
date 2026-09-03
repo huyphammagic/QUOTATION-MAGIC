@@ -293,6 +293,7 @@ export function calculateQuote(
     createdDate: rawQuote.createdDate || new Date().toISOString().slice(0, 10),
     updatedDate: new Date().toISOString().slice(0, 10),
     status: rawQuote.status || 'DRAFT',
+    quoteCurrency: rawQuote.quoteCurrency || rawQuote.terms?.currency || 'USD',
     exchangeRate: exchangeRate,
     customer: rawQuote.customer || {
       customerName: '',

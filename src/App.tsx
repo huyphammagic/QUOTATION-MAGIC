@@ -8,7 +8,8 @@ import {
   TermsAndConditions, 
   QuoteStatus, 
   CustomerRecord, 
-  SurchargeItem 
+  SurchargeItem,
+  QuoteCurrency
 } from './types/logistics';
 import { RateMasterItem, ChargeMasterItem, RateHistoryItem } from './types/masterRate';
 import { DEFAULT_COMPANY_PROFILE, INITIAL_SAMPLE_QUOTE, DEFAULT_EXCHANGE_RATE } from './data/presets';
@@ -436,6 +437,18 @@ export default function App() {
     });
   };
 
+  // Currency Changes for Quote
+  const handleQuoteCurrencyChange = (currency: QuoteCurrency) => {
+    updateQuoteState({
+      quoteCurrency: currency,
+      terms: {
+        ...quote.terms,
+        currency,
+      },
+    });
+    showToast(`Đã chọn hiển thị báo giá bằng tiền ${currency === 'VND' ? 'VNĐ' : 'USD'}`);
+  };
+
   // Company Settings Save with Firestore
   const handleSaveCompanyProfile = async (updatedCompany: CompanyProfile) => {
     setCompany(updatedCompany);
@@ -726,16 +739,19 @@ export default function App() {
             <SummaryCard
               quote={quote}
               onExchangeRateChange={handleExchangeRateChange}
+              onCurrencyChange={handleQuoteCurrencyChange}
               onSaveQuote={handleSaveQuoteAction}
-              onExportPdf={() => exportQuoteToPdf(quote)}
-              onExportExcel={() => exportQuoteToExcel(quote)}
+              onExportPdf={(curr) => exportQuoteToPdf(quote, curr)}
+              onExportExcel={(curr) => exportQuoteToExcel(quote, curr)}
               onOpenPreview={() => setIsPreviewOpen(true)}
             />
 
             {/* Terms & Conditions */}
             <TermsForm
               terms={quote.terms}
+              quoteCurrency={quote.quoteCurrency}
               onChangeTerms={handleChangeTerms}
+              onChangeCurrency={handleQuoteCurrencyChange}
             />
 
           </main>
@@ -744,6 +760,8 @@ export default function App() {
           <footer className="h-10 bg-slate-900 text-slate-400 px-6 flex items-center justify-between text-[11px] uppercase tracking-wider font-mono border-t border-slate-800 shrink-0">
             <div className="flex items-center space-x-4">
               <span>Ex.Rate: 1 USD = {quote.exchangeRate.toLocaleString()} VND</span>
+              <span className="hidden md:inline text-slate-700">|</span>
+              <span className="text-amber-300 font-semibold">Đồng tiền file: {quote.quoteCurrency || 'USD'}</span>
               <span className="hidden md:inline text-slate-700">|</span>
               <span className="hidden md:inline text-cyan-400">Pricing Engine Active</span>
             </div>
@@ -766,6 +784,7 @@ export default function App() {
         quote={quote}
         isOpen={isPreviewOpen}
         onClose={() => setIsPreviewOpen(false)}
+        onCurrencyChange={handleQuoteCurrencyChange}
       />
 
       <CustomerManagerModal

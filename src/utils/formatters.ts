@@ -17,13 +17,23 @@ export function formatUSD(amount: number): string {
   }).format(amount || 0);
 }
 
-// Format currency VND
-export function formatVND(amount: number): string {
-  if (isNaN(amount) || amount === null || amount === undefined) return '0 ₫';
-  const formatted = new Intl.NumberFormat('vi-VN', {
-    maximumFractionDigits: 0,
-  }).format(amount || 0);
-  return `${formatted} ₫`.replace(/[\u00A0\u202F]/g, ' ');
+// Format number with Vietnamese thousand separator (dot) - 100% pure ASCII digits and dots
+export function formatNumberVND(amount: number): string {
+  if (isNaN(amount) || amount === null || amount === undefined) return '0';
+  const rounded = Math.round(amount || 0);
+  return rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+// Format currency VND with customizable suffix (default ₫, or VND, or none)
+export function formatVND(amount: number, suffix: string = '₫'): string {
+  if (isNaN(amount) || amount === null || amount === undefined) return `0 ${suffix}`.trim();
+  const formatted = formatNumberVND(amount);
+  return suffix ? `${formatted} ${suffix}`.trim() : formatted;
+}
+
+// Format currency VND as plain ASCII string with "VND" (100% font-safe everywhere)
+export function formatVNDPlain(amount: number): string {
+  return `${formatNumberVND(amount)} VND`;
 }
 
 // Format exchange rate with full decimal precision (up to 8 decimal places)
