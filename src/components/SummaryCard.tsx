@@ -1,7 +1,7 @@
 import React from 'react';
 import { QuoteData, QuoteCurrency } from '../types/logistics';
 import { formatUSD, formatVND, formatPercent } from '../utils/formatters';
-import { FileDown, FileSpreadsheet, Save, Eye, Calculator, RefreshCw, TrendingUp, DollarSign, ShieldCheck, Coins } from 'lucide-react';
+import { FileDown, FileSpreadsheet, Save, Eye, Calculator, RefreshCw, TrendingUp, DollarSign, ShieldCheck, Coins, Send } from 'lucide-react';
 
 interface SummaryCardProps {
   quote: QuoteData;
@@ -11,6 +11,8 @@ interface SummaryCardProps {
   onExportPdf: (currency?: QuoteCurrency) => void;
   onExportExcel: (currency?: QuoteCurrency) => void;
   onOpenPreview: () => void;
+  onOpenGeneratePdf?: () => void;
+  onOpenSendModal?: () => void;
 }
 
 export const SummaryCard: React.FC<SummaryCardProps> = ({
@@ -20,7 +22,9 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
   onSaveQuote,
   onExportPdf,
   onExportExcel,
-  onOpenPreview
+  onOpenPreview,
+  onOpenGeneratePdf,
+  onOpenSendModal,
 }) => {
   const margin = quote.overallMarginPercent || 0;
   const isHealthyMargin = margin >= 15;
@@ -168,9 +172,19 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
 
         {/* Right 3 Cols: Actions */}
         <div className="lg:col-span-3 flex flex-col gap-2 shrink-0">
+          {onOpenSendModal && (
+            <button
+              onClick={onOpenSendModal}
+              className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm py-2.5 px-4 rounded-xl shadow-md transition-all active:scale-[0.99] border border-blue-400/40"
+            >
+              <Send className="w-4 h-4 text-blue-200" />
+              <span>Gửi Email Khách Hàng (Send Quote)</span>
+            </button>
+          )}
+
           <button
             onClick={onSaveQuote}
-            className="w-full flex items-center justify-center space-x-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs sm:text-sm py-2.5 px-4 rounded-xl shadow-md transition-all active:scale-[0.99]"
+            className="w-full flex items-center justify-center space-x-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs sm:text-sm py-2 px-4 rounded-xl shadow-md transition-all active:scale-[0.99]"
           >
             <Save className="w-4 h-4" />
             <span>Lưu Báo Giá Về Hệ Thống</span>
@@ -186,12 +200,12 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
 
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => onExportPdf(activeCurrency)}
-              className="flex items-center justify-center space-x-1.5 bg-rose-800 hover:bg-rose-700 text-white text-xs font-semibold py-2 px-2 rounded-xl transition-colors shadow-xs"
-              title={`Xuất file PDF với đồng tiền ${activeCurrency}`}
+              onClick={() => onOpenGeneratePdf ? onOpenGeneratePdf() : onExportPdf(activeCurrency)}
+              className="flex items-center justify-center space-x-1.5 bg-rose-700 hover:bg-rose-600 text-white text-xs font-bold py-2 px-2 rounded-xl transition-colors shadow-xs"
+              title={`Phát hành PDF Snapshot với đồng tiền ${activeCurrency}`}
             >
               <FileDown className="w-3.5 h-3.5" />
-              <span>PDF ({activeCurrency})</span>
+              <span>Xuất PDF ({activeCurrency})</span>
             </button>
 
             <button

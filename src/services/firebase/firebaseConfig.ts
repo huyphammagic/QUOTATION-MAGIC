@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
+import { getStorage, FirebaseStorage } from 'firebase/storage';
 import firebaseConfigJson from '../../../firebase-applet-config.json';
 
 const firebaseConfig = {
@@ -23,3 +24,13 @@ try {
 }
 
 export const db = firestoreDb;
+
+// Initialize Storage
+let firebaseStorage: FirebaseStorage | null = null;
+try {
+  firebaseStorage = getStorage(app);
+} catch (error) {
+  console.warn('Firebase Storage initialization notice:', error);
+}
+
+export const storage = firebaseStorage;

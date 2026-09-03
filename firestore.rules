@@ -42,5 +42,55 @@ service cloud.firestore {
     match /rateHistories/{historyId} {
       allow read, write: if true;
     }
+
+    // Phase 7: Professional Quotation Documents & Snapshots
+    match /quotationDocuments/{documentId} {
+      allow read, write: if true;
+    }
+
+    // Phase 7: Quotation Templates
+    match /quotationTemplates/{templateId} {
+      allow read, write: if true;
+    }
+
+    // Phase 7: Quotation Terms Master Templates
+    match /quotationTerms/{termId} {
+      allow read, write: if true;
+    }
+
+    // Phase 7: Quotation Audit Logs
+    match /quotationAuditLogs/{logId} {
+      allow read, write: if true;
+    }
+
+    // Phase 8: Quotation Communications (Email History & Dispatch)
+    match /quotationCommunications/{commId} {
+      allow read, write: if true;
+    }
+
+    // Phase 8: Secure Quotation Links
+    match /quotationLinks/{linkId} {
+      allow read, write: if true;
+    }
+
+    // Phase 8: Customer Responses (Accept / Reject / Revision Requests)
+    match /quotationResponses/{responseId} {
+      allow read, write: if true;
+    }
+
+    // Phase 8: Sales Follow-Up Tasks
+    match /followUps/{followUpId} {
+      allow read, write: if true;
+    }
+
+    // Phase 8: Email Templates
+    match /emailTemplates/{templateId} {
+      allow read, write: if true;
+    }
+
+    // Phase 8: Async Communication Jobs Queue
+    match /communicationJobs/{jobId} {
+      allow read, write: if true;
+    }
   }
 }

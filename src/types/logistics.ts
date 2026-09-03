@@ -38,7 +38,17 @@ export type ChargeLocation = 'POL' | 'FREIGHT' | 'POD' | 'OTHER';
 
 export type Currency = 'USD' | 'VND';
 
-export type QuoteStatus = 'DRAFT' | 'SENT' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+export type QuoteStatus = 
+  | 'DRAFT' 
+  | 'PENDING_APPROVAL' 
+  | 'APPROVED' 
+  | 'ISSUED' 
+  | 'SENT' 
+  | 'VIEWED' 
+  | 'ACCEPTED' 
+  | 'REJECTED' 
+  | 'EXPIRED' 
+  | 'CANCELLED';
 
 export type IncotermCode = 'FOB' | 'CIF' | 'EXW' | 'DDP' | 'DAP' | 'CFR' | 'FCA' | 'CPT' | 'CIP' | 'DPU';
 

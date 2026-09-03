@@ -22,7 +22,13 @@ import {
   ExternalLink,
   Sparkles,
   Layers,
-  History
+  History,
+  FileDown,
+  Layout,
+  Archive,
+  Mail,
+  Send,
+  Calendar
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -47,6 +53,13 @@ interface SidebarProps {
   onOpenSmartAssistant?: () => void;
   onOpenDataBackup: () => void;
   onOpenPreview?: () => void;
+  onOpenDocumentHistory?: () => void;
+  onOpenTemplateBuilder?: () => void;
+  onOpenGeneratePdf?: () => void;
+  onOpenSendModal?: () => void;
+  onOpenCommunication?: () => void;
+  onOpenEmailTemplates?: () => void;
+  onOpenFollowUps?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -70,12 +83,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenRateSearch,
   onOpenSmartAssistant,
   onOpenDataBackup,
-  onOpenPreview
+  onOpenPreview,
+  onOpenDocumentHistory,
+  onOpenTemplateBuilder,
+  onOpenGeneratePdf,
+  onOpenSendModal,
+  onOpenCommunication,
+  onOpenEmailTemplates,
+  onOpenFollowUps,
 }) => {
   // Folder open/closed states
   const [openFolders, setOpenFolders] = useState<{ [key: string]: boolean }>({
     company: true,
     quotes: true,
+    communication: true,
     masterData: true,
     system: true,
   });
@@ -326,11 +347,164 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <span className="text-xs truncate">Xem Trước Bản In (A4)</span>
                     </div>
                     <span className="text-[10px] text-purple-400 font-medium">
-                      PDF
+                      Xem
                     </span>
                   </button>
                 )}
 
+                {/* Item: Phát Hành PDF Chính Thức (Snapshot) */}
+                {onOpenGeneratePdf && (
+                  <button
+                    type="button"
+                    onClick={() => handleAction(onOpenGeneratePdf)}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md bg-rose-950/40 hover:bg-rose-900/60 text-rose-200 hover:text-white border border-rose-800/40 transition-colors text-left group"
+                  >
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <FileDown className="w-3.5 h-3.5 text-rose-400 shrink-0 group-hover:text-rose-300" />
+                      <span className="text-xs font-semibold truncate">Phát Hành PDF (Chính Thức)</span>
+                    </div>
+                    <span className="text-[9px] bg-rose-800 text-rose-100 px-1.5 py-0.2 rounded font-bold">
+                      A4 Pro
+                    </span>
+                  </button>
+                )}
+
+                {/* Item: Kho Tài Liệu PDF & Snapshot History */}
+                {onOpenDocumentHistory && (
+                  <button
+                    type="button"
+                    onClick={() => handleAction(onOpenDocumentHistory)}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
+                  >
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <Archive className="w-3.5 h-3.5 text-purple-400 shrink-0 group-hover:text-purple-300" />
+                      <span className="text-xs truncate">Kho PDF & Snapshots</span>
+                    </div>
+                    <span className="text-[10px] text-purple-400 font-mono">
+                      Lịch sử
+                    </span>
+                  </button>
+                )}
+
+                {/* Item: Trình Thiết Kế Mẫu (Template Builder) */}
+                {onOpenTemplateBuilder && (
+                  <button
+                    type="button"
+                    onClick={() => handleAction(onOpenTemplateBuilder)}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
+                  >
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <Layout className="w-3.5 h-3.5 text-cyan-400 shrink-0 group-hover:text-cyan-300" />
+                      <span className="text-xs truncate">Mẫu Báo Giá (Templates)</span>
+                    </div>
+                    <span className="text-[10px] text-cyan-400 font-mono">
+                      Builder
+                    </span>
+                  </button>
+                )}
+
+              </div>
+            )}
+          </div>
+
+          {/* FOLDER: GIAO TIẾP & BẢO MẬT (COMMUNICATION & SECURITY) */}
+          <div className="rounded-lg bg-slate-800/40 border border-slate-800/80 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => toggleFolder('communication')}
+              className="w-full flex items-center justify-between p-2.5 hover:bg-slate-800/70 text-slate-200 hover:text-white transition-colors text-left"
+            >
+              <div className="flex items-center space-x-2 min-w-0">
+                {openFolders.communication ? (
+                  <FolderOpen className="w-4 h-4 text-indigo-400 shrink-0" />
+                ) : (
+                  <Folder className="w-4 h-4 text-indigo-400 shrink-0" />
+                )}
+                <span className="font-semibold text-xs text-slate-100 truncate">
+                  Giao Tiếp & Bảo Mật
+                </span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <span className="text-[9px] font-bold text-white px-1.5 py-0.2 rounded-full bg-indigo-600 font-mono">
+                  Phase 8
+                </span>
+                {openFolders.communication ? (
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                )}
+              </div>
+            </button>
+
+            {openFolders.communication && (
+              <div className="pl-3 pr-2 py-1.5 space-y-0.5 border-t border-slate-800/60 bg-slate-900/40">
+                {/* Item: Gửi Báo Giá */}
+                {onOpenSendModal && (
+                  <button
+                    type="button"
+                    onClick={() => handleAction(onOpenSendModal)}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md bg-blue-950/40 hover:bg-blue-900/60 text-blue-200 hover:text-white border border-blue-800/40 transition-colors text-left group"
+                  >
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <Send className="w-3.5 h-3.5 text-blue-400 shrink-0 group-hover:text-blue-300" />
+                      <span className="text-xs font-semibold truncate">Gửi Email Khách Hàng</span>
+                    </div>
+                    <span className="text-[9px] bg-blue-800 text-blue-100 px-1.5 py-0.2 rounded font-bold">
+                      Send
+                    </span>
+                  </button>
+                )}
+
+                {/* Item: Tiến Trình & Lịch Sử Gửi */}
+                {onOpenCommunication && (
+                  <button
+                    type="button"
+                    onClick={() => handleAction(onOpenCommunication)}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
+                  >
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <Mail className="w-3.5 h-3.5 text-indigo-400 shrink-0 group-hover:text-indigo-300" />
+                      <span className="text-xs truncate">Tiến Trình & Lịch Sử Gửi</span>
+                    </div>
+                    <span className="text-[10px] text-indigo-400 font-mono">
+                      Timeline
+                    </span>
+                  </button>
+                )}
+
+                {/* Item: Mẫu Email Báo Giá */}
+                {onOpenEmailTemplates && (
+                  <button
+                    type="button"
+                    onClick={() => handleAction(onOpenEmailTemplates)}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
+                  >
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <FileText className="w-3.5 h-3.5 text-cyan-400 shrink-0 group-hover:text-cyan-300" />
+                      <span className="text-xs truncate">Mẫu Email (Templates)</span>
+                    </div>
+                    <span className="text-[10px] text-cyan-400 font-mono">
+                      Mẫu
+                    </span>
+                  </button>
+                )}
+
+                {/* Item: Lịch Chăm Sóc Khách Hàng */}
+                {onOpenFollowUps && (
+                  <button
+                    type="button"
+                    onClick={() => handleAction(onOpenFollowUps)}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
+                  >
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <Calendar className="w-3.5 h-3.5 text-emerald-400 shrink-0 group-hover:text-emerald-300" />
+                      <span className="text-xs truncate">Lịch Chăm Sóc (Follow-Up)</span>
+                    </div>
+                    <span className="text-[10px] text-emerald-400 font-mono">
+                      Hẹn
+                    </span>
+                  </button>
+                )}
               </div>
             )}
           </div>

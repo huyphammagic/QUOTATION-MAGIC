@@ -75,6 +75,17 @@ import { RateSearchModal } from './components/RateSearchModal';
 import { SmartRateAssistantModal } from './components/SmartRateAssistantModal';
 import { RateComparisonModal } from './components/RateComparisonModal';
 import { DataBackupModal } from './components/DataBackupModal';
+import { GeneratePdfModal } from './components/GeneratePdfModal';
+import { QuotationTemplateBuilderModal } from './components/QuotationTemplateBuilderModal';
+import { DocumentHistoryModal } from './components/DocumentHistoryModal';
+
+import { SendQuotationModal } from './components/communication/SendQuotationModal';
+import { QuotationCommunicationPanel } from './components/communication/QuotationCommunicationPanel';
+import { CustomerSecureQuotePage } from './components/communication/CustomerSecureQuotePage';
+import { EmailTemplateManagementModal } from './components/communication/EmailTemplateManagementModal';
+import { FollowUpModal } from './components/communication/FollowUpModal';
+import { getDocumentRecordsForQuotation } from './services/quotation/quotationDocumentService';
+import { QuotationDocumentRecord } from './types/quotationDocument';
 
 import { Check, Ship, ShieldCheck } from 'lucide-react';
 
@@ -120,6 +131,59 @@ export default function App() {
   const [isComparisonModalOpen, setIsComparisonModalOpen] = useState(false);
   const [isDataBackupOpen, setIsDataBackupOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  
+  // Phase 7: Professional PDF Quotation Engine & Template Builder Modals
+  const [isGeneratePdfOpen, setIsGeneratePdfOpen] = useState(false);
+  const [isTemplateBuilderOpen, setIsTemplateBuilderOpen] = useState(false);
+  const [isDocumentHistoryOpen, setIsDocumentHistoryOpen] = useState(false);
+
+  // Phase 8: Quotation Communication, Email & Secure Sharing
+  const [isSendQuotationOpen, setIsSendQuotationOpen] = useState(false);
+  const [isEmailTemplatesOpen, setIsEmailTemplatesOpen] = useState(false);
+  const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
+  const [isCommunicationPanelOpen, setIsCommunicationPanelOpen] = useState(false);
+  const [quotationDocuments, setQuotationDocuments] = useState<QuotationDocumentRecord[]>([]);
+  const [viewingSecureToken, setViewingSecureToken] = useState<string | null>(null);
+
+  // Listen for secure quote URLs like /q/:token or #q/:token
+  useEffect(() => {
+    const checkRoute = () => {
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+      if (path.startsWith('/q/')) {
+        const tok = path.replace('/q/', '').trim();
+        if (tok) setViewingSecureToken(tok);
+      } else if (hash.startsWith('#/q/') || hash.startsWith('#q/')) {
+        const tok = hash.replace(/^#(?:|\/)q\//, '').trim();
+        if (tok) setViewingSecureToken(tok);
+      }
+    };
+    checkRoute();
+    window.addEventListener('hashchange', checkRoute);
+    return () => window.removeEventListener('hashchange', checkRoute);
+  }, []);
+
+  // Load customer PDF documents for active quote
+  const loadQuotationDocuments = async (qId: string) => {
+    try {
+      const docs = await getDocumentRecordsForQuotation(qId);
+      setQuotationDocuments(docs);
+    } catch (e) {
+      console.warn('Error loading quote documents:', e);
+    }
+  };
+
+  useEffect(() => {
+    if (quote.id) {
+      loadQuotationDocuments(quote.id);
+    }
+  }, [quote.id, quote.updatedDate]);
+
+  // Approve Quote Handler
+  const handleApproveCurrentQuote = async () => {
+    await handleUpdateStatus(quote.id, 'APPROVED');
+    showToast(`Đã phê duyệt báo giá ${quote.quoteNumber}! Bây giờ bạn có thể gửi cho khách hàng.`);
+  };
 
   // Compute live diffs between quote snapshots and master rates database
   const outdatedRatesDiffs = useMemo(() => {
@@ -643,6 +707,21 @@ export default function App() {
     showToast(`Đã cập nhật trạng thái báo giá thành ${status}`);
   };
 
+  // If viewing a public customer secure quote link, render the dedicated portal view
+  if (viewingSecureToken) {
+    return (
+      <CustomerSecureQuotePage
+        token={viewingSecureToken}
+        onBackToApp={() => {
+          setViewingSecureToken(null);
+          if (window.location.hash.includes('q/')) {
+            window.location.hash = '';
+          }
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 font-sans flex flex-col">
       
@@ -671,6 +750,13 @@ export default function App() {
           onOpenSmartAssistant={() => setIsSmartAssistantOpen(true)}
           onOpenDataBackup={() => setIsDataBackupOpen(true)}
           onOpenPreview={() => setIsPreviewOpen(true)}
+          onOpenDocumentHistory={() => setIsDocumentHistoryOpen(true)}
+          onOpenTemplateBuilder={() => setIsTemplateBuilderOpen(true)}
+          onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
+          onOpenSendModal={() => setIsSendQuotationOpen(true)}
+          onOpenCommunication={() => setIsCommunicationPanelOpen(true)}
+          onOpenEmailTemplates={() => setIsEmailTemplatesOpen(true)}
+          onOpenFollowUps={() => setIsFollowUpOpen(true)}
         />
 
         {/* Right Main Application Workspace */}
@@ -744,7 +830,21 @@ export default function App() {
               onExportPdf={(curr) => exportQuoteToPdf(quote, curr)}
               onExportExcel={(curr) => exportQuoteToExcel(quote, curr)}
               onOpenPreview={() => setIsPreviewOpen(true)}
+              onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
+              onOpenSendModal={() => setIsSendQuotationOpen(true)}
             />
+
+            {/* Phase 8: Quotation Communication, Dispatch History & Timeline Panel */}
+            <div id="quotation-communication-section" className="w-full">
+              <QuotationCommunicationPanel
+                quote={quote}
+                documents={quotationDocuments}
+                onOpenSendModal={() => setIsSendQuotationOpen(true)}
+                onOpenFollowUpModal={() => setIsFollowUpOpen(true)}
+                onOpenSecureLinkPreview={(token) => setViewingSecureToken(token)}
+                onRefreshQuote={() => handleSelectQuote(quote)}
+              />
+            </div>
 
             {/* Terms & Conditions */}
             <TermsForm
@@ -882,6 +982,65 @@ export default function App() {
         savedQuotesCount={savedQuotes.length}
         customersCount={customers.length}
         surchargesCount={surcharges.length}
+      />
+
+      {/* Phase 7: Professional Quotation PDF Engine Modals */}
+      <GeneratePdfModal
+        isOpen={isGeneratePdfOpen}
+        onClose={() => setIsGeneratePdfOpen(false)}
+        quote={quote}
+        onOpenTemplateBuilder={() => setIsTemplateBuilderOpen(true)}
+        onDocumentGenerated={(rec) => {
+          showToast(`Đã phát hành file PDF ${rec.fileName} (Rev ${rec.revision}) thành công!`);
+        }}
+      />
+
+      <QuotationTemplateBuilderModal
+        isOpen={isTemplateBuilderOpen}
+        onClose={() => setIsTemplateBuilderOpen(false)}
+        sampleQuote={quote}
+        onTemplatesUpdated={() => {
+          showToast('Đã cập nhật hệ thống mẫu báo giá!');
+        }}
+      />
+
+      <DocumentHistoryModal
+        isOpen={isDocumentHistoryOpen}
+        onClose={() => setIsDocumentHistoryOpen(false)}
+        quotationId={quote.id}
+        quotationNumber={quote.quoteNumber}
+      />
+
+      {/* Phase 8: Quotation Communication & Secure Dispatch Modals */}
+      <SendQuotationModal
+        isOpen={isSendQuotationOpen}
+        onClose={() => setIsSendQuotationOpen(false)}
+        quote={quote}
+        documents={quotationDocuments}
+        onApproveQuote={handleApproveCurrentQuote}
+        onOpenTemplateManager={() => {
+          setIsSendQuotationOpen(false);
+          setIsEmailTemplatesOpen(true);
+        }}
+        onSuccess={(msg) => {
+          showToast(msg);
+          loadQuotationDocuments(quote.id);
+          handleUpdateStatus(quote.id, 'SENT');
+        }}
+      />
+
+      <EmailTemplateManagementModal
+        isOpen={isEmailTemplatesOpen}
+        onClose={() => setIsEmailTemplatesOpen(false)}
+      />
+
+      <FollowUpModal
+        isOpen={isFollowUpOpen}
+        onClose={() => setIsFollowUpOpen(false)}
+        quote={quote}
+        onSuccess={() => {
+          showToast('Đã lưu nhiệm vụ chăm sóc khách hàng thành công!');
+        }}
       />
 
     </div>
