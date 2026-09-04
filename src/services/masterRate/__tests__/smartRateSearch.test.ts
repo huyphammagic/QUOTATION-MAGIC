@@ -658,7 +658,6 @@ describe('Phase C: Smart Rate Search & Auto Quote Building Tests', () => {
       1150,
       'Special discount approved by Director',
       'Sales Director',
-      undefined,
       25400
     );
 

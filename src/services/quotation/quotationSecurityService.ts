@@ -425,3 +425,41 @@ export async function getCustomerResponses(quotationId: string): Promise<Quotati
   const local = getLocalResponses();
   return local.filter(r => r.quotationId === quotationId);
 }
+
+/**
+ * Fetches all customer responses across the entire system for aggregate analytics
+ */
+export async function getAllCustomerResponses(): Promise<QuotationCustomerResponse[]> {
+  if (db) {
+    try {
+      const snap = await getDocs(collection(db, COLLECTION_RESPONSES));
+      if (!snap.empty) {
+        const list: QuotationCustomerResponse[] = [];
+        snap.forEach(d => list.push({ ...d.data() as QuotationCustomerResponse, id: d.id }));
+        return list;
+      }
+    } catch (err) {
+      console.warn('Firestore getAllCustomerResponses notice:', err);
+    }
+  }
+  return getLocalResponses();
+}
+
+/**
+ * Fetches all secure share links across the entire system for analytics
+ */
+export async function getAllSecureLinks(): Promise<QuotationSecureLink[]> {
+  if (db) {
+    try {
+      const snap = await getDocs(collection(db, COLLECTION_LINKS));
+      if (!snap.empty) {
+        const list: QuotationSecureLink[] = [];
+        snap.forEach(d => list.push({ ...d.data() as QuotationSecureLink, id: d.id }));
+        return list;
+      }
+    } catch (err) {
+      console.warn('Firestore getAllSecureLinks notice:', err);
+    }
+  }
+  return getLocalLinks();
+}

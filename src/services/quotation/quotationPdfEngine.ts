@@ -5,6 +5,7 @@ import {
   QuotationTemplate, 
   QuotationDocumentType 
 } from '../../types/quotationDocument';
+import { DEFAULT_QUOTATION_TEMPLATES } from '../../data/defaultTemplates';
 import { 
   formatUSD, 
   formatNumberVND, 
@@ -588,4 +589,28 @@ export function generateQuotationPdf(
       doc.save(fileName);
     },
   };
+}
+
+/**
+ * Downloads or renders and downloads a PDF for a given document record or snapshot
+ */
+export function exportQuotationDocumentToPdf(docRecord: { 
+  snapshot?: QuotationDocumentSnapshot; 
+  downloadUrl?: string; 
+  fileName?: string;
+}): void {
+  if (docRecord.downloadUrl) {
+    const link = document.createElement('a');
+    link.href = docRecord.downloadUrl;
+    link.download = docRecord.fileName || 'Customer_Quotation.pdf';
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    return;
+  }
+  if (docRecord.snapshot) {
+    const result = generateQuotationPdf(docRecord.snapshot, DEFAULT_QUOTATION_TEMPLATES[0]);
+    result.download();
+  }
 }

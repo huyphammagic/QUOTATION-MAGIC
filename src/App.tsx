@@ -84,8 +84,17 @@ import { QuotationCommunicationPanel } from './components/communication/Quotatio
 import { CustomerSecureQuotePage } from './components/communication/CustomerSecureQuotePage';
 import { EmailTemplateManagementModal } from './components/communication/EmailTemplateManagementModal';
 import { FollowUpModal } from './components/communication/FollowUpModal';
-import { getDocumentRecordsForQuotation } from './services/quotation/quotationDocumentService';
+import { getDocumentRecordsForQuotation, getAllQuotationDocuments } from './services/quotation/quotationDocumentService';
 import { QuotationDocumentRecord } from './types/quotationDocument';
+import { getAllCommunications, getAllFollowUps } from './services/quotation/quotationCommunicationService';
+import { getAllCustomerResponses, getAllSecureLinks } from './services/quotation/quotationSecurityService';
+import { 
+  QuotationCommunication, 
+  QuotationCustomerResponse, 
+  QuotationFollowUp, 
+  QuotationSecureLink 
+} from './types/quotationCommunication';
+import { AdvancedAnalyticsDashboard } from './components/analytics/AdvancedAnalyticsDashboard';
 
 import { Check, Ship, ShieldCheck } from 'lucide-react';
 
@@ -145,7 +154,15 @@ export default function App() {
   const [quotationDocuments, setQuotationDocuments] = useState<QuotationDocumentRecord[]>([]);
   const [viewingSecureToken, setViewingSecureToken] = useState<string | null>(null);
 
-  // Listen for secure quote URLs like /q/:token or #q/:token
+  // Phase 9: Advanced Business Intelligence & Sales Analytics Dashboard
+  const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+  const [allCommunications, setAllCommunications] = useState<QuotationCommunication[]>([]);
+  const [allResponses, setAllResponses] = useState<QuotationCustomerResponse[]>([]);
+  const [allFollowUps, setAllFollowUps] = useState<QuotationFollowUp[]>([]);
+  const [allLinks, setAllLinks] = useState<QuotationSecureLink[]>([]);
+  const [allDocuments, setAllDocuments] = useState<QuotationDocumentRecord[]>([]);
+
+  // Listen for secure quote URLs like /q/:token or #q/:token or #dashboard
   useEffect(() => {
     const checkRoute = () => {
       const path = window.location.pathname;
@@ -156,12 +173,45 @@ export default function App() {
       } else if (hash.startsWith('#/q/') || hash.startsWith('#q/')) {
         const tok = hash.replace(/^#(?:|\/)q\//, '').trim();
         if (tok) setViewingSecureToken(tok);
+      } else if (
+        hash === '#analytics' || 
+        hash === '#dashboard' || 
+        hash.startsWith('#/analytics') || 
+        hash.startsWith('#/dashboard') ||
+        path === '/analytics' ||
+        path === '/dashboard'
+      ) {
+        setIsDashboardOpen(true);
       }
     };
     checkRoute();
     window.addEventListener('hashchange', checkRoute);
     return () => window.removeEventListener('hashchange', checkRoute);
   }, []);
+
+  // Load comprehensive analytics data across all collections
+  const loadAnalyticsData = async () => {
+    try {
+      const [comms, resps, follow, links, docs] = await Promise.all([
+        getAllCommunications(),
+        getAllCustomerResponses(),
+        getAllFollowUps(),
+        getAllSecureLinks(),
+        getAllQuotationDocuments(),
+      ]);
+      setAllCommunications(comms);
+      setAllResponses(resps);
+      setAllFollowUps(follow);
+      setAllLinks(links);
+      setAllDocuments(docs);
+    } catch (e) {
+      console.warn('Error loading analytics dataset:', e);
+    }
+  };
+
+  useEffect(() => {
+    loadAnalyticsData();
+  }, [isDashboardOpen, savedQuotes.length]);
 
   // Load customer PDF documents for active quote
   const loadQuotationDocuments = async (qId: string) => {
@@ -757,6 +807,7 @@ export default function App() {
           onOpenCommunication={() => setIsCommunicationPanelOpen(true)}
           onOpenEmailTemplates={() => setIsEmailTemplatesOpen(true)}
           onOpenFollowUps={() => setIsFollowUpOpen(true)}
+          onOpenDashboard={() => setIsDashboardOpen(true)}
         />
 
         {/* Right Main Application Workspace */}
@@ -785,7 +836,10 @@ export default function App() {
             )}
 
             {/* Dashboard Stats Bar */}
-            <DashboardStats quotes={savedQuotes} />
+            <DashboardStats 
+              quotes={savedQuotes} 
+              onOpenAnalytics={() => setIsDashboardOpen(true)}
+            />
 
             {/* Top Section: Customer Info & Shipment Route Forms Side-by-Side */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -1042,6 +1096,28 @@ export default function App() {
           showToast('Đã lưu nhiệm vụ chăm sóc khách hàng thành công!');
         }}
       />
+
+      {/* Phase 9: Advanced Business Intelligence & Sales Analytics Dashboard */}
+      {isDashboardOpen && (
+        <AdvancedAnalyticsDashboard
+          quotes={savedQuotes.length > 0 ? savedQuotes : [quote]}
+          communications={allCommunications}
+          customerResponses={allResponses}
+          documents={allDocuments}
+          followUpTasks={allFollowUps}
+          shareLinks={allLinks}
+          currentUserRole="ADMIN"
+          currentSalesName={company.salesRepName}
+          onSelectQuote={(qId) => {
+            const target = savedQuotes.find(q => q.id === qId || q.quoteNumber === qId);
+            if (target) {
+              handleSelectQuote(target);
+            }
+            setIsDashboardOpen(false);
+          }}
+          onClose={() => setIsDashboardOpen(false)}
+        />
+      )}
 
     </div>
   );

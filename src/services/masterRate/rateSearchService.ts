@@ -247,6 +247,7 @@ export function evaluateRateMatch(rate: RateMasterItem, context: RateSearchConte
     isExpired,
     isExpiringSoon,
     isValidForDate,
+    isFutureRate: checkTime < fromTime,
   };
 }
 

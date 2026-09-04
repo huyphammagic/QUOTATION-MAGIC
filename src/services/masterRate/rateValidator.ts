@@ -231,6 +231,7 @@ export function parseAndValidateBulkRateImport(
       id: `rate-import-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
       rateCode: String(row.rateCode || `RATE-${chargeCode}-${Date.now().toString().slice(-4)}-${idx + 1}`),
       rateName: String(row.rateName || `${chargeName} [${origin} -> ${destination}]`),
+      rateType: (row.rateType || (transportMode === 'AIR_FREIGHT' ? 'AIR' : transportMode === 'INLAND_TRUCKING' ? 'TRUCKING' : transportMode === 'CUSTOMS_CLEARANCE' ? 'CUSTOMS' : 'OCEAN')) as any,
       chargeCode,
       chargeName,
       category: (row.category || 'FREIGHT') as FeeCategory,

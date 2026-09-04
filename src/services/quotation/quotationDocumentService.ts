@@ -402,6 +402,31 @@ export async function getQuotationDocuments(quotationId?: string): Promise<Quota
   return list;
 }
 
+export async function getDocumentById(documentId: string): Promise<QuotationDocumentRecord | null> {
+  const local = getLocalDocuments();
+  const found = local.find(d => d.id === documentId);
+  if (found) return found;
+
+  if (db) {
+    try {
+      const docRef = doc(db, COLLECTIONS.DOCUMENTS, documentId);
+      const snapshot = await getDoc(docRef);
+      if (snapshot.exists()) {
+        const item = { ...snapshot.data() as QuotationDocumentRecord, id: snapshot.id };
+        saveLocalDocuments([item, ...local]);
+        return item;
+      }
+    } catch (error) {
+      console.warn('Firestore load document by id notice:', error);
+    }
+  }
+
+  return null;
+}
+
+export const getDocumentRecordsForQuotation = getQuotationDocuments;
+export const getDocumentsForQuotation = getQuotationDocuments;
+
 export async function archiveQuotationDocument(documentId: string): Promise<void> {
   const local = getLocalDocuments();
   const updated = local.map(d => d.id === documentId ? { ...d, status: 'ARCHIVED' as const } : d);
@@ -443,4 +468,23 @@ export async function getQuotationAuditLogs(quotationId?: string): Promise<Quota
     return local.filter(l => l.quotationId === quotationId);
   }
   return local;
+}
+
+/**
+ * Fetches all quotation documents across the entire organization for aggregate analytics
+ */
+export async function getAllQuotationDocuments(): Promise<QuotationDocumentRecord[]> {
+  if (db) {
+    try {
+      const snap = await getDocs(collection(db, COLLECTIONS.DOCUMENTS));
+      if (!snap.empty) {
+        const docs: QuotationDocumentRecord[] = [];
+        snap.forEach(d => docs.push({ ...d.data() as QuotationDocumentRecord, id: d.id }));
+        return docs;
+      }
+    } catch (error) {
+      console.warn('Firestore getAllQuotationDocuments notice:', error);
+    }
+  }
+  return getLocalDocuments();
 }

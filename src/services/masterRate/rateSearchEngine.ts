@@ -1,4 +1,10 @@
-import { RateMasterItem, RateSearchParams, RateSearchResult, MatchQuality, MatchingPriorityLevel } from '../../types/masterRate';
+import { 
+  RateMasterItem, 
+  RateSearchParams, 
+  RateSearchResult, 
+  MatchQuality, 
+  MatchingPriorityLevel 
+} from '../../types/masterRate';
 
 /**
  * Normalizes string for fuzzy/case-insensitive comparison
@@ -25,8 +31,8 @@ function looseMatch(queryStr: string | undefined, targetStr: string | undefined)
 }
 
 /**
- * Core Rate Search Engine for Freight Forwarding Quotation
- * Implements multi-tier matching (Exact > Route > Generic) and validity verification.
+ * Core Rate Search Engine for Freight Forwarding Quotation & Cost Management
+ * Implements multi-tier matching (Contract > Lane > Carrier/Supplier > Generic) and As-Of-Date validity verification.
  */
 export function searchMatchingRates(
   allRates: RateMasterItem[],
@@ -34,17 +40,40 @@ export function searchMatchingRates(
 ): {
   activeMatches: RateSearchResult[];
   expiredMatches: RateSearchResult[];
+  futureMatches: RateSearchResult[];
   allFound: RateSearchResult[];
   totalMatches: number;
 } {
   const checkDate = params.date || new Date().toISOString().slice(0, 10);
   const checkTime = new Date(checkDate).getTime();
+  const fourteenDaysMs = 14 * 24 * 60 * 60 * 1000;
 
   const results: RateSearchResult[] = [];
 
   allRates.forEach((rate) => {
     // Basic filter by status if explicitly requested
-    if (params.status && params.status !== 'ALL' && rate.status !== params.status) {
+    if (params.status && params.status !== 'ALL') {
+      if (params.status === 'ACTIVE' && rate.status !== 'ACTIVE' && rate.status !== 'APPROVED') {
+        return;
+      } else if (params.status !== 'ACTIVE' && rate.status !== params.status) {
+        return;
+      }
+    } else if (rate.status === 'CANCELLED') {
+      return; // Never show cancelled rates unless specifically asked
+    }
+
+    // Rate Type filter (BUY / SELL / CONTRACT / REFERENCE)
+    if (params.rateType && params.rateType !== 'ALL' && rate.rateType !== params.rateType) {
+      return;
+    }
+
+    // Service Type filter
+    if (params.serviceType && params.serviceType !== 'ALL' && rate.serviceType !== params.serviceType) {
+      return;
+    }
+
+    // Currency filter
+    if (params.currency && rate.sellingCurrency !== params.currency && rate.costCurrency !== params.currency) {
       return;
     }
 
@@ -57,8 +86,10 @@ export function searchMatchingRates(
         looseMatch(kw, rate.chargeName) ||
         looseMatch(kw, rate.chargeCode) ||
         looseMatch(kw, rate.carrier) ||
+        looseMatch(kw, rate.supplierName) ||
         looseMatch(kw, rate.origin) ||
         looseMatch(kw, rate.destination) ||
+        looseMatch(kw, rate.contractNo) ||
         looseMatch(kw, rate.notes);
       if (!matchKw) return;
     }
@@ -72,112 +103,124 @@ export function searchMatchingRates(
     const toTime = new Date(rate.effectiveTo).getTime();
     const isValidWindow = checkTime >= fromTime && checkTime <= toTime;
     const isExpired = checkTime > toTime || rate.status === 'EXPIRED';
+    const isFutureRate = checkTime < fromTime;
+    const isExpiringSoon = !isExpired && (toTime - checkTime <= fourteenDaysMs) && (toTime >= checkTime);
 
     // Calculate match score
     let score = 0;
+    let quality: MatchQuality = 'GENERAL_RATE';
+    let priority: MatchingPriorityLevel = 5;
     const matchReasonsVi: string[] = [];
     const matchReasonsEn: string[] = [];
 
+    // 0. Customer Contract Match (Top Priority)
+    if (params.customerCode && rate.customerCode && looseMatch(params.customerCode, rate.customerCode)) {
+      score += 45;
+      priority = 1;
+      quality = 'CONTRACT_MATCH';
+      matchReasonsVi.push(`Hợp đồng riêng của khách hàng [${rate.customerCode}]`);
+      matchReasonsEn.push(`Customer specific contract rate [${rate.customerCode}]`);
+    } else if (rate.isContractRate) {
+      score += 10;
+    }
+
     // 1. Route match (Origin + Destination)
-    const originMatch = looseMatch(params.origin, rate.origin) || looseMatch(params.origin, rate.originPort);
-    const destMatch = looseMatch(params.destination, rate.destination) || looseMatch(params.destination, rate.destinationPort);
+    const originMatch = looseMatch(params.origin, rate.origin) || looseMatch(params.origin, rate.originPort) || looseMatch(params.origin, rate.originCode);
+    const destMatch = looseMatch(params.destination, rate.destination) || looseMatch(params.destination, rate.destinationPort) || looseMatch(params.destination, rate.destinationCode);
 
     if (params.origin && params.destination) {
       if (originMatch && destMatch) {
-        score += 40;
+        score += 35;
+        if (priority > 2) priority = 2;
+        if (quality === 'GENERAL_RATE') quality = 'EXACT_MATCH';
         matchReasonsVi.push(`Khớp chính xác tuyến đường (${rate.origin} -> ${rate.destination})`);
-        matchReasonsEn.push(`Exact route matched (${rate.origin} -> ${rate.destination})`);
+        matchReasonsEn.push(`Exact lane matched (${rate.origin} -> ${rate.destination})`);
       } else if (originMatch || destMatch) {
         score += 15;
+        if (priority > 4) priority = 4;
+        if (quality === 'GENERAL_RATE') quality = 'ROUTE_MATCH';
         matchReasonsVi.push(`Khớp một phần cảng/tuyến (${originMatch ? rate.origin : rate.destination})`);
-        matchReasonsEn.push(`Partial port/route matched (${originMatch ? rate.origin : rate.destination})`);
+        matchReasonsEn.push(`Partial port/lane matched (${originMatch ? rate.origin : rate.destination})`);
       }
     } else if (params.origin && originMatch) {
-      score += 20;
+      score += 15;
       matchReasonsVi.push(`Khớp điểm đi (${rate.origin})`);
       matchReasonsEn.push(`Origin matched (${rate.origin})`);
     } else if (params.destination && destMatch) {
-      score += 20;
+      score += 15;
       matchReasonsVi.push(`Khớp điểm đến (${rate.destination})`);
       matchReasonsEn.push(`Destination matched (${rate.destination})`);
     }
 
-    // 2. Equipment / Container Type match for FCL
-    if (params.containerType && params.containerType !== '') {
-      if (rate.containerType && normalizeText(rate.containerType) === normalizeText(params.containerType)) {
-        score += 25;
-        matchReasonsVi.push(`Khớp loại container (${rate.containerType})`);
-        matchReasonsEn.push(`Container type matched (${rate.containerType})`);
-      } else if (!rate.containerType) {
-        score += 5; // Generic container
-      } else {
-        // Container type mismatch
-        score -= 20;
+    // 2. Carrier or Supplier match
+    if (params.carrier && looseMatch(params.carrier, rate.carrier)) {
+      score += 15;
+      if (priority > 3) priority = 3;
+      if (quality === 'GENERAL_RATE') quality = 'CARRIER_MATCH';
+      matchReasonsVi.push(`Khớp hãng tàu/hàng không (${rate.carrier})`);
+      matchReasonsEn.push(`Carrier matched (${rate.carrier})`);
+    }
+    if (params.supplierId && rate.supplierId === params.supplierId) {
+      score += 15;
+      matchReasonsVi.push(`Khớp nhà cung cấp đã chọn`);
+      matchReasonsEn.push(`Supplier matched`);
+    }
+
+    // 3. Equipment match (Container Type)
+    if (params.containerType && rate.containerType) {
+      if (params.containerType === rate.containerType) {
+        score += 15;
+        matchReasonsVi.push(`Khớp loại thiết bị/container (${rate.containerType})`);
+        matchReasonsEn.push(`Equipment/Container matched (${rate.containerType})`);
       }
     }
 
-    // 3. Carrier match
-    if (params.carrier && params.carrier.trim() !== '') {
-      if (looseMatch(params.carrier, rate.carrier)) {
-        score += 20;
-        matchReasonsVi.push(`Khớp hãng tàu/vận chuyển (${rate.carrier})`);
-        matchReasonsEn.push(`Carrier matched (${rate.carrier})`);
-      }
+    // 4. Validity bonus
+    if (isValidWindow) {
+      score += 10;
+    } else if (isExpired) {
+      score = Math.max(0, score - 30);
     }
 
-    // 4. Customer-specific rate priority bonus
-    if (params.customerCode && rate.customerCode && looseMatch(params.customerCode, rate.customerCode)) {
-      score += 30;
-      matchReasonsVi.push(`Bảng giá riêng theo khách hàng (${rate.customerName || rate.customerCode})`);
-      matchReasonsEn.push(`Customer-specific contracted rate (${rate.customerName || rate.customerCode})`);
+    // If query has specific parameters and score is 0, skip
+    const hasSearchFilters = params.origin || params.destination || params.carrier || params.containerType || params.keyword;
+    if (hasSearchFilters && score < 15) {
+      return;
     }
 
-    // Add base priority from rate master
-    score += (rate.priority || 10) / 10;
-
-    // Minimum baseline score for category/mode match
-    if (score <= 0 && modeMatches) {
-      score = 10;
-      matchReasonsVi.push('Phù hợp phương thức vận tải chung');
-      matchReasonsEn.push('General transport mode match');
-    }
-
-    const isValidForDate = isValidWindow && rate.status === 'ACTIVE';
-    const roundedScore = Math.round(score);
-    const matchQuality: MatchQuality = roundedScore >= 80 ? 'EXACT_MATCH' : roundedScore >= 50 ? 'ROUTE_MATCH' : 'GENERAL_RATE';
-    const isExpiringSoon = isValidForDate && Boolean(rate.effectiveTo && (new Date(rate.effectiveTo).getTime() - new Date().getTime() <= 7 * 86400000));
-    const priorityLevel: MatchingPriorityLevel = (Math.min(5, Math.max(1, Math.round((rate.priority || 10) / 2))) as MatchingPriorityLevel);
+    const matchReasonVi = matchReasonsVi.length > 0 ? matchReasonsVi.join(' • ') : 'Bảng giá cước chung';
+    const matchReasonEn = matchReasonsEn.length > 0 ? matchReasonsEn.join(' • ') : 'General master rate';
 
     results.push({
       rate,
-      matchScore: roundedScore,
-      matchQuality,
-      matchReasonVi: matchReasonsVi.join(', ') || 'Bảng giá khả dụng',
-      matchReasonEn: matchReasonsEn.join(', ') || 'Available rate',
+      matchScore: Math.min(100, Math.max(0, score)),
+      matchQuality: quality,
+      priorityLevel: priority,
+      matchReasonVi,
+      matchReasonEn,
       isExpired,
-      isValidForDate,
       isExpiringSoon,
-      priorityLevel,
+      isFutureRate,
+      isValidForDate: isValidWindow,
     });
   });
 
-  // Sort results: Valid first, then by match score descending, then by priority descending
+  // Sort by Priority ascending (1 > 2 > 3 > 4 > 5), then Match Score descending
   results.sort((a, b) => {
-    if (a.isValidForDate !== b.isValidForDate) {
-      return a.isValidForDate ? -1 : 1;
+    if (a.priorityLevel !== b.priorityLevel) {
+      return a.priorityLevel - b.priorityLevel;
     }
-    if (b.matchScore !== a.matchScore) {
-      return b.matchScore - a.matchScore;
-    }
-    return (b.rate.priority || 0) - (a.rate.priority || 0);
+    return b.matchScore - a.matchScore;
   });
 
-  const activeMatches = results.filter(r => r.isValidForDate);
-  const expiredMatches = results.filter(r => !r.isValidForDate);
+  const activeMatches = results.filter(r => !r.isExpired && !r.isFutureRate);
+  const expiredMatches = results.filter(r => r.isExpired);
+  const futureMatches = results.filter(r => r.isFutureRate);
 
   return {
     activeMatches,
     expiredMatches,
+    futureMatches,
     allFound: results,
     totalMatches: results.length,
   };

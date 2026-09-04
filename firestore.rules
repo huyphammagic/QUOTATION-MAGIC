@@ -92,5 +92,25 @@ service cloud.firestore {
     match /communicationJobs/{jobId} {
       allow read, write: if true;
     }
+
+    // Phase 10: Logistics Suppliers Master
+    match /suppliers/{supplierId} {
+      allow read, write: if true;
+    }
+
+    // Phase 10: Logistics Carriers Master
+    match /carriers/{carrierId} {
+      allow read, write: if true;
+    }
+
+    // Phase 10: Rate Approval Requests
+    match /rateApprovals/{approvalId} {
+      allow read, write: if true;
+    }
+
+    // Phase 10: Sales to Pricing Rate Requests
+    match /rateRequests/{requestId} {
+      allow read, write: if true;
+    }
   }
 }

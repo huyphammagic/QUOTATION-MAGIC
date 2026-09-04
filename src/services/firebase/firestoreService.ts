@@ -13,7 +13,15 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 import { QuoteData, CustomerRecord, SurchargeItem, CompanyProfile } from '../../types/logistics';
-import { RateMasterItem, ChargeMasterItem, RateHistoryItem } from '../../types/masterRate';
+import { 
+  RateMasterItem, 
+  ChargeMasterItem, 
+  RateHistoryItem,
+  SupplierItem,
+  CarrierItem,
+  RateApprovalRequest,
+  RateRequestItem
+} from '../../types/masterRate';
 import { 
   loadSavedQuotes, 
   saveQuotesList, 
@@ -41,6 +49,10 @@ const COLLECTIONS = {
   CHARGE_MASTERS: 'chargeMasters',
   RATE_HISTORIES: 'rateHistories',
   SETTINGS: 'system_settings',
+  SUPPLIERS: 'suppliers',
+  CARRIERS: 'carriers',
+  RATE_APPROVALS: 'rateApprovals',
+  RATE_REQUESTS: 'rateRequests',
 };
 
 /**
@@ -455,4 +467,184 @@ export async function getRateHistoriesFromFirestore(): Promise<RateHistoryItem[]
 
   return getSavedRateHistories();
 }
+
+/**
+ * =========================================================================
+ * 8. SUPPLIERS CRUD WITH FIRESTORE
+ * =========================================================================
+ */
+
+export async function saveSupplierToFirestore(supplier: SupplierItem): Promise<void> {
+  if (!db) return;
+  try {
+    const docRef = doc(db, COLLECTIONS.SUPPLIERS, supplier.id);
+    await setDoc(docRef, {
+      ...supplier,
+      _updatedAt: serverTimestamp(),
+    }, { merge: true });
+  } catch (error) {
+    console.warn('Firestore save supplier error:', error);
+  }
+}
+
+export async function getSuppliersFromFirestore(): Promise<SupplierItem[]> {
+  if (!db) return [];
+  try {
+    const q = query(collection(db, COLLECTIONS.SUPPLIERS));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      const items: SupplierItem[] = [];
+      snapshot.forEach(docSnap => {
+        items.push({ ...docSnap.data() as SupplierItem, id: docSnap.id });
+      });
+      return items;
+    }
+  } catch (error) {
+    console.warn('Firestore load suppliers error:', error);
+  }
+  return [];
+}
+
+export async function deleteSupplierFromFirestore(id: string): Promise<void> {
+  if (!db) return;
+  try {
+    const docRef = doc(db, COLLECTIONS.SUPPLIERS, id);
+    await setDoc(docRef, { status: 'INACTIVE', _updatedAt: serverTimestamp() }, { merge: true });
+  } catch (error) {
+    console.warn('Firestore delete supplier error:', error);
+  }
+}
+
+/**
+ * =========================================================================
+ * 9. CARRIERS CRUD WITH FIRESTORE
+ * =========================================================================
+ */
+
+export async function saveCarrierToFirestore(carrier: CarrierItem): Promise<void> {
+  if (!db) return;
+  try {
+    const docRef = doc(db, COLLECTIONS.CARRIERS, carrier.id);
+    await setDoc(docRef, {
+      ...carrier,
+      _updatedAt: serverTimestamp(),
+    }, { merge: true });
+  } catch (error) {
+    console.warn('Firestore save carrier error:', error);
+  }
+}
+
+export async function getCarriersFromFirestore(): Promise<CarrierItem[]> {
+  if (!db) return [];
+  try {
+    const q = query(collection(db, COLLECTIONS.CARRIERS));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      const items: CarrierItem[] = [];
+      snapshot.forEach(docSnap => {
+        items.push({ ...docSnap.data() as CarrierItem, id: docSnap.id });
+      });
+      return items;
+    }
+  } catch (error) {
+    console.warn('Firestore load carriers error:', error);
+  }
+  return [];
+}
+
+export async function deleteCarrierFromFirestore(id: string): Promise<void> {
+  if (!db) return;
+  try {
+    const docRef = doc(db, COLLECTIONS.CARRIERS, id);
+    await setDoc(docRef, { status: 'INACTIVE', _updatedAt: serverTimestamp() }, { merge: true });
+  } catch (error) {
+    console.warn('Firestore delete carrier error:', error);
+  }
+}
+
+/**
+ * =========================================================================
+ * 10. RATE APPROVALS CRUD WITH FIRESTORE
+ * =========================================================================
+ */
+
+export async function saveRateApprovalToFirestore(approval: RateApprovalRequest): Promise<void> {
+  if (!db) return;
+  try {
+    const docRef = doc(db, COLLECTIONS.RATE_APPROVALS, approval.id);
+    await setDoc(docRef, {
+      ...approval,
+      _updatedAt: serverTimestamp(),
+    }, { merge: true });
+  } catch (error) {
+    console.warn('Firestore save rate approval error:', error);
+  }
+}
+
+export async function getRateApprovalsFromFirestore(): Promise<RateApprovalRequest[]> {
+  if (!db) return [];
+  try {
+    const q = query(collection(db, COLLECTIONS.RATE_APPROVALS));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      const items: RateApprovalRequest[] = [];
+      snapshot.forEach(docSnap => {
+        items.push({ ...docSnap.data() as RateApprovalRequest, id: docSnap.id });
+      });
+      items.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+      return items;
+    }
+  } catch (error) {
+    console.warn('Firestore load rate approvals error:', error);
+  }
+  return [];
+}
+
+/**
+ * =========================================================================
+ * 11. RATE REQUESTS (SALES -> PRICING) CRUD WITH FIRESTORE
+ * =========================================================================
+ */
+
+export async function saveRateRequestToFirestore(request: RateRequestItem): Promise<void> {
+  if (!db) return;
+  try {
+    const docRef = doc(db, COLLECTIONS.RATE_REQUESTS, request.id);
+    await setDoc(docRef, {
+      ...request,
+      _updatedAt: serverTimestamp(),
+    }, { merge: true });
+  } catch (error) {
+    console.warn('Firestore save rate request error:', error);
+  }
+}
+
+export async function getRateRequestsFromFirestore(): Promise<RateRequestItem[]> {
+  if (!db) return [];
+  try {
+    const q = query(collection(db, COLLECTIONS.RATE_REQUESTS));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      const items: RateRequestItem[] = [];
+      snapshot.forEach(docSnap => {
+        items.push({ ...docSnap.data() as RateRequestItem, id: docSnap.id });
+      });
+      items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      return items;
+    }
+  } catch (error) {
+    console.warn('Firestore load rate requests error:', error);
+  }
+  return [];
+}
+
+export async function deleteRateRequestFromFirestore(id: string): Promise<void> {
+  if (!db) return;
+  try {
+    await deleteDoc(doc(db, COLLECTIONS.RATE_REQUESTS, id));
+  } catch (error) {
+    console.warn('Firestore delete rate request error:', error);
+  }
+}
+
 

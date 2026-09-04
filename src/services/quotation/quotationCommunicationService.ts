@@ -542,3 +542,41 @@ export async function buildQuotationTimeline(quote: QuoteData): Promise<Quotatio
 
   return events;
 }
+
+/**
+ * Fetches all communications across the entire company for aggregate analytics
+ */
+export async function getAllCommunications(): Promise<QuotationCommunication[]> {
+  if (db) {
+    try {
+      const snap = await getDocs(collection(db, COLLECTION_COMMUNICATIONS));
+      if (!snap.empty) {
+        const items: QuotationCommunication[] = [];
+        snap.forEach(d => items.push({ ...d.data() as QuotationCommunication, id: d.id }));
+        return items;
+      }
+    } catch (err) {
+      console.warn('Firestore getAllCommunications error:', err);
+    }
+  }
+  return getLocalCommunications();
+}
+
+/**
+ * Fetches all follow-up tasks across the organization for analytics and task health
+ */
+export async function getAllFollowUps(): Promise<QuotationFollowUp[]> {
+  if (db) {
+    try {
+      const snap = await getDocs(collection(db, COLLECTION_FOLLOW_UPS));
+      if (!snap.empty) {
+        const items: QuotationFollowUp[] = [];
+        snap.forEach(d => items.push({ ...d.data() as QuotationFollowUp, id: d.id }));
+        return items;
+      }
+    } catch (err) {
+      console.warn('Firestore getAllFollowUps error:', err);
+    }
+  }
+  return getLocalFollowUps();
+}
