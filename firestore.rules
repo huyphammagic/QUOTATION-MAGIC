@@ -112,5 +112,40 @@ service cloud.firestore {
     match /rateRequests/{requestId} {
       allow read, write: if true;
     }
+
+    // Phase 13: Bulk Rate Import Jobs
+    match /importJobs/{jobId} {
+      allow read, write: if true;
+    }
+
+    // Phase 13: Missing Rate Detection Events
+    match /missingRateEvents/{eventId} {
+      allow read, write: if true;
+    }
+
+    // Phase 14: Customer & Supplier Contracts
+    match /contracts/{contractId} {
+      allow read, write: if true;
+    }
+
+    // Phase 14: Contract Rates
+    match /contractRates/{rateId} {
+      allow read, write: if true;
+    }
+
+    // Phase 14: Contract Versions
+    match /contractVersions/{versionId} {
+      allow read, write: if true;
+    }
+
+    // Phase 14: Contract Documents
+    match /contractDocuments/{documentId} {
+      allow read, write: if true;
+    }
+
+    // Phase 14: Contract Audits
+    match /contractAudits/{auditId} {
+      allow read, write: if true;
+    }
   }
 }

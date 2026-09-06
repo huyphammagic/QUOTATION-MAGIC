@@ -19,7 +19,8 @@ import {
   Sparkles,
   Info,
   RefreshCw,
-  Edit3
+  Edit3,
+  ShieldCheck
 } from 'lucide-react';
 
 interface LineItemsTableProps {
@@ -404,7 +405,25 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                       className="w-full px-2.5 py-1.5 rounded border border-slate-200 font-medium text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
                       placeholder="Tên phí..."
                     />
-                    {item.rateId && (
+                    {item.priceSource === 'CUSTOMER_CONTRACT' && (
+                      <span 
+                        className="shrink-0 text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-300 px-1.5 py-0.5 rounded flex items-center gap-1 shadow-2xs cursor-help"
+                        title={item.priceTraceability || `Hợp Đồng Khách Hàng: ${item.sourceContractNumber || 'CTR'} (v${item.sourceVersion || 1})`}
+                      >
+                        <ShieldCheck className="w-2.5 h-2.5 text-purple-700" />
+                        {item.sourceContractNumber ? `HĐ KH: ${item.sourceContractNumber}` : 'HĐ KH'}
+                      </span>
+                    )}
+                    {item.priceSource === 'SUPPLIER_CONTRACT' && (
+                      <span 
+                        className="shrink-0 text-[10px] font-bold bg-teal-100 text-teal-900 border border-teal-300 px-1.5 py-0.5 rounded flex items-center gap-1 shadow-2xs cursor-help"
+                        title={item.priceTraceability || `Hợp Đồng NCC: ${item.sourceContractNumber || 'CTR'}`}
+                      >
+                        <ShieldCheck className="w-2.5 h-2.5 text-teal-700" />
+                        {item.sourceContractNumber ? `HĐ NCC: ${item.sourceContractNumber}` : 'HĐ NCC'}
+                      </span>
+                    )}
+                    {item.rateId && !item.priceSource && (
                       <span 
                         className="shrink-0 text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded flex items-center gap-1"
                         title={`Master Snapshot: ${item.rateCode || item.rateId} (v${item.rateVersion || 1}) - Bất biến`}

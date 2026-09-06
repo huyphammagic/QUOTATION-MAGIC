@@ -15,6 +15,12 @@ import {
 import { roundCurrency } from './currencyCalculator';
 import { calculateOverallMargin, calculateProfitAndMargin } from './profitCalculator';
 import { validateQuote } from './validationEngine';
+import { 
+  calculateMarkupPercent, 
+  calculateRecommendedSellPrice, 
+  calculateMinimumSellPrice, 
+  evaluateMarginStatus 
+} from './profitIntelligenceEngine';
 
 /**
  * Creates an empty group breakdown object
@@ -328,6 +334,22 @@ export function calculateQuote(
     totalProfitUsd: profitUsdCalc.profit,
     totalProfitVnd: profitVndCalc.profit,
     overallMarginPercent: profitUsdCalc.marginPercent,
+    markupPercent: calculateMarkupPercent(profitUsdCalc.profit, roundedTotalCostUsd),
+    targetMarginPercent: rawQuote.targetMarginPercent || 20,
+    minimumMarginPercent: rawQuote.minimumMarginPercent || 15,
+    marginStatus: evaluateMarginStatus(
+      profitUsdCalc.marginPercent,
+      rawQuote.targetMarginPercent || 20,
+      rawQuote.minimumMarginPercent || 15,
+      8,
+      roundedTotalCostUsd,
+      roundedSubtotalUsd
+    ),
+    recommendedSellPriceUsd: calculateRecommendedSellPrice(roundedTotalCostUsd, rawQuote.targetMarginPercent || 20),
+    minimumSellPriceUsd: calculateMinimumSellPrice(roundedTotalCostUsd, rawQuote.minimumMarginPercent || 15),
+    priceFloorType: rawQuote.priceFloorType || 'MIN_MARGIN',
+    pricingPolicyId: rawQuote.pricingPolicyId,
+    pricingPolicyCode: rawQuote.pricingPolicyCode,
   };
 
   // Run Validation Engine

@@ -1,6 +1,6 @@
 {
   "name": "Báo Giá Logistics - Quotation Manager",
-  "description": "Ứng dụng tạo, quản lý và xuất báo giá dịch vụ Logistics chuyên nghiệp (Freight Forwarding, Kho bãi, Vận tải, Hải quan)",
+  "description": "Ứng dụng tạo, quản lý và xuất báo giá dịch vụ Logistics chuyên nghiệp kèm hệ thống Profit & Margin Intelligence, What-If Pricing Engine, Quản lý Hợp Đồng Khách Hàng & NCC, và nạp cước hàng loạt hiệu năng cao",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

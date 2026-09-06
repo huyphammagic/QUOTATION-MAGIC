@@ -10,3 +10,6 @@ export * from './rateApprovalService';
 export * from './rateRequestService';
 export * from './rateImportExportService';
 export * from './rateAnalyticsService';
+export * from './rateIdentityService';
+export * from './rateMatchingEngine';
+export * from './bulkImportEngine';

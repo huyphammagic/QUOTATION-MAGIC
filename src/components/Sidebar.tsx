@@ -28,8 +28,10 @@ import {
   Archive,
   Mail,
   Send,
-  Calendar,
-  LayoutDashboard
+  Calendar, 
+  LayoutDashboard,
+  TrendingUp,
+  Sliders
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -62,6 +64,10 @@ interface SidebarProps {
   onOpenEmailTemplates?: () => void;
   onOpenFollowUps?: () => void;
   onOpenDashboard?: () => void;
+  onOpenContracts?: () => void;
+  contractsCount?: number;
+  onOpenProfitIntelligence?: () => void;
+  onOpenPricingPolicies?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -94,6 +100,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenEmailTemplates,
   onOpenFollowUps,
   onOpenDashboard,
+  onOpenContracts,
+  contractsCount = 0,
+  onOpenProfitIntelligence,
+  onOpenPricingPolicies,
 }) => {
   // Folder open/closed states
   const [openFolders, setOpenFolders] = useState<{ [key: string]: boolean }>({
@@ -378,6 +388,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </button>
                 )}
 
+                {/* Item: Phân Tích Lợi Nhuận & What-If Pricing (Phase 15) */}
+                {onOpenProfitIntelligence && (
+                  <button
+                    type="button"
+                    onClick={() => handleAction(onOpenProfitIntelligence)}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-emerald-200 hover:text-white transition-colors text-left group bg-emerald-950/20 border border-emerald-800/30"
+                    id="sidebar-btn-profit-intelligence"
+                  >
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <TrendingUp className="w-3.5 h-3.5 text-emerald-400 shrink-0 group-hover:text-emerald-300" />
+                      <span className="text-xs font-semibold truncate">Biên Lãi & What-If</span>
+                    </div>
+                    <span className="text-[9px] bg-emerald-700 text-emerald-100 font-bold px-1.5 py-0.2 rounded font-mono">
+                      Phase 15
+                    </span>
+                  </button>
+                )}
+
                 {/* Item: Xem trước A4 */}
                 {onOpenPreview && (
                   <button
@@ -604,6 +632,49 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         {rateMastersCount}
                       </span>
                     )}
+                  </button>
+                )}
+
+                {/* Item: Hợp Đồng Khách Hàng & NCC (Phase 14) */}
+                {onOpenContracts && (
+                  <button
+                    type="button"
+                    onClick={() => handleAction(onOpenContracts)}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group bg-gradient-to-r from-purple-950/40 to-indigo-950/40 border border-purple-800/40"
+                    id="sidebar-btn-contracts"
+                  >
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <FileText className="w-3.5 h-3.5 text-purple-400 shrink-0 group-hover:text-purple-300" />
+                      <span className="text-xs font-semibold text-purple-200 truncate">Hợp Đồng KH & NCC</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {contractsCount > 0 && (
+                        <span className="text-[10px] bg-purple-900/80 text-purple-200 border border-purple-700/50 px-1.5 py-0.2 rounded font-mono font-bold">
+                          {contractsCount}
+                        </span>
+                      )}
+                      <span className="text-[9px] bg-purple-600 text-white font-black px-1.5 py-0.2 rounded uppercase">
+                        Phase 14
+                      </span>
+                    </div>
+                  </button>
+                )}
+
+                {/* Item: Chính Sách Giá & Biên Lãi (Phase 15) */}
+                {onOpenPricingPolicies && (
+                  <button
+                    type="button"
+                    onClick={() => handleAction(onOpenPricingPolicies)}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group bg-gradient-to-r from-emerald-950/40 to-teal-950/40 border border-emerald-800/40"
+                    id="sidebar-btn-pricing-policies"
+                  >
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <Sliders className="w-3.5 h-3.5 text-emerald-400 shrink-0 group-hover:text-emerald-300" />
+                      <span className="text-xs font-semibold text-emerald-200 truncate">Chính Sách Biên Lãi</span>
+                    </div>
+                    <span className="text-[9px] bg-emerald-600 text-white font-black px-1.5 py-0.2 rounded uppercase">
+                      Phase 15
+                    </span>
                   </button>
                 )}
 

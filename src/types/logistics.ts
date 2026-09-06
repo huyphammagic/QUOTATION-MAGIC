@@ -129,12 +129,21 @@ export interface LineItem {
   overrideReason?: string;
   overriddenAt?: string;
   overriddenBy?: string;
+
+  // Contract & Price Source Traceability (Phase 14)
+  priceSource?: 'CUSTOMER_CONTRACT' | 'SUPPLIER_CONTRACT' | 'STANDARD_RATE' | 'SPOT_RATE' | 'MANUAL';
+  sourceId?: string;           // contractId or rateId
+  sourceContractNumber?: string; // e.g. CTR-CUST-2026-001
+  sourceVersion?: number | string; // e.g. 1, 2, or 'V1'
+  sourceRateId?: string;       // e.g. CRATE-001
+  priceTraceability?: string;  // e.g. "Hợp đồng KH: CTR-2026-001 (V1) - Giá SELL"
 }
 
 export interface CustomerRecord extends CustomerInfo {
   id: string;
   code: string;
   group?: string;
+  segment?: string; // VIP, STRATEGIC, STANDARD
   notes?: string;
   createdDate?: string;
 }
@@ -156,6 +165,9 @@ export interface SurchargeItem {
 }
 
 export interface CustomerInfo {
+  id?: string;
+  code?: string;
+  segment?: string;
   customerName: string;
   companyName: string;
   taxId: string;
@@ -238,4 +250,21 @@ export interface QuoteData {
   totalProfitUsd?: number;
   totalProfitVnd?: number;
   overallMarginPercent?: number;
+  markupPercent?: number;
+  targetMarginPercent?: number;
+  minimumMarginPercent?: number;
+  recommendedSellPriceUsd?: number;
+  recommendedSellPriceVnd?: number;
+  minimumSellPriceUsd?: number;
+  minimumSellPriceVnd?: number;
+  maximumDiscountUsd?: number;
+  maximumDiscountPercent?: number;
+  marginStatus?: string;
+  priceFloorType?: any;
+  priceLocked?: boolean;
+  priceOverrideReason?: string;
+  pricingPolicyId?: string;
+  pricingPolicyCode?: string;
+  pricingPolicyVersion?: number;
+  profitSummary?: any;
 }

@@ -9,7 +9,8 @@ import {
   orderBy, 
   onSnapshot,
   Timestamp,
-  serverTimestamp 
+  serverTimestamp,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 import { QuoteData, CustomerRecord, SurchargeItem, CompanyProfile } from '../../types/logistics';
@@ -20,7 +21,9 @@ import {
   SupplierItem,
   CarrierItem,
   RateApprovalRequest,
-  RateRequestItem
+  RateRequestItem,
+  BulkImportJob,
+  MissingRateEvent
 } from '../../types/masterRate';
 import { 
   loadSavedQuotes, 
@@ -53,6 +56,8 @@ const COLLECTIONS = {
   CARRIERS: 'carriers',
   RATE_APPROVALS: 'rateApprovals',
   RATE_REQUESTS: 'rateRequests',
+  IMPORT_JOBS: 'importJobs',
+  MISSING_RATE_EVENTS: 'missingRateEvents',
 };
 
 /**
@@ -646,5 +651,180 @@ export async function deleteRateRequestFromFirestore(id: string): Promise<void> 
     console.warn('Firestore delete rate request error:', error);
   }
 }
+
+/**
+ * =========================================================================
+ * 12. PHASE 13: BATCH SAVE MASTER RATES & IMPORT JOBS
+ * =========================================================================
+ */
+
+/**
+ * Batch saves multiple master rates using Firestore writeBatch (chunks of 400 docs)
+ */
+export async function batchSaveMasterRatesToFirestore(
+  rates: RateMasterItem[],
+  importJobId?: string,
+  actor: string = 'BULK_IMPORT'
+): Promise<void> {
+  if (!rates || rates.length === 0) return;
+
+  // 1. Update local cache immediately for responsive UI
+  const existingLocal = getSavedRateMasters();
+  const localMap = new Map<string, RateMasterItem>();
+  existingLocal.forEach(r => localMap.set(r.id, r));
+  rates.forEach(r => localMap.set(r.id, r));
+  localStorage.setItem('LOGISTICS_RATE_MASTERS_V1', JSON.stringify(Array.from(localMap.values())));
+
+  // 2. Persist to Firestore in safe chunks
+  if (!db) return;
+
+  const CHUNK_SIZE = 400; // Well below 500 Firestore limit
+  for (let i = 0; i < rates.length; i += CHUNK_SIZE) {
+    const chunk = rates.slice(i, i + CHUNK_SIZE);
+    const batch = writeBatch(db);
+
+    for (const rate of chunk) {
+      const docRef = doc(db, COLLECTIONS.RATE_MASTERS, rate.id);
+      batch.set(docRef, {
+        ...rate,
+        importJobId: importJobId || rate.importJobId || null,
+        _updatedAt: serverTimestamp(),
+      }, { merge: true });
+    }
+
+    try {
+      await batch.commit();
+    } catch (error) {
+      console.warn(`Firestore batch commit chunk ${i / CHUNK_SIZE + 1} error:`, error);
+    }
+  }
+
+  // 3. Log bulk import audit record
+  const bulkHistoryItem: RateHistoryItem = {
+    id: `hist-bulk-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    rateId: importJobId || 'BULK_IMPORT',
+    rateCode: `BATCH_${rates.length}_ITEMS`,
+    action: 'RATE_IMPORTED',
+    timestamp: new Date().toISOString(),
+    actor: actor,
+    snapshot: {},
+    note: `Đã import thành công ${rates.length} bảng giá cước (Job: ${importJobId || 'N/A'})`,
+  };
+  addRateHistoryItem(bulkHistoryItem);
+
+  try {
+    const histDocRef = doc(db, COLLECTIONS.RATE_HISTORIES, bulkHistoryItem.id);
+    await setDoc(histDocRef, {
+      ...bulkHistoryItem,
+      _createdAt: serverTimestamp(),
+    }, { merge: true });
+  } catch (err) {
+    console.warn('Firestore log bulk import history error:', err);
+  }
+}
+
+/**
+ * Saves Bulk Import Job metadata
+ */
+export async function saveBulkImportJobToFirestore(job: BulkImportJob): Promise<void> {
+  // Save local cache
+  try {
+    const raw = localStorage.getItem('LOGISTICS_IMPORT_JOBS_V1');
+    const list: BulkImportJob[] = raw ? JSON.parse(raw) : [];
+    const idx = list.findIndex(j => j.id === job.id);
+    if (idx >= 0) list[idx] = job;
+    else list.unshift(job);
+    localStorage.setItem('LOGISTICS_IMPORT_JOBS_V1', JSON.stringify(list.slice(0, 50)));
+  } catch (e) {
+    console.warn('Cache import job error:', e);
+  }
+
+  if (!db) return;
+  try {
+    const docRef = doc(db, COLLECTIONS.IMPORT_JOBS, job.id);
+    await setDoc(docRef, {
+      ...job,
+      _updatedAt: serverTimestamp(),
+    }, { merge: true });
+  } catch (error) {
+    console.warn('Firestore save import job error:', error);
+  }
+}
+
+/**
+ * Retrieves Import Jobs from Firestore
+ */
+export async function getBulkImportJobsFromFirestore(): Promise<BulkImportJob[]> {
+  if (!db) {
+    try {
+      const raw = localStorage.getItem('LOGISTICS_IMPORT_JOBS_V1');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  try {
+    const q = query(collection(db, COLLECTIONS.IMPORT_JOBS));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      const items: BulkImportJob[] = [];
+      snapshot.forEach(docSnap => {
+        items.push({ ...docSnap.data() as BulkImportJob, id: docSnap.id });
+      });
+      items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      localStorage.setItem('LOGISTICS_IMPORT_JOBS_V1', JSON.stringify(items));
+      return items;
+    }
+  } catch (error) {
+    console.warn('Firestore load import jobs error:', error);
+  }
+
+  try {
+    const raw = localStorage.getItem('LOGISTICS_IMPORT_JOBS_V1');
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Saves a missing rate event to Firestore
+ */
+export async function saveMissingRateEventToFirestore(event: MissingRateEvent): Promise<void> {
+  if (!db) return;
+  try {
+    const docRef = doc(db, COLLECTIONS.MISSING_RATE_EVENTS, event.id);
+    await setDoc(docRef, {
+      ...event,
+      _updatedAt: serverTimestamp(),
+    }, { merge: true });
+  } catch (error) {
+    console.warn('Firestore save missing rate event error:', error);
+  }
+}
+
+/**
+ * Retrieves missing rate events from Firestore
+ */
+export async function getMissingRateEventsFromFirestore(): Promise<MissingRateEvent[]> {
+  if (!db) return [];
+  try {
+    const q = query(collection(db, COLLECTIONS.MISSING_RATE_EVENTS));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      const items: MissingRateEvent[] = [];
+      snapshot.forEach(docSnap => {
+        items.push({ ...docSnap.data() as MissingRateEvent, id: docSnap.id });
+      });
+      items.sort((a, b) => b.lastRequestedAt.localeCompare(a.lastRequestedAt));
+      return items;
+    }
+  } catch (error) {
+    console.warn('Firestore load missing rate events error:', error);
+  }
+  return [];
+}
+
 
 

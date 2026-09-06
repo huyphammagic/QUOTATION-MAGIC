@@ -14,7 +14,10 @@ import {
   Trash2, 
   Search,
   Check,
-  AlertCircle
+  AlertCircle,
+  GitCompare,
+  Sparkles,
+  FileSpreadsheet
 } from 'lucide-react';
 import { 
   RateMasterItem, 
@@ -47,6 +50,7 @@ import {
   saveRateRequest, 
   removeRateRequest 
 } from '../services/masterRate/rateRequestService';
+import { batchSaveMasterRatesToFirestore } from '../services/firebase/firestoreService';
 
 import { RateTableTab } from './rateEngine/RateTableTab';
 import { RateFormModal } from './rateEngine/RateFormModal';
@@ -54,7 +58,9 @@ import { RateApprovalTab } from './rateEngine/RateApprovalTab';
 import { RateRequestTab } from './rateEngine/RateRequestTab';
 import { SupplierCarrierTab } from './rateEngine/SupplierCarrierTab';
 import { RateExpiringTab } from './rateEngine/RateExpiringTab';
-import { RateCsvImportModal } from './rateEngine/RateCsvImportModal';
+import { RateBulkImportModal } from './rateEngine/RateBulkImportModal';
+import { RateComparisonTab } from './rateEngine/RateComparisonTab';
+import { RateMatchingPlayground } from './rateEngine/RateMatchingPlayground';
 
 interface MasterRateHubModalProps {
   isOpen: boolean;
@@ -82,15 +88,15 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
   onBulkImportRates,
 }) => {
   const [activeTab, setActiveTab] = useState<
-    'RATES' | 'EXPIRING' | 'APPROVALS' | 'REQUESTS' | 'ENTITIES' | 'CHARGES' | 'AUDIT'
+    'RATES' | 'COMPARISON' | 'MATCHING' | 'EXPIRING' | 'APPROVALS' | 'REQUESTS' | 'ENTITIES' | 'CHARGES' | 'AUDIT'
   >('RATES');
 
   // Rate Form state
   const [isRateFormOpen, setIsRateFormOpen] = useState(false);
   const [editingRate, setEditingRate] = useState<Partial<RateMasterItem> | null>(null);
 
-  // Bulk CSV Import Modal state
-  const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
+  // Bulk Excel/CSV Import Modal state
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
 
   // Charge Form Modal state
   const [isChargeFormOpen, setIsChargeFormOpen] = useState(false);
@@ -158,6 +164,10 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
     const rejectedRate = await rejectRateRequest(rate, approvalId, reason, 'Pricing Manager');
     await onSaveRate(rejectedRate);
     setApprovals(prev => prev.map(a => a.id === approvalId ? { ...a, status: 'REJECTED', rejectionReason: reason, reviewedBy: 'Pricing Manager', reviewedAt: new Date().toISOString() } : a));
+  };
+
+  const handleCompareRate = (rate: RateMasterItem) => {
+    setActiveTab('COMPARISON');
   };
 
   // Supplier & Carrier Actions
@@ -293,17 +303,17 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold tracking-tight">
-                  Advanced Rate & Cost Management Engine
+                  Rate Intelligence & Advanced Cost Hub
                 </h2>
                 <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded border border-blue-400/30">
                   Firebase Source of Truth
                 </span>
                 <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded border border-emerald-400/30">
-                  Phase 10 Enterprise
+                  Phase 13 Performance-First
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                Quản lý biểu cước cước biển, hàng không, trucking, local charges, giá vốn (Buy), giá bán (Sell), phê duyệt và cảnh báo hết hạn
+                Định vị giá cước đa tầng, bộ lọc thông minh, streaming bulk import và bảo toàn dữ liệu
               </p>
             </div>
           </div>
@@ -318,12 +328,12 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
               <Download className="w-3.5 h-3.5 text-emerald-400" /> Xuất Excel CSV
             </button>
             <button
-              onClick={() => setIsCsvModalOpen(true)}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-colors"
-              title="Nạp bảng giá hàng loạt từ CSV"
+              onClick={() => setIsBulkImportOpen(true)}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors"
+              title="Nạp bảng giá hàng loạt từ Excel hoặc CSV (Streaming)"
               id="btn-header-import-csv"
             >
-              <Upload className="w-3.5 h-3.5 text-blue-400" /> Nạp Bulk CSV
+              <FileSpreadsheet className="w-3.5 h-3.5" /> Nạp Excel/CSV Hàng Loạt
             </button>
             <button 
               onClick={onClose}
@@ -336,7 +346,7 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
         </div>
 
         {/* Navigation Tabs Bar */}
-        <div className="px-6 bg-slate-850 bg-slate-900 border-b border-slate-700 flex items-center justify-between overflow-x-auto">
+        <div className="px-6 bg-slate-900 border-b border-slate-700 flex items-center justify-between overflow-x-auto">
           <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={() => setActiveTab('RATES')}
@@ -352,6 +362,32 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('COMPARISON')}
+              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
+                activeTab === 'COMPARISON'
+                  ? 'border-indigo-500 text-white bg-slate-800/80'
+                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+              id="tab-btn-comparison"
+            >
+              <GitCompare className="w-4 h-4 text-indigo-400" />
+              So Sánh & Phân Tích
+            </button>
+
+            <button
+              onClick={() => setActiveTab('MATCHING')}
+              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
+                activeTab === 'MATCHING'
+                  ? 'border-purple-500 text-white bg-slate-800/80'
+                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+              id="tab-btn-matching"
+            >
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              Rate Matching Engine
+            </button>
+
+            <button
               onClick={() => setActiveTab('EXPIRING')}
               className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
                 activeTab === 'EXPIRING'
@@ -361,7 +397,7 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
               id="tab-btn-expiring"
             >
               <Clock className="w-4 h-4 text-amber-400" />
-              Cảnh Báo Hết Hạn & Tuyến
+              Cảnh Báo Hết Hạn
             </button>
 
             <button
@@ -386,12 +422,12 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
               onClick={() => setActiveTab('REQUESTS')}
               className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
                 activeTab === 'REQUESTS'
-                  ? 'border-indigo-500 text-white bg-slate-800/80'
+                  ? 'border-sky-500 text-white bg-slate-800/80'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
               id="tab-btn-requests"
             >
-              <Layers className="w-4 h-4 text-indigo-400" />
+              <Layers className="w-4 h-4 text-sky-400" />
               Yêu Cầu Giá (Sales) ({requests.length})
             </button>
 
@@ -399,13 +435,13 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
               onClick={() => setActiveTab('ENTITIES')}
               className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
                 activeTab === 'ENTITIES'
-                  ? 'border-purple-500 text-white bg-slate-800/80'
+                  ? 'border-purple-400 text-white bg-slate-800/80'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
               id="tab-btn-entities"
             >
               <Building className="w-4 h-4 text-purple-400" />
-              Hãng Tàu & Nhà Cung Cấp
+              Hãng Vận Chuyển & NCC
             </button>
 
             <button
@@ -431,7 +467,7 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
               id="tab-btn-audit"
             >
               <History className="w-4 h-4 text-slate-400" />
-              Lịch Sử Audit ({rateHistories.length})
+              Nhật Ký Audit ({rateHistories.length})
             </button>
           </div>
 
@@ -460,10 +496,27 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
               onNewVersion={handleNewVersion}
               onDeleteRate={onDeleteRate}
               onSubmitApproval={handleSubmitForApproval}
+              onCompareRate={handleCompareRate}
             />
           )}
 
-          {/* TAB 2: EXPIRING & COVERAGE */}
+          {/* TAB 2: COMPARISON MATRIX */}
+          {activeTab === 'COMPARISON' && (
+            <RateComparisonTab
+              rates={rates}
+              onEditRate={handleEditRate}
+            />
+          )}
+
+          {/* TAB 3: RATE MATCHING ENGINE PLAYGROUND */}
+          {activeTab === 'MATCHING' && (
+            <RateMatchingPlayground
+              rates={rates}
+              onSelectRate={handleEditRate}
+            />
+          )}
+
+          {/* TAB 4: EXPIRING & COVERAGE */}
           {activeTab === 'EXPIRING' && (
             <RateExpiringTab
               rates={rates}
@@ -472,7 +525,7 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
             />
           )}
 
-          {/* TAB 3: APPROVALS */}
+          {/* TAB 5: APPROVALS */}
           {activeTab === 'APPROVALS' && (
             <RateApprovalTab
               approvals={approvals}
@@ -482,7 +535,7 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
             />
           )}
 
-          {/* TAB 4: REQUESTS */}
+          {/* TAB 6: REQUESTS */}
           {activeTab === 'REQUESTS' && (
             <RateRequestTab
               requests={requests}
@@ -492,7 +545,7 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
             />
           )}
 
-          {/* TAB 5: ENTITIES (CARRIERS & SUPPLIERS) */}
+          {/* TAB 7: ENTITIES (CARRIERS & SUPPLIERS) */}
           {activeTab === 'ENTITIES' && (
             <SupplierCarrierTab
               suppliers={suppliers}
@@ -504,7 +557,7 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
             />
           )}
 
-          {/* TAB 6: CHARGE MASTERS */}
+          {/* TAB 8: CHARGE MASTERS */}
           {activeTab === 'CHARGES' && (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
               <table className="w-full text-left text-xs border-collapse">
@@ -573,7 +626,7 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
             </div>
           )}
 
-          {/* TAB 7: AUDIT HISTORIES */}
+          {/* TAB 9: AUDIT HISTORIES */}
           {activeTab === 'AUDIT' && (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
               <table className="w-full text-left text-xs border-collapse">
@@ -604,14 +657,15 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
                             hist.action === 'CREATE' ? 'bg-emerald-100 text-emerald-800' :
                             hist.action === 'UPDATE' ? 'bg-blue-100 text-blue-800' :
                             hist.action === 'NEW_VERSION' ? 'bg-purple-100 text-purple-800' :
-                            hist.action === 'APPROVE' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
+                            hist.action === 'APPROVE' ? 'bg-amber-100 text-amber-800' : 
+                            hist.action === 'RATE_IMPORTED' ? 'bg-indigo-100 text-indigo-800' : 'bg-rose-100 text-rose-800'
                           }`}>
                             {hist.action}
                           </span>
                         </td>
                         <td className="py-3 px-3 font-mono font-bold text-slate-700">{hist.rateCode}</td>
-                        <td className="py-3 px-3 text-slate-700 font-medium">{hist.performedBy}</td>
-                        <td className="py-3 px-4 text-slate-600 text-[11px]">{hist.details}</td>
+                        <td className="py-3 px-3 text-slate-700 font-medium">{hist.performedBy || hist.actor}</td>
+                        <td className="py-3 px-4 text-slate-600 text-[11px]">{hist.details || hist.note}</td>
                       </tr>
                     ))
                   )}
@@ -636,14 +690,14 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
           }}
         />
 
-        {/* MODAL: BULK CSV IMPORT */}
-        <RateCsvImportModal
-          isOpen={isCsvModalOpen}
-          onClose={() => setIsCsvModalOpen(false)}
+        {/* MODAL: BULK EXCEL & CSV STREAMING IMPORT */}
+        <RateBulkImportModal
+          isOpen={isBulkImportOpen}
+          onClose={() => setIsBulkImportOpen(false)}
           existingRates={rates}
-          onConfirmImport={async (importedRates) => {
+          onConfirmImport={async (importedRates, jobId) => {
+            await batchSaveMasterRatesToFirestore(importedRates, jobId, 'PRICING_USER');
             await onBulkImportRates(importedRates);
-            setIsCsvModalOpen(false);
           }}
         />
 

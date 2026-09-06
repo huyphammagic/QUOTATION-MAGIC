@@ -1,7 +1,23 @@
 import React from 'react';
 import { QuoteData, QuoteCurrency } from '../types/logistics';
 import { formatUSD, formatVND, formatPercent } from '../utils/formatters';
-import { FileDown, FileSpreadsheet, Save, Eye, Calculator, RefreshCw, TrendingUp, DollarSign, ShieldCheck, Coins, Send } from 'lucide-react';
+import { 
+  FileDown, 
+  FileSpreadsheet, 
+  Save, 
+  Eye, 
+  Calculator, 
+  RefreshCw, 
+  TrendingUp, 
+  DollarSign, 
+  ShieldCheck, 
+  Coins, 
+  Send,
+  Sparkles,
+  AlertTriangle,
+  CheckCircle2,
+  ShieldAlert
+} from 'lucide-react';
 
 interface SummaryCardProps {
   quote: QuoteData;
@@ -13,6 +29,7 @@ interface SummaryCardProps {
   onOpenPreview: () => void;
   onOpenGeneratePdf?: () => void;
   onOpenSendModal?: () => void;
+  onOpenProfitIntelligence?: () => void;
 }
 
 export const SummaryCard: React.FC<SummaryCardProps> = ({
@@ -25,11 +42,18 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
   onOpenPreview,
   onOpenGeneratePdf,
   onOpenSendModal,
+  onOpenProfitIntelligence,
 }) => {
   const margin = quote.overallMarginPercent || 0;
-  const isHealthyMargin = margin >= 15;
+  const markup = quote.markupPercent || 0;
+  const targetMargin = quote.targetMarginPercent || 20;
+  const minMargin = quote.minimumMarginPercent || 15;
   const activeCurrency: QuoteCurrency = quote.quoteCurrency || 'USD';
   const isVnd = activeCurrency === 'VND';
+
+  const isBelowMinimum = margin < minMargin;
+  const isBelowTarget = margin < targetMargin;
+  const isAboveTarget = margin >= targetMargin;
 
   return (
     <div id="summary-card" className="bg-slate-900 text-white p-5 lg:p-6 rounded-2xl shadow-xl border border-slate-800 space-y-4">
@@ -125,26 +149,30 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
             <div className="font-bold text-emerald-300 text-sm font-mono mt-0.5">
               +{isVnd ? formatVND(quote.totalProfitVnd || 0) : formatUSD(quote.totalProfitUsd || 0)}
             </div>
-            <div className="text-[10px] text-emerald-400/70 font-mono">
-              {isVnd ? `~ +${formatUSD(quote.totalProfitUsd || 0)}` : `~ +${formatVND(quote.totalProfitVnd || 0)}`}
+            <div className="text-[10px] text-slate-400 font-mono flex items-center justify-between">
+              <span>Markup: <span className="text-indigo-300 font-bold">{formatPercent(markup, 1)}</span></span>
+              <span>{isVnd ? `~ +${formatUSD(quote.totalProfitUsd || 0)}` : `~ +${formatVND(quote.totalProfitVnd || 0)}`}</span>
             </div>
           </div>
 
           {/* 4. Margin % & VAT */}
           <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80 flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-slate-400 font-medium text-[11px]">Margin / VAT:</span>
-              <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
-                isHealthyMargin ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-amber-950 text-amber-300 border border-amber-800'
+              <span className="text-slate-400 font-medium text-[11px]">Biên Lãi / Sàn:</span>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 ${
+                isBelowMinimum 
+                  ? 'bg-rose-950 text-rose-300 border border-rose-800 animate-pulse' 
+                  : isBelowTarget 
+                  ? 'bg-amber-950 text-amber-300 border border-amber-800' 
+                  : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
               }`}>
+                {isBelowMinimum ? <ShieldAlert className="w-3 h-3" /> : isBelowTarget ? <AlertTriangle className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
                 {formatPercent(margin, 1)}
               </span>
             </div>
-            <div className="text-right font-mono mt-1">
-              <span className="text-slate-400 text-[10px]">VAT: </span>
-              <span className="font-bold text-slate-300 text-xs">
-                {isVnd ? formatVND(quote.vatTotalVnd) : formatUSD(quote.vatTotalUsd)}
-              </span>
+            <div className="flex items-center justify-between text-[10px] font-mono mt-1 text-slate-400">
+              <span>Mục tiêu: {targetMargin}%</span>
+              <span>VAT: <span className="font-bold text-slate-300">{isVnd ? formatVND(quote.vatTotalVnd) : formatUSD(quote.vatTotalUsd)}</span></span>
             </div>
           </div>
 
@@ -172,6 +200,17 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
 
         {/* Right 3 Cols: Actions */}
         <div className="lg:col-span-3 flex flex-col gap-2 shrink-0">
+          {onOpenProfitIntelligence && (
+            <button
+              onClick={onOpenProfitIntelligence}
+              className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-amber-500 to-cyan-500 hover:from-amber-400 hover:to-cyan-400 text-slate-950 font-black text-xs sm:text-sm py-2 px-3 rounded-xl shadow-md transition-all active:scale-[0.99]"
+              title="Mở bảng phân tích lợi nhuận & công cụ What-If Pricing"
+            >
+              <Sparkles className="w-4 h-4 text-slate-950" />
+              <span>Phân Tích & What-If Pricing</span>
+            </button>
+          )}
+
           {onOpenSendModal && (
             <button
               onClick={onOpenSendModal}

@@ -9,7 +9,8 @@ import {
   QuoteStatus, 
   CustomerRecord, 
   SurchargeItem,
-  QuoteCurrency
+  QuoteCurrency,
+  TransportMode
 } from './types/logistics';
 import { RateMasterItem, ChargeMasterItem, RateHistoryItem } from './types/masterRate';
 import { DEFAULT_COMPANY_PROFILE, INITIAL_SAMPLE_QUOTE, DEFAULT_EXCHANGE_RATE } from './data/presets';
@@ -95,6 +96,20 @@ import {
   QuotationSecureLink 
 } from './types/quotationCommunication';
 import { AdvancedAnalyticsDashboard } from './components/analytics/AdvancedAnalyticsDashboard';
+import { ContractHubModal } from './components/contract/ContractHubModal';
+import { resolveQuotationPricing } from './services/contract/contractRateResolver';
+import { fetchContracts } from './services/contract/contractRepository';
+
+// Phase 15: Profit & Margin Intelligence
+import { ProfitIntelligenceModal } from './components/pricing/ProfitIntelligenceModal';
+import { PricingPolicyManagementModal } from './components/pricing/PricingPolicyManagementModal';
+import { 
+  getPricingPoliciesFromFirestore, 
+  resolvePricingPolicy, 
+  DEFAULT_GLOBAL_PRICING_POLICY 
+} from './services/pricing/pricingPolicyService';
+import { recordPricingAuditEvent } from './services/pricing/pricingAuditService';
+import { PricingPolicyItem } from './types/pricingIntelligence';
 
 import { Check, Ship, ShieldCheck } from 'lucide-react';
 
@@ -161,6 +176,40 @@ export default function App() {
   const [allFollowUps, setAllFollowUps] = useState<QuotationFollowUp[]>([]);
   const [allLinks, setAllLinks] = useState<QuotationSecureLink[]>([]);
   const [allDocuments, setAllDocuments] = useState<QuotationDocumentRecord[]>([]);
+
+  // Phase 14: Customer & Supplier Contract Management
+  const [isContractsOpen, setIsContractsOpen] = useState(false);
+  const [contractsCount, setContractsCount] = useState(0);
+
+  // Phase 15: Profit & Margin Intelligence
+  const [isProfitIntelligenceOpen, setIsProfitIntelligenceOpen] = useState(false);
+  const [isPricingPolicyMgmtOpen, setIsPricingPolicyMgmtOpen] = useState(false);
+  const [pricingPolicies, setPricingPolicies] = useState<PricingPolicyItem[]>([DEFAULT_GLOBAL_PRICING_POLICY]);
+  const [activePricingPolicy, setActivePricingPolicy] = useState<PricingPolicyItem>(DEFAULT_GLOBAL_PRICING_POLICY);
+
+  const loadPricingPoliciesData = async () => {
+    try {
+      const list = await getPricingPoliciesFromFirestore();
+      setPricingPolicies(list);
+      const resolved = resolvePricingPolicy(list, quote.customer?.id, (quote.customer as any)?.segment, quote.shipment?.mode);
+      setActivePricingPolicy(resolved);
+    } catch (e) {
+      console.warn('Error loading pricing policies:', e);
+    }
+  };
+
+  const loadContractsCount = async () => {
+    try {
+      const res = await fetchContracts({ limitCount: 100 });
+      setContractsCount(res.contracts ? res.contracts.length : 0);
+    } catch (e) {
+      console.warn('Error loading contracts count:', e);
+    }
+  };
+
+  useEffect(() => {
+    loadContractsCount();
+  }, [isContractsOpen]);
 
   // Listen for secure quote URLs like /q/:token or #q/:token or #dashboard
   useEffect(() => {
@@ -229,10 +278,93 @@ export default function App() {
     }
   }, [quote.id, quote.updatedDate]);
 
-  // Approve Quote Handler
+  // Approve Quote Handler with Phase 15 Margin Intelligence Approval Checks
   const handleApproveCurrentQuote = async () => {
+    if (quote.marginStatus === 'BLOCKED') {
+      showToast('⚠️ KHÔNG THỂ PHÊ DUYỆT: Biên lợi nhuận vi phạm mức chặn tối thiểu của chính sách định giá!');
+      setIsProfitIntelligenceOpen(true);
+      return;
+    }
+
+    if (quote.marginStatus === 'BELOW_MINIMUM') {
+      const confirmEx = window.confirm(
+        `⚠️ CẢNH BÁO BIÊN LÃI:\nBiên lợi nhuận (${(quote.overallMarginPercent || 0).toFixed(1)}%) thấp hơn mức tối thiểu (${quote.minimumMarginPercent || 15}%).\nYêu cầu phê duyệt cấp Quản lý / Giám đốc.\n\nBạn có muốn phê duyệt ngoại lệ với quyền quản trị?`
+      );
+      if (!confirmEx) return;
+
+      // Record audit event for policy exception approval
+      await recordPricingAuditEvent({
+        quotationId: quote.id,
+        quotationNumber: quote.quoteNumber,
+        action: 'MARGIN_OVERRIDE',
+        userId: company.salesRepName || 'Manager',
+        userName: company.salesRepName || 'Manager',
+        oldValue: { marginPercent: quote.overallMarginPercent, grandTotalUsd: quote.grandTotalUsd },
+        newValue: { marginPercent: quote.overallMarginPercent, grandTotalUsd: quote.grandTotalUsd },
+        reason: 'Phê duyệt ngoại lệ biên lợi nhuận thấp hơn mức tối thiểu',
+        notes: `Chính sách: ${activePricingPolicy.policyCode}`,
+      });
+    }
+
     await handleUpdateStatus(quote.id, 'APPROVED');
     showToast(`Đã phê duyệt báo giá ${quote.quoteNumber}! Bây giờ bạn có thể gửi cho khách hàng.`);
+  };
+
+  // Phase 14: Resolve Contract Pricing for Current Quotation
+  const handleResolveContractPricing = async () => {
+    const customerId = quote.customer.code || quote.customer.companyName;
+    const origin = quote.shipment.origin;
+    const destination = quote.shipment.destination;
+    const modeUpper = (quote.shipment.serviceType || '').toUpperCase();
+    const mappedMode: TransportMode = 
+      modeUpper.includes('AIR') ? 'AIR_FREIGHT' :
+      modeUpper.includes('TRUCK') ? 'INLAND_TRUCKING' :
+      modeUpper.includes('CUSTOMS') ? 'CUSTOMS_CLEARANCE' :
+      modeUpper.includes('LCL') ? 'SEA_LCL' : 'SEA_FCL';
+
+    showToast('Đang tra cứu biểu cước theo hợp đồng khách hàng & nhà cung cấp...');
+    try {
+      const resolved = await resolveQuotationPricing({
+        customerId,
+        origin,
+        destination,
+        mode: mappedMode,
+        shipmentDate: quote.shipment.etd || new Date().toISOString().slice(0, 10),
+        equipment: quote.shipment.containerType,
+      }, rates);
+
+      if (resolved.isFound) {
+        let hasUpdated = false;
+        const updatedItems = quote.items.map(item => {
+          if (item.category === 'FREIGHT' || item.location === 'FREIGHT') {
+            hasUpdated = true;
+            return {
+              ...item,
+              unitPrice: resolved.sellUnitPrice,
+              costPrice: resolved.costUnitPrice,
+              priceSource: resolved.priceSource,
+              sourceContractNumber: resolved.sourceContractNumber,
+              sourceVersion: resolved.sourceVersion,
+              sourceContractId: resolved.sourceContractId,
+              priceTraceability: resolved.priceTraceability,
+            };
+          }
+          return item;
+        });
+
+        if (hasUpdated) {
+          updateQuoteState({ items: updatedItems });
+          showToast(`Đã áp dụng: ${resolved.priceTraceability}`);
+        } else {
+          showToast(`Tìm thấy cước ${resolved.priceSource} ($${resolved.sellUnitPrice}), nhưng chưa có dòng cước FREIGHT để gán.`);
+        }
+      } else {
+        showToast('Không tìm thấy biểu cước hợp đồng khớp cho tuyến này. Bạn có thể mở mục Hợp Đồng để bổ sung.');
+      }
+    } catch (err: any) {
+      console.error('Error resolving contract pricing:', err);
+      showToast('Lỗi khi tra cứu biểu cước hợp đồng: ' + (err.message || ''));
+    }
   };
 
   // Compute live diffs between quote snapshots and master rates database
@@ -302,6 +434,9 @@ export default function App() {
         if (cloudRates && cloudRates.length > 0) setRates(cloudRates);
         if (cloudChargeMasters && cloudChargeMasters.length > 0) setChargeMasters(cloudChargeMasters);
         if (cloudHistories && cloudHistories.length > 0) setRateHistories(cloudHistories);
+
+        // Sync Phase 15 Pricing Policies
+        await loadPricingPoliciesData();
       } catch (err) {
         console.warn('Firestore initial background sync notice:', err);
       }
@@ -359,10 +494,16 @@ export default function App() {
     });
   };
 
-  // Select Customer from Manager to Auto-fill Quote
+  // Select Customer from Manager to Auto-fill Quote with Pricing Policy resolution
   const handleSelectCustomerForQuote = (cust: CustomerRecord) => {
+    const resolvedPolicy = resolvePricingPolicy(pricingPolicies, cust.id || cust.code, cust.segment, quote.shipment?.mode);
+    setActivePricingPolicy(resolvedPolicy);
+
     updateQuoteState({
       customer: {
+        id: cust.id,
+        code: cust.code,
+        segment: cust.segment,
         companyName: cust.companyName,
         customerName: cust.customerName,
         taxId: cust.taxId,
@@ -370,9 +511,13 @@ export default function App() {
         email: cust.email,
         phone: cust.phone,
         contactPerson: cust.contactPerson || cust.customerName,
-      }
+      },
+      targetMarginPercent: resolvedPolicy.targetMarginPercent,
+      minimumMarginPercent: resolvedPolicy.minimumMarginPercent,
+      pricingPolicyId: resolvedPolicy.id,
+      pricingPolicyCode: resolvedPolicy.policyCode,
     });
-    showToast(`Đã chọn áp dụng khách hàng [${cust.code}] ${cust.companyName}`);
+    showToast(`Đã chọn khách hàng [${cust.code}] ${cust.companyName} (Áp dụng chính sách: ${resolvedPolicy.policyName})`);
   };
 
   // Customer Manager CRUD with Firestore
@@ -491,6 +636,30 @@ export default function App() {
 
     handleUpdateItems(updated);
     showToast(`Đã cập nhật ${selectedLineItemIds.length} mục theo Master Rate mới nhất!`);
+  };
+
+  // Phase 15: Apply What-If Pricing Simulation to Quote with Audit Trail
+  const handleApplyWhatIfToQuote = async (simulatedItems: LineItem[], appliedReason: string) => {
+    const oldMargin = quote.overallMarginPercent;
+    const oldTotal = quote.grandTotalUsd;
+
+    handleUpdateItems(simulatedItems);
+
+    const { calculatedQuote } = calculateQuote({ ...quote, items: simulatedItems });
+
+    await recordPricingAuditEvent({
+      quotationId: quote.id,
+      quotationNumber: quote.quoteNumber,
+      action: 'WHAT_IF_APPLIED',
+      userId: company.salesRepName || 'Pricing Analyst',
+      userName: company.salesRepName || 'Pricing Analyst',
+      oldValue: { marginPercent: oldMargin, grandTotalUsd: oldTotal },
+      newValue: { marginPercent: calculatedQuote.overallMarginPercent, grandTotalUsd: calculatedQuote.grandTotalUsd },
+      reason: appliedReason || 'Áp dụng kịch bản mô phỏng What-If Pricing',
+      notes: `Chính sách: ${activePricingPolicy.policyCode}`,
+    });
+
+    showToast(`Đã áp dụng kết quả What-If thành công! Biên lãi mới: ${(calculatedQuote.overallMarginPercent || 0).toFixed(1)}%`);
   };
 
   const handleAddSurchargeToQuote = (surcharge: SurchargeItem) => {
@@ -808,6 +977,10 @@ export default function App() {
           onOpenEmailTemplates={() => setIsEmailTemplatesOpen(true)}
           onOpenFollowUps={() => setIsFollowUpOpen(true)}
           onOpenDashboard={() => setIsDashboardOpen(true)}
+          onOpenContracts={() => setIsContractsOpen(true)}
+          contractsCount={contractsCount}
+          onOpenProfitIntelligence={() => setIsProfitIntelligenceOpen(true)}
+          onOpenPricingPolicies={() => setIsPricingPolicyMgmtOpen(true)}
         />
 
         {/* Right Main Application Workspace */}
@@ -861,6 +1034,39 @@ export default function App() {
               />
             </div>
 
+            {/* Phase 14 Contract Quick Resolver Action Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 border border-indigo-200/80 rounded-xl shadow-2xs">
+              <div className="flex items-center gap-2 text-xs">
+                <span className="p-1.5 bg-purple-600 text-white rounded-lg shadow-2xs">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                </span>
+                <div>
+                  <span className="font-bold text-slate-800">Contract Rate Engine:</span>
+                  <span className="text-slate-600 ml-1.5">
+                    {quote.customer.companyName ? `Khách: ${quote.customer.companyName}` : 'Chưa chọn khách hàng'} &bull; {quote.shipment.origin || 'POL'} &rarr; {quote.shipment.destination || 'POD'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleResolveContractPricing}
+                  className="px-3 py-1.5 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-2xs flex items-center gap-1.5 transition-colors"
+                  id="btn-resolve-contract-pricing"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" /> Khớp Giá Hợp Đồng
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsContractsOpen(true)}
+                  className="px-3 py-1.5 text-xs font-semibold text-purple-900 bg-white hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors"
+                >
+                  Quản Lý HĐ ({contractsCount})
+                </button>
+              </div>
+            </div>
+
             {/* Full-Width Section: Line Items Table (Pricing Engine Integration) */}
             <div className="w-full">
               <LineItemsTable
@@ -886,6 +1092,7 @@ export default function App() {
               onOpenPreview={() => setIsPreviewOpen(true)}
               onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
               onOpenSendModal={() => setIsSendQuotationOpen(true)}
+              onOpenProfitIntelligence={() => setIsProfitIntelligenceOpen(true)}
             />
 
             {/* Phase 8: Quotation Communication, Dispatch History & Timeline Panel */}
@@ -1118,6 +1325,35 @@ export default function App() {
           onClose={() => setIsDashboardOpen(false)}
         />
       )}
+
+      {/* Phase 14: Customer & Supplier Contract Management Hub */}
+      <ContractHubModal
+        isOpen={isContractsOpen}
+        onClose={() => setIsContractsOpen(false)}
+        customers={customers}
+        suppliers={[]}
+        carriers={[]}
+      />
+
+      {/* Phase 15: Profit & Margin Intelligence Modals */}
+      <ProfitIntelligenceModal
+        isOpen={isProfitIntelligenceOpen}
+        onClose={() => setIsProfitIntelligenceOpen(false)}
+        quote={quote}
+        activePolicy={activePricingPolicy}
+        onApplyWhatIfToQuote={handleApplyWhatIfToQuote}
+        onOpenPolicyManagement={() => {
+          setIsProfitIntelligenceOpen(false);
+          setIsPricingPolicyMgmtOpen(true);
+        }}
+      />
+
+      <PricingPolicyManagementModal
+        isOpen={isPricingPolicyMgmtOpen}
+        onClose={() => setIsPricingPolicyMgmtOpen(false)}
+        policies={pricingPolicies}
+        onPoliciesUpdated={loadPricingPoliciesData}
+      />
 
     </div>
   );

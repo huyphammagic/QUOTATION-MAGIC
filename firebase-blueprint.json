@@ -1,0 +1,72 @@
+{
+  "entities": {
+    "Contract": {
+      "collection": "contracts",
+      "fields": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "contractNumber": { "type": "string" },
+        "contractType": { "type": "string" },
+        "partyId": { "type": "string" },
+        "partyName": { "type": "string" },
+        "partyCode": { "type": "string" },
+        "contractName": { "type": "string" },
+        "currency": { "type": "string" },
+        "effectiveDate": { "type": "string" },
+        "expiryDate": { "type": "string" },
+        "status": { "type": "string" },
+        "currentVersion": { "type": "number" },
+        "totalRatesCount": { "type": "number" }
+      }
+    },
+    "ContractRate": {
+      "collection": "contractRates",
+      "fields": {
+        "id": { "type": "string" },
+        "contractId": { "type": "string" },
+        "contractNumber": { "type": "string" },
+        "contractVersion": { "type": "number" },
+        "rateType": { "type": "string" },
+        "serviceMode": { "type": "string" },
+        "origin": { "type": "string" },
+        "destination": { "type": "string" },
+        "baseRate": { "type": "number" },
+        "currency": { "type": "string" },
+        "validFrom": { "type": "string" },
+        "validTo": { "type": "string" },
+        "status": { "type": "string" }
+      }
+    },
+    "ContractVersion": {
+      "collection": "contractVersions",
+      "fields": {
+        "id": { "type": "string" },
+        "contractId": { "type": "string" },
+        "versionNumber": { "type": "number" },
+        "effectiveDate": { "type": "string" },
+        "expiryDate": { "type": "string" },
+        "status": { "type": "string" }
+      }
+    },
+    "ContractDocument": {
+      "collection": "contractDocuments",
+      "fields": {
+        "id": { "type": "string" },
+        "contractId": { "type": "string" },
+        "fileName": { "type": "string" },
+        "documentType": { "type": "string" },
+        "uploadedAt": { "type": "string" }
+      }
+    },
+    "ContractAudit": {
+      "collection": "contractAudits",
+      "fields": {
+        "id": { "type": "string" },
+        "contractId": { "type": "string" },
+        "action": { "type": "string" },
+        "performedBy": { "type": "string" },
+        "timestamp": { "type": "string" }
+      }
+    }
+  }
+}

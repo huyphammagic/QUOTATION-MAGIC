@@ -11,7 +11,15 @@ export type MasterRateStatus =
   | 'CANCELLED'
   | 'INACTIVE';
 
-export type RateType = 'BUY' | 'SELL' | 'REFERENCE' | 'CONTRACT';
+export type RateType = 
+  | 'BUY' 
+  | 'SELL' 
+  | 'REFERENCE' 
+  | 'CONTRACT' 
+  | 'SPOT' 
+  | 'CUSTOMER_CONTRACT' 
+  | 'SUPPLIER_RATE' 
+  | 'CARRIER_RATE';
 
 export type MasterShipmentType = 'FCL' | 'LCL' | 'AIR' | 'TRUCK' | 'CUSTOMS' | 'LOCAL_CHARGE' | 'OTHER';
 
@@ -105,12 +113,36 @@ export interface RateWeightBreak {
   label: string; // e.g. "-45KG", "+45KG", "+100KG", "+300KG", "+500KG", "+1000KG"
 }
 
+export type SurchargeCalculationType = 
+  | 'FIXED' 
+  | 'PER_CONTAINER' 
+  | 'PER_BL' 
+  | 'PER_SHIPMENT' 
+  | 'PER_KG' 
+  | 'PER_CBM' 
+  | 'PER_WM'
+  | 'PERCENTAGE';
+
+export interface RateSurchargeItem {
+  id?: string;
+  code: string;            // E.g. BAF, CAF, THC, LSS, EBS, DOC, AMS, ENS, ISPS
+  name: string;            // Phụ phí (e.g. Bunker Adjustment Factor)
+  type: SurchargeCalculationType;
+  amount: number;
+  currency: Currency;
+  unit?: string;
+  effectiveFrom?: string;
+  effectiveTo?: string;
+  applicableCondition?: string; // e.g. 'All 20/40 cont', 'Peak Season', 'US Destination'
+}
+
 export interface RateMasterItem {
   id: string;
   companyId?: string;           // Multi-tenant company isolation
+  rateIdentityKey?: string;     // Unique canonical hash for deduplication and overlap prevention
   rateCode: string;             // E.g. RATE-MSC-CATLAI-LAX-40HC-01
   rateName: string;             // E.g. Cước Biển MSC Tuyến Cát Lái - Los Angeles
-  rateType: RateType;           // BUY | SELL | REFERENCE | CONTRACT
+  rateType: RateType;           // BUY | SELL | REFERENCE | CONTRACT | SPOT | CUSTOMER_CONTRACT | SUPPLIER_RATE | CARRIER_RATE
   serviceType?: ServiceType;    // OCEAN_FCL | OCEAN_LCL | AIR | TRUCKING | etc.
   chargeId?: string;            // Link to ChargeMasterItem if available
   chargeCode: string;           // E.g. OFR, THC, BL, etc.
@@ -120,6 +152,9 @@ export interface RateMasterItem {
   transportMode: TransportMode; // SEA_FCL | SEA_LCL | AIR_FREIGHT | INLAND_TRUCKING | CUSTOMS_CLEARANCE | MULTIMODAL
   shipmentType: MasterShipmentType; // FCL | LCL | AIR | TRUCK | CUSTOMS | OTHER
   source?: RateSource;          // CARRIER | SUPPLIER | AGENT | CONTRACT | MANUAL | IMPORTED
+  sourceType?: 'MANUAL' | 'EXCEL_IMPORT' | 'CSV_IMPORT' | 'API' | 'CARRIER_CONTRACT' | 'SUPPLIER_CONTRACT';
+  sourceReference?: string;
+  importJobId?: string;
   
   // Carrier & Providers
   carrier: string;              // Shipping Line / Airline / Trucker (e.g. Maersk, ONE, VN Airlines)
@@ -185,6 +220,14 @@ export interface RateMasterItem {
   routing?: string;             // Tuyến (e.g. Direct / Tuyến thẳng)
   freeTime?: string;            // Miễn phí lưu container (e.g. 7 days Dem/Det)
   
+  // Surcharges & Component Breakdown
+  surcharges?: RateSurchargeItem[];
+  localCharges?: RateSurchargeItem[];
+  
+  // Utilization Foundation
+  usedCount?: number;
+  lastUsedAt?: string;
+
   // Versioning & Audit
   version: number;              // Version number (1, 2, 3, ...)
   previousVersionId?: string;   // Pointer to previous rate version (Immutable linked list)
@@ -220,7 +263,18 @@ export interface RateHistoryItem {
     | 'NEW_VERSION' 
     | 'EXPIRE' 
     | 'DELETE_SOFT'
-    | 'OVERRIDE';
+    | 'OVERRIDE'
+    | 'RATE_CREATED'
+    | 'RATE_UPDATED'
+    | 'RATE_VERSION_CREATED'
+    | 'RATE_IMPORTED'
+    | 'RATE_APPROVAL_REQUESTED'
+    | 'RATE_APPROVED'
+    | 'RATE_REJECTED'
+    | 'RATE_ACTIVATED'
+    | 'RATE_DEACTIVATED'
+    | 'RATE_ARCHIVED'
+    | 'RATE_EXPIRED';
   timestamp: string;
   actor: string;
   changes?: Record<string, { oldValue: any; newValue: any }>;
@@ -444,3 +498,141 @@ export interface RateCoverageSummary {
   missingValidityCount: number;
   missingSupplierCount: number;
 }
+
+/**
+ * ============================================================================
+ * PHASE 13: RATE INTELLIGENCE, MATCHING & BULK IMPORT TYPES
+ * ============================================================================
+ */
+
+export type DuplicatePolicy = 'SKIP' | 'UPDATE' | 'CREATE_NEW_VERSION' | 'REJECT';
+
+export type ImportJobStatus = 
+  | 'QUEUED' 
+  | 'PROCESSING' 
+  | 'COMPLETED' 
+  | 'COMPLETED_WITH_ERRORS' 
+  | 'FAILED' 
+  | 'CANCELLED';
+
+export interface ImportRowError {
+  rowNumber: number;
+  rateCode?: string;
+  field?: string;
+  messageVi: string;
+  messageEn: string;
+  rawData?: Record<string, any>;
+}
+
+export interface BulkImportJob {
+  id: string;
+  companyId?: string;
+  fileName: string;
+  fileType: 'EXCEL' | 'CSV';
+  fileSize?: number;
+  status: ImportJobStatus;
+  duplicatePolicy: DuplicatePolicy;
+  totalRows: number;
+  processedRows: number;
+  successRows: number;
+  failedRows: number;
+  duplicateRows: number;
+  warningRows: number;
+  errors: ImportRowError[];
+  createdBy: string;
+  createdAt: string;
+  completedAt?: string;
+}
+
+export type RateMatchStatus = 
+  | 'MATCH_FOUND' 
+  | 'NO_APPLICABLE_RATE_FOUND' 
+  | 'RATE_CONFLICT' 
+  | 'RATE_OVERLAP_CONFLICT';
+
+export type RateMatchingPriority = 
+  | 'CUSTOMER_CONTRACT' 
+  | 'CARRIER_CONTRACT' 
+  | 'SUPPLIER_CONTRACT' 
+  | 'SPOT_RATE' 
+  | 'DEFAULT_RATE';
+
+export interface RateMatchQueryCriteria {
+  companyId?: string;
+  transportMode: TransportMode;
+  serviceType?: ServiceType;
+  rateType?: RateType | 'ALL';
+  origin: string;
+  destination: string;
+  pol?: string;
+  pod?: string;
+  carrierId?: string;
+  carrier?: string;
+  supplierId?: string;
+  equipment?: ContainerType | string;
+  containerQuantity?: number;
+  weightKg?: number;
+  volumeCbm?: number;
+  effectiveDate?: string;       // Default today or quotation date
+  customerId?: string;
+  customerCode?: string;
+  customerName?: string;
+  currency?: Currency;
+}
+
+export interface RateMatchOutcome {
+  status: RateMatchStatus;
+  bestMatch?: RateSearchResult;
+  matchingCandidates: RateSearchResult[];
+  conflictRates?: RateMasterItem[];
+  conflictReason?: string;
+  queryCriteria: RateMatchQueryCriteria;
+  missingRateEventLogged?: boolean;
+}
+
+export interface MissingRateEvent {
+  id: string;
+  companyId?: string;
+  transportMode: TransportMode;
+  serviceType?: ServiceType;
+  origin: string;
+  destination: string;
+  equipment?: string;
+  carrier?: string;
+  requestedDate: string;
+  requestedBy?: string;
+  hitCount: number;
+  createdAt: string;
+  lastRequestedAt: string;
+  status: 'PENDING' | 'RESOLVED' | 'IGNORED';
+  notes?: string;
+}
+
+export interface RateComparisonMatrixItem {
+  id: string;
+  rateCode: string;
+  carrier: string;
+  supplierName?: string;
+  serviceType?: ServiceType;
+  origin: string;
+  destination: string;
+  equipment?: string;
+  costAmount: number;
+  costCurrency: Currency;
+  sellingAmount: number;
+  sellingCurrency: Currency;
+  grossProfit: number;
+  marginPercent: number;
+  effectiveFrom: string;
+  effectiveTo: string;
+  transitTime?: string;
+  freeTime?: string;
+  surchargesTotal: number;
+  status: MasterRateStatus;
+  rateType: RateType;
+  priority: number;
+  isBestCost?: boolean;
+  isBestSell?: boolean;
+  isHighestMargin?: boolean;
+}
+

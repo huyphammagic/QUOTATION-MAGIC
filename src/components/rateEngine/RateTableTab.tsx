@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Search, 
   Filter, 
@@ -19,7 +19,11 @@ import {
   Truck,
   FileText,
   DollarSign,
-  Layers
+  Layers,
+  ChevronLeft,
+  ChevronRight,
+  GitCompare,
+  Key
 } from 'lucide-react';
 import { RateMasterItem, MasterRateStatus, RateType, MasterShipmentType } from '../../types/masterRate';
 import { TransportMode, Currency } from '../../types/logistics';
@@ -33,6 +37,7 @@ interface RateTableTabProps {
   onNewVersion: (rate: RateMasterItem) => void;
   onDeleteRate: (id: string) => void;
   onSubmitApproval?: (rate: RateMasterItem) => void;
+  onCompareRate?: (rate: RateMasterItem) => void;
 }
 
 export const RateTableTab: React.FC<RateTableTabProps> = ({
@@ -43,14 +48,29 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
   onNewVersion,
   onDeleteRate,
   onSubmitApproval,
+  onCompareRate,
 }) => {
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
   const [modeFilter, setModeFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [rateTypeFilter, setRateTypeFilter] = useState<string>('ALL');
   const [carrierFilter, setCarrierFilter] = useState<string>('ALL');
   const [sortBy, setSortBy] = useState<'UPDATED' | 'RATE_CODE' | 'VALIDITY' | 'SELLING'>('UPDATED');
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedKeyword(searchKeyword);
+      setCurrentPage(1);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchKeyword]);
 
   // Carriers set
   const uniqueCarriers = useMemo(() => {
@@ -62,7 +82,7 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
   }, [rates]);
 
   // Filtered and sorted rates
-  const displayRates = useMemo(() => {
+  const filteredRates = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     return rates.filter(rate => {
       // Status filter
@@ -89,8 +109,8 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
       }
 
       // Keyword filter
-      if (searchKeyword.trim() !== '') {
-        const kw = searchKeyword.toLowerCase();
+      if (debouncedKeyword.trim() !== '') {
+        const kw = debouncedKeyword.toLowerCase();
         const match = 
           (rate.rateCode || '').toLowerCase().includes(kw) ||
           (rate.rateName || '').toLowerCase().includes(kw) ||
@@ -99,7 +119,8 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
           (rate.supplierName || '').toLowerCase().includes(kw) ||
           (rate.origin || '').toLowerCase().includes(kw) ||
           (rate.destination || '').toLowerCase().includes(kw) ||
-          (rate.contractNo || '').toLowerCase().includes(kw);
+          (rate.contractNo || '').toLowerCase().includes(kw) ||
+          (rate.rateIdentityKey || '').toLowerCase().includes(kw);
         if (!match) return false;
       }
 
@@ -118,7 +139,14 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
       }
       return sortOrder === 'ASC' ? comparison : -comparison;
     });
-  }, [rates, searchKeyword, modeFilter, statusFilter, rateTypeFilter, carrierFilter, sortBy, sortOrder]);
+  }, [rates, debouncedKeyword, modeFilter, statusFilter, rateTypeFilter, carrierFilter, sortBy, sortOrder]);
+
+  // Total pages and paginated slice
+  const totalPages = Math.max(1, Math.ceil(filteredRates.length / pageSize));
+  const paginatedRates = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredRates.slice(start, start + pageSize);
+  }, [filteredRates, currentPage, pageSize]);
 
   const getStatusBadge = (rate: RateMasterItem) => {
     const today = new Date().toISOString().slice(0, 10);
@@ -190,7 +218,7 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Tìm theo mã cước, cảng đi/đến, hãng tàu, nhà cung cấp..."
+            placeholder="Tìm theo mã cước, cảng đi/đến, hãng tàu, nhà cung cấp, identity key..."
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
             className="w-full pl-9 pr-4 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -201,7 +229,7 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
         {/* Filter Mode */}
         <select
           value={modeFilter}
-          onChange={(e) => setModeFilter(e.target.value)}
+          onChange={(e) => { setModeFilter(e.target.value); setCurrentPage(1); }}
           className="px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           id="filter-mode"
         >
@@ -216,7 +244,7 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
         {/* Filter Rate Type */}
         <select
           value={rateTypeFilter}
-          onChange={(e) => setRateTypeFilter(e.target.value)}
+          onChange={(e) => { setRateTypeFilter(e.target.value); setCurrentPage(1); }}
           className="px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           id="filter-rate-type"
         >
@@ -227,10 +255,25 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
           <option value="REFERENCE">REFERENCE (Giá tham khảo)</option>
         </select>
 
+        {/* Filter Carrier */}
+        {uniqueCarriers.length > 0 && (
+          <select
+            value={carrierFilter}
+            onChange={(e) => { setCarrierFilter(e.target.value); setCurrentPage(1); }}
+            className="px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            id="filter-carrier"
+          >
+            <option value="ALL">Tất cả Hãng vận chuyển</option>
+            {uniqueCarriers.map((c, i) => (
+              <option key={i} value={c}>{c}</option>
+            ))}
+          </select>
+        )}
+
         {/* Filter Status */}
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
           className="px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           id="filter-status"
         >
@@ -254,26 +297,47 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
       {/* Stats Quick Bar */}
       <div className="flex items-center justify-between text-xs text-slate-500 px-1">
         <div>
-          Hiển thị <span className="font-bold text-slate-800">{displayRates.length}</span> / {rates.length} bảng giá
+          Hiển thị <span className="font-bold text-slate-800">{filteredRates.length}</span> / {rates.length} bảng giá
+          {filteredRates.length > 0 && (
+            <span className="ml-2 text-slate-400">
+              (Trang {currentPage} / {totalPages})
+            </span>
+          )}
         </div>
-        <div className="flex items-center gap-2">
-          <span>Sắp xếp theo:</span>
-          <select 
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="text-xs font-medium text-slate-700 bg-transparent border-b border-slate-300 focus:outline-none"
-          >
-            <option value="UPDATED">Mới cập nhật</option>
-            <option value="RATE_CODE">Mã bảng giá</option>
-            <option value="VALIDITY">Hạn hiệu lực</option>
-            <option value="SELLING">Giá bán</option>
-          </select>
-          <button 
-            onClick={() => setSortOrder(prev => prev === 'ASC' ? 'DESC' : 'ASC')}
-            className="px-1.5 py-0.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-100"
-          >
-            {sortOrder === 'ASC' ? '↑ Tăng' : '↓ Giảm'}
-          </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <span>Dòng/trang:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+              className="text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded px-1.5 py-0.5 outline-none"
+            >
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span>Sắp xếp theo:</span>
+            <select 
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="text-xs font-medium text-slate-700 bg-transparent border-b border-slate-300 focus:outline-none"
+            >
+              <option value="UPDATED">Mới cập nhật</option>
+              <option value="RATE_CODE">Mã bảng giá</option>
+              <option value="VALIDITY">Hạn hiệu lực</option>
+              <option value="SELLING">Giá bán</option>
+            </select>
+            <button 
+              onClick={() => setSortOrder(prev => prev === 'ASC' ? 'DESC' : 'ASC')}
+              className="px-1.5 py-0.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-100"
+            >
+              {sortOrder === 'ASC' ? '↑ Tăng' : '↓ Giảm'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -292,11 +356,11 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
                 <th className="p-3 text-right">Lợi Nhuận (GP / Margin)</th>
                 <th className="p-3 text-center">Thời Hạn Hiệu Lực</th>
                 <th className="p-3 text-center">Trạng Thái</th>
-                <th className="p-3 text-center w-36">Thao Tác</th>
+                <th className="p-3 text-center w-40">Thao Tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {displayRates.length === 0 ? (
+              {paginatedRates.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="p-8 text-center text-slate-400">
                     <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
@@ -304,33 +368,47 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
                   </td>
                 </tr>
               ) : (
-                displayRates.map((rate, index) => {
+                paginatedRates.map((rate, index) => {
                   const profit = (rate.sellingAmount || 0) - (rate.costAmount || 0);
                   const marginPct = rate.sellingAmount > 0 ? (profit / rate.sellingAmount) * 100 : 0;
                   const isProfitPositive = profit >= 0;
+                  const rowStt = (currentPage - 1) * pageSize + index + 1;
 
                   return (
                     <tr key={rate.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="p-3 text-center text-slate-400 font-mono">
-                        {index + 1}
+                        {rowStt}
                       </td>
 
                       {/* Code & Name */}
                       <td className="p-3 max-w-[260px]">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-mono font-bold text-blue-700">{rate.rateCode}</span>
                           {getRateTypeBadge(rate.rateType || 'SELL')}
-                          {rate.version > 1 && (
+                          {rate.version && rate.version > 1 && (
                             <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-slate-200 text-slate-700">
                               v{rate.version}
                             </span>
                           )}
+                          {rate.rateIdentityKey && (
+                            <span 
+                              className="text-slate-400 hover:text-slate-600 cursor-help"
+                              title={`Rate Identity Key:\n${rate.rateIdentityKey}`}
+                            >
+                              <Key className="w-3 h-3 inline" />
+                            </span>
+                          )}
                         </div>
-                        <div className="font-medium text-slate-900 truncate" title={rate.rateName}>
+                        <div className="font-medium text-slate-900 truncate mt-0.5" title={rate.rateName}>
                           {rate.rateName}
                         </div>
                         <div className="text-[11px] text-slate-500">
                           {rate.chargeCode} • {rate.basis} • {rate.unit}
+                          {rate.surcharges && rate.surcharges.length > 0 && (
+                            <span className="ml-1.5 text-blue-600 font-medium">
+                              +{rate.surcharges.length} phụ phí
+                            </span>
+                          )}
                         </div>
                       </td>
 
@@ -411,6 +489,15 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
                       {/* Actions */}
                       <td className="p-3 text-center">
                         <div className="flex items-center justify-center gap-1">
+                          {onCompareRate && (
+                            <button
+                              onClick={() => onCompareRate(rate)}
+                              className="p-1 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded"
+                              title="So sánh giá tuyến này (Compare Matrix)"
+                            >
+                              <GitCompare className="w-4 h-4" />
+                            </button>
+                          )}
                           {rate.status === 'DRAFT' && onSubmitApproval && (
                             <button
                               onClick={() => onSubmitApproval(rate)}
@@ -462,6 +549,58 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Footer */}
+        {filteredRates.length > pageSize && (
+          <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600">
+            <div>
+              Hiển thị <b>{(currentPage - 1) * pageSize + 1}</b> - <b>{Math.min(currentPage * pageSize, filteredRates.length)}</b> trên tổng số <b>{filteredRates.length}</b> kết quả
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="p-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(page => Math.abs(page - currentPage) <= 2 || page === 1 || page === totalPages)
+                  .map((page, idx, arr) => {
+                    const prev = arr[idx - 1];
+                    const hasGap = prev && page - prev > 1;
+
+                    return (
+                      <React.Fragment key={page}>
+                        {hasGap && <span className="px-1 text-slate-400">...</span>}
+                        <button
+                          onClick={() => setCurrentPage(page)}
+                          className={`px-2.5 py-1 rounded-lg font-medium transition ${
+                            currentPage === page
+                              ? 'bg-blue-600 text-white shadow-xs'
+                              : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      </React.Fragment>
+                    );
+                  })}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="p-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
