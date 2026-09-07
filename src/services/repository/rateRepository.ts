@@ -197,7 +197,7 @@ export async function fetchSurcharges(forceRefresh = false): Promise<SurchargeIt
     return memorySurchargesCache.data;
   }
 
-  if (!db) return INITIAL_SURCHARGE_CATALOG;
+  if (!db) return memorySurchargesCache ? memorySurchargesCache.data : [];
 
   try {
     const q = query(
@@ -208,12 +208,8 @@ export async function fetchSurcharges(forceRefresh = false): Promise<SurchargeIt
     const snap = await getDocs(q);
 
     if (snap.empty) {
-      // Seed initial surcharges to Firestore
-      for (const item of INITIAL_SURCHARGE_CATALOG) {
-        await saveSurcharge(item);
-      }
-      memorySurchargesCache = { data: INITIAL_SURCHARGE_CATALOG, cachedAt: now };
-      return INITIAL_SURCHARGE_CATALOG;
+      memorySurchargesCache = { data: [], cachedAt: now };
+      return [];
     }
 
     const items: SurchargeItem[] = [];
@@ -225,7 +221,7 @@ export async function fetchSurcharges(forceRefresh = false): Promise<SurchargeIt
     return items;
   } catch (err) {
     console.error('[rateRepository] Error fetching surcharges from Firestore:', err);
-    return memorySurchargesCache ? memorySurchargesCache.data : INITIAL_SURCHARGE_CATALOG;
+    return memorySurchargesCache ? memorySurchargesCache.data : [];
   }
 }
 

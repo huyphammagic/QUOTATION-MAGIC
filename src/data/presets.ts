@@ -1,4 +1,4 @@
-import { CompanyProfile, IncotermCode, FeeCategory, LineItem, TransportMode, CustomerRecord, SurchargeItem, SurchargeTransportMode, ChargeLocation } from '../types/logistics';
+import { CompanyProfile, IncotermCode, FeeCategory, LineItem, TransportMode, CustomerRecord, SurchargeItem, SurchargeTransportMode, ChargeLocation, QuoteData } from '../types/logistics';
 
 export const INITIAL_CUSTOMERS: CustomerRecord[] = [
   {
@@ -258,6 +258,66 @@ export const INCOTERMS_LIST: {
     podPaidBy: 'BUYER'
   }
 ];
+
+export function createEmptyQuote(company?: CompanyProfile): QuoteData {
+  const currentYear = new Date().getFullYear();
+  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+  return {
+    id: `quote-${Date.now()}`,
+    quoteNumber: `LOG-${currentYear}-${randomSuffix}`,
+    createdDate: new Date().toISOString().slice(0, 10),
+    updatedDate: new Date().toISOString().slice(0, 10),
+    status: "DRAFT",
+    quoteCurrency: "USD",
+    exchangeRate: DEFAULT_EXCHANGE_RATE,
+    company: company || DEFAULT_COMPANY_PROFILE,
+    customer: {
+      customerName: "",
+      companyName: "",
+      taxId: "",
+      address: "",
+      email: "",
+      phone: "",
+      contactPerson: "",
+    },
+    shipment: {
+      mode: "SEA_FCL",
+      pol: "",
+      pod: "",
+      commodity: "",
+      containerType: "40'HC",
+      quantity: 1,
+      grossWeightKg: 0,
+      volumeCbm: 0,
+      chargeableWeight: 0,
+      etd: "",
+      eta: "",
+      transitTime: "",
+      freeTime: "",
+    },
+    items: [],
+    terms: {
+      incoterm: "FOB",
+      validityDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+      paymentTerms: "Thanh toán 100% trước khi phát hành B/L hoặc thả hàng.",
+      specialNotes: "",
+    },
+    totalAmountUsd: 0,
+    totalAmountVnd: 0,
+    totalVatAmountUsd: 0,
+    totalVatAmountVnd: 0,
+    subtotalUsd: 0,
+    subtotalVnd: 0,
+    grandTotalUsd: 0,
+    grandTotalVnd: 0,
+    totalCostUsd: 0,
+    totalCostVnd: 0,
+    marginAmountUsd: 0,
+    marginAmountVnd: 0,
+    marginPercent: 0,
+    version: 1,
+  };
+}
 
 export const INITIAL_SAMPLE_QUOTE = {
   id: "quote-sample-01",

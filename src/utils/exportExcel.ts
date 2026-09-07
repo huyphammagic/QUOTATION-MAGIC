@@ -1,8 +1,8 @@
-import * as XLSX from 'xlsx';
 import { QuoteData } from '../types/logistics';
 import { formatUSD, formatVND, formatNumber, formatExchangeRate } from './formatters';
 
-export function exportQuoteToExcel(quote: QuoteData, targetCurrency?: 'USD' | 'VND') {
+export async function exportQuoteToExcel(quote: QuoteData, targetCurrency?: 'USD' | 'VND') {
+  const XLSX = await import('xlsx');
   const currency: 'USD' | 'VND' = targetCurrency || quote.quoteCurrency || 'USD';
   const isVnd = currency === 'VND';
   const wb = XLSX.utils.book_new();

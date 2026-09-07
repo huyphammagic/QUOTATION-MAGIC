@@ -76,10 +76,10 @@ export const CustomerSecureQuotePage: React.FC<CustomerSecureQuotePageProps> = (
     loadQuotation();
   }, [token]);
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     if (!docRecord) return;
     try {
-      exportQuotationDocumentToPdf(docRecord);
+      await exportQuotationDocumentToPdf(docRecord);
     } catch (e) {
       console.error('Download PDF error:', e);
       if (docRecord.downloadUrl) {

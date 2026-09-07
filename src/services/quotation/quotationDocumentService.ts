@@ -259,7 +259,7 @@ export async function generateAndSaveQuotationDocument(
   );
 
   // 5. Generate PDF
-  const pdfResult = generateQuotationPdf(snapshot, template);
+  const pdfResult = await generateQuotationPdf(snapshot, template);
 
   // 6. Upload PDF to Storage
   const uploadResult = await uploadQuotationPdfToStorage(

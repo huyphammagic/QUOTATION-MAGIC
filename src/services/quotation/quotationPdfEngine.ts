@@ -1,5 +1,3 @@
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { 
   QuotationDocumentSnapshot, 
   QuotationTemplate, 
@@ -15,7 +13,7 @@ import {
 import { removeVietnameseTones } from '../../utils/exportPdf';
 
 export interface GeneratedPdfResult {
-  doc: jsPDF;
+  doc: any;
   blob: Blob;
   fileName: string;
   pageCount: number;
@@ -47,10 +45,13 @@ function hexToRgb(hex: string, fallback: [number, number, number] = [22, 78, 99]
  * Enterprise PDF Quotation Generation Engine
  * Renders immutable approved snapshots into high-precision corporate PDF documents.
  */
-export function generateQuotationPdf(
+export async function generateQuotationPdf(
   snapshot: QuotationDocumentSnapshot,
   template: QuotationTemplate
-): GeneratedPdfResult {
+): Promise<GeneratedPdfResult> {
+  const { jsPDF } = await import('jspdf');
+  const { default: autoTable } = await import('jspdf-autotable');
+
   const isVnd = snapshot.currency === 'VND';
   const isInternal = snapshot.documentType === 'INTERNAL_QUOTATION';
   const isConfirmation = snapshot.documentType === 'CONFIRMATION_NOTICE';
@@ -594,11 +595,11 @@ export function generateQuotationPdf(
 /**
  * Downloads or renders and downloads a PDF for a given document record or snapshot
  */
-export function exportQuotationDocumentToPdf(docRecord: { 
+export async function exportQuotationDocumentToPdf(docRecord: { 
   snapshot?: QuotationDocumentSnapshot; 
   downloadUrl?: string; 
   fileName?: string;
-}): void {
+}): Promise<void> {
   if (docRecord.downloadUrl) {
     const link = document.createElement('a');
     link.href = docRecord.downloadUrl;
@@ -610,7 +611,7 @@ export function exportQuotationDocumentToPdf(docRecord: {
     return;
   }
   if (docRecord.snapshot) {
-    const result = generateQuotationPdf(docRecord.snapshot, DEFAULT_QUOTATION_TEMPLATES[0]);
+    const result = await generateQuotationPdf(docRecord.snapshot, DEFAULT_QUOTATION_TEMPLATES[0]);
     result.download();
   }
 }

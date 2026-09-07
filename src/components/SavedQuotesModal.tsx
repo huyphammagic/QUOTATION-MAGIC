@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { QuoteData, QuoteStatus } from '../types/logistics';
 import { formatUSD, formatVND } from '../utils/formatters';
 import { exportQuoteToPdf } from '../utils/exportPdf';
 import { exportQuoteToExcel } from '../utils/exportExcel';
-import { X, Search, FileText, Copy, Trash2, Edit3, FileDown, FileSpreadsheet } from 'lucide-react';
+import { X, Search, FileText, Copy, Trash2, Edit3, FileDown, FileSpreadsheet, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SavedQuotesModalProps {
   quotes: QuoteData[];
@@ -27,11 +27,23 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
   initialStatusFilter = 'ALL',
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
     if (isOpen) {
       setStatusFilter(initialStatusFilter || 'ALL');
+      setCurrentPage(1);
     }
   }, [isOpen, initialStatusFilter]);
 
@@ -46,20 +58,26 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  const filtered = useMemo(() => {
+    const term = debouncedSearch.toLowerCase().trim();
+    return quotes.filter((q) => {
+      const matchesSearch = !term ||
+        q.quoteNumber.toLowerCase().includes(term) ||
+        (q.customer?.companyName || '').toLowerCase().includes(term) ||
+        (q.customer?.customerName || '').toLowerCase().includes(term) ||
+        (q.shipment?.pol || '').toLowerCase().includes(term) ||
+        (q.shipment?.pod || '').toLowerCase().includes(term);
 
-  const filtered = quotes.filter((q) => {
-    const matchesSearch =
-      q.quoteNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      q.customer.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      q.customer.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      q.shipment.pol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      q.shipment.pod.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'ALL' || q.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [quotes, debouncedSearch, statusFilter]);
 
-    const matchesStatus = statusFilter === 'ALL' || q.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginatedQuotes = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filtered.slice(startIndex, startIndex + pageSize);
+  }, [filtered, currentPage, pageSize]);
 
   const getStatusBadge = (status: QuoteStatus) => {
     switch (status) {
@@ -136,7 +154,7 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {filtered.map((quote) => (
+              {paginatedQuotes.map((quote) => (
                 <tr key={quote.id} className="hover:bg-slate-50 transition-colors">
                   
                   {/* Quote Number & Date */}
@@ -253,6 +271,53 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Footer */}
+        {filtered.length > 0 && (
+          <div className="p-3 border-t border-slate-200 bg-slate-50 rounded-b-2xl flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600">
+            <div className="flex items-center space-x-3">
+              <span>Hiển thị <strong>{Math.min(filtered.length, (currentPage - 1) * pageSize + 1)}</strong> - <strong>{Math.min(filtered.length, currentPage * pageSize)}</strong> trong tổng số <strong>{filtered.length}</strong> báo giá</span>
+              <div className="flex items-center space-x-1.5 pl-2 border-l border-slate-200">
+                <span>Số dòng:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="bg-white border border-slate-200 rounded px-2 py-0.5 text-xs text-slate-700 font-medium"
+                >
+                  <option value={10}>10</option>
+                  <option value={15}>15</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <span className="text-slate-500">Trang {currentPage} / {totalPages}</span>
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="p-1 rounded border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none text-slate-700"
+                title="Trang trước"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="p-1 rounded border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none text-slate-700"
+                title="Trang tiếp"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

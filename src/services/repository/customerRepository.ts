@@ -39,8 +39,8 @@ export async function fetchCustomers(forceRefresh = false): Promise<CustomerReco
   }
 
   if (!db) {
-    console.warn('[customerRepository] Firestore not initialized, returning initial preset');
-    return INITIAL_CUSTOMERS;
+    console.warn('[customerRepository] Firestore not initialized');
+    return memoryCustomersCache ? memoryCustomersCache.data : [];
   }
 
   try {
@@ -48,13 +48,8 @@ export async function fetchCustomers(forceRefresh = false): Promise<CustomerReco
     const snap = await getDocs(q);
 
     if (snap.empty) {
-      // Seed initial customers into Firestore for cloud persistence
-      console.log('[customerRepository] Seeding initial customers to Firestore...');
-      for (const cust of INITIAL_CUSTOMERS) {
-        await saveCustomer(cust);
-      }
-      memoryCustomersCache = { data: INITIAL_CUSTOMERS, cachedAt: now };
-      return INITIAL_CUSTOMERS;
+      memoryCustomersCache = { data: [], cachedAt: now };
+      return [];
     }
 
     const items: CustomerRecord[] = [];
@@ -67,7 +62,7 @@ export async function fetchCustomers(forceRefresh = false): Promise<CustomerReco
   } catch (error) {
     console.error('[customerRepository] Error fetching customers from Firestore:', error);
     if (memoryCustomersCache) return memoryCustomersCache.data;
-    return INITIAL_CUSTOMERS;
+    return [];
   }
 }
 

@@ -29,11 +29,11 @@ import { saveCompanyProfile as repoSaveCompanyProfile } from '../services/reposi
  * ============================================================================
  */
 
-// In-Memory Business State
-let memoryQuotes: QuoteData[] = [INITIAL_SAMPLE_QUOTE];
+// In-Memory Business State (Populated exclusively from Firebase Cloud)
+let memoryQuotes: QuoteData[] = [];
 let memoryCompanySettings: any = null;
-let memoryCustomers: CustomerRecord[] = INITIAL_CUSTOMERS;
-let memorySurcharges: SurchargeItem[] = INITIAL_SURCHARGE_CATALOG;
+let memoryCustomers: CustomerRecord[] = [];
+let memorySurcharges: SurchargeItem[] = [];
 let memoryRateMasters: RateMasterItem[] = [];
 let memoryChargeMasters: ChargeMasterItem[] = [];
 let memoryRateHistories: RateHistoryItem[] = [];

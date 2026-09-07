@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CustomerRecord } from '../types/logistics';
 import { 
   Users, Plus, Search, Edit2, Trash2, Building2, Phone, Mail, 
-  MapPin, Check, X, FileText, UserCheck, ShieldCheck 
+  MapPin, Check, X, FileText, UserCheck, ShieldCheck, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 interface CustomerManagerModalProps {
@@ -23,11 +23,23 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
   onSelectCustomerForQuote
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Partial<CustomerRecord>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
     if (!isOpen) return;
+    setCurrentPage(1);
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
@@ -39,13 +51,23 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
 
   if (!isOpen) return null;
 
-  const filteredCustomers = customers.filter(c => 
-    c.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.taxId.includes(searchTerm) ||
-    c.phone.includes(searchTerm)
-  );
+  const filteredCustomers = useMemo(() => {
+    const term = debouncedSearch.toLowerCase().trim();
+    if (!term) return customers;
+    return customers.filter(c => 
+      (c.companyName || '').toLowerCase().includes(term) ||
+      (c.customerName || '').toLowerCase().includes(term) ||
+      (c.code || '').toLowerCase().includes(term) ||
+      (c.taxId || '').includes(term) ||
+      (c.phone || '').includes(term)
+    );
+  }, [customers, debouncedSearch]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / pageSize));
+  const paginatedCustomers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredCustomers.slice(start, start + pageSize);
+  }, [filteredCustomers, currentPage, pageSize]);
 
   const handleAddNew = () => {
     const newCode = `KH-00${customers.length + 1}`;
@@ -322,7 +344,7 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  filteredCustomers.map((cust) => (
+                  paginatedCustomers.map((cust) => (
                     <tr key={cust.id} className="hover:bg-blue-50/30 transition-colors">
                       <td className="p-3 font-mono font-bold text-blue-900">
                         {cust.code}
@@ -397,6 +419,53 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
               </tbody>
             </table>
           </div>
+
+          {/* Customer Pagination Controls */}
+          {filteredCustomers.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+              <div className="flex items-center space-x-3">
+                <span>Hiển thị <strong>{Math.min(filteredCustomers.length, (currentPage - 1) * pageSize + 1)}</strong> - <strong>{Math.min(filteredCustomers.length, currentPage * pageSize)}</strong> / <strong>{filteredCustomers.length}</strong> khách hàng</span>
+                <div className="flex items-center space-x-1.5 pl-2 border-l border-slate-200">
+                  <span>Số dòng:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="bg-white border border-slate-200 rounded px-2 py-0.5 text-xs text-slate-700 font-medium"
+                  >
+                    <option value={10}>10</option>
+                    <option value={15}>15</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <span className="text-slate-500">Trang {currentPage} / {totalPages}</span>
+                <button
+                  type="button"
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="p-1 rounded border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none text-slate-700"
+                  title="Trang trước"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="p-1 rounded border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none text-slate-700"
+                  title="Trang tiếp"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
 
         </div>
 

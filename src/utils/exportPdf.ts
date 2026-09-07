@@ -1,5 +1,3 @@
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { QuoteData } from '../types/logistics';
 import { formatUSD, formatVND, formatNumberVND, formatNumber, formatExchangeRate } from './formatters';
 
@@ -34,7 +32,10 @@ export function removeVietnameseTones(str: string): string {
   return result;
 }
 
-export function exportQuoteToPdf(quote: QuoteData, targetCurrency?: 'USD' | 'VND') {
+export async function exportQuoteToPdf(quote: QuoteData, targetCurrency?: 'USD' | 'VND') {
+  const { jsPDF } = await import('jspdf');
+  const { default: autoTable } = await import('jspdf-autotable');
+
   const currency: 'USD' | 'VND' = targetCurrency || quote.quoteCurrency || 'USD';
   const isVnd = currency === 'VND';
 
