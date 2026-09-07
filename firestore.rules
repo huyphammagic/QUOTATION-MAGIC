@@ -147,5 +147,35 @@ service cloud.firestore {
     match /contractAudits/{auditId} {
       allow read, write: if true;
     }
+
+    // Phase 15: Pricing Policies
+    match /pricingPolicies/{policyId} {
+      allow read, write: if true;
+    }
+
+    // Phase 15: Pricing Audits
+    match /pricingAudits/{auditId} {
+      allow read, write: if true;
+    }
+
+    // Phase 16: Analytics Summaries
+    match /analyticsSummaries/{summaryId} {
+      allow read, write: if true;
+    }
+
+    // Phase 17: Quotation Active Drafts (Cloud Persistence)
+    match /quotationDrafts/{draftId} {
+      allow read, write: if true;
+    }
+
+    // Phase 17: Master Data (Ports, Airports, Incoterms, Countries, Currencies)
+    match /masterData/{masterId} {
+      allow read, write: if true;
+    }
+
+    // Phase 17: Multi-tenant Company Hierarchy
+    match /companies/{companyId}/{document=**} {
+      allow read, write: if true;
+    }
   }
 }

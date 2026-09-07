@@ -1,6 +1,7 @@
 import React from 'react';
 import { Ship, RefreshCw, CheckCircle2, Menu, Plus } from 'lucide-react';
 import { CompanyProfile } from '../types/logistics';
+import { CloudSyncStatusBadge } from './CloudSyncStatusBadge';
 
 interface NavbarProps {
   company: CompanyProfile;
@@ -10,6 +11,12 @@ interface NavbarProps {
   onToggleSidebar?: () => void;
   onExchangeRateChange: (rate: number) => void;
   onNewQuote?: () => void;
+  isCloudSyncing?: boolean;
+  onForceCloudSync?: () => Promise<void>;
+  lastCloudSyncedAt?: Date | null;
+  quoteCount?: number;
+  customerCount?: number;
+  rateCount?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -20,6 +27,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleSidebar,
   onExchangeRateChange,
   onNewQuote,
+  isCloudSyncing = false,
+  onForceCloudSync,
+  lastCloudSyncedAt = null,
+  quoteCount = 0,
+  customerCount = 0,
+  rateCount = 0,
 }) => {
   return (
     <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-30 flex items-center justify-between px-3 sm:px-6 lg:px-8 shadow-xs">
@@ -55,11 +68,22 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Right controls: Auto-save status, Exchange Rate Adjuster & Quick New Quote */}
-      <div className="flex items-center space-x-3">
-        
+      {/* Right controls: Cloud Status, Auto-save status, Exchange Rate Adjuster & Quick New Quote */}
+      <div className="flex items-center space-x-2 sm:space-x-3">
+        {/* Cloud Sync Status Badge (Phase 17) */}
+        {onForceCloudSync && (
+          <CloudSyncStatusBadge
+            isSyncing={isCloudSyncing}
+            onForceSync={onForceCloudSync}
+            lastSyncedAt={lastCloudSyncedAt}
+            quoteCount={quoteCount}
+            customerCount={customerCount}
+            rateCount={rateCount}
+          />
+        )}
+
         {/* Auto-Save Badge */}
-        <div className="hidden sm:flex items-center space-x-1.5 bg-emerald-50/80 border border-emerald-200/90 text-emerald-900 px-3 py-1 rounded-full text-xs font-medium shadow-2xs">
+        <div className="hidden md:flex items-center space-x-1.5 bg-emerald-50/80 border border-emerald-200/90 text-emerald-900 px-3 py-1 rounded-full text-xs font-medium shadow-2xs">
           <span className="relative flex h-2 w-2">
             <span className={`animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 ${isAutoSaving ? 'opacity-100 scale-125' : 'opacity-75'}`}></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>

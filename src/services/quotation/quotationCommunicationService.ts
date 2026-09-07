@@ -29,42 +29,25 @@ import { getCustomerResponses, getLinksForQuotation } from './quotationSecurityS
 
 const COLLECTION_COMMUNICATIONS = 'quotationCommunications';
 const COLLECTION_FOLLOW_UPS = 'followUps';
-const STORAGE_KEY_COMMUNICATIONS = 'logiquote_communications_v1';
-const STORAGE_KEY_FOLLOW_UPS = 'logiquote_follow_ups_v1';
 
-// Local storage fallback helpers
+// In-memory cache (NO LOCAL STORAGE BUSINESS DATA - PHASE 17)
+let memoryCommunications: QuotationCommunication[] = [];
+let memoryFollowUps: QuotationFollowUp[] = [];
+
 function getLocalCommunications(): QuotationCommunication[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_COMMUNICATIONS);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    return [];
-  }
+  return memoryCommunications;
 }
 
 function saveLocalCommunications(items: QuotationCommunication[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY_COMMUNICATIONS, JSON.stringify(items));
-  } catch (e) {
-    console.warn('LocalStorage save communications error:', e);
-  }
+  memoryCommunications = items;
 }
 
 function getLocalFollowUps(): QuotationFollowUp[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_FOLLOW_UPS);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    return [];
-  }
+  return memoryFollowUps;
 }
 
 function saveLocalFollowUps(items: QuotationFollowUp[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY_FOLLOW_UPS, JSON.stringify(items));
-  } catch (e) {
-    console.warn('LocalStorage save followups error:', e);
-  }
+  memoryFollowUps = items;
 }
 
 /**

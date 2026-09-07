@@ -5,24 +5,15 @@ import {
   deleteRateRequestFromFirestore 
 } from '../firebase/firestoreService';
 
-const LOCAL_RATE_REQUESTS_KEY = 'LOGIQUOTE_RATE_REQUESTS_V1';
+// In-memory cache (NO LOCAL STORAGE BUSINESS DATA - PHASE 17)
+let memoryRateRequests: RateRequestItem[] = [];
 
 export function getLocalRateRequests(): RateRequestItem[] {
-  try {
-    const raw = localStorage.getItem(LOCAL_RATE_REQUESTS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (err) {
-    console.warn('Error reading local rate requests:', err);
-    return [];
-  }
+  return memoryRateRequests;
 }
 
 export function saveLocalRateRequests(items: RateRequestItem[]): void {
-  try {
-    localStorage.setItem(LOCAL_RATE_REQUESTS_KEY, JSON.stringify(items));
-  } catch (err) {
-    console.warn('Error saving local rate requests:', err);
-  }
+  memoryRateRequests = items;
 }
 
 export async function loadRateRequests(): Promise<RateRequestItem[]> {

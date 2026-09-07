@@ -16,25 +16,17 @@ import { QuoteData } from '../../types/logistics';
 import { QuotationDocumentRecord } from '../../types/quotationDocument';
 import { DEFAULT_EMAIL_TEMPLATES, ALLOWED_EMAIL_VARIABLES, FORBIDDEN_EMAIL_VARIABLES } from '../../data/defaultEmailTemplates';
 
-const STORAGE_KEY = 'logiquote_email_templates_v1';
 const COLLECTION_NAME = 'emailTemplates';
 
-// Local storage fallback helper
+// In-memory cache (NO LOCAL STORAGE BUSINESS DATA - PHASE 17)
+let memoryEmailTemplates: EmailTemplate[] = DEFAULT_EMAIL_TEMPLATES;
+
 function getLocalTemplates(): EmailTemplate[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : DEFAULT_EMAIL_TEMPLATES;
-  } catch (e) {
-    return DEFAULT_EMAIL_TEMPLATES;
-  }
+  return memoryEmailTemplates.length > 0 ? memoryEmailTemplates : DEFAULT_EMAIL_TEMPLATES;
 }
 
 function saveLocalTemplates(templates: EmailTemplate[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(templates));
-  } catch (e) {
-    console.warn('LocalStorage save templates error:', e);
-  }
+  memoryEmailTemplates = templates;
 }
 
 export async function getEmailTemplates(companyId?: string): Promise<EmailTemplate[]> {

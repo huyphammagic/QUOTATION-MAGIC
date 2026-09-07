@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { QuoteData } from '../../types/logistics';
 import { 
   QuotationCommunication, 
@@ -56,6 +56,7 @@ interface AdvancedAnalyticsDashboardProps {
   currentSalesName?: string;
   onSelectQuote?: (quoteId: string) => void;
   onClose?: () => void;
+  initialTab?: DashboardTab;
 }
 
 type DashboardTab = 
@@ -80,11 +81,18 @@ export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProp
   currentSalesName,
   onSelectQuote,
   onClose,
+  initialTab = 'OVERVIEW',
 }) => {
   // Config & State
-  const [activeTab, setActiveTab] = useState<DashboardTab>('OVERVIEW');
+  const [activeTab, setActiveTab] = useState<DashboardTab>(initialTab);
   const [language, setLanguage] = useState<AnalyticsLanguage>('vi');
   const [userRole, setUserRole] = useState<UserRole>(currentUserRole);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   const isVi = language === 'vi';
 

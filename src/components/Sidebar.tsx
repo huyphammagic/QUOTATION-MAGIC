@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { CompanyProfile, QuoteData } from '../types/logistics';
+import { UserRole, ROLE_PERMISSIONS } from '../types/analytics';
+import { NavigationLanguage, NAVIGATION_I18N } from '../i18n/navigation';
 import { 
   Folder, 
   FolderOpen, 
@@ -19,7 +21,6 @@ import {
   Coins, 
   Database, 
   Ship, 
-  ExternalLink,
   Sparkles,
   Layers,
   History,
@@ -31,27 +32,43 @@ import {
   Calendar, 
   LayoutDashboard,
   TrendingUp,
-  Sliders
+  Sliders,
+  Search,
+  Star,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Plane,
+  Truck,
+  FileCheck2,
+  Anchor,
+  Box,
+  Lock,
+  Compass,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
+  ChevronLeft
 } from 'lucide-react';
 
-interface SidebarProps {
+export interface SidebarProps {
   company: CompanyProfile;
   savedQuotes: QuoteData[];
   customersCount?: number;
   surchargesCount?: number;
   rateMastersCount?: number;
   chargeMastersCount?: number;
+  contractsCount?: number;
   exchangeRate: number;
   lastAutoSaveTime: string | null;
   isAutoSaving?: boolean;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
   onNewQuote: () => void;
-  onOpenSavedQuotes: () => void;
+  onOpenSavedQuotes: (filter?: string) => void;
   onOpenCompanyProfile: (tab?: 'profile' | 'sales' | 'bank' | 'preview') => void;
   onOpenCustomers: () => void;
   onOpenSurchargeCatalog: () => void;
-  onOpenMasterRateHub?: (tab?: 'RATES' | 'CHARGES' | 'AUDIT') => void;
+  onOpenMasterRateHub?: (tab?: 'RATES' | 'CHARGES' | 'SUPPLIERS' | 'APPROVAL' | 'REQUESTS' | 'EXPIRING' | 'AUDIT') => void;
   onOpenRateSearch?: () => void;
   onOpenSmartAssistant?: () => void;
   onOpenDataBackup: () => void;
@@ -63,11 +80,17 @@ interface SidebarProps {
   onOpenCommunication?: () => void;
   onOpenEmailTemplates?: () => void;
   onOpenFollowUps?: () => void;
-  onOpenDashboard?: () => void;
+  onOpenDashboard?: (tab?: string) => void;
   onOpenContracts?: () => void;
-  contractsCount?: number;
   onOpenProfitIntelligence?: () => void;
   onOpenPricingPolicies?: () => void;
+  onOpenMasterDataReference?: (type: 'PORT' | 'CONTAINER_TYPE' | 'INCOTERM' | 'PAYMENT_TERM') => void;
+  onSelectTransportMode?: (mode: 'SEA_FCL' | 'SEA_LCL' | 'AIR_FREIGHT' | 'INLAND_TRUCKING' | 'CUSTOMS_CLEARANCE') => void;
+  currentUserRole?: UserRole;
+  onRoleChange?: (role: UserRole) => void;
+  language?: NavigationLanguage;
+  onLanguageChange?: (lang: NavigationLanguage) => void;
+  activeRouteId?: string;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -77,6 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   surchargesCount = 0,
   rateMastersCount = 0,
   chargeMastersCount = 0,
+  contractsCount = 0,
   exchangeRate,
   lastAutoSaveTime,
   isAutoSaving,
@@ -101,23 +125,58 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenFollowUps,
   onOpenDashboard,
   onOpenContracts,
-  contractsCount = 0,
   onOpenProfitIntelligence,
   onOpenPricingPolicies,
+  onOpenMasterDataReference,
+  onSelectTransportMode,
+  currentUserRole = 'ADMIN',
+  onRoleChange,
+  language = 'vi',
+  onLanguageChange,
+  activeRouteId = 'quotation_workbench',
 }) => {
-  // Folder open/closed states
-  const [openFolders, setOpenFolders] = useState<{ [key: string]: boolean }>({
-    company: true,
-    quotes: true,
-    communication: true,
-    masterData: true,
-    system: true,
+  // Collapsed state (icon-only mode)
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeRole, setActiveRole] = useState<UserRole>(currentUserRole);
+  const [activeLang, setActiveLang] = useState<NavigationLanguage>(language);
+  const [showRoleSelector, setShowRoleSelector] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Synchronize incoming role or language props
+  useEffect(() => {
+    setActiveRole(currentUserRole);
+  }, [currentUserRole]);
+
+  useEffect(() => {
+    setActiveLang(language);
+  }, [language]);
+
+  const t = NAVIGATION_I18N[activeLang];
+
+  // Pinned favorite items IDs
+  const [pinnedIds, setPinnedIds] = useState<string[]>([
+    'quotations_all',
+    'pricing_rates',
+    'master_customers',
+    'pricing_contracts',
+  ]);
+
+  // Collapsible Group states
+  const [expandedGroups, setExpandedGroups] = useState<{ [key: string]: boolean }>({
+    main: true,
+    quotation: true,
+    pricing: true,
+    masterData: false,
+    operations: false,
+    analytics: false,
+    system: false,
   });
 
-  const toggleFolder = (folderKey: string) => {
-    setOpenFolders(prev => ({
+  const toggleGroup = (groupKey: string) => {
+    setExpandedGroups(prev => ({
       ...prev,
-      [folderKey]: !prev[folderKey]
+      [groupKey]: !prev[groupKey],
     }));
   };
 
@@ -128,740 +187,899 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
+  const togglePin = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setPinnedIds(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  // Keyboard shortcut Ctrl+K to search navigation & Escape to close mobile
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        if (isCollapsed) setIsCollapsed(false);
+        searchInputRef.current?.focus();
+      }
+      if (e.key === 'Escape') {
+        if (isOpenMobile) onCloseMobile();
+        if (searchQuery) setSearchQuery('');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpenMobile, onCloseMobile, isCollapsed, searchQuery]);
+
+  // Real-time counter calculations from loaded memory (Zero fake badges!)
+  const pendingApprovalCount = useMemo(() => {
+    return savedQuotes.filter(q => q.status === 'PENDING_APPROVAL').length;
+  }, [savedQuotes]);
+
+  const draftsCount = useMemo(() => {
+    return savedQuotes.filter(q => q.status === 'DRAFT').length;
+  }, [savedQuotes]);
+
+  const sentCount = useMemo(() => {
+    return savedQuotes.filter(q => q.status === 'SENT' || q.status === 'ISSUED').length;
+  }, [savedQuotes]);
+
+  // Permissions validation based on current role
+  const permissions = ROLE_PERMISSIONS[activeRole] || [];
+  const canViewProfitability = permissions.includes('profitability.view');
+  const isAdminOrManager = activeRole === 'ADMIN' || activeRole === 'SALES_MANAGER';
+
+  // Navigation Items Definition
+  interface NavItem {
+    id: string;
+    label: string;
+    icon: React.FC<{ className?: string }>;
+    group: 'main' | 'quotation' | 'pricing' | 'masterData' | 'operations' | 'analytics' | 'system';
+    action: () => void;
+    badge?: string | number | null;
+    badgeColor?: string;
+    isCta?: boolean;
+    shortcut?: string;
+    restricted?: boolean;
+    requiredRoleDesc?: string;
+  }
+
+  const allNavItems: NavItem[] = [
+    // --- MAIN ---
+    {
+      id: 'main_dashboard',
+      label: t.analyticsDashboard,
+      icon: LayoutDashboard,
+      group: 'main',
+      action: () => onOpenDashboard && onOpenDashboard('OVERVIEW'),
+      badge: 'KPIs',
+      badgeColor: 'bg-blue-600/80 text-blue-100',
+    },
+
+    // --- QUOTATION ---
+    {
+      id: 'quotation_new',
+      label: t.createQuotation,
+      icon: Plus,
+      group: 'quotation',
+      action: onNewQuote,
+      isCta: true,
+      shortcut: 'Ctrl+N',
+    },
+    {
+      id: 'quotations_all',
+      label: t.allQuotations,
+      icon: FileText,
+      group: 'quotation',
+      action: () => onOpenSavedQuotes('ALL'),
+      badge: savedQuotes.length > 0 ? savedQuotes.length : null,
+      badgeColor: 'bg-slate-800 text-slate-200 border border-slate-700',
+    },
+    {
+      id: 'quotations_draft',
+      label: t.drafts,
+      icon: Clock,
+      group: 'quotation',
+      action: () => onOpenSavedQuotes('DRAFT'),
+      badge: draftsCount > 0 ? draftsCount : null,
+      badgeColor: 'bg-amber-500/20 text-amber-300 border border-amber-500/40',
+    },
+    {
+      id: 'quotations_pending',
+      label: t.pendingApproval,
+      icon: CheckCircle2,
+      group: 'quotation',
+      action: () => onOpenSavedQuotes('PENDING_APPROVAL'),
+      badge: pendingApprovalCount > 0 ? pendingApprovalCount : null,
+      badgeColor: 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40',
+    },
+    {
+      id: 'quotations_sent',
+      label: t.sentQuotations,
+      icon: Send,
+      group: 'quotation',
+      action: () => onOpenSavedQuotes('SENT'),
+      badge: sentCount > 0 ? sentCount : null,
+      badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40',
+    },
+    {
+      id: 'quotation_preview',
+      label: activeLang === 'vi' ? 'Xem Trước Bản In (A4)' : 'Print Preview (A4)',
+      icon: Printer,
+      group: 'quotation',
+      action: () => onOpenPreview && onOpenPreview(),
+    },
+    {
+      id: 'quotation_snapshots',
+      label: t.quoteSnapshots,
+      icon: Archive,
+      group: 'quotation',
+      action: () => onOpenDocumentHistory && onOpenDocumentHistory(),
+    },
+    {
+      id: 'quotation_templates',
+      label: t.quoteTemplates,
+      icon: Layout,
+      group: 'quotation',
+      action: () => onOpenTemplateBuilder && onOpenTemplateBuilder(),
+    },
+    {
+      id: 'quotation_send',
+      label: activeLang === 'vi' ? 'Gửi Email Báo Giá' : 'Send Quote Email',
+      icon: Mail,
+      group: 'quotation',
+      action: () => onOpenSendModal && onOpenSendModal(),
+    },
+    {
+      id: 'quotation_communication',
+      label: t.communicationCenter,
+      icon: ExternalLink,
+      group: 'quotation',
+      action: () => onOpenCommunication && onOpenCommunication(),
+    },
+    {
+      id: 'quotation_email_templates',
+      label: t.emailTemplates,
+      icon: FileText,
+      group: 'quotation',
+      action: () => onOpenEmailTemplates && onOpenEmailTemplates(),
+    },
+    {
+      id: 'quotation_followup',
+      label: t.followUpSchedule,
+      icon: Calendar,
+      group: 'quotation',
+      action: () => onOpenFollowUps && onOpenFollowUps(),
+    },
+
+    // --- PRICING ---
+    {
+      id: 'pricing_rates',
+      label: t.rateManagement,
+      icon: Database,
+      group: 'pricing',
+      action: () => onOpenMasterRateHub && onOpenMasterRateHub('RATES'),
+      badge: rateMastersCount > 0 ? rateMastersCount : null,
+      badgeColor: 'bg-blue-900/60 text-blue-300 border border-blue-700/50',
+    },
+    {
+      id: 'pricing_contracts',
+      label: t.contractsHub,
+      icon: FileText,
+      group: 'pricing',
+      action: () => onOpenContracts && onOpenContracts(),
+      badge: contractsCount > 0 ? contractsCount : null,
+      badgeColor: 'bg-purple-900/80 text-purple-200 border border-purple-700/50',
+    },
+    {
+      id: 'pricing_policies',
+      label: t.pricingPolicies,
+      icon: Sliders,
+      group: 'pricing',
+      action: () => onOpenPricingPolicies && onOpenPricingPolicies(),
+      restricted: !isAdminOrManager,
+      requiredRoleDesc: 'Admin / Manager',
+    },
+    {
+      id: 'pricing_profit',
+      label: t.profitIntelligence,
+      icon: TrendingUp,
+      group: 'pricing',
+      action: () => onOpenProfitIntelligence && onOpenProfitIntelligence(),
+      restricted: !canViewProfitability,
+      requiredRoleDesc: 'RBAC Protected',
+    },
+    {
+      id: 'pricing_smart',
+      label: t.smartAssistant,
+      icon: Sparkles,
+      group: 'pricing',
+      action: () => onOpenSmartAssistant && onOpenSmartAssistant(),
+      badge: 'AI',
+      badgeColor: 'bg-amber-600/80 text-white font-bold',
+    },
+    {
+      id: 'pricing_search',
+      label: t.rateSearch,
+      icon: Search,
+      group: 'pricing',
+      action: () => onOpenRateSearch && onOpenRateSearch(),
+    },
+
+    // --- MASTER DATA ---
+    {
+      id: 'master_customers',
+      label: t.customersCrm,
+      icon: Users,
+      group: 'masterData',
+      action: onOpenCustomers,
+      badge: customersCount > 0 ? customersCount : null,
+      badgeColor: 'bg-cyan-900/60 text-cyan-300 border border-cyan-700/50',
+    },
+    {
+      id: 'master_suppliers',
+      label: t.suppliersCarriers,
+      icon: Ship,
+      group: 'masterData',
+      action: () => onOpenMasterRateHub && onOpenMasterRateHub('SUPPLIERS'),
+    },
+    {
+      id: 'master_charges',
+      label: t.chargeCodes,
+      icon: Layers,
+      group: 'masterData',
+      action: () => onOpenMasterRateHub && onOpenMasterRateHub('CHARGES'),
+      badge: chargeMastersCount > 0 ? chargeMastersCount : null,
+      badgeColor: 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50',
+    },
+    {
+      id: 'master_surcharges',
+      label: t.surchargesCatalog,
+      icon: Receipt,
+      group: 'masterData',
+      action: onOpenSurchargeCatalog,
+      badge: surchargesCount > 0 ? surchargesCount : null,
+      badgeColor: 'bg-amber-900/60 text-amber-300 border border-amber-700/50',
+    },
+    {
+      id: 'master_ports',
+      label: t.portsLocations,
+      icon: Anchor,
+      group: 'masterData',
+      action: () => onOpenMasterDataReference && onOpenMasterDataReference('PORT'),
+    },
+    {
+      id: 'master_containers',
+      label: t.containerTypes,
+      icon: Box,
+      group: 'masterData',
+      action: () => onOpenMasterDataReference && onOpenMasterDataReference('CONTAINER_TYPE'),
+    },
+    {
+      id: 'master_incoterms',
+      label: t.incotermsTerms,
+      icon: FileCheck2,
+      group: 'masterData',
+      action: () => onOpenMasterDataReference && onOpenMasterDataReference('INCOTERM'),
+    },
+    {
+      id: 'master_payment_terms',
+      label: t.paymentTerms,
+      icon: CreditCard,
+      group: 'masterData',
+      action: () => onOpenMasterDataReference && onOpenMasterDataReference('PAYMENT_TERM'),
+    },
+
+    // --- OPERATIONS ---
+    {
+      id: 'ops_ocean',
+      label: t.oceanFclLcl,
+      icon: Ship,
+      group: 'operations',
+      action: () => {
+        if (onSelectTransportMode) onSelectTransportMode('SEA_FCL');
+        else if (onOpenMasterRateHub) onOpenMasterRateHub('RATES');
+      },
+    },
+    {
+      id: 'ops_air',
+      label: t.airFreight,
+      icon: Plane,
+      group: 'operations',
+      action: () => {
+        if (onSelectTransportMode) onSelectTransportMode('AIR_FREIGHT');
+        else if (onOpenMasterRateHub) onOpenMasterRateHub('RATES');
+      },
+    },
+    {
+      id: 'ops_trucking',
+      label: t.truckingInland,
+      icon: Truck,
+      group: 'operations',
+      action: () => {
+        if (onSelectTransportMode) onSelectTransportMode('INLAND_TRUCKING');
+        else if (onOpenMasterRateHub) onOpenMasterRateHub('RATES');
+      },
+    },
+    {
+      id: 'ops_customs',
+      label: t.customsClearance,
+      icon: FileCheck2,
+      group: 'operations',
+      action: () => {
+        if (onSelectTransportMode) onSelectTransportMode('CUSTOMS_CLEARANCE');
+        else if (onOpenMasterRateHub) onOpenMasterRateHub('CHARGES');
+      },
+    },
+
+    // --- ANALYTICS ---
+    {
+      id: 'analytics_funnel',
+      label: t.quotationFunnel,
+      icon: TrendingUp,
+      group: 'analytics',
+      action: () => onOpenDashboard && onOpenDashboard('FUNNEL'),
+    },
+    {
+      id: 'analytics_sales',
+      label: t.salesPerformance,
+      icon: Users,
+      group: 'analytics',
+      action: () => onOpenDashboard && onOpenDashboard('SALES'),
+    },
+    {
+      id: 'analytics_profit',
+      label: t.profitabilityRbac,
+      icon: Coins,
+      group: 'analytics',
+      action: () => onOpenDashboard && onOpenDashboard('PROFITABILITY'),
+      restricted: !canViewProfitability,
+      requiredRoleDesc: 'RBAC Restricted',
+    },
+    {
+      id: 'analytics_lanes',
+      label: t.laneServiceAnalytics,
+      icon: Compass,
+      group: 'analytics',
+      action: () => onOpenDashboard && onOpenDashboard('LANES_SERVICES'),
+    },
+
+    // --- SYSTEM ---
+    {
+      id: 'sys_profile',
+      label: t.companyProfile,
+      icon: Building2,
+      group: 'system',
+      action: () => onOpenCompanyProfile('profile'),
+    },
+    {
+      id: 'sys_sales_bank',
+      label: t.salesRepBank,
+      icon: UserCheck,
+      group: 'system',
+      action: () => onOpenCompanyProfile('sales'),
+    },
+    {
+      id: 'sys_audit',
+      label: t.auditLogs,
+      icon: History,
+      group: 'system',
+      action: () => onOpenMasterRateHub && onOpenMasterRateHub('AUDIT'),
+    },
+    {
+      id: 'sys_backup',
+      label: t.dataBackup,
+      icon: Database,
+      group: 'system',
+      action: onOpenDataBackup,
+    },
+  ];
+
+  // Filter items if searching
+  const filteredNavItems = useMemo(() => {
+    if (!searchQuery.trim()) return allNavItems;
+    const q = searchQuery.toLowerCase();
+    return allNavItems.filter(item => 
+      item.label.toLowerCase().includes(q) || item.id.toLowerCase().includes(q)
+    );
+  }, [allNavItems, searchQuery]);
+
+  // Group definitions
+  const groups: { key: string; title: string; icon: React.FC<{ className?: string }> }[] = [
+    { key: 'main', title: t.groupMain, icon: LayoutDashboard },
+    { key: 'quotation', title: t.groupQuotation, icon: FileText },
+    { key: 'pricing', title: t.groupPricing, icon: Sliders },
+    { key: 'masterData', title: t.groupMasterData, icon: Database },
+    { key: 'operations', title: t.groupOperations, icon: Ship },
+    { key: 'analytics', title: t.groupAnalytics, icon: TrendingUp },
+    { key: 'system', title: t.groupSystem, icon: Settings },
+  ];
+
+  // Pinned items for quick access tray
+  const pinnedItems = useMemo(() => {
+    return allNavItems.filter(item => pinnedIds.includes(item.id));
+  }, [allNavItems, pinnedIds]);
+
+  const handleRoleSwitch = (newRole: UserRole) => {
+    setActiveRole(newRole);
+    if (onRoleChange) onRoleChange(newRole);
+    setShowRoleSelector(false);
+  };
+
+  const handleLanguageToggle = () => {
+    const nextLang: NavigationLanguage = activeLang === 'vi' ? 'en' : 'vi';
+    setActiveLang(nextLang);
+    if (onLanguageChange) onLanguageChange(nextLang);
+  };
+
   return (
     <>
       {/* Mobile Backdrop */}
       {isOpenMobile && (
         <div 
           onClick={onCloseMobile}
-          className="fixed inset-0 bg-slate-950/70 z-40 lg:hidden backdrop-blur-xs transition-opacity"
+          className="fixed inset-0 bg-slate-950/75 z-40 lg:hidden backdrop-blur-xs transition-opacity"
+          aria-hidden="true"
         />
       )}
 
       {/* Main Sidebar Container */}
       <aside 
-        className={`fixed top-0 bottom-0 left-0 z-40 w-72 lg:w-76 bg-slate-900 text-slate-100 flex flex-col border-r border-slate-800 transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:z-auto shrink-0 select-none ${
-          isOpenMobile ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed top-0 bottom-0 left-0 z-40 bg-slate-900 text-slate-100 flex flex-col border-r border-slate-800 transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto shrink-0 select-none shadow-xl ${
+          isCollapsed ? 'w-18' : 'w-72 lg:w-74'
+        } ${isOpenMobile ? 'translate-x-0' : '-translate-x-full'}`}
+        role="navigation"
+        aria-label="Sidebar Navigation"
       >
-        {/* Top App Header */}
-        <div className="p-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
+        {/* Top App Header & Branding */}
+        <div className="p-3 border-b border-slate-800 flex items-center justify-between bg-slate-950/60 min-h-[60px]">
           <div className="flex items-center space-x-2.5 min-w-0">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-md shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-700 flex items-center justify-center text-white shadow-md shrink-0">
               <Ship className="w-4 h-4" />
             </div>
-            <div className="min-w-0">
-              <h2 className="font-bold text-xs text-white uppercase tracking-wider truncate">
-                Thư Mục Quản Lý
-              </h2>
-              <p className="text-[10px] text-blue-400 font-medium truncate">
-                {company.shortName || 'Logistics Pro'}
-              </p>
-            </div>
+            
+            {!isCollapsed && (
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h1 className="font-extrabold text-xs text-white uppercase tracking-wider truncate">
+                    {t.appName}
+                  </h1>
+                  <span className="text-[9px] px-1 py-0.2 rounded font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                    TMS
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 font-medium truncate max-w-[170px]">
+                  {company.shortName || company.name || t.appSubtitle}
+                </p>
+              </div>
+            )}
           </div>
 
+          {/* Desktop Collapse / Expand Toggle */}
           <button
             type="button"
-            onClick={() => handleAction(onNewQuote)}
-            className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-xs font-semibold flex items-center space-x-1 shadow-2xs transition-colors"
-            title="Tạo báo giá mới"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="hidden lg:flex p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors"
+            title={isCollapsed ? t.expandSidebar : t.collapseSidebar}
+            aria-label={isCollapsed ? t.expandSidebar : t.collapseSidebar}
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span className="text-[11px] pr-0.5">Mới</span>
+            {isCollapsed ? (
+              <PanelLeftOpen className="w-4 h-4 text-blue-400" />
+            ) : (
+              <PanelLeftClose className="w-4 h-4" />
+            )}
+          </button>
+
+          {/* Mobile Close Button */}
+          <button
+            type="button"
+            onClick={onCloseMobile}
+            className="lg:hidden p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md"
+            aria-label="Đóng menu"
+          >
+            <ChevronLeft className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Directory / Folder Tree Navigation Area */}
-        <div className="flex-1 overflow-y-auto p-2.5 space-y-2 text-xs custom-scrollbar">
+        {/* Quick Search & Command Bar (When Expanded) */}
+        {!isCollapsed && (
+          <div className="px-3 pt-2 pb-1">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t.searchPlaceholder}
+                className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-950/70 border border-slate-800 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs font-bold"
+                >
+                  &times;
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Quick Pinned Favorites Tray (When Expanded and not searching) */}
+        {!isCollapsed && !searchQuery && pinnedItems.length > 0 && (
+          <div className="px-3 py-1.5 border-b border-slate-800/60 bg-slate-950/30">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                <span>{t.favorites}</span>
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {pinnedItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={`pinned-${item.id}`}
+                    type="button"
+                    onClick={() => handleAction(item.action)}
+                    className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 hover:text-white text-[11px] border border-slate-700/60 transition-colors group"
+                    title={item.label}
+                  >
+                    <Icon className="w-3 h-3 text-blue-400 group-hover:text-blue-300 shrink-0" />
+                    <span className="truncate max-w-[120px]">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Navigation Items Area */}
+        <div className="flex-1 overflow-y-auto px-2 py-2 space-y-2 text-xs custom-scrollbar">
           
-          {/* Quick Launch: Business Intelligence & Analytics Dashboard (Phase 9) */}
-          {onOpenDashboard && (
-            <button
-              type="button"
-              onClick={() => handleAction(onOpenDashboard)}
-              className="w-full flex items-center justify-between p-2.5 rounded-lg bg-gradient-to-r from-blue-900/60 via-indigo-900/50 to-blue-800/60 hover:from-blue-800/80 hover:to-indigo-800/80 text-white border border-blue-500/50 shadow-xs transition-all group mb-2"
-            >
-              <div className="flex items-center space-x-2.5 min-w-0">
-                <div className="w-7 h-7 rounded-md bg-blue-600 flex items-center justify-center text-white shadow-2xs group-hover:scale-105 transition-transform">
-                  <LayoutDashboard className="w-4 h-4" />
+          {/* SEARCH RESULTS VIEW (if search input has query) */}
+          {searchQuery ? (
+            <div className="space-y-1">
+              <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase">
+                {filteredNavItems.length} {activeLang === 'vi' ? 'kết quả tìm kiếm' : 'search results'}
+              </div>
+              {filteredNavItems.length === 0 ? (
+                <div className="p-4 text-center text-slate-400 text-xs">
+                  {activeLang === 'vi' ? 'Không tìm thấy chức năng phù hợp' : 'No matching menu item'}
                 </div>
-                <div className="text-left min-w-0">
-                  <div className="font-bold text-xs text-white truncate flex items-center gap-1.5">
-                    <span>Dashboard & BI</span>
-                    <span className="text-[9px] bg-blue-500/40 text-blue-200 px-1 rounded font-mono">Phase 9</span>
-                  </div>
-                  <p className="text-[10px] text-blue-300/80 truncate">Phân tích kinh doanh & KPIs</p>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-blue-300 group-hover:translate-x-0.5 transition-transform shrink-0" />
-            </button>
-          )}
-
-          {/* FOLDER 1: THÔNG TIN CÔNG TY (FORWARDER PROFILE) */}
-          <div className="rounded-lg bg-slate-800/40 border border-slate-800/80 overflow-hidden">
-            {/* Folder Header */}
-            <button
-              type="button"
-              onClick={() => toggleFolder('company')}
-              className="w-full flex items-center justify-between p-2.5 hover:bg-slate-800/70 text-slate-200 hover:text-white transition-colors text-left"
-            >
-              <div className="flex items-center space-x-2 min-w-0">
-                {openFolders.company ? (
-                  <FolderOpen className="w-4 h-4 text-amber-400 shrink-0" />
-                ) : (
-                  <Folder className="w-4 h-4 text-amber-400 shrink-0" />
-                )}
-                <span className="font-semibold text-xs text-slate-100 truncate">
-                  Thông Tin Doanh Nghiệp
-                </span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <span className="text-[10px] text-slate-400 px-1.5 py-0.2 rounded bg-slate-800">
-                  4 mục
-                </span>
-                {openFolders.company ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                ) : (
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                )}
-              </div>
-            </button>
-
-            {/* Folder Items */}
-            {openFolders.company && (
-              <div className="pl-3 pr-2 py-1.5 space-y-0.5 border-t border-slate-800/60 bg-slate-900/40">
-                
-                {/* Item 1: Pháp lý & Trụ sở */}
-                <button
-                  type="button"
-                  onClick={() => handleAction(() => onOpenCompanyProfile('profile'))}
-                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
-                >
-                  <div className="flex items-center space-x-2 min-w-0">
-                    <Building2 className="w-3.5 h-3.5 text-blue-400 shrink-0 group-hover:text-blue-300" />
-                    <span className="text-xs truncate">Pháp Lý & Trụ Sở</span>
-                  </div>
-                  <span className="text-[10px] text-slate-500 group-hover:text-slate-300 font-mono">
-                    MST
-                  </span>
-                </button>
-
-                {/* Item 2: Sales Rep */}
-                <button
-                  type="button"
-                  onClick={() => handleAction(() => onOpenCompanyProfile('sales'))}
-                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
-                >
-                  <div className="flex items-center space-x-2 min-w-0">
-                    <UserCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0 group-hover:text-emerald-300" />
-                    <span className="text-xs truncate">Người Lập Báo Giá</span>
-                  </div>
-                  <span className="text-[10px] text-slate-500 group-hover:text-slate-300 truncate max-w-[80px]">
-                    {company.salesRepName ? company.salesRepName.split(' ').slice(-1)[0] : 'Sales'}
-                  </span>
-                </button>
-
-                {/* Item 3: Banking Account */}
-                <button
-                  type="button"
-                  onClick={() => handleAction(() => onOpenCompanyProfile('bank'))}
-                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
-                >
-                  <div className="flex items-center space-x-2 min-w-0">
-                    <CreditCard className="w-3.5 h-3.5 text-indigo-400 shrink-0 group-hover:text-indigo-300" />
-                    <span className="text-xs truncate">Tài Khoản Ngân Hàng</span>
-                  </div>
-                  <span className="text-[10px] text-slate-500 group-hover:text-slate-300 font-mono">
-                    TK
-                  </span>
-                </button>
-
-                {/* Item 4: Header & Preview */}
-                <button
-                  type="button"
-                  onClick={() => handleAction(() => onOpenCompanyProfile('preview'))}
-                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
-                >
-                  <div className="flex items-center space-x-2 min-w-0">
-                    <Eye className="w-3.5 h-3.5 text-cyan-400 shrink-0 group-hover:text-cyan-300" />
-                    <span className="text-xs truncate">Mẫu Header & Đóng Dấu</span>
-                  </div>
-                  <span className="text-[10px] text-slate-500 group-hover:text-slate-300">
-                    Xem mẫu
-                  </span>
-                </button>
-
-                {/* Item 5: Quản lý đầy đủ */}
-                <button
-                  type="button"
-                  onClick={() => handleAction(() => onOpenCompanyProfile('profile'))}
-                  className="w-full mt-1 flex items-center justify-center space-x-1 px-2.5 py-1.5 rounded-md bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 hover:text-white border border-blue-500/30 transition-colors text-xs font-medium"
-                >
-                  <Settings className="w-3.5 h-3.5" />
-                  <span>Quản Lý Toàn Bộ Profile</span>
-                </button>
-
-              </div>
-            )}
-          </div>
-
-          {/* FOLDER 2: QUẢN LÝ BÁO GIÁ (QUOTES MANAGEMENT) */}
-          <div className="rounded-lg bg-slate-800/40 border border-slate-800/80 overflow-hidden">
-            {/* Folder Header */}
-            <button
-              type="button"
-              onClick={() => toggleFolder('quotes')}
-              className="w-full flex items-center justify-between p-2.5 hover:bg-slate-800/70 text-slate-200 hover:text-white transition-colors text-left"
-            >
-              <div className="flex items-center space-x-2 min-w-0">
-                {openFolders.quotes ? (
-                  <FolderOpen className="w-4 h-4 text-blue-400 shrink-0" />
-                ) : (
-                  <Folder className="w-4 h-4 text-blue-400 shrink-0" />
-                )}
-                <span className="font-semibold text-xs text-slate-100 truncate">
-                  Quản Lý Báo Giá
-                </span>
-              </div>
-              <div className="flex items-center space-x-1">
-                {savedQuotes.length > 0 && (
-                  <span className="text-[10px] font-bold text-white px-1.5 py-0.2 rounded-full bg-blue-600 font-mono">
-                    {savedQuotes.length}
-                  </span>
-                )}
-                {openFolders.quotes ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                ) : (
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                )}
-              </div>
-            </button>
-
-            {/* Folder Items */}
-            {openFolders.quotes && (
-              <div className="pl-3 pr-2 py-1.5 space-y-0.5 border-t border-slate-800/60 bg-slate-900/40">
-                
-                {/* Item: Tạo mới */}
-                <button
-                  type="button"
-                  onClick={() => handleAction(onNewQuote)}
-                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
-                >
-                  <div className="flex items-center space-x-2 min-w-0">
-                    <Plus className="w-3.5 h-3.5 text-emerald-400 shrink-0 group-hover:text-emerald-300" />
-                    <span className="text-xs truncate">Tạo Báo Giá Mới</span>
-                  </div>
-                  <span className="text-[10px] text-emerald-400 font-medium">
-                    Ctrl+N
-                  </span>
-                </button>
-
-                {/* Item: Danh sách đã lưu */}
-                <button
-                  type="button"
-                  onClick={() => handleAction(onOpenSavedQuotes)}
-                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
-                >
-                  <div className="flex items-center space-x-2 min-w-0">
-                    <FileText className="w-3.5 h-3.5 text-blue-400 shrink-0 group-hover:text-blue-300" />
-                    <span className="text-xs truncate">Báo Giá Đã Lưu</span>
-                  </div>
-                  <span className="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded font-mono font-bold">
-                    {savedQuotes.length}
-                  </span>
-                </button>
-
-                {/* Item: Báo Cáo & Phân Tích BI */}
-                {onOpenDashboard && (
+              ) : (
+                filteredNavItems.map((item) => (
                   <button
+                    key={item.id}
                     type="button"
-                    onClick={() => handleAction(onOpenDashboard)}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group bg-blue-950/20 border border-blue-800/30"
+                    onClick={() => {
+                      handleAction(item.action);
+                      setSearchQuery('');
+                    }}
+                    className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors text-left group border border-slate-800"
                   >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <LayoutDashboard className="w-3.5 h-3.5 text-blue-400 shrink-0 group-hover:text-blue-300" />
-                      <span className="text-xs font-semibold text-blue-200 truncate">Báo Cáo & Phân Tích (BI)</span>
+                    <div className="flex items-center space-x-2.5 min-w-0">
+                      <item.icon className="w-4 h-4 text-blue-400 group-hover:text-blue-300 shrink-0" />
+                      <span className="text-xs truncate">{item.label}</span>
                     </div>
-                    <span className="text-[9px] bg-blue-700 text-blue-100 font-bold px-1.5 py-0.2 rounded font-mono">
-                      KPIs
-                    </span>
-                  </button>
-                )}
-
-                {/* Item: Phân Tích Lợi Nhuận & What-If Pricing (Phase 15) */}
-                {onOpenProfitIntelligence && (
-                  <button
-                    type="button"
-                    onClick={() => handleAction(onOpenProfitIntelligence)}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-emerald-200 hover:text-white transition-colors text-left group bg-emerald-950/20 border border-emerald-800/30"
-                    id="sidebar-btn-profit-intelligence"
-                  >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <TrendingUp className="w-3.5 h-3.5 text-emerald-400 shrink-0 group-hover:text-emerald-300" />
-                      <span className="text-xs font-semibold truncate">Biên Lãi & What-If</span>
-                    </div>
-                    <span className="text-[9px] bg-emerald-700 text-emerald-100 font-bold px-1.5 py-0.2 rounded font-mono">
-                      Phase 15
-                    </span>
-                  </button>
-                )}
-
-                {/* Item: Xem trước A4 */}
-                {onOpenPreview && (
-                  <button
-                    type="button"
-                    onClick={() => handleAction(onOpenPreview)}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
-                  >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <Printer className="w-3.5 h-3.5 text-purple-400 shrink-0 group-hover:text-purple-300" />
-                      <span className="text-xs truncate">Xem Trước Bản In (A4)</span>
-                    </div>
-                    <span className="text-[10px] text-purple-400 font-medium">
-                      Xem
-                    </span>
-                  </button>
-                )}
-
-                {/* Item: Phát Hành PDF Chính Thức (Snapshot) */}
-                {onOpenGeneratePdf && (
-                  <button
-                    type="button"
-                    onClick={() => handleAction(onOpenGeneratePdf)}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md bg-rose-950/40 hover:bg-rose-900/60 text-rose-200 hover:text-white border border-rose-800/40 transition-colors text-left group"
-                  >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <FileDown className="w-3.5 h-3.5 text-rose-400 shrink-0 group-hover:text-rose-300" />
-                      <span className="text-xs font-semibold truncate">Phát Hành PDF (Chính Thức)</span>
-                    </div>
-                    <span className="text-[9px] bg-rose-800 text-rose-100 px-1.5 py-0.2 rounded font-bold">
-                      A4 Pro
-                    </span>
-                  </button>
-                )}
-
-                {/* Item: Kho Tài Liệu PDF & Snapshot History */}
-                {onOpenDocumentHistory && (
-                  <button
-                    type="button"
-                    onClick={() => handleAction(onOpenDocumentHistory)}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
-                  >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <Archive className="w-3.5 h-3.5 text-purple-400 shrink-0 group-hover:text-purple-300" />
-                      <span className="text-xs truncate">Kho PDF & Snapshots</span>
-                    </div>
-                    <span className="text-[10px] text-purple-400 font-mono">
-                      Lịch sử
-                    </span>
-                  </button>
-                )}
-
-                {/* Item: Trình Thiết Kế Mẫu (Template Builder) */}
-                {onOpenTemplateBuilder && (
-                  <button
-                    type="button"
-                    onClick={() => handleAction(onOpenTemplateBuilder)}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
-                  >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <Layout className="w-3.5 h-3.5 text-cyan-400 shrink-0 group-hover:text-cyan-300" />
-                      <span className="text-xs truncate">Mẫu Báo Giá (Templates)</span>
-                    </div>
-                    <span className="text-[10px] text-cyan-400 font-mono">
-                      Builder
-                    </span>
-                  </button>
-                )}
-
-              </div>
-            )}
-          </div>
-
-          {/* FOLDER: GIAO TIẾP & BẢO MẬT (COMMUNICATION & SECURITY) */}
-          <div className="rounded-lg bg-slate-800/40 border border-slate-800/80 overflow-hidden">
-            <button
-              type="button"
-              onClick={() => toggleFolder('communication')}
-              className="w-full flex items-center justify-between p-2.5 hover:bg-slate-800/70 text-slate-200 hover:text-white transition-colors text-left"
-            >
-              <div className="flex items-center space-x-2 min-w-0">
-                {openFolders.communication ? (
-                  <FolderOpen className="w-4 h-4 text-indigo-400 shrink-0" />
-                ) : (
-                  <Folder className="w-4 h-4 text-indigo-400 shrink-0" />
-                )}
-                <span className="font-semibold text-xs text-slate-100 truncate">
-                  Giao Tiếp & Bảo Mật
-                </span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <span className="text-[9px] font-bold text-white px-1.5 py-0.2 rounded-full bg-indigo-600 font-mono">
-                  Phase 8
-                </span>
-                {openFolders.communication ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                ) : (
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                )}
-              </div>
-            </button>
-
-            {openFolders.communication && (
-              <div className="pl-3 pr-2 py-1.5 space-y-0.5 border-t border-slate-800/60 bg-slate-900/40">
-                {/* Item: Gửi Báo Giá */}
-                {onOpenSendModal && (
-                  <button
-                    type="button"
-                    onClick={() => handleAction(onOpenSendModal)}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md bg-blue-950/40 hover:bg-blue-900/60 text-blue-200 hover:text-white border border-blue-800/40 transition-colors text-left group"
-                  >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <Send className="w-3.5 h-3.5 text-blue-400 shrink-0 group-hover:text-blue-300" />
-                      <span className="text-xs font-semibold truncate">Gửi Email Khách Hàng</span>
-                    </div>
-                    <span className="text-[9px] bg-blue-800 text-blue-100 px-1.5 py-0.2 rounded font-bold">
-                      Send
-                    </span>
-                  </button>
-                )}
-
-                {/* Item: Tiến Trình & Lịch Sử Gửi */}
-                {onOpenCommunication && (
-                  <button
-                    type="button"
-                    onClick={() => handleAction(onOpenCommunication)}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
-                  >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <Mail className="w-3.5 h-3.5 text-indigo-400 shrink-0 group-hover:text-indigo-300" />
-                      <span className="text-xs truncate">Tiến Trình & Lịch Sử Gửi</span>
-                    </div>
-                    <span className="text-[10px] text-indigo-400 font-mono">
-                      Timeline
-                    </span>
-                  </button>
-                )}
-
-                {/* Item: Mẫu Email Báo Giá */}
-                {onOpenEmailTemplates && (
-                  <button
-                    type="button"
-                    onClick={() => handleAction(onOpenEmailTemplates)}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
-                  >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <FileText className="w-3.5 h-3.5 text-cyan-400 shrink-0 group-hover:text-cyan-300" />
-                      <span className="text-xs truncate">Mẫu Email (Templates)</span>
-                    </div>
-                    <span className="text-[10px] text-cyan-400 font-mono">
-                      Mẫu
-                    </span>
-                  </button>
-                )}
-
-                {/* Item: Lịch Chăm Sóc Khách Hàng */}
-                {onOpenFollowUps && (
-                  <button
-                    type="button"
-                    onClick={() => handleAction(onOpenFollowUps)}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
-                  >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <Calendar className="w-3.5 h-3.5 text-emerald-400 shrink-0 group-hover:text-emerald-300" />
-                      <span className="text-xs truncate">Lịch Chăm Sóc (Follow-Up)</span>
-                    </div>
-                    <span className="text-[10px] text-emerald-400 font-mono">
-                      Hẹn
-                    </span>
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* FOLDER 3: DỮ LIỆU NỀN TẢNG (MASTER RATES & DATA) */}
-          <div className="rounded-lg bg-slate-800/40 border border-slate-800/80 overflow-hidden">
-            {/* Folder Header */}
-            <button
-              type="button"
-              onClick={() => toggleFolder('masterData')}
-              className="w-full flex items-center justify-between p-2.5 hover:bg-slate-800/70 text-slate-200 hover:text-white transition-colors text-left"
-            >
-              <div className="flex items-center space-x-2 min-w-0">
-                {openFolders.masterData ? (
-                  <FolderOpen className="w-4 h-4 text-emerald-400 shrink-0" />
-                ) : (
-                  <Folder className="w-4 h-4 text-emerald-400 shrink-0" />
-                )}
-                <span className="font-semibold text-xs text-slate-100 truncate">
-                  Bảng Giá Master & Phụ Phí
-                </span>
-              </div>
-              <div className="flex items-center space-x-1">
-                {rateMastersCount > 0 && (
-                  <span className="text-[10px] bg-emerald-600 text-white font-bold px-1.5 py-0.2 rounded font-mono">
-                    {rateMastersCount}
-                  </span>
-                )}
-                {openFolders.masterData ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                ) : (
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                )}
-              </div>
-            </button>
-
-            {/* Folder Items */}
-            {openFolders.masterData && (
-              <div className="pl-3 pr-2 py-1.5 space-y-0.5 border-t border-slate-800/60 bg-slate-900/40">
-                
-                {/* Item: Bảng Giá Master */}
-                {onOpenMasterRateHub && (
-                  <button
-                    type="button"
-                    onClick={() => handleAction(() => onOpenMasterRateHub('RATES'))}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
-                  >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <Database className="w-3.5 h-3.5 text-blue-400 shrink-0 group-hover:text-blue-300" />
-                      <span className="text-xs font-semibold text-slate-200 truncate">Bảng Giá Master (Rates)</span>
-                    </div>
-                    {rateMastersCount > 0 && (
-                      <span className="text-[10px] bg-blue-900/60 text-blue-300 border border-blue-700/50 px-1.5 py-0.5 rounded font-mono font-bold">
-                        {rateMastersCount}
+                    {item.badge && (
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-bold ${item.badgeColor || 'bg-slate-700 text-white'}`}>
+                        {item.badge}
                       </span>
                     )}
                   </button>
-                )}
+                ))
+              )}
+            </div>
+          ) : (
+            /* REGULAR STRUCTURED GROUPS */
+            groups.map((group) => {
+              const groupItems = allNavItems.filter(item => item.group === group.key);
+              if (groupItems.length === 0) return null;
 
-                {/* Item: Hợp Đồng Khách Hàng & NCC (Phase 14) */}
-                {onOpenContracts && (
-                  <button
-                    type="button"
-                    onClick={() => handleAction(onOpenContracts)}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group bg-gradient-to-r from-purple-950/40 to-indigo-950/40 border border-purple-800/40"
-                    id="sidebar-btn-contracts"
-                  >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <FileText className="w-3.5 h-3.5 text-purple-400 shrink-0 group-hover:text-purple-300" />
-                      <span className="text-xs font-semibold text-purple-200 truncate">Hợp Đồng KH & NCC</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {contractsCount > 0 && (
-                        <span className="text-[10px] bg-purple-900/80 text-purple-200 border border-purple-700/50 px-1.5 py-0.2 rounded font-mono font-bold">
-                          {contractsCount}
+              const isExpanded = expandedGroups[group.key];
+              const GroupIcon = group.icon;
+
+              // Check if any child item is active
+              const hasActiveChild = groupItems.some(i => i.id === activeRouteId);
+
+              return (
+                <div 
+                  key={group.key}
+                  className={`rounded-xl border transition-colors overflow-hidden ${
+                    hasActiveChild 
+                      ? 'border-blue-500/40 bg-slate-900/60' 
+                      : 'border-slate-800/60 bg-slate-950/20'
+                  }`}
+                >
+                  {/* Group Header */}
+                  {!isCollapsed ? (
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(group.key)}
+                      className={`w-full flex items-center justify-between p-2 hover:bg-slate-800/50 text-slate-300 hover:text-white transition-colors text-left ${
+                        hasActiveChild ? 'text-blue-300 font-bold' : ''
+                      }`}
+                      aria-expanded={isExpanded}
+                    >
+                      <div className="flex items-center space-x-2 min-w-0">
+                        <GroupIcon className={`w-3.5 h-3.5 shrink-0 ${hasActiveChild ? 'text-blue-400' : 'text-slate-400'}`} />
+                        <span className="font-bold text-[11px] uppercase tracking-wider truncate">
+                          {group.title}
                         </span>
-                      )}
-                      <span className="text-[9px] bg-purple-600 text-white font-black px-1.5 py-0.2 rounded uppercase">
-                        Phase 14
-                      </span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        {isExpanded ? (
+                          <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                        ) : (
+                          <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                        )}
+                      </div>
+                    </button>
+                  ) : (
+                    /* Collapsed Group Divider Icon */
+                    <div className="py-1 text-center border-b border-slate-800/60" title={group.title}>
+                      <GroupIcon className="w-4 h-4 mx-auto text-slate-400" />
                     </div>
-                  </button>
-                )}
-
-                {/* Item: Chính Sách Giá & Biên Lãi (Phase 15) */}
-                {onOpenPricingPolicies && (
-                  <button
-                    type="button"
-                    onClick={() => handleAction(onOpenPricingPolicies)}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group bg-gradient-to-r from-emerald-950/40 to-teal-950/40 border border-emerald-800/40"
-                    id="sidebar-btn-pricing-policies"
-                  >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <Sliders className="w-3.5 h-3.5 text-emerald-400 shrink-0 group-hover:text-emerald-300" />
-                      <span className="text-xs font-semibold text-emerald-200 truncate">Chính Sách Biên Lãi</span>
-                    </div>
-                    <span className="text-[9px] bg-emerald-600 text-white font-black px-1.5 py-0.2 rounded uppercase">
-                      Phase 15
-                    </span>
-                  </button>
-                )}
-
-                {/* Item: Smart Rate Assistant */}
-                {onOpenSmartAssistant && (
-                  <button
-                    type="button"
-                    onClick={() => handleAction(onOpenSmartAssistant)}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group bg-gradient-to-r from-blue-900/40 to-indigo-900/30 border border-blue-800/40"
-                    id="sidebar-btn-smart-assistant"
-                  >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <Sparkles className="w-3.5 h-3.5 text-yellow-400 shrink-0 group-hover:text-yellow-300" />
-                      <span className="text-xs font-semibold text-blue-200 truncate">Smart Rate Assistant</span>
-                    </div>
-                    <span className="text-[9px] bg-blue-700 text-white font-bold px-1.5 py-0.2 rounded uppercase">
-                      AI Auto
-                    </span>
-                  </button>
-                )}
-
-                {/* Item: Tra Cứu Nhanh Bảng Giá */}
-                {onOpenRateSearch && (
-                  <button
-                    type="button"
-                    onClick={() => handleAction(onOpenRateSearch)}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
-                  >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0 group-hover:text-amber-300" />
-                      <span className="text-xs truncate">Tra Cứu Bảng Giá Nhanh</span>
-                    </div>
-                    <span className="text-[10px] text-amber-400 font-medium">Search</span>
-                  </button>
-                )}
-
-                {/* Item: Danh Mục Phí Chuẩn */}
-                {onOpenMasterRateHub && (
-                  <button
-                    type="button"
-                    onClick={() => handleAction(() => onOpenMasterRateHub('CHARGES'))}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
-                  >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <Layers className="w-3.5 h-3.5 text-emerald-400 shrink-0 group-hover:text-emerald-300" />
-                      <span className="text-xs truncate">Danh Mục Phí Chuẩn</span>
-                    </div>
-                    {chargeMastersCount > 0 && (
-                      <span className="text-[10px] bg-slate-800 text-emerald-400 px-1.5 py-0.5 rounded font-mono">
-                        {chargeMastersCount}
-                      </span>
-                    )}
-                  </button>
-                )}
-
-                {/* Item: Khách hàng */}
-                <button
-                  type="button"
-                  onClick={() => handleAction(onOpenCustomers)}
-                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
-                >
-                  <div className="flex items-center space-x-2 min-w-0">
-                    <Users className="w-3.5 h-3.5 text-cyan-400 shrink-0 group-hover:text-cyan-300" />
-                    <span className="text-xs truncate">Danh Mục Khách Hàng (CRM)</span>
-                  </div>
-                  {customersCount > 0 && (
-                    <span className="text-[10px] bg-slate-800 text-cyan-400 px-1.5 py-0.5 rounded font-mono">
-                      {customersCount}
-                    </span>
                   )}
-                </button>
 
-                {/* Item: Phụ phí catalog */}
-                <button
-                  type="button"
-                  onClick={() => handleAction(onOpenSurchargeCatalog)}
-                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
-                >
-                  <div className="flex items-center space-x-2 min-w-0">
-                    <Receipt className="w-3.5 h-3.5 text-amber-400 shrink-0 group-hover:text-amber-300" />
-                    <span className="text-xs truncate">Catalog Phụ Phí Đã Lưu</span>
-                  </div>
-                  {surchargesCount > 0 && (
-                    <span className="text-[10px] bg-slate-800 text-amber-400 px-1.5 py-0.5 rounded font-mono">
-                      {surchargesCount}
-                    </span>
-                  )}
-                </button>
+                  {/* Group Menu Items */}
+                  {(isExpanded || isCollapsed) && (
+                    <div className={`${isCollapsed ? 'py-1 space-y-1' : 'px-1.5 pb-1.5 space-y-0.5'}`}>
+                      {groupItems.map((item) => {
+                        const Icon = item.icon;
+                        const isPinned = pinnedIds.includes(item.id);
+                        const isActive = activeRouteId === item.id;
 
-                {/* Item: Audit log */}
-                {onOpenMasterRateHub && (
-                  <button
-                    type="button"
-                    onClick={() => handleAction(() => onOpenMasterRateHub('AUDIT'))}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
-                  >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <History className="w-3.5 h-3.5 text-purple-400 shrink-0 group-hover:text-purple-300" />
-                      <span className="text-xs truncate">Lịch Sử & Audit Log</span>
+                        // Prominent CTA style for 'Create Quotation'
+                        if (item.isCta) {
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => handleAction(item.action)}
+                              className={`w-full flex items-center ${
+                                isCollapsed ? 'justify-center p-2' : 'justify-between px-2.5 py-2'
+                              } rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold shadow-md hover:shadow-blue-500/20 transition-all group my-1`}
+                              title={isCollapsed ? item.label : undefined}
+                              aria-label={item.label}
+                            >
+                              <div className="flex items-center space-x-2 min-w-0">
+                                <Plus className="w-4 h-4 text-white shrink-0 group-hover:rotate-90 transition-transform duration-200" />
+                                {!isCollapsed && (
+                                  <span className="text-xs font-bold tracking-wide truncate">
+                                    {item.label}
+                                  </span>
+                                )}
+                              </div>
+                              {!isCollapsed && item.shortcut && (
+                                <span className="text-[10px] bg-white/20 text-white px-1.5 py-0.2 rounded font-mono font-medium">
+                                  {item.shortcut}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        }
+
+                        // Regular Item
+                        return (
+                          <div
+                            key={item.id}
+                            className="relative group/tooltip"
+                          >
+                            {isCollapsed ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (item.restricted) {
+                                    alert(`${t.permissionRestricted}: ${item.requiredRoleDesc || activeRole}`);
+                                    return;
+                                  }
+                                  handleAction(item.action);
+                                }}
+                                disabled={item.restricted}
+                                className={`w-full flex items-center justify-center p-2.5 rounded-lg transition-all text-left ${
+                                  isActive 
+                                    ? 'bg-blue-600/20 text-white border border-blue-500/50 shadow-2xs' 
+                                    : 'hover:bg-slate-800/80 text-slate-300 hover:text-white'
+                                } ${item.restricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                aria-label={item.label}
+                              >
+                                <Icon className={`w-3.5 h-3.5 shrink-0 ${
+                                  isActive ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
+                                }`} />
+                              </button>
+                            ) : (
+                              <div
+                                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-all text-left group ${
+                                  isActive 
+                                    ? 'bg-blue-600/20 text-white border border-blue-500/50 shadow-2xs font-semibold' 
+                                    : 'hover:bg-slate-800/80 text-slate-300 hover:text-white'
+                                } ${item.restricted ? 'opacity-50' : ''}`}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (item.restricted) {
+                                      alert(`${t.permissionRestricted}: ${item.requiredRoleDesc || activeRole}`);
+                                      return;
+                                    }
+                                    handleAction(item.action);
+                                  }}
+                                  disabled={item.restricted}
+                                  className="flex-1 flex items-center space-x-2 min-w-0 text-left bg-transparent border-0 p-0 text-inherit cursor-pointer disabled:cursor-not-allowed"
+                                  aria-label={item.label}
+                                >
+                                  <Icon className={`w-3.5 h-3.5 shrink-0 ${
+                                    isActive ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
+                                  }`} />
+                                  <span className="text-xs truncate">{item.label}</span>
+                                </button>
+
+                                <div className="flex items-center space-x-1.5 ml-2 shrink-0">
+                                  {item.restricted && (
+                                    <Lock className="w-3 h-3 text-rose-400 shrink-0" title={item.requiredRoleDesc} />
+                                  )}
+
+                                  {item.badge && (
+                                    <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-bold ${
+                                      item.badgeColor || 'bg-slate-800 text-slate-300'
+                                    }`}>
+                                      {item.badge}
+                                    </span>
+                                  )}
+
+                                  {/* Pin toggle on hover */}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => togglePin(e, item.id)}
+                                    className={`p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:text-amber-300 ${
+                                      isPinned ? 'text-amber-400 opacity-100' : 'text-slate-500'
+                                    }`}
+                                    title={isPinned ? t.unpinFromFavorites : t.pinToFavorites}
+                                  >
+                                    <Star className={`w-3 h-3 ${isPinned ? 'fill-amber-400' : ''}`} />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Floating Tooltip in Collapsed Mode */}
+                            {isCollapsed && (
+                              <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover/tooltip:flex items-center gap-2 px-2.5 py-1.5 bg-slate-950 text-white text-xs font-medium rounded-md shadow-xl border border-slate-800 whitespace-nowrap z-50 pointer-events-none">
+                                <span>{item.label}</span>
+                                {item.badge && (
+                                  <span className="text-[10px] px-1 py-0.2 rounded font-mono bg-blue-600 text-white">
+                                    {item.badge}
+                                  </span>
+                                )}
+                                {item.restricted && (
+                                  <span className="text-[9px] px-1 py-0.2 rounded bg-rose-900 text-rose-200">
+                                    {item.requiredRoleDesc}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                    <span className="text-[10px] text-purple-400 font-medium">Log</span>
-                  </button>
-                )}
-
-              </div>
-            )}
-          </div>
-
-          {/* FOLDER 4: CÀI ĐẶT & HỆ THỐNG (SYSTEM & SETTINGS) */}
-          <div className="rounded-lg bg-slate-800/40 border border-slate-800/80 overflow-hidden">
-            {/* Folder Header */}
-            <button
-              type="button"
-              onClick={() => toggleFolder('system')}
-              className="w-full flex items-center justify-between p-2.5 hover:bg-slate-800/70 text-slate-200 hover:text-white transition-colors text-left"
-            >
-              <div className="flex items-center space-x-2 min-w-0">
-                {openFolders.system ? (
-                  <FolderOpen className="w-4 h-4 text-indigo-400 shrink-0" />
-                ) : (
-                  <Folder className="w-4 h-4 text-indigo-400 shrink-0" />
-                )}
-                <span className="font-semibold text-xs text-slate-100 truncate">
-                  Cài Đặt & Sao Lưu
-                </span>
-              </div>
-              <div className="flex items-center space-x-1">
-                {openFolders.system ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                ) : (
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                )}
-              </div>
-            </button>
-
-            {/* Folder Items */}
-            {openFolders.system && (
-              <div className="pl-3 pr-2 py-1.5 space-y-0.5 border-t border-slate-800/60 bg-slate-900/40">
-                
-                {/* Item: Tỷ giá */}
-                <div className="flex items-center justify-between px-2.5 py-1.5 rounded-md text-slate-300 text-xs">
-                  <div className="flex items-center space-x-2 min-w-0">
-                    <Coins className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span className="truncate">Tỷ Giá USD/VND:</span>
-                  </div>
-                  <span className="font-mono font-bold text-amber-300 text-[11px]">
-                    {exchangeRate.toLocaleString()}
-                  </span>
+                  )}
                 </div>
-
-                {/* Item: Sao lưu JSON */}
-                <button
-                  type="button"
-                  onClick={() => handleAction(onOpenDataBackup)}
-                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white transition-colors text-left group"
-                >
-                  <div className="flex items-center space-x-2 min-w-0">
-                    <Database className="w-3.5 h-3.5 text-indigo-400 shrink-0 group-hover:text-indigo-300" />
-                    <span className="text-xs truncate">Sao Lưu & Phục Hồi</span>
-                  </div>
-                  <span className="text-[10px] text-slate-500 group-hover:text-slate-300 font-mono">
-                    JSON
-                  </span>
-                </button>
-
-              </div>
-            )}
-          </div>
+              );
+            })
+          )}
 
         </div>
 
-        {/* Sidebar Status Footer */}
-        <div className="p-3 bg-slate-950 border-t border-slate-800 text-[11px] text-slate-400 flex flex-col gap-1.5">
-          <div className="flex items-center justify-between text-[10px]">
-            <span className="flex items-center gap-1 text-slate-400">
-              <span className={`w-1.5 h-1.5 rounded-full ${isAutoSaving ? 'bg-amber-400 animate-ping' : 'bg-emerald-400'}`} />
-              <span>Tự động lưu:</span>
-            </span>
-            <span className="font-mono text-emerald-400 font-medium">
-              {isAutoSaving ? 'Đang lưu...' : (lastAutoSaveTime || 'Sẵn sàng')}
-            </span>
-          </div>
+        {/* Sidebar Footer: Profile, Role Switcher, Language & System Status */}
+        <div className="p-2.5 bg-slate-950 border-t border-slate-800 text-slate-400 flex flex-col gap-2">
+          
+          {/* User Profile Card & Role Indicator */}
+          {!isCollapsed ? (
+            <div className="relative">
+              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-900/80 border border-slate-800/80">
+                <div className="flex items-center space-x-2 min-w-0">
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                    {company.salesRepName ? company.salesRepName.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold text-white truncate">
+                      {company.salesRepName || 'Logistics Specialist'}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowRoleSelector(!showRoleSelector)}
+                      className="text-[10px] text-blue-400 hover:text-blue-300 font-mono flex items-center gap-1"
+                    >
+                      <span>{activeRole}</span>
+                      <ChevronDown className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                </div>
 
-          <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-900">
-            <span>Phiên bản Enterprise</span>
-            <span className="font-mono text-slate-400">v2.5 Pro</span>
-          </div>
+                {/* Language Switcher VI | EN */}
+                <button
+                  type="button"
+                  onClick={handleLanguageToggle}
+                  className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded text-[10px] font-bold border border-slate-700 transition-colors flex items-center gap-1"
+                  title="Chuyển ngôn ngữ / Switch language"
+                >
+                  <span className={activeLang === 'vi' ? 'text-blue-400' : 'text-slate-400'}>VI</span>
+                  <span>|</span>
+                  <span className={activeLang === 'en' ? 'text-blue-400' : 'text-slate-400'}>EN</span>
+                </button>
+              </div>
+
+              {/* RBAC Role Selector Dropdown */}
+              {showRoleSelector && (
+                <div className="absolute bottom-full left-0 right-0 mb-1.5 p-1.5 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 space-y-1">
+                  <div className="px-2 py-1 text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+                    {t.switchRole} (RBAC)
+                  </div>
+                  {(['ADMIN', 'SALES_MANAGER', 'SALES_REP', 'PRICING_SPECIALIST', 'VIEWER'] as UserRole[]).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => handleRoleSwitch(r)}
+                      className={`w-full text-left px-2 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
+                        activeRole === r 
+                          ? 'bg-blue-600 text-white font-bold' 
+                          : 'text-slate-300 hover:bg-slate-800'
+                      }`}
+                    >
+                      <span>
+                        {r === 'ADMIN' && t.roleAdmin}
+                        {r === 'SALES_MANAGER' && t.roleSalesManager}
+                        {r === 'SALES_REP' && t.roleSalesRep}
+                        {r === 'PRICING_SPECIALIST' && t.rolePricingSpecialist}
+                        {r === 'VIEWER' && t.roleViewer}
+                      </span>
+                      {activeRole === r && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Collapsed Footer Profile Icon */
+            <div className="flex flex-col items-center gap-2 py-1">
+              <button
+                type="button"
+                onClick={handleLanguageToggle}
+                className="w-8 h-8 rounded bg-slate-800 text-[10px] font-bold text-blue-400 flex items-center justify-center hover:bg-slate-700"
+                title="VI / EN"
+              >
+                {activeLang.toUpperCase()}
+              </button>
+              <div 
+                className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold"
+                title={`${company.salesRepName || 'User'} (${activeRole})`}
+              >
+                {company.salesRepName ? company.salesRepName.charAt(0).toUpperCase() : 'U'}
+              </div>
+            </div>
+          )}
+
+          {/* System Status: Auto-save & USD Rate (When expanded) */}
+          {!isCollapsed && (
+            <div className="pt-1.5 border-t border-slate-900/90 flex items-center justify-between text-[10px]">
+              <span className="flex items-center gap-1.5 text-slate-400">
+                <span className={`w-1.5 h-1.5 rounded-full ${isAutoSaving ? 'bg-amber-400 animate-ping' : 'bg-emerald-400'}`} />
+                <span>{isAutoSaving ? t.autoSaving : t.autoSaved}:</span>
+                <span className="font-mono text-emerald-400 font-medium truncate max-w-[80px]">
+                  {lastAutoSaveTime || 'Ready'}
+                </span>
+              </span>
+
+              <span className="font-mono text-slate-400" title="Tỷ giá USD">
+                ${exchangeRate.toLocaleString()}
+              </span>
+            </div>
+          )}
+
         </div>
 
       </aside>

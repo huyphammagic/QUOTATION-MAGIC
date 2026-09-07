@@ -13,6 +13,7 @@ interface SavedQuotesModalProps {
   onCloneQuote: (id: string) => void;
   onDeleteQuote: (id: string) => void;
   onUpdateStatus: (id: string, status: QuoteStatus) => void;
+  initialStatusFilter?: string;
 }
 
 export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
@@ -22,10 +23,17 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
   onSelectQuote,
   onCloneQuote,
   onDeleteQuote,
-  onUpdateStatus
+  onUpdateStatus,
+  initialStatusFilter = 'ALL',
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter);
+
+  useEffect(() => {
+    if (isOpen) {
+      setStatusFilter(initialStatusFilter || 'ALL');
+    }
+  }, [isOpen, initialStatusFilter]);
 
   useEffect(() => {
     if (!isOpen) return;

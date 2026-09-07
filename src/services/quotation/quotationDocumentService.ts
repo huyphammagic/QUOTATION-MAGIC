@@ -40,76 +40,44 @@ const COLLECTIONS = {
 };
 
 // ==========================================
-// LOCAL STORAGE CACHE HELPERS
+// IN-MEMORY CACHE (NO LOCAL STORAGE BUSINESS DATA - PHASE 17)
 // ==========================================
 
+let memoryDocuments: QuotationDocumentRecord[] = [];
+let memoryTemplates: QuotationTemplate[] = DEFAULT_QUOTATION_TEMPLATES;
+let memoryTerms: QuotationTermsTemplate[] = DEFAULT_TERMS_TEMPLATES;
+let memoryAuditLogs: QuotationAuditLog[] = [];
+
 function getLocalDocuments(): QuotationDocumentRecord[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.DOCUMENTS);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    return [];
-  }
+  return memoryDocuments;
 }
 
 function saveLocalDocuments(docs: QuotationDocumentRecord[]) {
-  try {
-    localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify(docs));
-  } catch (e) {
-    console.warn('LocalStorage save documents error:', e);
-  }
+  memoryDocuments = docs;
 }
 
 function getLocalTemplates(): QuotationTemplate[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.TEMPLATES);
-    return raw ? JSON.parse(raw) : DEFAULT_QUOTATION_TEMPLATES;
-  } catch (e) {
-    return DEFAULT_QUOTATION_TEMPLATES;
-  }
+  return memoryTemplates.length > 0 ? memoryTemplates : DEFAULT_QUOTATION_TEMPLATES;
 }
 
 function saveLocalTemplates(templates: QuotationTemplate[]) {
-  try {
-    localStorage.setItem(STORAGE_KEYS.TEMPLATES, JSON.stringify(templates));
-  } catch (e) {
-    console.warn('LocalStorage save templates error:', e);
-  }
+  memoryTemplates = templates;
 }
 
 function getLocalTerms(): QuotationTermsTemplate[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.TERMS);
-    return raw ? JSON.parse(raw) : DEFAULT_TERMS_TEMPLATES;
-  } catch (e) {
-    return DEFAULT_TERMS_TEMPLATES;
-  }
+  return memoryTerms.length > 0 ? memoryTerms : DEFAULT_TERMS_TEMPLATES;
 }
 
 function saveLocalTerms(terms: QuotationTermsTemplate[]) {
-  try {
-    localStorage.setItem(STORAGE_KEYS.TERMS, JSON.stringify(terms));
-  } catch (e) {
-    console.warn('LocalStorage save terms error:', e);
-  }
+  memoryTerms = terms;
 }
 
 function getLocalAuditLogs(): QuotationAuditLog[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    return [];
-  }
+  return memoryAuditLogs;
 }
 
 function appendLocalAuditLog(log: QuotationAuditLog) {
-  try {
-    const logs = [log, ...getLocalAuditLogs()].slice(0, 200);
-    localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(logs));
-  } catch (e) {
-    console.warn('LocalStorage save audit log error:', e);
-  }
+  memoryAuditLogs = [log, ...memoryAuditLogs].slice(0, 200);
 }
 
 // ==========================================

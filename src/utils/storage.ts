@@ -2,66 +2,87 @@ import { QuoteData, CustomerRecord, SurchargeItem } from '../types/logistics';
 import { RateMasterItem, ChargeMasterItem, RateHistoryItem } from '../types/masterRate';
 import { INITIAL_SAMPLE_QUOTE, INITIAL_CUSTOMERS, INITIAL_SURCHARGE_CATALOG } from '../data/presets';
 import { generateQuoteNumber } from './formatters';
+import { 
+  saveQuotation as repoSaveQuotation, 
+  deleteQuotation as repoDeleteQuotation,
+  saveActiveQuotationDraft as repoSaveDraft,
+  clearActiveQuotationDraft as repoClearDraft
+} from '../services/repository/quotationRepository';
+import { 
+  saveCustomer as repoSaveCustomer, 
+  deleteCustomer as repoDeleteCustomer 
+} from '../services/repository/customerRepository';
+import { 
+  saveSurcharge as repoSaveSurcharge, 
+  deleteSurcharge as repoDeleteSurcharge,
+  saveRateMaster as repoSaveRateMaster,
+  deleteRateMaster as repoDeleteRateMaster,
+  saveChargeMaster as repoSaveChargeMaster,
+  addRateHistory as repoAddRateHistory
+} from '../services/repository/rateRepository';
+import { saveCompanyProfile as repoSaveCompanyProfile } from '../services/repository/companyProfileRepository';
 
-const STORAGE_KEY = 'LOGISTICS_SAVED_QUOTES_V1';
-const SETTINGS_KEY = 'LOGISTICS_COMPANY_SETTINGS_V1';
-const CUSTOMERS_KEY = 'LOGISTICS_CUSTOMERS_V1';
-const SURCHARGES_KEY = 'LOGISTICS_SURCHARGES_CATALOG_V1';
-const RATE_MASTERS_KEY = 'LOGISTICS_RATE_MASTERS_V1';
-const CHARGE_MASTERS_KEY = 'LOGISTICS_CHARGE_MASTERS_V1';
-const RATE_HISTORIES_KEY = 'LOGISTICS_RATE_HISTORIES_V1';
+/**
+ * ============================================================================
+ * PHASE 17 CLOUD-FIRST IN-MEMORY DATA LAYER
+ * NO BUSINESS DATA IN LOCAL STORAGE. FIREBASE IS SINGLE SOURCE OF TRUTH.
+ * ============================================================================
+ */
 
+// In-Memory Business State
+let memoryQuotes: QuoteData[] = [INITIAL_SAMPLE_QUOTE];
+let memoryCompanySettings: any = null;
+let memoryCustomers: CustomerRecord[] = INITIAL_CUSTOMERS;
+let memorySurcharges: SurchargeItem[] = INITIAL_SURCHARGE_CATALOG;
+let memoryRateMasters: RateMasterItem[] = [];
+let memoryChargeMasters: ChargeMasterItem[] = [];
+let memoryRateHistories: RateHistoryItem[] = [];
+let memoryActiveDraft: { quote: QuoteData | null; savedAt: string | null } = { quote: null, savedAt: null };
+
+// ================= QUOTES STORAGE (IN-MEMORY + ASYNC CLOUD) =================
 export function getSavedQuotes(): QuoteData[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      // Seed with initial sample quote if empty
-      const initial = [INITIAL_SAMPLE_QUOTE];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
-      return initial;
-    }
-    return JSON.parse(raw);
-  } catch (err) {
-    console.error('Error loading saved quotes:', err);
-    return [INITIAL_SAMPLE_QUOTE];
-  }
+  return memoryQuotes;
 }
 
 export function saveQuote(quote: QuoteData): QuoteData[] {
-  const existing = getSavedQuotes();
-  const index = existing.findIndex((q) => q.id === quote.id);
-
-  const updatedQuote = {
+  const index = memoryQuotes.findIndex((q) => q.id === quote.id);
+  const updatedQuote: QuoteData = {
     ...quote,
+    version: (quote.version || 1) + 1,
     updatedDate: new Date().toISOString().slice(0, 10),
   };
 
   if (index >= 0) {
-    existing[index] = updatedQuote;
+    memoryQuotes[index] = updatedQuote;
   } else {
-    existing.unshift(updatedQuote);
+    memoryQuotes.unshift(updatedQuote);
   }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
-  return existing;
+  // Persist directly to Firebase Cloud in background
+  repoSaveQuotation(updatedQuote).catch((err) => {
+    console.warn('[Cloud Sync] Background save quotation notice:', err);
+  });
+
+  return memoryQuotes;
 }
 
 export function deleteQuote(id: string): QuoteData[] {
-  const existing = getSavedQuotes();
-  const filtered = existing.filter((q) => q.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-  return filtered;
+  memoryQuotes = memoryQuotes.filter((q) => q.id !== id);
+  repoDeleteQuotation(id).catch((err) => {
+    console.warn('[Cloud Sync] Background delete quotation notice:', err);
+  });
+  return memoryQuotes;
 }
 
 export function cloneQuote(id: string): QuoteData | null {
-  const existing = getSavedQuotes();
-  const target = existing.find((q) => q.id === id);
+  const target = memoryQuotes.find((q) => q.id === id);
   if (!target) return null;
 
   const newQuote: QuoteData = {
     ...JSON.parse(JSON.stringify(target)),
     id: `quote-${Date.now()}`,
     quoteNumber: generateQuoteNumber(),
+    version: 1,
     createdDate: new Date().toISOString().slice(0, 10),
     updatedDate: new Date().toISOString().slice(0, 10),
     status: 'DRAFT',
@@ -72,211 +93,192 @@ export function cloneQuote(id: string): QuoteData | null {
 }
 
 export function updateQuoteStatus(id: string, status: QuoteData['status']): QuoteData[] {
-  const existing = getSavedQuotes();
-  const target = existing.find((q) => q.id === id);
+  const target = memoryQuotes.find((q) => q.id === id);
   if (target) {
     target.status = status;
     target.updatedDate = new Date().toISOString().slice(0, 10);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+    repoSaveQuotation(target).catch((err) => {
+      console.warn('[Cloud Sync] Background update quote status notice:', err);
+    });
   }
-  return existing;
+  return memoryQuotes;
 }
 
 export function getCompanySettings() {
-  try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {
-    console.error('Error loading settings', e);
-  }
-  return null;
+  return memoryCompanySettings;
 }
 
 export function saveCompanySettings(settings: any) {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  memoryCompanySettings = settings;
+  if (settings) {
+    repoSaveCompanyProfile(settings).catch((err) => {
+      console.warn('[Cloud Sync] Background save company profile notice:', err);
+    });
+  }
 }
 
 // ================= CUSTOMERS STORAGE =================
 export function getSavedCustomers(): CustomerRecord[] {
-  try {
-    const raw = localStorage.getItem(CUSTOMERS_KEY);
-    if (!raw) {
-      localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(INITIAL_CUSTOMERS));
-      return INITIAL_CUSTOMERS;
-    }
-    return JSON.parse(raw);
-  } catch (e) {
-    console.error('Error loading customers', e);
-    return INITIAL_CUSTOMERS;
-  }
+  return memoryCustomers;
 }
 
 export function saveCustomerRecord(customer: CustomerRecord): CustomerRecord[] {
-  const existing = getSavedCustomers();
-  const index = existing.findIndex((c) => c.id === customer.id);
+  const index = memoryCustomers.findIndex((c) => c.id === customer.id);
   if (index >= 0) {
-    existing[index] = customer;
+    memoryCustomers[index] = customer;
   } else {
-    existing.unshift(customer);
+    memoryCustomers.unshift(customer);
   }
-  localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(existing));
-  return existing;
+  repoSaveCustomer(customer).catch((err) => {
+    console.warn('[Cloud Sync] Background save customer notice:', err);
+  });
+  return memoryCustomers;
 }
 
 export function deleteCustomerRecord(id: string): CustomerRecord[] {
-  const existing = getSavedCustomers();
-  const filtered = existing.filter((c) => c.id !== id);
-  localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(filtered));
-  return filtered;
+  memoryCustomers = memoryCustomers.filter((c) => c.id !== id);
+  repoDeleteCustomer(id).catch((err) => {
+    console.warn('[Cloud Sync] Background delete customer notice:', err);
+  });
+  return memoryCustomers;
 }
 
 // ================= SURCHARGE CATALOG STORAGE =================
 export function getSavedSurcharges(): SurchargeItem[] {
-  try {
-    const raw = localStorage.getItem(SURCHARGES_KEY);
-    if (!raw) {
-      localStorage.setItem(SURCHARGES_KEY, JSON.stringify(INITIAL_SURCHARGE_CATALOG));
-      return INITIAL_SURCHARGE_CATALOG;
-    }
-    return JSON.parse(raw);
-  } catch (e) {
-    console.error('Error loading surcharge catalog', e);
-    return INITIAL_SURCHARGE_CATALOG;
-  }
+  return memorySurcharges;
 }
 
 export function saveSurchargeItem(item: SurchargeItem): SurchargeItem[] {
-  const existing = getSavedSurcharges();
-  const index = existing.findIndex((s) => s.id === item.id);
+  const index = memorySurcharges.findIndex((s) => s.id === item.id);
   if (index >= 0) {
-    existing[index] = item;
+    memorySurcharges[index] = item;
   } else {
-    existing.unshift(item);
+    memorySurcharges.unshift(item);
   }
-  localStorage.setItem(SURCHARGES_KEY, JSON.stringify(existing));
-  return existing;
+  repoSaveSurcharge(item).catch((err) => {
+    console.warn('[Cloud Sync] Background save surcharge notice:', err);
+  });
+  return memorySurcharges;
 }
 
 export function deleteSurchargeItem(id: string): SurchargeItem[] {
-  const existing = getSavedSurcharges();
-  const filtered = existing.filter((s) => s.id !== id);
-  localStorage.setItem(SURCHARGES_KEY, JSON.stringify(filtered));
-  return filtered;
+  memorySurcharges = memorySurcharges.filter((s) => s.id !== id);
+  repoDeleteSurcharge(id).catch((err) => {
+    console.warn('[Cloud Sync] Background delete surcharge notice:', err);
+  });
+  return memorySurcharges;
 }
 
 // ================= MASTER RATES STORAGE =================
 export function getSavedRateMasters(): RateMasterItem[] {
-  try {
-    const raw = localStorage.getItem(RATE_MASTERS_KEY);
-    if (!raw) {
-      return [];
-    }
-    return JSON.parse(raw);
-  } catch (e) {
-    console.error('Error loading master rates', e);
-    return [];
-  }
+  return memoryRateMasters;
 }
 
 export function saveRateMasterItem(rate: RateMasterItem): RateMasterItem[] {
-  const existing = getSavedRateMasters();
-  const index = existing.findIndex((r) => r.id === rate.id);
+  const index = memoryRateMasters.findIndex((r) => r.id === rate.id);
   const updatedRate = {
     ...rate,
     updatedAt: new Date().toISOString().slice(0, 10),
   };
 
   if (index >= 0) {
-    existing[index] = updatedRate;
+    memoryRateMasters[index] = updatedRate;
   } else {
-    existing.unshift(updatedRate);
+    memoryRateMasters.unshift(updatedRate);
   }
-  localStorage.setItem(RATE_MASTERS_KEY, JSON.stringify(existing));
-  return existing;
+  repoSaveRateMaster(updatedRate).catch((err) => {
+    console.warn('[Cloud Sync] Background save rate master notice:', err);
+  });
+  return memoryRateMasters;
 }
 
 export function deleteRateMasterItem(id: string, softDelete: boolean = true): RateMasterItem[] {
-  const existing = getSavedRateMasters();
   if (softDelete) {
-    // Soft delete: mark INACTIVE
-    const target = existing.find(r => r.id === id);
+    const target = memoryRateMasters.find(r => r.id === id);
     if (target) {
       target.status = 'INACTIVE';
       target.updatedAt = new Date().toISOString().slice(0, 10);
-      localStorage.setItem(RATE_MASTERS_KEY, JSON.stringify(existing));
+      repoSaveRateMaster(target).catch(() => {});
     }
-    return existing;
   } else {
-    const filtered = existing.filter((r) => r.id !== id);
-    localStorage.setItem(RATE_MASTERS_KEY, JSON.stringify(filtered));
-    return filtered;
+    memoryRateMasters = memoryRateMasters.filter((r) => r.id !== id);
+    repoDeleteRateMaster(id, false).catch(() => {});
   }
+  return memoryRateMasters;
 }
 
 // ================= CHARGE MASTERS STORAGE =================
 export function getSavedChargeMasters(): ChargeMasterItem[] {
-  try {
-    const raw = localStorage.getItem(CHARGE_MASTERS_KEY);
-    if (!raw) {
-      return [];
-    }
-    return JSON.parse(raw);
-  } catch (e) {
-    console.error('Error loading charge masters', e);
-    return [];
-  }
+  return memoryChargeMasters;
 }
 
 export function saveChargeMasterItem(charge: ChargeMasterItem): ChargeMasterItem[] {
-  const existing = getSavedChargeMasters();
-  const index = existing.findIndex((c) => c.id === charge.id || c.chargeCode === charge.chargeCode);
+  const index = memoryChargeMasters.findIndex((c) => c.id === charge.id || c.chargeCode === charge.chargeCode);
   const updatedCharge = {
     ...charge,
     updatedAt: new Date().toISOString().slice(0, 10),
   };
 
   if (index >= 0) {
-    existing[index] = updatedCharge;
+    memoryChargeMasters[index] = updatedCharge;
   } else {
-    existing.unshift(updatedCharge);
+    memoryChargeMasters.unshift(updatedCharge);
   }
-  localStorage.setItem(CHARGE_MASTERS_KEY, JSON.stringify(existing));
-  return existing;
+  repoSaveChargeMaster(updatedCharge).catch(() => {});
+  return memoryChargeMasters;
 }
 
 export function deleteChargeMasterItem(id: string): ChargeMasterItem[] {
-  const existing = getSavedChargeMasters();
-  const target = existing.find(c => c.id === id);
+  const target = memoryChargeMasters.find(c => c.id === id);
   if (target) {
     target.status = 'INACTIVE';
     target.updatedAt = new Date().toISOString().slice(0, 10);
-    localStorage.setItem(CHARGE_MASTERS_KEY, JSON.stringify(existing));
+    repoSaveChargeMaster(target).catch(() => {});
   }
-  return existing;
+  return memoryChargeMasters;
 }
 
 // ================= RATE HISTORIES / AUDIT STORAGE =================
 export function getSavedRateHistories(): RateHistoryItem[] {
-  try {
-    const raw = localStorage.getItem(RATE_HISTORIES_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw);
-  } catch (e) {
-    console.error('Error loading rate histories', e);
-    return [];
-  }
+  return memoryRateHistories;
 }
 
 export function addRateHistoryItem(history: RateHistoryItem): RateHistoryItem[] {
-  const existing = getSavedRateHistories();
-  existing.unshift(history);
-  // Keep last 500 audit entries
-  const trimmed = existing.slice(0, 500);
-  localStorage.setItem(RATE_HISTORIES_KEY, JSON.stringify(trimmed));
-  return trimmed;
+  memoryRateHistories.unshift(history);
+  memoryRateHistories = memoryRateHistories.slice(0, 500);
+  repoAddRateHistory(history).catch(() => {});
+  return memoryRateHistories;
 }
 
-// ================= FULL BACKUP & RESTORE DATA =================
+// ================= ACTIVE DRAFT CLOUD STORAGE =================
+export function saveActiveQuoteDraft(quote: QuoteData): string {
+  const now = new Date();
+  const timeString = now.toLocaleTimeString('vi-VN', { hour12: false });
+  memoryActiveDraft = { quote, savedAt: timeString };
+  repoSaveDraft('current_user', quote).catch(() => {});
+  return timeString;
+}
+
+export function getActiveQuoteDraft(): { quote: QuoteData | null; savedAt: string | null } {
+  return memoryActiveDraft;
+}
+
+export function clearActiveQuoteDraft() {
+  memoryActiveDraft = { quote: null, savedAt: null };
+  repoClearDraft('current_user').catch(() => {});
+}
+
+// ================= SYNC UPDATE HELPER (WHEN CLOUD DATA ARRIVES) =================
+export const loadSavedQuotes = getSavedQuotes;
+export const saveQuotesList = (quotes: QuoteData[]) => { memoryQuotes = quotes; };
+export const loadSavedCustomers = getSavedCustomers;
+export const saveCustomersList = (customers: CustomerRecord[]) => { memoryCustomers = customers; };
+export const loadSavedSurcharges = getSavedSurcharges;
+export const saveSurchargesList = (surcharges: SurchargeItem[]) => { memorySurcharges = surcharges; };
+export const loadCompanyProfile = getCompanySettings;
+export const saveCompanyProfile = (p: any) => { memoryCompanySettings = p; };
+
+// ================= BACKUP & EXPORT/IMPORT (CLOUD INTEGRATED) =================
 export interface SystemBackupData {
   version: string;
   exportDate: string;
@@ -289,65 +291,17 @@ export interface SystemBackupData {
   rateHistories?: RateHistoryItem[];
 }
 
-// ================= ACTIVE DRAFT AUTO-SAVE STORAGE =================
-const DRAFT_KEY = 'LOGISTICS_ACTIVE_QUOTE_DRAFT_V1';
-
-export function saveActiveQuoteDraft(quote: QuoteData): string {
-  try {
-    const now = new Date();
-    const timeString = now.toLocaleTimeString('vi-VN', { hour12: false });
-    const draftData = {
-      quote,
-      savedAt: timeString,
-      timestamp: now.getTime(),
-    };
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData));
-    return timeString;
-  } catch (err) {
-    console.error('Error saving active quote draft:', err);
-    return '';
-  }
-}
-
-export function getActiveQuoteDraft(): { quote: QuoteData | null; savedAt: string | null } {
-  try {
-    const raw = localStorage.getItem(DRAFT_KEY);
-    if (!raw) return { quote: null, savedAt: null };
-    const parsed = JSON.parse(raw);
-    if (parsed && parsed.quote) {
-      return {
-        quote: parsed.quote,
-        savedAt: parsed.savedAt || null,
-      };
-    }
-  } catch (err) {
-    console.error('Error reading active quote draft:', err);
-  }
-  return { quote: null, savedAt: null };
-}
-
-export function clearActiveQuoteDraft() {
-  localStorage.removeItem(DRAFT_KEY);
-}
-
-// Aliases for unified terminology across Firestore sync service
-export const loadSavedQuotes = getSavedQuotes;
-export const saveQuotesList = (quotes: QuoteData[]) => localStorage.setItem(STORAGE_KEY, JSON.stringify(quotes));
-export const loadSavedCustomers = getSavedCustomers;
-export const saveCustomersList = (customers: CustomerRecord[]) => localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
-export const loadSavedSurcharges = getSavedSurcharges;
-export const saveSurchargesList = (surcharges: SurchargeItem[]) => localStorage.setItem(SURCHARGES_KEY, JSON.stringify(surcharges));
-export const loadCompanyProfile = getCompanySettings;
-export const saveCompanyProfile = saveCompanySettings;
-
 export function exportAllSystemData(): SystemBackupData {
   return {
-    version: '2.5',
+    version: '17.0-Cloud',
     exportDate: new Date().toISOString(),
     quotes: getSavedQuotes(),
     companySettings: getCompanySettings(),
     customers: getSavedCustomers(),
     surcharges: getSavedSurcharges(),
+    rateMasters: getSavedRateMasters(),
+    chargeMasters: getSavedChargeMasters(),
+    rateHistories: getSavedRateHistories(),
   };
 }
 
@@ -360,7 +314,7 @@ export function downloadBackupJsonFile() {
   const dateStr = new Date().toISOString().slice(0, 10);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `backup_logistics_data_${dateStr}.json`;
+  link.download = `backup_logistics_cloud_${dateStr}.json`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -385,19 +339,23 @@ export function importSystemData(jsonData: any, mode: 'overwrite' | 'merge' = 'm
   if (mode === 'overwrite') {
     if (Array.isArray(jsonData.quotes)) {
       finalQuotes = jsonData.quotes;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(finalQuotes));
+      saveQuotesList(finalQuotes);
+      finalQuotes.forEach((q) => repoSaveQuotation(q, { forceOverwrite: true }).catch(() => {}));
     }
     if (jsonData.companySettings) {
       finalCompany = jsonData.companySettings;
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(finalCompany));
+      saveCompanyProfile(finalCompany);
+      repoSaveCompanyProfile(finalCompany).catch(() => {});
     }
     if (Array.isArray(jsonData.customers)) {
       finalCustomers = jsonData.customers;
-      localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(finalCustomers));
+      saveCustomersList(finalCustomers);
+      finalCustomers.forEach((c) => repoSaveCustomer(c).catch(() => {}));
     }
     if (Array.isArray(jsonData.surcharges)) {
       finalSurcharges = jsonData.surcharges;
-      localStorage.setItem(SURCHARGES_KEY, JSON.stringify(finalSurcharges));
+      saveSurchargesList(finalSurcharges);
+      finalSurcharges.forEach((s) => repoSaveSurcharge(s).catch(() => {}));
     }
   } else {
     // MERGE mode
@@ -407,11 +365,13 @@ export function importSystemData(jsonData: any, mode: 'overwrite' | 'merge' = 'm
     existingQuotes.forEach(q => quoteMap.set(q.id, q));
     importedQuotes.forEach((q: QuoteData) => quoteMap.set(q.id, q));
     finalQuotes = Array.from(quoteMap.values());
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(finalQuotes));
+    saveQuotesList(finalQuotes);
+    importedQuotes.forEach((q: QuoteData) => repoSaveQuotation(q, { forceOverwrite: true }).catch(() => {}));
 
     if (jsonData.companySettings) {
       finalCompany = jsonData.companySettings;
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(finalCompany));
+      saveCompanyProfile(finalCompany);
+      repoSaveCompanyProfile(finalCompany).catch(() => {});
     } else {
       finalCompany = getCompanySettings();
     }
@@ -422,7 +382,8 @@ export function importSystemData(jsonData: any, mode: 'overwrite' | 'merge' = 'm
     existingCustomers.forEach(c => customerMap.set(c.id, c));
     importedCustomers.forEach((c: CustomerRecord) => customerMap.set(c.id, c));
     finalCustomers = Array.from(customerMap.values());
-    localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(finalCustomers));
+    saveCustomersList(finalCustomers);
+    importedCustomers.forEach((c: CustomerRecord) => repoSaveCustomer(c).catch(() => {}));
 
     const existingSurcharges = getSavedSurcharges();
     const importedSurcharges = Array.isArray(jsonData.surcharges) ? jsonData.surcharges : [];
@@ -430,7 +391,8 @@ export function importSystemData(jsonData: any, mode: 'overwrite' | 'merge' = 'm
     existingSurcharges.forEach(s => surchargeMap.set(s.id, s));
     importedSurcharges.forEach((s: SurchargeItem) => surchargeMap.set(s.id, s));
     finalSurcharges = Array.from(surchargeMap.values());
-    localStorage.setItem(SURCHARGES_KEY, JSON.stringify(finalSurcharges));
+    saveSurchargesList(finalSurcharges);
+    importedSurcharges.forEach((s: SurchargeItem) => repoSaveSurcharge(s).catch(() => {}));
   }
 
   return {
@@ -440,5 +402,3 @@ export function importSystemData(jsonData: any, mode: 'overwrite' | 'merge' = 'm
     surcharges: finalSurcharges,
   };
 }
-
-

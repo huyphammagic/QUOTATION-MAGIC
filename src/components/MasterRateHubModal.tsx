@@ -73,6 +73,7 @@ interface MasterRateHubModalProps {
   onSaveCharge: (charge: ChargeMasterItem) => Promise<void>;
   onDeleteCharge: (id: string) => Promise<void>;
   onBulkImportRates: (rates: RateMasterItem[]) => Promise<void>;
+  initialTab?: 'RATES' | 'COMPARISON' | 'MATCHING' | 'EXPIRING' | 'APPROVALS' | 'REQUESTS' | 'ENTITIES' | 'CHARGES' | 'AUDIT';
 }
 
 export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
@@ -86,10 +87,17 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
   onSaveCharge,
   onDeleteCharge,
   onBulkImportRates,
+  initialTab = 'RATES',
 }) => {
   const [activeTab, setActiveTab] = useState<
     'RATES' | 'COMPARISON' | 'MATCHING' | 'EXPIRING' | 'APPROVALS' | 'REQUESTS' | 'ENTITIES' | 'CHARGES' | 'AUDIT'
-  >('RATES');
+  >(initialTab);
+
+  useEffect(() => {
+    if (isOpen && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   // Rate Form state
   const [isRateFormOpen, setIsRateFormOpen] = useState(false);

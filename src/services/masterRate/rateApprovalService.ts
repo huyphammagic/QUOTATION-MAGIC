@@ -5,24 +5,15 @@ import {
   getRateApprovalsFromFirestore 
 } from '../firebase/firestoreService';
 
-const LOCAL_APPROVALS_KEY = 'LOGIQUOTE_RATE_APPROVALS_V1';
+// In-memory cache (NO LOCAL STORAGE BUSINESS DATA - PHASE 17)
+let memoryApprovals: RateApprovalRequest[] = [];
 
 export function getLocalApprovals(): RateApprovalRequest[] {
-  try {
-    const raw = localStorage.getItem(LOCAL_APPROVALS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (err) {
-    console.warn('Error reading local approvals:', err);
-    return [];
-  }
+  return memoryApprovals;
 }
 
 export function saveLocalApprovals(items: RateApprovalRequest[]): void {
-  try {
-    localStorage.setItem(LOCAL_APPROVALS_KEY, JSON.stringify(items));
-  } catch (err) {
-    console.warn('Error saving local approvals:', err);
-  }
+  memoryApprovals = items;
 }
 
 /**

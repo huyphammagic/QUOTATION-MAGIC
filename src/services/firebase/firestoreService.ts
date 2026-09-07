@@ -351,8 +351,8 @@ export async function getRateMastersFromFirestore(): Promise<RateMasterItem[]> {
       snapshot.forEach(docSnap => {
         items.push({ ...docSnap.data() as RateMasterItem, id: docSnap.id });
       });
-      // Save to local cache
-      localStorage.setItem('LOGISTICS_RATE_MASTERS_V1', JSON.stringify(items));
+      // Save to memory cache
+      items.forEach(it => saveRateMasterItem(it));
       return items;
     }
   } catch (error) {
@@ -417,7 +417,7 @@ export async function getChargeMastersFromFirestore(): Promise<ChargeMasterItem[
       snapshot.forEach(docSnap => {
         items.push({ ...docSnap.data() as ChargeMasterItem, id: docSnap.id });
       });
-      localStorage.setItem('LOGISTICS_CHARGE_MASTERS_V1', JSON.stringify(items));
+      items.forEach(it => saveChargeMasterItem(it));
       return items;
     }
   } catch (error) {
@@ -463,7 +463,7 @@ export async function getRateHistoriesFromFirestore(): Promise<RateHistoryItem[]
         items.push({ ...docSnap.data() as RateHistoryItem, id: docSnap.id });
       });
       items.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-      localStorage.setItem('LOGISTICS_RATE_HISTORIES_V1', JSON.stringify(items));
+      items.forEach(it => addRateHistoryItem(it));
       return items;
     }
   } catch (error) {
@@ -668,12 +668,8 @@ export async function batchSaveMasterRatesToFirestore(
 ): Promise<void> {
   if (!rates || rates.length === 0) return;
 
-  // 1. Update local cache immediately for responsive UI
-  const existingLocal = getSavedRateMasters();
-  const localMap = new Map<string, RateMasterItem>();
-  existingLocal.forEach(r => localMap.set(r.id, r));
-  rates.forEach(r => localMap.set(r.id, r));
-  localStorage.setItem('LOGISTICS_RATE_MASTERS_V1', JSON.stringify(Array.from(localMap.values())));
+  // 1. Update memory cache immediately for responsive UI
+  rates.forEach(r => saveRateMasterItem(r));
 
   // 2. Persist to Firestore in safe chunks
   if (!db) return;
@@ -723,21 +719,18 @@ export async function batchSaveMasterRatesToFirestore(
   }
 }
 
+// In-memory cache for import jobs (NO LOCAL STORAGE - PHASE 17)
+let memoryImportJobs: BulkImportJob[] = [];
+
 /**
  * Saves Bulk Import Job metadata
  */
 export async function saveBulkImportJobToFirestore(job: BulkImportJob): Promise<void> {
-  // Save local cache
-  try {
-    const raw = localStorage.getItem('LOGISTICS_IMPORT_JOBS_V1');
-    const list: BulkImportJob[] = raw ? JSON.parse(raw) : [];
-    const idx = list.findIndex(j => j.id === job.id);
-    if (idx >= 0) list[idx] = job;
-    else list.unshift(job);
-    localStorage.setItem('LOGISTICS_IMPORT_JOBS_V1', JSON.stringify(list.slice(0, 50)));
-  } catch (e) {
-    console.warn('Cache import job error:', e);
-  }
+  // Save memory cache
+  const idx = memoryImportJobs.findIndex(j => j.id === job.id);
+  if (idx >= 0) memoryImportJobs[idx] = job;
+  else memoryImportJobs.unshift(job);
+  memoryImportJobs = memoryImportJobs.slice(0, 50);
 
   if (!db) return;
   try {
@@ -756,12 +749,7 @@ export async function saveBulkImportJobToFirestore(job: BulkImportJob): Promise<
  */
 export async function getBulkImportJobsFromFirestore(): Promise<BulkImportJob[]> {
   if (!db) {
-    try {
-      const raw = localStorage.getItem('LOGISTICS_IMPORT_JOBS_V1');
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
+    return memoryImportJobs;
   }
 
   try {
@@ -773,19 +761,14 @@ export async function getBulkImportJobsFromFirestore(): Promise<BulkImportJob[]>
         items.push({ ...docSnap.data() as BulkImportJob, id: docSnap.id });
       });
       items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-      localStorage.setItem('LOGISTICS_IMPORT_JOBS_V1', JSON.stringify(items));
+      memoryImportJobs = items;
       return items;
     }
   } catch (error) {
     console.warn('Firestore load import jobs error:', error);
   }
 
-  try {
-    const raw = localStorage.getItem('LOGISTICS_IMPORT_JOBS_V1');
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  return memoryImportJobs;
 }
 
 /**

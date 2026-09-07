@@ -110,6 +110,17 @@ import {
 } from './services/pricing/pricingPolicyService';
 import { recordPricingAuditEvent } from './services/pricing/pricingAuditService';
 import { PricingPolicyItem } from './types/pricingIntelligence';
+import { ConflictResolutionModal } from './components/ConflictResolutionModal';
+import { runPhase17Migration } from './services/repository/migrationService';
+import { 
+  saveQuotation, 
+  deleteQuotation as repoDeleteQuotation, 
+  fetchQuotations 
+} from './services/repository/quotationRepository';
+import { fetchCustomers } from './services/repository/customerRepository';
+import { fetchRateMasters } from './services/repository/rateRepository';
+import { MasterDataReferenceModal, MasterDataType } from './components/MasterDataReferenceModal';
+import { UserRole } from './types/analytics';
 
 import { Check, Ship, ShieldCheck } from 'lucide-react';
 
@@ -141,6 +152,15 @@ export default function App() {
   // Toast notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Phase 17: Cloud-First Persistence & Cross-Device Sync States
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+  const [lastCloudSyncedAt, setLastCloudSyncedAt] = useState<Date | null>(null);
+  const [conflictState, setConflictState] = useState<{
+    isOpen: boolean;
+    localQuote?: QuoteData;
+    remoteQuote?: QuoteData;
+  }>({ isOpen: false });
+
   // Modal visibility states
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isSavedOpen, setIsSavedOpen] = useState(false);
@@ -149,7 +169,15 @@ export default function App() {
   const [isCustomersOpen, setIsCustomersOpen] = useState(false);
   const [isSurchargesOpen, setIsSurchargesOpen] = useState(false);
   const [isMasterRateHubOpen, setIsMasterRateHubOpen] = useState(false);
-  const [masterRateHubTab, setMasterRateHubTab] = useState<'RATES' | 'CHARGES' | 'AUDIT'>('RATES');
+  const [masterRateHubTab, setMasterRateHubTab] = useState<
+    'RATES' | 'COMPARISON' | 'MATCHING' | 'EXPIRING' | 'APPROVALS' | 'REQUESTS' | 'ENTITIES' | 'CHARGES' | 'AUDIT'
+  >('RATES');
+  const [savedQuotesInitialFilter, setSavedQuotesInitialFilter] = useState<string>('ALL');
+  const [dashboardInitialTab, setDashboardInitialTab] = useState<string>('OVERVIEW');
+  const [isMasterDataRefOpen, setIsMasterDataRefOpen] = useState(false);
+  const [masterDataRefType, setMasterDataRefType] = useState<MasterDataType>('PORT');
+  const [appUserRole, setAppUserRole] = useState<UserRole>('ADMIN');
+  const [appLanguage, setAppLanguage] = useState<'vi' | 'en'>('vi');
   const [isRateSearchOpen, setIsRateSearchOpen] = useState(false);
   const [isSmartAssistantOpen, setIsSmartAssistantOpen] = useState(false);
   const [isComparisonModalOpen, setIsComparisonModalOpen] = useState(false);
@@ -377,14 +405,35 @@ export default function App() {
     setIsCompanyOpen(true);
   };
 
-  const handleOpenMasterRateHub = (tab: 'RATES' | 'CHARGES' | 'AUDIT' = 'RATES') => {
-    setMasterRateHubTab(tab);
+  const handleOpenMasterRateHub = (tab: 'RATES' | 'CHARGES' | 'SUPPLIERS' | 'APPROVAL' | 'REQUESTS' | 'EXPIRING' | 'AUDIT' = 'RATES') => {
+    const mappedTab = tab === 'SUPPLIERS' ? 'ENTITIES' : tab === 'APPROVAL' ? 'APPROVALS' : tab;
+    setMasterRateHubTab(mappedTab as any);
     setIsMasterRateHubOpen(true);
+  };
+
+  const handleOpenSavedQuotes = (filter: string = 'ALL') => {
+    setSavedQuotesInitialFilter(filter);
+    setIsSavedOpen(true);
+  };
+
+  const handleOpenDashboard = (tab: string = 'OVERVIEW') => {
+    setDashboardInitialTab(tab);
+    setIsDashboardOpen(true);
+  };
+
+  const handleOpenMasterDataRef = (type: MasterDataType) => {
+    setMasterDataRefType(type);
+    setIsMasterDataRefOpen(true);
+  };
+
+  const handleSelectTransportMode = (mode: string) => {
+    handleChangeShipment({ mode: mode as any });
+    showToast(`Đã chuyển phương thức vận tải sang: ${mode}`);
   };
 
   // Mount Effect: Restore saved lists & active draft with Firestore Sync
   useEffect(() => {
-    // 1. Initial Local Cache Load
+    // 1. Initial Local In-Memory Cache Load
     setSavedQuotes(getSavedQuotes());
     const companySettings = getCompanySettings();
     if (companySettings) setCompany(companySettings);
@@ -404,8 +453,19 @@ export default function App() {
       }
     }
 
-    // 2. Async Sync with Firebase Firestore
+    // 2. Phase 17 Migration: scan and migrate legacy browser data
+    runPhase17Migration().then((stats) => {
+      if (stats.quotesCount > 0 || stats.customersCount > 0 || stats.ratesCount > 0) {
+        console.log('[Phase 17] Migration complete:', stats);
+        showToast(`Đã đồng bộ toàn bộ dữ liệu lên Firebase Cloud (${stats.quotesCount} báo giá, ${stats.customersCount} khách hàng).`);
+      }
+    }).catch((err) => {
+      console.warn('[Phase 17] Migration note:', err);
+    });
+
+    // 3. Async Sync with Firebase Firestore
     async function syncFirestoreData() {
+      setIsCloudSyncing(true);
       try {
         const [
           cloudQuotes, 
@@ -416,11 +476,11 @@ export default function App() {
           cloudChargeMasters,
           cloudHistories
         ] = await Promise.all([
-          getQuotesFromFirestore(),
-          getCustomersFromFirestore(),
+          fetchQuotations(),
+          fetchCustomers(),
           getSurchargesFromFirestore(),
           getCompanyProfileFromFirestore(),
-          getRateMastersFromFirestore(),
+          fetchRateMasters(),
           getChargeMastersFromFirestore(),
           getRateHistoriesFromFirestore(),
         ]);
@@ -437,8 +497,11 @@ export default function App() {
 
         // Sync Phase 15 Pricing Policies
         await loadPricingPoliciesData();
+        setLastCloudSyncedAt(new Date());
       } catch (err) {
         console.warn('Firestore initial background sync notice:', err);
+      } finally {
+        setIsCloudSyncing(false);
       }
     }
 
@@ -866,16 +929,72 @@ export default function App() {
     showToast(`Đã tạo báo giá mới: ${newRef}`);
   };
 
-  // Save Quote Handler with Firestore Sync
+  // Manual Cloud Sync Function for Navbar Trigger
+  const handleForceCloudSync = async () => {
+    setIsCloudSyncing(true);
+    try {
+      const [cloudQuotes, cloudCustomers, cloudRates] = await Promise.all([
+        fetchQuotations({ forceRefresh: true }),
+        fetchCustomers(true),
+        fetchRateMasters(true),
+      ]);
+      if (cloudQuotes) setSavedQuotes(cloudQuotes);
+      if (cloudCustomers) setCustomers(cloudCustomers);
+      if (cloudRates) setRates(cloudRates);
+      setLastCloudSyncedAt(new Date());
+      showToast('Đã đồng bộ trực tiếp với Firebase Cloud!');
+    } catch (e) {
+      console.warn('Manual cloud sync notice:', e);
+    } finally {
+      setIsCloudSyncing(false);
+    }
+  };
+
+  // Save Quote Handler with Firestore Sync & Cross-Device Conflict Handling
   const handleSaveQuoteAction = async () => {
     const { calculatedQuote } = calculateQuote(quote);
     setQuote(calculatedQuote);
-    await saveQuoteToFirestore(calculatedQuote);
-    const updated = await getQuotesFromFirestore();
+    const result = await saveQuotation(calculatedQuote, {
+      userId: company.salesRepName || 'User',
+      userName: company.salesRepName || 'User',
+    });
+
+    // Check for concurrency conflict (saved on another device)
+    if (result.conflict && result.remoteQuote) {
+      setConflictState({
+        isOpen: true,
+        localQuote: calculatedQuote,
+        remoteQuote: result.remoteQuote,
+      });
+      return;
+    }
+
+    const updated = await fetchQuotations();
     setSavedQuotes(updated);
     const savedTime = saveActiveQuoteDraft(calculatedQuote);
     if (savedTime) setLastAutoSaveTime(savedTime);
-    showToast(`Đã lưu báo giá ${calculatedQuote.quoteNumber} thành công!`);
+    showToast(`Đã lưu báo giá ${calculatedQuote.quoteNumber} thành công lên Cloud (v${result.savedQuote?.version || calculatedQuote.version || 1})!`);
+  };
+
+  // Handle Conflict Modal Actions
+  const handleForceOverwriteConflict = async () => {
+    if (!conflictState.localQuote) return;
+    const res = await saveQuotation(conflictState.localQuote, { 
+      forceOverwrite: true,
+      userId: company.salesRepName || 'User',
+    });
+    setConflictState({ isOpen: false });
+    const updated = await fetchQuotations({ forceRefresh: true });
+    setSavedQuotes(updated);
+    showToast(`Đã ghi đè thành công lên Cloud (v${res.savedQuote?.version || 1})!`);
+  };
+
+  const handleReloadRemoteConflict = () => {
+    if (!conflictState.remoteQuote) return;
+    const { calculatedQuote } = calculateQuote(conflictState.remoteQuote);
+    setQuote(calculatedQuote);
+    setConflictState({ isOpen: false });
+    showToast(`Đã tải phiên bản mới nhất từ Cloud (v${conflictState.remoteQuote.version || 1})!`);
   };
 
   // Select Saved Quote
@@ -960,7 +1079,7 @@ export default function App() {
           isOpenMobile={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
           onNewQuote={handleNewQuote}
-          onOpenSavedQuotes={() => setIsSavedOpen(true)}
+          onOpenSavedQuotes={handleOpenSavedQuotes}
           onOpenCompanyProfile={handleOpenCompanyProfile}
           onOpenCustomers={() => setIsCustomersOpen(true)}
           onOpenSurchargeCatalog={() => setIsSurchargesOpen(true)}
@@ -976,11 +1095,17 @@ export default function App() {
           onOpenCommunication={() => setIsCommunicationPanelOpen(true)}
           onOpenEmailTemplates={() => setIsEmailTemplatesOpen(true)}
           onOpenFollowUps={() => setIsFollowUpOpen(true)}
-          onOpenDashboard={() => setIsDashboardOpen(true)}
+          onOpenDashboard={handleOpenDashboard}
           onOpenContracts={() => setIsContractsOpen(true)}
           contractsCount={contractsCount}
           onOpenProfitIntelligence={() => setIsProfitIntelligenceOpen(true)}
           onOpenPricingPolicies={() => setIsPricingPolicyMgmtOpen(true)}
+          onOpenMasterDataReference={handleOpenMasterDataRef}
+          onSelectTransportMode={handleSelectTransportMode}
+          currentUserRole={appUserRole}
+          onRoleChange={setAppUserRole}
+          language={appLanguage}
+          onLanguageChange={setAppLanguage}
         />
 
         {/* Right Main Application Workspace */}
@@ -995,6 +1120,12 @@ export default function App() {
             onToggleSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
             onExchangeRateChange={handleExchangeRateChange}
             onNewQuote={handleNewQuote}
+            isCloudSyncing={isCloudSyncing}
+            onForceCloudSync={handleForceCloudSync}
+            lastCloudSyncedAt={lastCloudSyncedAt}
+            quoteCount={savedQuotes.length}
+            customerCount={customers.length}
+            rateCount={rates.length}
           />
 
           {/* Main Content Area */}
@@ -1221,6 +1352,7 @@ export default function App() {
       <SavedQuotesModal
         quotes={savedQuotes}
         isOpen={isSavedOpen}
+        initialStatusFilter={savedQuotesInitialFilter}
         onClose={() => setIsSavedOpen(false)}
         onSelectQuote={handleSelectQuote}
         onCloneQuote={handleCloneQuote}
@@ -1313,8 +1445,9 @@ export default function App() {
           documents={allDocuments}
           followUpTasks={allFollowUps}
           shareLinks={allLinks}
-          currentUserRole="ADMIN"
+          currentUserRole={appUserRole}
           currentSalesName={company.salesRepName}
+          initialTab={dashboardInitialTab as any}
           onSelectQuote={(qId) => {
             const target = savedQuotes.find(q => q.id === qId || q.quoteNumber === qId);
             if (target) {
@@ -1325,6 +1458,14 @@ export default function App() {
           onClose={() => setIsDashboardOpen(false)}
         />
       )}
+
+      {/* Master Data Reference Modal (Ports, Container Types, Incoterms, Payment Terms) */}
+      <MasterDataReferenceModal
+        isOpen={isMasterDataRefOpen}
+        onClose={() => setIsMasterDataRefOpen(false)}
+        initialType={masterDataRefType}
+        language={appLanguage}
+      />
 
       {/* Phase 14: Customer & Supplier Contract Management Hub */}
       <ContractHubModal
@@ -1354,6 +1495,18 @@ export default function App() {
         policies={pricingPolicies}
         onPoliciesUpdated={loadPricingPoliciesData}
       />
+
+      {/* Phase 17: Cross-Device Concurrency Conflict Resolution Modal */}
+      {conflictState.isOpen && conflictState.localQuote && conflictState.remoteQuote && (
+        <ConflictResolutionModal
+          isOpen={conflictState.isOpen}
+          onClose={() => setConflictState({ isOpen: false })}
+          localQuote={conflictState.localQuote}
+          remoteQuote={conflictState.remoteQuote}
+          onForceOverwrite={handleForceOverwriteConflict}
+          onReloadRemote={handleReloadRemoteConflict}
+        />
+      )}
 
     </div>
   );

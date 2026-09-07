@@ -25,42 +25,25 @@ import { saveQuoteToFirestore } from '../firebase/firestoreService';
 
 const COLLECTION_LINKS = 'quotationLinks';
 const COLLECTION_RESPONSES = 'quotationResponses';
-const LOCAL_STORAGE_KEY = 'logiquote_secure_links_v1';
-const LOCAL_RESPONSES_KEY = 'logiquote_customer_responses_v1';
 
-// In-memory/localStorage fallback helpers
+// In-memory cache (NO LOCAL STORAGE BUSINESS DATA - PHASE 17)
+let memoryLinks: QuotationSecureLink[] = [];
+let memoryResponses: QuotationCustomerResponse[] = [];
+
 function getLocalLinks(): QuotationSecureLink[] {
-  try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    return [];
-  }
+  return memoryLinks;
 }
 
 function saveLocalLinks(links: QuotationSecureLink[]) {
-  try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(links));
-  } catch (e) {
-    console.warn('LocalStorage save links error:', e);
-  }
+  memoryLinks = links;
 }
 
 function getLocalResponses(): QuotationCustomerResponse[] {
-  try {
-    const raw = localStorage.getItem(LOCAL_RESPONSES_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    return [];
-  }
+  return memoryResponses;
 }
 
 function saveLocalResponses(responses: QuotationCustomerResponse[]) {
-  try {
-    localStorage.setItem(LOCAL_RESPONSES_KEY, JSON.stringify(responses));
-  } catch (e) {
-    console.warn('LocalStorage save responses error:', e);
-  }
+  memoryResponses = responses;
 }
 
 /**
