@@ -107,8 +107,8 @@ export const RateBulkImportModal: React.FC<RateBulkImportModalProps> = ({
     }
   };
 
-  const handleDownloadExcelTemplate = () => {
-    const blob = generateRateImportTemplate();
+  const handleDownloadExcelTemplate = async () => {
+    const blob = await generateRateImportTemplate();
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -132,9 +132,9 @@ export const RateBulkImportModal: React.FC<RateBulkImportModalProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  const handleDownloadErrors = () => {
+  const handleDownloadErrors = async () => {
     if (!inspection || inspection.errors.length === 0) return;
-    const blob = exportErrorsToExcel(inspection.errors);
+    const blob = await exportErrorsToExcel(inspection.errors);
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

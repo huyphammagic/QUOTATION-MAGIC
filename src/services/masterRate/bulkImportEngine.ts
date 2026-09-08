@@ -1,4 +1,3 @@
-import * as XLSX from 'xlsx';
 import { 
   RateMasterItem, 
   BulkImportJob, 
@@ -39,6 +38,7 @@ function normalizeHeader(h: string): string {
  * Extracts raw tabular rows from an ArrayBuffer of an Excel or CSV file
  */
 export async function parseFileToRawRows(file: File): Promise<Record<string, any>[]> {
+  const XLSX = await import('xlsx');
   const isCsv = file.name.endsWith('.csv');
   const buffer = await file.arrayBuffer();
 
@@ -353,7 +353,8 @@ export async function executeStreamingBulkImport(
 /**
  * Generates an Excel error report downloadable as an .xlsx blob
  */
-export function exportErrorsToExcel(errors: ImportRowError[]): Blob {
+export async function exportErrorsToExcel(errors: ImportRowError[]): Promise<Blob> {
+  const XLSX = await import('xlsx');
   const errorData = errors.map(e => ({
     'Dòng (Row)': e.rowNumber,
     'Mã cước (Rate Code)': e.rateCode || '',
@@ -372,7 +373,8 @@ export function exportErrorsToExcel(errors: ImportRowError[]): Blob {
 /**
  * Generates a clean Excel Template for user rate imports
  */
-export function generateRateImportTemplate(): Blob {
+export async function generateRateImportTemplate(): Promise<Blob> {
+  const XLSX = await import('xlsx');
   const sampleData = [
     {
       'RateName': 'Cước Biển Cát Lái - Los Angeles Cont 40HC',

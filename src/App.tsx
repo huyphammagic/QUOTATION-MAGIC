@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import { 
   QuoteData, 
   CompanyProfile, 
@@ -13,7 +13,7 @@ import {
   TransportMode
 } from './types/logistics';
 import { RateMasterItem, ChargeMasterItem, RateHistoryItem } from './types/masterRate';
-import { DEFAULT_COMPANY_PROFILE, INITIAL_SAMPLE_QUOTE, DEFAULT_EXCHANGE_RATE } from './data/presets';
+import { DEFAULT_COMPANY_PROFILE, createEmptyQuote, DEFAULT_EXCHANGE_RATE } from './data/presets';
 import { generateQuoteNumber, calculateLineItem } from './utils/formatters';
 import { calculateQuote } from './services/pricing';
 import { 
@@ -66,25 +66,34 @@ import { LineItemsTable } from './components/LineItemsTable';
 import { TermsForm } from './components/TermsForm';
 import { SummaryCard } from './components/SummaryCard';
 
-import { QuotePreviewModal } from './components/QuotePreviewModal';
-import { SavedQuotesModal } from './components/SavedQuotesModal';
-import { CompanyProfileModal } from './components/CompanyProfileModal';
-import { CustomerManagerModal } from './components/CustomerManagerModal';
-import { SurchargeCatalogModal } from './components/SurchargeCatalogModal';
-import { MasterRateHubModal } from './components/MasterRateHubModal';
-import { RateSearchModal } from './components/RateSearchModal';
-import { SmartRateAssistantModal } from './components/SmartRateAssistantModal';
-import { RateComparisonModal } from './components/RateComparisonModal';
-import { DataBackupModal } from './components/DataBackupModal';
-import { GeneratePdfModal } from './components/GeneratePdfModal';
-import { QuotationTemplateBuilderModal } from './components/QuotationTemplateBuilderModal';
-import { DocumentHistoryModal } from './components/DocumentHistoryModal';
-
-import { SendQuotationModal } from './components/communication/SendQuotationModal';
 import { QuotationCommunicationPanel } from './components/communication/QuotationCommunicationPanel';
-import { CustomerSecureQuotePage } from './components/communication/CustomerSecureQuotePage';
-import { EmailTemplateManagementModal } from './components/communication/EmailTemplateManagementModal';
-import { FollowUpModal } from './components/communication/FollowUpModal';
+import type { MasterDataType } from './components/MasterDataReferenceModal';
+
+// Lazy loaded modals for on-demand bundle splitting
+const QuotePreviewModal = lazy(() => import('./components/QuotePreviewModal').then(m => ({ default: m.QuotePreviewModal })));
+const SavedQuotesModal = lazy(() => import('./components/SavedQuotesModal').then(m => ({ default: m.SavedQuotesModal })));
+const CompanyProfileModal = lazy(() => import('./components/CompanyProfileModal').then(m => ({ default: m.CompanyProfileModal })));
+const CustomerManagerModal = lazy(() => import('./components/CustomerManagerModal').then(m => ({ default: m.CustomerManagerModal })));
+const SurchargeCatalogModal = lazy(() => import('./components/SurchargeCatalogModal').then(m => ({ default: m.SurchargeCatalogModal })));
+const MasterRateHubModal = lazy(() => import('./components/MasterRateHubModal').then(m => ({ default: m.MasterRateHubModal })));
+const RateSearchModal = lazy(() => import('./components/RateSearchModal').then(m => ({ default: m.RateSearchModal })));
+const SmartRateAssistantModal = lazy(() => import('./components/SmartRateAssistantModal').then(m => ({ default: m.SmartRateAssistantModal })));
+const RateComparisonModal = lazy(() => import('./components/RateComparisonModal').then(m => ({ default: m.RateComparisonModal })));
+const DataBackupModal = lazy(() => import('./components/DataBackupModal').then(m => ({ default: m.DataBackupModal })));
+const GeneratePdfModal = lazy(() => import('./components/GeneratePdfModal').then(m => ({ default: m.GeneratePdfModal })));
+const QuotationTemplateBuilderModal = lazy(() => import('./components/QuotationTemplateBuilderModal').then(m => ({ default: m.QuotationTemplateBuilderModal })));
+const DocumentHistoryModal = lazy(() => import('./components/DocumentHistoryModal').then(m => ({ default: m.DocumentHistoryModal })));
+const SendQuotationModal = lazy(() => import('./components/communication/SendQuotationModal').then(m => ({ default: m.SendQuotationModal })));
+const CustomerSecureQuotePage = lazy(() => import('./components/communication/CustomerSecureQuotePage').then(m => ({ default: m.CustomerSecureQuotePage })));
+const EmailTemplateManagementModal = lazy(() => import('./components/communication/EmailTemplateManagementModal').then(m => ({ default: m.EmailTemplateManagementModal })));
+const FollowUpModal = lazy(() => import('./components/communication/FollowUpModal').then(m => ({ default: m.FollowUpModal })));
+const AdvancedAnalyticsDashboard = lazy(() => import('./components/analytics/AdvancedAnalyticsDashboard').then(m => ({ default: m.AdvancedAnalyticsDashboard })));
+const ContractHubModal = lazy(() => import('./components/contract/ContractHubModal').then(m => ({ default: m.ContractHubModal })));
+const ProfitIntelligenceModal = lazy(() => import('./components/pricing/ProfitIntelligenceModal').then(m => ({ default: m.ProfitIntelligenceModal })));
+const PricingPolicyManagementModal = lazy(() => import('./components/pricing/PricingPolicyManagementModal').then(m => ({ default: m.PricingPolicyManagementModal })));
+const ConflictResolutionModal = lazy(() => import('./components/ConflictResolutionModal').then(m => ({ default: m.ConflictResolutionModal })));
+const MasterDataReferenceModal = lazy(() => import('./components/MasterDataReferenceModal').then(m => ({ default: m.MasterDataReferenceModal })));
+
 import { getDocumentRecordsForQuotation, getAllQuotationDocuments } from './services/quotation/quotationDocumentService';
 import { QuotationDocumentRecord } from './types/quotationDocument';
 import { getAllCommunications, getAllFollowUps } from './services/quotation/quotationCommunicationService';
@@ -95,14 +104,10 @@ import {
   QuotationFollowUp, 
   QuotationSecureLink 
 } from './types/quotationCommunication';
-import { AdvancedAnalyticsDashboard } from './components/analytics/AdvancedAnalyticsDashboard';
-import { ContractHubModal } from './components/contract/ContractHubModal';
 import { resolveQuotationPricing } from './services/contract/contractRateResolver';
 import { fetchContracts } from './services/contract/contractRepository';
 
 // Phase 15: Profit & Margin Intelligence
-import { ProfitIntelligenceModal } from './components/pricing/ProfitIntelligenceModal';
-import { PricingPolicyManagementModal } from './components/pricing/PricingPolicyManagementModal';
 import { 
   getPricingPoliciesFromFirestore, 
   resolvePricingPolicy, 
@@ -110,7 +115,6 @@ import {
 } from './services/pricing/pricingPolicyService';
 import { recordPricingAuditEvent } from './services/pricing/pricingAuditService';
 import { PricingPolicyItem } from './types/pricingIntelligence';
-import { ConflictResolutionModal } from './components/ConflictResolutionModal';
 import { runPhase17Migration } from './services/repository/migrationService';
 import { 
   saveQuotation, 
@@ -119,7 +123,6 @@ import {
 } from './services/repository/quotationRepository';
 import { fetchCustomers } from './services/repository/customerRepository';
 import { fetchRateMasters } from './services/repository/rateRepository';
-import { MasterDataReferenceModal, MasterDataType } from './components/MasterDataReferenceModal';
 import { UserRole } from './types/analytics';
 
 import { Check, Ship, ShieldCheck } from 'lucide-react';
@@ -129,7 +132,7 @@ export default function App() {
   const [savedQuotes, setSavedQuotes] = useState<QuoteData[]>([]);
   const [company, setCompany] = useState<CompanyProfile>(DEFAULT_COMPANY_PROFILE);
   const [quote, setQuote] = useState<QuoteData>(() => {
-    const { calculatedQuote } = calculateQuote(INITIAL_SAMPLE_QUOTE);
+    const { calculatedQuote } = calculateQuote(createEmptyQuote(DEFAULT_COMPANY_PROFILE));
     return calculatedQuote;
   });
   
@@ -1048,15 +1051,17 @@ export default function App() {
   // If viewing a public customer secure quote link, render the dedicated portal view
   if (viewingSecureToken) {
     return (
-      <CustomerSecureQuotePage
-        token={viewingSecureToken}
-        onBackToApp={() => {
-          setViewingSecureToken(null);
-          if (window.location.hash.includes('q/')) {
-            window.location.hash = '';
-          }
-        }}
-      />
+      <Suspense fallback={<div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Đang tải cổng thông tin bảo mật...</div>}>
+        <CustomerSecureQuotePage
+          token={viewingSecureToken}
+          onBackToApp={() => {
+            setViewingSecureToken(null);
+            if (window.location.hash.includes('q/')) {
+              window.location.hash = '';
+            }
+          }}
+        />
+      </Suspense>
     );
   }
 
@@ -1272,12 +1277,13 @@ export default function App() {
       </div>
 
       {/* Modals */}
-      <QuotePreviewModal
-        quote={quote}
-        isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
-        onCurrencyChange={handleQuoteCurrencyChange}
-      />
+      <Suspense fallback={null}>
+        <QuotePreviewModal
+          quote={quote}
+          isOpen={isPreviewOpen}
+          onClose={() => setIsPreviewOpen(false)}
+          onCurrencyChange={handleQuoteCurrencyChange}
+        />
 
       <CustomerManagerModal
         isOpen={isCustomersOpen}
@@ -1439,7 +1445,7 @@ export default function App() {
       {/* Phase 9: Advanced Business Intelligence & Sales Analytics Dashboard */}
       {isDashboardOpen && (
         <AdvancedAnalyticsDashboard
-          quotes={savedQuotes.length > 0 ? savedQuotes : [quote]}
+          quotes={savedQuotes}
           communications={allCommunications}
           customerResponses={allResponses}
           documents={allDocuments}
@@ -1507,6 +1513,7 @@ export default function App() {
           onReloadRemote={handleReloadRemoteConflict}
         />
       )}
+      </Suspense>
 
     </div>
   );

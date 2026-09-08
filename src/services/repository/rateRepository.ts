@@ -14,7 +14,6 @@ import {
 import { db } from '../firebase/firebaseConfig';
 import { RateMasterItem, ChargeMasterItem, RateHistoryItem } from '../../types/masterRate';
 import { SurchargeItem } from '../../types/logistics';
-import { INITIAL_SURCHARGE_CATALOG } from '../../data/presets';
 
 const COLLECTIONS = {
   RATE_MASTERS: 'rateMasters',

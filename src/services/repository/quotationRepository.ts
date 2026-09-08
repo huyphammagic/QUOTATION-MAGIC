@@ -15,7 +15,6 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { QuoteData } from '../../types/logistics';
-import { INITIAL_SAMPLE_QUOTE } from '../../data/presets';
 
 const COLLECTION_NAME = 'quotes';
 const DRAFT_COLLECTION = 'quotationDrafts';
@@ -111,12 +110,12 @@ export async function fetchQuotations(options: FetchQuotationsOptions = {}): Pro
       };
     }
 
-    return items.length > 0 ? items : (memoryQuotesCache ? memoryQuotesCache.data : [INITIAL_SAMPLE_QUOTE]);
+    return items.length > 0 ? items : (memoryQuotesCache ? memoryQuotesCache.data : []);
   } catch (error: any) {
     console.warn('[quotationRepository] Notice fetching quotations from Firestore:', error?.message || error);
     // Return cached data if available on error
     if (memoryQuotesCache) return memoryQuotesCache.data;
-    return [INITIAL_SAMPLE_QUOTE];
+    return [];
   }
 }
 

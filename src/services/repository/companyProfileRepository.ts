@@ -1,7 +1,7 @@
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { CompanyProfile } from '../../types/logistics';
-import { INITIAL_SAMPLE_QUOTE } from '../../data/presets';
+import { DEFAULT_COMPANY_PROFILE } from '../../data/presets';
 
 const COLLECTION_NAME = 'settings';
 const DOC_ID = 'company_profile';
@@ -22,7 +22,7 @@ export async function fetchCompanyProfile(forceRefresh = false): Promise<Company
     return memoryCompanyProfileCache.data;
   }
 
-  const defaultProfile = INITIAL_SAMPLE_QUOTE.company;
+  const defaultProfile = DEFAULT_COMPANY_PROFILE;
 
   if (!db) return defaultProfile;
 

@@ -1,6 +1,5 @@
 import { QuoteData, CustomerRecord, SurchargeItem } from '../types/logistics';
 import { RateMasterItem, ChargeMasterItem, RateHistoryItem } from '../types/masterRate';
-import { INITIAL_SAMPLE_QUOTE, INITIAL_CUSTOMERS, INITIAL_SURCHARGE_CATALOG } from '../data/presets';
 import { generateQuoteNumber } from './formatters';
 import { 
   saveQuotation as repoSaveQuotation, 

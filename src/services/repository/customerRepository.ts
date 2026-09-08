@@ -13,7 +13,6 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { CustomerRecord } from '../../types/logistics';
-import { INITIAL_CUSTOMERS } from '../../data/presets';
 
 const COLLECTION_NAME = 'customers';
 
