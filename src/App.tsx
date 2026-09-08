@@ -93,6 +93,7 @@ const ProfitIntelligenceModal = lazy(() => import('./components/pricing/ProfitIn
 const PricingPolicyManagementModal = lazy(() => import('./components/pricing/PricingPolicyManagementModal').then(m => ({ default: m.PricingPolicyManagementModal })));
 const ConflictResolutionModal = lazy(() => import('./components/ConflictResolutionModal').then(m => ({ default: m.ConflictResolutionModal })));
 const MasterDataReferenceModal = lazy(() => import('./components/MasterDataReferenceModal').then(m => ({ default: m.MasterDataReferenceModal })));
+const SmartQuotationWorkspace = lazy(() => import('./components/smartQuotation/SmartQuotationWorkspace').then(m => ({ default: m.SmartQuotationWorkspace })));
 
 import { getDocumentRecordsForQuotation, getAllQuotationDocuments } from './services/quotation/quotationDocumentService';
 import { QuotationDocumentRecord } from './types/quotationDocument';
@@ -125,7 +126,7 @@ import { fetchCustomers } from './services/repository/customerRepository';
 import { fetchRateMasters } from './services/repository/rateRepository';
 import { UserRole } from './types/analytics';
 
-import { Check, Ship, ShieldCheck } from 'lucide-react';
+import { Check, Ship, ShieldCheck, Sparkles } from 'lucide-react';
 
 export default function App() {
   // Saved data states
@@ -183,6 +184,7 @@ export default function App() {
   const [appLanguage, setAppLanguage] = useState<'vi' | 'en'>('vi');
   const [isRateSearchOpen, setIsRateSearchOpen] = useState(false);
   const [isSmartAssistantOpen, setIsSmartAssistantOpen] = useState(false);
+  const [isSmartQuotationWorkspaceOpen, setIsSmartQuotationWorkspaceOpen] = useState(false);
   const [isComparisonModalOpen, setIsComparisonModalOpen] = useState(false);
   const [isDataBackupOpen, setIsDataBackupOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -1098,6 +1100,7 @@ export default function App() {
           onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
           onOpenSendModal={() => setIsSendQuotationOpen(true)}
           onOpenCommunication={() => setIsCommunicationPanelOpen(true)}
+          onOpenSmartQuotationWorkspace={() => setIsSmartQuotationWorkspaceOpen(true)}
           onOpenEmailTemplates={() => setIsEmailTemplatesOpen(true)}
           onOpenFollowUps={() => setIsFollowUpOpen(true)}
           onOpenDashboard={handleOpenDashboard}
@@ -1185,6 +1188,14 @@ export default function App() {
               </div>
 
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsSmartQuotationWorkspaceOpen(true)}
+                  className="px-3.5 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
+                  id="btn-open-smart-quotation-workspace"
+                >
+                  <Sparkles className="w-3.5 h-3.5 animate-pulse" /> Smart Workspace (Phase 20)
+                </button>
                 <button
                   type="button"
                   onClick={handleResolveContractPricing}
@@ -1511,6 +1522,31 @@ export default function App() {
           remoteQuote={conflictState.remoteQuote}
           onForceOverwrite={handleForceOverwriteConflict}
           onReloadRemote={handleReloadRemoteConflict}
+        />
+      )}
+
+      {/* Phase 20: Smart Quotation Workspace & Intelligent Pricing Assistant */}
+      {isSmartQuotationWorkspaceOpen && (
+        <SmartQuotationWorkspace
+          isOpen={isSmartQuotationWorkspaceOpen}
+          onClose={() => setIsSmartQuotationWorkspaceOpen(false)}
+          initialQuote={quote}
+          company={company}
+          currentUserRole={appUserRole}
+          onSaveQuoteToDatabase={async (updatedQuote) => {
+            const { calculatedQuote } = calculateQuote(updatedQuote);
+            setQuote(calculatedQuote);
+            const result = await saveQuotation(calculatedQuote, {
+              userId: company.salesRepName || 'User',
+              userName: company.salesRepName || 'User',
+            });
+            const updated = await fetchQuotations();
+            setSavedQuotes(updated);
+            showToast(`Đã lưu báo giá ${calculatedQuote.quoteNumber} và Snapshot thành công!`);
+            return true;
+          }}
+          onExportPdf={(q, curr) => exportQuoteToPdf(q, curr)}
+          onExportExcel={(q, curr) => exportQuoteToExcel(q, curr)}
         />
       )}
       </Suspense>

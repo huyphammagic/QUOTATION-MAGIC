@@ -78,6 +78,7 @@ export interface SidebarProps {
   onOpenGeneratePdf?: () => void;
   onOpenSendModal?: () => void;
   onOpenCommunication?: () => void;
+  onOpenSmartQuotationWorkspace?: () => void;
   onOpenEmailTemplates?: () => void;
   onOpenFollowUps?: () => void;
   onOpenDashboard?: (tab?: string) => void;
@@ -121,6 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenGeneratePdf,
   onOpenSendModal,
   onOpenCommunication,
+  onOpenSmartQuotationWorkspace,
   onOpenEmailTemplates,
   onOpenFollowUps,
   onOpenDashboard,
@@ -257,6 +259,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
 
     // --- QUOTATION ---
+    {
+      id: 'smart_quotation_workspace',
+      label: language === 'vi' ? 'Workspace Báo Giá Thông Minh' : 'Smart Quotation Workspace',
+      icon: Sparkles,
+      group: 'quotation',
+      action: () => onOpenSmartQuotationWorkspace && onOpenSmartQuotationWorkspace(),
+      badge: 'Phase 20',
+      badgeColor: 'bg-indigo-600 text-white font-bold',
+    },
     {
       id: 'quotation_new',
       label: t.createQuotation,

@@ -267,6 +267,7 @@ export interface QuoteData {
   pricingPolicyCode?: string;
   pricingPolicyVersion?: number;
   profitSummary?: any;
+  pricingSnapshot?: any;
   // Cloud-First Persistence & Concurrency (Phase 17)
   version?: number;
   companyId?: string;
