@@ -1,6 +1,6 @@
 import React from 'react';
 import { CompanyProfile } from '../types/logistics';
-import { Building2, Settings, Phone, Mail, Globe, CreditCard, UserCheck, ShieldCheck, MapPin } from 'lucide-react';
+import { Building2, Settings, Phone, Mail, Globe, CreditCard, UserCheck, ShieldCheck, MapPin, AlertCircle } from 'lucide-react';
 
 interface CompanyCardProps {
   company: CompanyProfile;
@@ -8,6 +8,8 @@ interface CompanyCardProps {
 }
 
 export const CompanyCard: React.FC<CompanyCardProps> = ({ company, onOpenCompanyProfile }) => {
+  const isConfigured = Boolean(company && company.name && company.name.trim().length > 0);
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
       {/* Header Bar */}
@@ -21,10 +23,12 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({ company, onOpenCompany
               <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded border border-blue-400/30">
                 Đơn Vị Báo Giá (Forwarder)
               </span>
-              <span className="text-xs text-slate-400 font-mono hidden md:inline">MST: {company.taxId}</span>
+              {company.taxId && (
+                <span className="text-xs text-slate-400 font-mono hidden md:inline">MST: {company.taxId}</span>
+              )}
             </div>
             <h2 className="text-sm sm:text-base font-bold text-white truncate tracking-tight">
-              {company.name}
+              {isConfigured ? company.name : 'Chưa cấu hình thông tin doanh nghiệp'}
             </h2>
           </div>
         </div>
@@ -36,7 +40,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({ company, onOpenCompany
           title="Mở bảng cấu hình thông tin doanh nghiệp"
         >
           <Settings className="w-3.5 h-3.5" />
-          <span>Quản Lý Thông Tin Công Ty</span>
+          <span>{isConfigured ? 'Quản Lý Thông Tin Công Ty' : 'Thiết Lập Hồ Sơ Công Ty'}</span>
         </button>
       </div>
 
@@ -49,24 +53,35 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({ company, onOpenCompany
             <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
             <span>Pháp Lý & Trụ Sở</span>
           </div>
-          {company.englishName && (
+          {company.englishName ? (
             <p className="text-slate-600 italic text-[11px] truncate" title={company.englishName}>
               {company.englishName}
             </p>
+          ) : null}
+          {company.address ? (
+            <p className="text-slate-700 flex items-start space-x-1.5">
+              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+              <span className="line-clamp-2" title={company.address}>{company.address}</span>
+            </p>
+          ) : (
+            <p className="text-slate-400 italic flex items-center space-x-1">
+              <AlertCircle className="w-3 h-3 text-amber-500" />
+              <span>Chưa cấu hình địa chỉ trụ sở</span>
+            </p>
           )}
-          <p className="text-slate-700 flex items-start space-x-1.5">
-            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-            <span className="line-clamp-2" title={company.address}>{company.address}</span>
-          </p>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-slate-600 pt-1">
-            <span className="flex items-center space-x-1">
-              <Phone className="w-3 h-3 text-slate-400" />
-              <span>{company.phone}</span>
-            </span>
-            <span className="flex items-center space-x-1">
-              <Mail className="w-3 h-3 text-slate-400" />
-              <span className="truncate max-w-[150px]">{company.email}</span>
-            </span>
+            {company.phone && (
+              <span className="flex items-center space-x-1">
+                <Phone className="w-3 h-3 text-slate-400" />
+                <span>{company.phone}</span>
+              </span>
+            )}
+            {company.email && (
+              <span className="flex items-center space-x-1">
+                <Mail className="w-3 h-3 text-slate-400" />
+                <span className="truncate max-w-[150px]">{company.email}</span>
+              </span>
+            )}
             {company.website && (
               <span className="flex items-center space-x-1">
                 <Globe className="w-3 h-3 text-slate-400" />
@@ -82,18 +97,31 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({ company, onOpenCompany
             <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
             <span>Người Lập Báo Giá (Sales Rep)</span>
           </div>
-          <p className="font-bold text-slate-900 text-sm">{company.salesRepName}</p>
-          <p className="text-slate-600 text-[11px]">{company.salesRepTitle}</p>
-          <div className="space-y-0.5 text-slate-600 pt-0.5">
-            <p className="flex items-center space-x-1.5">
-              <Phone className="w-3 h-3 text-emerald-600" />
-              <span>SĐT/Zalo: <strong>{company.salesRepPhone}</strong></span>
+          {company.salesRepName ? (
+            <>
+              <p className="font-bold text-slate-900 text-sm">{company.salesRepName}</p>
+              <p className="text-slate-600 text-[11px]">{company.salesRepTitle || 'Chuyên viên Báo giá & Cước'}</p>
+              <div className="space-y-0.5 text-slate-600 pt-0.5">
+                {company.salesRepPhone && (
+                  <p className="flex items-center space-x-1.5">
+                    <Phone className="w-3 h-3 text-emerald-600" />
+                    <span>SĐT/Zalo: <strong>{company.salesRepPhone}</strong></span>
+                  </p>
+                )}
+                {company.salesRepEmail && (
+                  <p className="flex items-center space-x-1.5">
+                    <Mail className="w-3 h-3 text-emerald-600" />
+                    <span className="truncate">{company.salesRepEmail}</span>
+                  </p>
+                )}
+              </div>
+            </>
+          ) : (
+            <p className="text-slate-400 italic flex items-center space-x-1">
+              <AlertCircle className="w-3 h-3 text-amber-500" />
+              <span>Chưa thiết lập người phụ trách báo giá</span>
             </p>
-            <p className="flex items-center space-x-1.5">
-              <Mail className="w-3 h-3 text-emerald-600" />
-              <span className="truncate">{company.salesRepEmail}</span>
-            </p>
-          </div>
+          )}
         </div>
 
         {/* Col 3: Banking Details */}
@@ -102,18 +130,29 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({ company, onOpenCompany
             <CreditCard className="w-3.5 h-3.5 text-indigo-600" />
             <span>Tài Khoản Thanh Toán</span>
           </div>
-          <p className="font-semibold text-slate-800 text-[11px] truncate" title={company.bankName}>
-            {company.bankName}
-          </p>
-          <p className="text-slate-700 font-mono text-[11px]">
-            Số TK: <strong className="text-slate-900">{company.bankAccountNo}</strong>
-          </p>
-          <p className="text-slate-600 text-[11px] truncate" title={company.bankAccountHolder}>
-            Chủ TK: {company.bankAccountHolder}
-          </p>
-          {company.bankSwiftCode && (
-            <p className="text-slate-500 font-mono text-[10px]">
-              SWIFT: {company.bankSwiftCode}
+          {company.bankName || company.bankAccountNo ? (
+            <>
+              <p className="font-semibold text-slate-800 text-[11px] truncate" title={company.bankName}>
+                {company.bankName}
+              </p>
+              <p className="text-slate-700 font-mono text-[11px]">
+                Số TK: <strong className="text-slate-900">{company.bankAccountNo}</strong>
+              </p>
+              {company.bankAccountHolder && (
+                <p className="text-slate-600 text-[11px] truncate" title={company.bankAccountHolder}>
+                  Chủ TK: {company.bankAccountHolder}
+                </p>
+              )}
+              {company.bankSwiftCode && (
+                <p className="text-slate-500 font-mono text-[10px]">
+                  SWIFT: {company.bankSwiftCode}
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-slate-400 italic flex items-center space-x-1">
+              <AlertCircle className="w-3 h-3 text-amber-500" />
+              <span>Chưa cấu hình tài khoản ngân hàng</span>
             </p>
           )}
         </div>

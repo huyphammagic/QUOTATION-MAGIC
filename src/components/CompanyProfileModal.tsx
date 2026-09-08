@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CompanyProfile } from '../types/logistics';
-import { Building2, X, Save, CreditCard, UserCheck, ShieldCheck, Eye, Sparkles, RefreshCw, Check } from 'lucide-react';
+import { Building2, X, Save, CreditCard, UserCheck, ShieldCheck, Eye, Check } from 'lucide-react';
 
 interface CompanyProfileModalProps {
   company: CompanyProfile;
@@ -9,72 +9,6 @@ interface CompanyProfileModalProps {
   onClose: () => void;
   onSaveCompany: (updated: CompanyProfile) => void;
 }
-
-const PRESET_COMPANIES: { title: string; profile: CompanyProfile }[] = [
-  {
-    title: 'Global Seaways Logistics',
-    profile: {
-      name: 'CÔNG TY CỔ PHẦN LOGISTICS & VẬN TẢI QUỐC TẾ GLOBAL SEAWAYS',
-      englishName: 'GLOBAL SEAWAYS LOGISTICS JOINT STOCK COMPANY',
-      shortName: 'GSL LOGISTICS',
-      taxId: '0312984712',
-      address: 'Tầng 8, Tòa nhà Pearl Plaza, 561A Điện Biên Phủ, Phường 25, Q. Bình Thạnh, TP. Hồ Chí Minh',
-      phone: '(+84) 28 3840 9988',
-      email: 'pricing@globalseaways.com.vn',
-      website: 'www.globalseaways.com.vn',
-      bankName: 'Ngân hàng TMCP Ngoại Thương Việt Nam (Vietcombank) - CN TP.HCM',
-      bankAccountNo: '0071001289388 (VND) / 0071001289399 (USD)',
-      bankAccountHolder: 'CONG TY CP LOGISTICS & VAN TAI QUOC TE GLOBAL SEAWAYS',
-      bankSwiftCode: 'BFTVVNVX007',
-      salesRepName: 'Nguyễn Văn Hùng',
-      salesRepTitle: 'Senior Pricing & Sales Executive',
-      salesRepPhone: '(+84) 909 123 456',
-      salesRepEmail: 'hung.nguyen@globalseaways.com.vn'
-    }
-  },
-  {
-    title: 'Tân Cảng Express Forwarding',
-    profile: {
-      name: 'CÔNG TY TNHH TIẾP VẬN VÀ GIAO NHẬN TÂN CẢNG EXPRESS',
-      englishName: 'TAN CANG EXPRESS FORWARDING & LOGISTICS CO., LTD',
-      shortName: 'TCE LOGISTICS',
-      taxId: '0309988776',
-      address: 'Khu Cảng Cát Lái, Đường Lê Phụng Hiểu, Phường Cát Lái, TP. Thủ Đức, TP. Hồ Chí Minh',
-      phone: '(+84) 28 3742 2222',
-      email: 'quote@tancang-express.vn',
-      website: 'www.tancang-express.vn',
-      bankName: 'Ngân hàng TMCP Quân Đội (MBBank) - CN Sài Gòn',
-      bankAccountNo: '110019998888 (VND)',
-      bankAccountHolder: 'CONG TY TNHH TIEP VAN VA GIAO NHAN TAN CANG EXPRESS',
-      bankSwiftCode: 'MBVCVNVX',
-      salesRepName: 'Trần Minh Tuấn',
-      salesRepTitle: 'Trưởng Nhóm Sales Cước & Logistics',
-      salesRepPhone: '0988 567 890',
-      salesRepEmail: 'tuan.tran@tancang-express.vn'
-    }
-  },
-  {
-    title: 'VietTrans International',
-    profile: {
-      name: 'CÔNG TY CỔ PHẦN GIAO NHẬN VẬN TẢI QUỐC TẾ VIETTRANS',
-      englishName: 'VIETTRANS INTERNATIONAL FREIGHT FORWARDERS CORP',
-      shortName: 'VIETTRANS',
-      taxId: '0100109988',
-      address: 'Tòa nhà VCCI, Số 9 Đào Duy Anh, Quận Đống Đa, TP. Hà Nội',
-      phone: '(+84) 24 3574 1111',
-      email: 'sales@viettrans-intl.com',
-      website: 'www.viettrans-intl.com',
-      bankName: 'Ngân hàng TMCP Công Thương Việt Nam (VietinBank) - CN Đống Đa',
-      bankAccountNo: '112000888999 (VND)',
-      bankAccountHolder: 'CONG TY CP GIAO NHAN VAN TAI QUOC TE VIETTRANS',
-      bankSwiftCode: 'ICBVVNVX',
-      salesRepName: 'Lê Hoàng Yến',
-      salesRepTitle: 'Key Account Manager - Air & Sea Freight',
-      salesRepPhone: '0915 678 123',
-      salesRepEmail: 'yen.le@viettrans-intl.com'
-    }
-  }
-];
 
 export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
   company,
@@ -114,10 +48,6 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
     onClose();
   };
 
-  const handleApplyPreset = (preset: CompanyProfile) => {
-    setFormData({ ...preset });
-  };
-
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <div className="bg-white text-slate-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col border border-slate-200">
@@ -133,7 +63,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                 Quản Lý Thông Tin Doanh Nghiệp (Forwarder Profile)
               </h3>
               <p className="text-[11px] text-slate-400">
-                Thông tin này sẽ được thể hiện trực tiếp trên đầu trang báo giá, file PDF và Excel
+                Thông tin này là Source of Truth cho toàn bộ đầu trang báo giá, preview, file PDF và Excel
               </p>
             </div>
           </div>
@@ -145,26 +75,6 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
           >
             <X className="w-5 h-5" />
           </button>
-        </div>
-
-        {/* Preset Quick Loader Bar */}
-        <div className="px-6 py-2.5 bg-slate-100 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
-          <span className="text-slate-600 font-semibold flex items-center gap-1">
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-            Mẫu doanh nghiệp tiêu chuẩn:
-          </span>
-          <div className="flex flex-wrap gap-1.5">
-            {PRESET_COMPANIES.map((preset, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleApplyPreset(preset.profile)}
-                className="px-2.5 py-1 bg-white hover:bg-blue-50 text-blue-700 border border-slate-300 hover:border-blue-300 rounded font-medium text-[11px] transition-colors"
-              >
-                {preset.title}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Navigation Tabs */}
@@ -179,7 +89,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
             }`}
           >
             <ShieldCheck className="w-4 h-4" />
-            <span>1. Pháp Lý & Liên Hệ</span>
+            <span>1. Pháp Lý & Trụ Sở</span>
           </button>
 
           <button
@@ -192,7 +102,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
             }`}
           >
             <UserCheck className="w-4 h-4" />
-            <span>2. Người Lập Báo Giá (Sales)</span>
+            <span>2. Người Báo Giá (Sales)</span>
           </button>
 
           <button
@@ -218,24 +128,20 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
             }`}
           >
             <Eye className="w-4 h-4" />
-            <span>4. Xem Trước Báo Giá (Preview)</span>
+            <span>4. Xem Trước Đầu Báo Giá</span>
           </button>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
+        {/* Modal Form Content */}
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 space-y-6 text-xs">
           
-          {/* TAB 1: Company Profile */}
+          {/* TAB 1: Legal & Company Profile */}
           {activeTab === 'profile' && (
             <div className="space-y-4">
-              <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-200/60 text-[11px] text-blue-900">
-                💡 Thông tin này sẽ xuất hiện trên <strong>Header chính</strong> của bảng báo giá (Web, PDF, Excel) gửi tới khách hàng.
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-slate-700 font-bold mb-1">
-                    Tên Doanh Nghiệp (Tiếng Việt) *
+                    Tên Doanh Nghiệp / Công Ty (Tiếng Việt) *
                   </label>
                   <input
                     type="text"
@@ -243,7 +149,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    placeholder="CÔNG TY CỔ PHẦN LOGISTICS..."
+                    placeholder="Ví dụ: CÔNG TY TNHH GIAO NHẬN TIẾP VẬN QUỐC TẾ ABC..."
                   />
                 </div>
 
@@ -256,7 +162,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                     value={formData.englishName}
                     onChange={(e) => setFormData({ ...formData, englishName: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="GLOBAL SEAWAYS LOGISTICS JOINT STOCK COMPANY"
+                    placeholder="Ví dụ: ABC INTERNATIONAL LOGISTICS COMPANY LIMITED"
                   />
                 </div>
 
@@ -269,7 +175,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                     value={formData.shortName || ''}
                     onChange={(e) => setFormData({ ...formData, shortName: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="GSL LOGISTICS"
+                    placeholder="Ví dụ: ABC LOGISTICS"
                   />
                 </div>
 
@@ -283,7 +189,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                     value={formData.taxId}
                     onChange={(e) => setFormData({ ...formData, taxId: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="0312984712"
+                    placeholder="Ví dụ: 031xxxxxxx"
                   />
                 </div>
 
@@ -297,7 +203,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="(+84) 28 3840 9988"
+                    placeholder="Ví dụ: (+84) 28 3840 xxxx"
                   />
                 </div>
 
@@ -311,7 +217,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="pricing@company.com.vn"
+                    placeholder="Ví dụ: pricing@yourcompany.com.vn"
                   />
                 </div>
 
@@ -325,7 +231,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Tầng 8, Tòa nhà Pearl Plaza, 561A Điện Biên Phủ, Phường 25, Q. Bình Thạnh, TP. HCM"
+                    placeholder="Ví dụ: Số 123 Đường ABC, Phường X, Quận Y, TP. Hồ Chí Minh"
                   />
                 </div>
 
@@ -338,7 +244,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                     value={formData.website}
                     onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="www.companylogistics.com.vn"
+                    placeholder="Ví dụ: www.yourcompany.com.vn"
                   />
                 </div>
               </div>
@@ -363,7 +269,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                     value={formData.salesRepName}
                     onChange={(e) => setFormData({ ...formData, salesRepName: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    placeholder="Nguyễn Văn Hùng"
+                    placeholder="Ví dụ: Nguyễn Văn A"
                   />
                 </div>
 
@@ -377,7 +283,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                     value={formData.salesRepTitle}
                     onChange={(e) => setFormData({ ...formData, salesRepTitle: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Senior Pricing & Sales Executive"
+                    placeholder="Ví dụ: Senior Pricing & Sales Executive"
                   />
                 </div>
 
@@ -391,7 +297,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                     value={formData.salesRepPhone}
                     onChange={(e) => setFormData({ ...formData, salesRepPhone: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="(+84) 909 123 456"
+                    placeholder="Ví dụ: (+84) 909 xxx xxx"
                   />
                 </div>
 
@@ -405,7 +311,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                     value={formData.salesRepEmail}
                     onChange={(e) => setFormData({ ...formData, salesRepEmail: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="hung.nguyen@company.com.vn"
+                    placeholder="Ví dụ: sales.rep@yourcompany.com.vn"
                   />
                 </div>
               </div>
@@ -430,7 +336,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                     value={formData.bankName}
                     onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Ngân hàng TMCP Ngoại Thương Việt Nam (Vietcombank) - CN TP.HCM"
+                    placeholder="Ví dụ: Ngân hàng TMCP Ngoại Thương Việt Nam (Vietcombank) - CN TP.HCM"
                   />
                 </div>
 
@@ -444,7 +350,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                     value={formData.bankAccountHolder}
                     onChange={(e) => setFormData({ ...formData, bankAccountHolder: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="CONG TY CP LOGISTICS & VAN TAI QUOC TE GLOBAL SEAWAYS"
+                    placeholder="Ví dụ: CONG TY TNHH GIAO NHAN TIEP VAN ABC"
                   />
                 </div>
 
@@ -458,7 +364,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                     value={formData.bankAccountNo}
                     onChange={(e) => setFormData({ ...formData, bankAccountNo: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="0071001289388 (VND) / 0071001289399 (USD)"
+                    placeholder="Ví dụ: 007100xxxxxxx (VND) / 007100yyyyyyy (USD)"
                   />
                 </div>
 
@@ -471,7 +377,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                     value={formData.bankSwiftCode}
                     onChange={(e) => setFormData({ ...formData, bankSwiftCode: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="BFTVVNVX007"
+                    placeholder="Ví dụ: BFTVVNVX"
                   />
                 </div>
               </div>
@@ -483,20 +389,22 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
             <div className="space-y-4">
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
                 <div className="border-b-2 border-blue-900 pb-3">
-                  <h4 className="font-extrabold text-blue-950 text-base uppercase">{formData.name}</h4>
+                  <h4 className="font-extrabold text-blue-950 text-base uppercase">
+                    {formData.name || 'CHƯA CẤU HÌNH TÊN DOANH NGHIỆP'}
+                  </h4>
                   {formData.englishName && <p className="text-slate-500 text-[11px] italic">{formData.englishName}</p>}
-                  <p className="text-slate-700 mt-1">ĐC: {formData.address}</p>
+                  <p className="text-slate-700 mt-1">ĐC: {formData.address || 'Chưa cấu hình địa chỉ'}</p>
                   <p className="text-slate-700">
-                    MST: <span className="font-mono font-bold">{formData.taxId}</span> | Tel: {formData.phone} | Email: {formData.email}
+                    MST: <span className="font-mono font-bold">{formData.taxId || 'N/A'}</span> | Tel: {formData.phone || 'N/A'} | Email: {formData.email || 'N/A'}
                   </p>
                   {formData.website && <p className="text-slate-700">Website: {formData.website}</p>}
                 </div>
 
                 <div className="bg-white p-3 rounded border border-slate-200 text-[11px] space-y-1">
                   <p className="font-bold text-blue-900 uppercase">THÔNG TIN CHUYỂN KHOẢN:</p>
-                  <p>• Ngân hàng: {formData.bankName}</p>
-                  <p>• Số TK: <span className="font-mono font-bold text-slate-900">{formData.bankAccountNo}</span></p>
-                  <p>• Chủ tài khoản: <span className="font-bold">{formData.bankAccountHolder}</span></p>
+                  <p>• Ngân hàng: {formData.bankName || 'Chưa cấu hình'}</p>
+                  <p>• Số TK: <span className="font-mono font-bold text-slate-900">{formData.bankAccountNo || 'Chưa cấu hình'}</span></p>
+                  <p>• Chủ tài khoản: <span className="font-bold">{formData.bankAccountHolder || 'Chưa cấu hình'}</span></p>
                   {formData.bankSwiftCode && <p>• SWIFT Code: <span className="font-mono">{formData.bankSwiftCode}</span></p>}
                 </div>
 
@@ -510,7 +418,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                     <p className="font-bold text-blue-900 uppercase">ĐẠI DIỆN CÔNG TY BÁO GIÁ</p>
                     <p className="text-slate-400 italic text-[10px]">({formData.shortName || 'FORWARDER'})</p>
                     <div className="h-10"></div>
-                    <p className="font-bold text-slate-900">{formData.salesRepName}</p>
+                    <p className="font-bold text-slate-900">{formData.salesRepName || 'Chưa thiết lập sales'}</p>
                     <p className="text-slate-500 text-[10px]">{formData.salesRepTitle}</p>
                     <p className="text-slate-500 text-[10px]">Tel: {formData.salesRepPhone}</p>
                   </div>
@@ -523,7 +431,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
           <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200">
             <div className="text-slate-500 text-[11px] flex items-center gap-1">
               <Check className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Dữ liệu được lưu trữ an toàn trong trình duyệt & file backup.</span>
+              <span>Dữ liệu được lưu trữ trực tiếp vào Firebase Cloud & Single Source of Truth.</span>
             </div>
 
             <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
@@ -540,7 +448,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                 className="px-5 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-bold flex items-center space-x-1.5 shadow-md transition-all"
               >
                 <Save className="w-4 h-4" />
-                <span>Lưu & Áp Dụng Báo Giá</span>
+                <span>Lưu & Đồng Bộ Toàn Hệ Thống</span>
               </button>
             </div>
           </div>

@@ -1,7 +1,8 @@
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { CompanyProfile } from '../../types/logistics';
-import { DEFAULT_COMPANY_PROFILE } from '../../data/presets';
+import { EMPTY_COMPANY_PROFILE } from '../../data/presets';
+import { broadcastSSOTEvent } from '../sync/singleSourceOfTruthSync';
 
 const COLLECTION_NAME = 'settings';
 const DOC_ID = 'company_profile';
@@ -14,7 +15,8 @@ export function invalidateCompanyProfileCache(): void {
 }
 
 /**
- * Fetch Company Profile from Firestore (with memory cache fallback)
+ * Fetch Company Profile from Firestore (Single Source of Truth).
+ * Does NOT seed or inject mock data if the collection/document is missing.
  */
 export async function fetchCompanyProfile(forceRefresh = false): Promise<CompanyProfile> {
   const now = Date.now();
@@ -22,9 +24,9 @@ export async function fetchCompanyProfile(forceRefresh = false): Promise<Company
     return memoryCompanyProfileCache.data;
   }
 
-  const defaultProfile = DEFAULT_COMPANY_PROFILE;
-
-  if (!db) return defaultProfile;
+  if (!db) {
+    return memoryCompanyProfileCache ? memoryCompanyProfileCache.data : EMPTY_COMPANY_PROFILE;
+  }
 
   try {
     const docRef = doc(db, COLLECTION_NAME, DOC_ID);
@@ -35,26 +37,25 @@ export async function fetchCompanyProfile(forceRefresh = false): Promise<Company
       memoryCompanyProfileCache = { data, cachedAt: now };
       return data;
     } else {
-      // Seed default company profile to Firestore
-      await setDoc(docRef, {
-        ...defaultProfile,
-        _updatedAt: serverTimestamp(),
-      });
-      memoryCompanyProfileCache = { data: defaultProfile, cachedAt: now };
-      return defaultProfile;
+      // Document does NOT exist in Firestore yet: return EMPTY profile.
+      // ZERO AUTOMATIC SEEDING of fake company profile as mandated by Phase 21.
+      memoryCompanyProfileCache = { data: EMPTY_COMPANY_PROFILE, cachedAt: now };
+      return EMPTY_COMPANY_PROFILE;
     }
   } catch (err) {
     console.error('[companyProfileRepository] Error fetching company profile from Firestore:', err);
-    return memoryCompanyProfileCache ? memoryCompanyProfileCache.data : defaultProfile;
+    return memoryCompanyProfileCache ? memoryCompanyProfileCache.data : EMPTY_COMPANY_PROFILE;
   }
 }
 
 /**
- * Save Company Profile to Firestore
+ * Save Company Profile to Firestore (Single Source of Truth)
+ * and broadcast real-time update to all open tabs and active states.
  */
 export async function saveCompanyProfile(profile: CompanyProfile): Promise<CompanyProfile> {
   if (!db) {
     memoryCompanyProfileCache = { data: profile, cachedAt: Date.now() };
+    broadcastSSOTEvent('COMPANY_PROFILE_SYNC', profile);
     return profile;
   }
 
@@ -66,9 +67,40 @@ export async function saveCompanyProfile(profile: CompanyProfile): Promise<Compa
     }, { merge: true });
 
     memoryCompanyProfileCache = { data: profile, cachedAt: Date.now() };
+    broadcastSSOTEvent('COMPANY_PROFILE_SYNC', profile);
     return profile;
   } catch (err) {
     console.error('[companyProfileRepository] Error saving company profile to Firestore:', err);
     throw err;
+  }
+}
+
+/**
+ * Real-time Firestore snapshot listener for company profile changes
+ */
+export function listenToCompanyProfile(
+  onUpdate: (profile: CompanyProfile) => void
+): () => void {
+  if (!db) return () => {};
+
+  try {
+    const docRef = doc(db, COLLECTION_NAME, DOC_ID);
+    const unsubscribe = onSnapshot(docRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data() as CompanyProfile;
+        memoryCompanyProfileCache = { data, cachedAt: Date.now() };
+        onUpdate(data);
+      } else {
+        memoryCompanyProfileCache = { data: EMPTY_COMPANY_PROFILE, cachedAt: Date.now() };
+        onUpdate(EMPTY_COMPANY_PROFILE);
+      }
+    }, (err) => {
+      console.warn('[companyProfileRepository] Live snapshot notice:', err);
+    });
+
+    return unsubscribe;
+  } catch (e) {
+    console.warn('[companyProfileRepository] Failed to bind live snapshot:', e);
+    return () => {};
   }
 }
