@@ -90,9 +90,23 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
-      <div className="bg-white text-slate-900 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col border border-slate-200">
+    <div 
+      className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+      id="modal-saved-quotes-backdrop"
+    >
+      <div 
+        className="bg-white text-slate-900 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col border border-slate-200"
+        onClick={(e) => e.stopPropagation()}
+        id="modal-saved-quotes-container"
+      >
         
         {/* Modal Header */}
         <div className="p-5 border-b border-slate-200 flex items-center justify-between">
@@ -100,7 +114,13 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
             <FileText className="w-5 h-5 text-cyan-700" />
             <h3 className="font-bold text-slate-900 text-base">Danh Sách Báo Giá Đã Lưu ({quotes.length})</h3>
           </div>
-          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-900 rounded-lg">
+          <button 
+            type="button"
+            id="btn-close-saved-quotes"
+            onClick={onClose} 
+            className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+            title="Đóng cửa sổ (Esc)"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -272,52 +292,72 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
           </table>
         </div>
 
-        {/* Pagination Footer */}
-        {filtered.length > 0 && (
-          <div className="p-3 border-t border-slate-200 bg-slate-50 rounded-b-2xl flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600">
-            <div className="flex items-center space-x-3">
-              <span>Hiển thị <strong>{Math.min(filtered.length, (currentPage - 1) * pageSize + 1)}</strong> - <strong>{Math.min(filtered.length, currentPage * pageSize)}</strong> trong tổng số <strong>{filtered.length}</strong> báo giá</span>
-              <div className="flex items-center space-x-1.5 pl-2 border-l border-slate-200">
-                <span>Số dòng:</span>
-                <select
-                  value={pageSize}
-                  onChange={(e) => {
-                    setPageSize(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
-                  className="bg-white border border-slate-200 rounded px-2 py-0.5 text-xs text-slate-700 font-medium"
-                >
-                  <option value={10}>10</option>
-                  <option value={15}>15</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                </select>
+        {/* Modal Footer */}
+        <div className="p-3 border-t border-slate-200 bg-slate-50 rounded-b-2xl flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600">
+          {filtered.length > 0 ? (
+            <>
+              <div className="flex items-center space-x-3">
+                <span>Hiển thị <strong>{Math.min(filtered.length, (currentPage - 1) * pageSize + 1)}</strong> - <strong>{Math.min(filtered.length, currentPage * pageSize)}</strong> trong tổng số <strong>{filtered.length}</strong> báo giá</span>
+                <div className="flex items-center space-x-1.5 pl-2 border-l border-slate-200">
+                  <span>Số dòng:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="bg-white border border-slate-200 rounded px-2 py-0.5 text-xs text-slate-700 font-medium"
+                  >
+                    <option value={10}>10</option>
+                    <option value={15}>15</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-center space-x-2">
-              <span className="text-slate-500">Trang {currentPage} / {totalPages}</span>
+              <div className="flex items-center space-x-2">
+                <span className="text-slate-500">Trang {currentPage} / {totalPages}</span>
+                <button
+                  type="button"
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="p-1 rounded border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none text-slate-700"
+                  title="Trang trước"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="p-1 rounded border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none text-slate-700"
+                  title="Trang tiếp"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="ml-3 px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium rounded-lg transition-colors cursor-pointer"
+                >
+                  Đóng
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="w-full flex items-center justify-between">
+              <span className="text-slate-400 italic">Tổng cộng 0 báo giá</span>
               <button
                 type="button"
-                disabled={currentPage <= 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="p-1 rounded border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none text-slate-700"
-                title="Trang trước"
+                onClick={onClose}
+                className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium rounded-lg transition-colors cursor-pointer"
               >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                disabled={currentPage >= totalPages}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="p-1 rounded border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none text-slate-700"
-                title="Trang tiếp"
-              >
-                <ChevronRight className="w-4 h-4" />
+                Đóng
               </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
       </div>
     </div>

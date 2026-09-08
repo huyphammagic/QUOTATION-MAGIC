@@ -1289,169 +1289,201 @@ export default function App() {
 
       {/* Modals */}
       <Suspense fallback={null}>
-        <QuotePreviewModal
-          quote={quote}
-          isOpen={isPreviewOpen}
-          onClose={() => setIsPreviewOpen(false)}
-          onCurrencyChange={handleQuoteCurrencyChange}
+        {isPreviewOpen && (
+          <QuotePreviewModal
+            quote={quote}
+            isOpen={isPreviewOpen}
+            onClose={() => setIsPreviewOpen(false)}
+            onCurrencyChange={handleQuoteCurrencyChange}
+          />
+        )}
+
+      {isCustomersOpen && (
+        <CustomerManagerModal
+          isOpen={isCustomersOpen}
+          onClose={() => setIsCustomersOpen(false)}
+          customers={customers}
+          onSaveCustomer={handleSaveCustomer}
+          onDeleteCustomer={handleDeleteCustomer}
+          onSelectCustomerForQuote={handleSelectCustomerForQuote}
         />
+      )}
 
-      <CustomerManagerModal
-        isOpen={isCustomersOpen}
-        onClose={() => setIsCustomersOpen(false)}
-        customers={customers}
-        onSaveCustomer={handleSaveCustomer}
-        onDeleteCustomer={handleDeleteCustomer}
-        onSelectCustomerForQuote={handleSelectCustomerForQuote}
-      />
+      {isSurchargesOpen && (
+        <SurchargeCatalogModal
+          isOpen={isSurchargesOpen}
+          onClose={() => setIsSurchargesOpen(false)}
+          surcharges={surcharges}
+          exchangeRate={quote.exchangeRate}
+          onSaveSurcharge={handleSaveSurcharge}
+          onDeleteSurcharge={handleDeleteSurcharge}
+          onAddSurchargeToQuote={handleAddSurchargeToQuote}
+        />
+      )}
 
-      <SurchargeCatalogModal
-        isOpen={isSurchargesOpen}
-        onClose={() => setIsSurchargesOpen(false)}
-        surcharges={surcharges}
-        exchangeRate={quote.exchangeRate}
-        onSaveSurcharge={handleSaveSurcharge}
-        onDeleteSurcharge={handleDeleteSurcharge}
-        onAddSurchargeToQuote={handleAddSurchargeToQuote}
-      />
+      {isMasterRateHubOpen && (
+        <MasterRateHubModal
+          isOpen={isMasterRateHubOpen}
+          onClose={() => setIsMasterRateHubOpen(false)}
+          initialTab={masterRateHubTab}
+          rates={rates}
+          charges={chargeMasters}
+          histories={rateHistories}
+          exchangeRate={quote.exchangeRate}
+          currentUser={company.salesRepName || 'Pricing Manager'}
+          onSaveRate={handleSaveRate}
+          onDeleteRate={handleDeleteRate}
+          onSaveCharge={handleSaveCharge}
+          onDeleteCharge={handleDeleteCharge}
+          onBulkImportRates={handleBulkImportRates}
+          onSelectRateForQuote={handleSelectRateForQuote}
+        />
+      )}
 
-      <MasterRateHubModal
-        isOpen={isMasterRateHubOpen}
-        onClose={() => setIsMasterRateHubOpen(false)}
-        initialTab={masterRateHubTab}
-        rates={rates}
-        charges={chargeMasters}
-        histories={rateHistories}
-        exchangeRate={quote.exchangeRate}
-        currentUser={company.salesRepName || 'Pricing Manager'}
-        onSaveRate={handleSaveRate}
-        onDeleteRate={handleDeleteRate}
-        onSaveCharge={handleSaveCharge}
-        onDeleteCharge={handleDeleteCharge}
-        onBulkImportRates={handleBulkImportRates}
-        onSelectRateForQuote={handleSelectRateForQuote}
-      />
+      {isRateSearchOpen && (
+        <RateSearchModal
+          isOpen={isRateSearchOpen}
+          onClose={() => setIsRateSearchOpen(false)}
+          rates={rates}
+          exchangeRate={quote.exchangeRate}
+          shipment={quote.shipment}
+          onSelectRate={(selectedRate) => {
+            handleSelectRateForQuote(selectedRate);
+            setIsRateSearchOpen(false);
+          }}
+        />
+      )}
 
-      <RateSearchModal
-        isOpen={isRateSearchOpen}
-        onClose={() => setIsRateSearchOpen(false)}
-        rates={rates}
-        exchangeRate={quote.exchangeRate}
-        shipment={quote.shipment}
-        onSelectRate={(selectedRate) => {
-          handleSelectRateForQuote(selectedRate);
-          setIsRateSearchOpen(false);
-        }}
-      />
+      {isSmartAssistantOpen && (
+        <SmartRateAssistantModal
+          isOpen={isSmartAssistantOpen}
+          onClose={() => setIsSmartAssistantOpen(false)}
+          shipment={quote.shipment}
+          customer={quote.customer}
+          rates={rates}
+          exchangeRate={quote.exchangeRate}
+          existingItemRateIds={quote.items.map(i => i.rateId).filter(Boolean) as string[]}
+          onAddSelectedRates={handleAddSmartRates}
+          onAddSingleRate={handleSelectRateForQuote}
+          onOpenManualAdd={() => {
+            setIsSmartAssistantOpen(false);
+          }}
+        />
+      )}
 
-      <SmartRateAssistantModal
-        isOpen={isSmartAssistantOpen}
-        onClose={() => setIsSmartAssistantOpen(false)}
-        shipment={quote.shipment}
-        customer={quote.customer}
-        rates={rates}
-        exchangeRate={quote.exchangeRate}
-        existingItemRateIds={quote.items.map(i => i.rateId).filter(Boolean) as string[]}
-        onAddSelectedRates={handleAddSmartRates}
-        onAddSingleRate={handleSelectRateForQuote}
-        onOpenManualAdd={() => {
-          setIsSmartAssistantOpen(false);
-        }}
-      />
+      {isComparisonModalOpen && (
+        <RateComparisonModal
+          isOpen={isComparisonModalOpen}
+          onClose={() => setIsComparisonModalOpen(false)}
+          diffs={outdatedRatesDiffs}
+          onConfirmUpdate={handleConfirmRateUpdates}
+        />
+      )}
 
-      <RateComparisonModal
-        isOpen={isComparisonModalOpen}
-        onClose={() => setIsComparisonModalOpen(false)}
-        diffs={outdatedRatesDiffs}
-        onConfirmUpdate={handleConfirmRateUpdates}
-      />
+      {isSavedOpen && (
+        <SavedQuotesModal
+          quotes={savedQuotes}
+          isOpen={isSavedOpen}
+          initialStatusFilter={savedQuotesInitialFilter}
+          onClose={() => setIsSavedOpen(false)}
+          onSelectQuote={handleSelectQuote}
+          onCloneQuote={handleCloneQuote}
+          onDeleteQuote={handleDeleteQuote}
+          onUpdateStatus={handleUpdateStatus}
+        />
+      )}
 
-      <SavedQuotesModal
-        quotes={savedQuotes}
-        isOpen={isSavedOpen}
-        initialStatusFilter={savedQuotesInitialFilter}
-        onClose={() => setIsSavedOpen(false)}
-        onSelectQuote={handleSelectQuote}
-        onCloneQuote={handleCloneQuote}
-        onDeleteQuote={handleDeleteQuote}
-        onUpdateStatus={handleUpdateStatus}
-      />
+      {isCompanyOpen && (
+        <CompanyProfileModal
+          company={company}
+          isOpen={isCompanyOpen}
+          initialTab={companyModalTab}
+          onClose={() => setIsCompanyOpen(false)}
+          onSaveCompany={handleSaveCompanyProfile}
+        />
+      )}
 
-      <CompanyProfileModal
-        company={company}
-        isOpen={isCompanyOpen}
-        initialTab={companyModalTab}
-        onClose={() => setIsCompanyOpen(false)}
-        onSaveCompany={handleSaveCompanyProfile}
-      />
-
-      <DataBackupModal
-        isOpen={isDataBackupOpen}
-        onClose={() => setIsDataBackupOpen(false)}
-        onDataImported={handleDataImported}
-        savedQuotesCount={savedQuotes.length}
-        customersCount={customers.length}
-        surchargesCount={surcharges.length}
-      />
+      {isDataBackupOpen && (
+        <DataBackupModal
+          isOpen={isDataBackupOpen}
+          onClose={() => setIsDataBackupOpen(false)}
+          onDataImported={handleDataImported}
+          savedQuotesCount={savedQuotes.length}
+          customersCount={customers.length}
+          surchargesCount={surcharges.length}
+        />
+      )}
 
       {/* Phase 7: Professional Quotation PDF Engine Modals */}
-      <GeneratePdfModal
-        isOpen={isGeneratePdfOpen}
-        onClose={() => setIsGeneratePdfOpen(false)}
-        quote={quote}
-        onOpenTemplateBuilder={() => setIsTemplateBuilderOpen(true)}
-        onDocumentGenerated={(rec) => {
-          showToast(`Đã phát hành file PDF ${rec.fileName} (Rev ${rec.revision}) thành công!`);
-        }}
-      />
+      {isGeneratePdfOpen && (
+        <GeneratePdfModal
+          isOpen={isGeneratePdfOpen}
+          onClose={() => setIsGeneratePdfOpen(false)}
+          quote={quote}
+          onOpenTemplateBuilder={() => setIsTemplateBuilderOpen(true)}
+          onDocumentGenerated={(rec) => {
+            showToast(`Đã phát hành file PDF ${rec.fileName} (Rev ${rec.revision}) thành công!`);
+          }}
+        />
+      )}
 
-      <QuotationTemplateBuilderModal
-        isOpen={isTemplateBuilderOpen}
-        onClose={() => setIsTemplateBuilderOpen(false)}
-        sampleQuote={quote}
-        onTemplatesUpdated={() => {
-          showToast('Đã cập nhật hệ thống mẫu báo giá!');
-        }}
-      />
+      {isTemplateBuilderOpen && (
+        <QuotationTemplateBuilderModal
+          isOpen={isTemplateBuilderOpen}
+          onClose={() => setIsTemplateBuilderOpen(false)}
+          sampleQuote={quote}
+          onTemplatesUpdated={() => {
+            showToast('Đã cập nhật hệ thống mẫu báo giá!');
+          }}
+        />
+      )}
 
-      <DocumentHistoryModal
-        isOpen={isDocumentHistoryOpen}
-        onClose={() => setIsDocumentHistoryOpen(false)}
-        quotationId={quote.id}
-        quotationNumber={quote.quoteNumber}
-      />
+      {isDocumentHistoryOpen && (
+        <DocumentHistoryModal
+          isOpen={isDocumentHistoryOpen}
+          onClose={() => setIsDocumentHistoryOpen(false)}
+          quotationId={quote.id}
+          quotationNumber={quote.quoteNumber}
+        />
+      )}
 
       {/* Phase 8: Quotation Communication & Secure Dispatch Modals */}
-      <SendQuotationModal
-        isOpen={isSendQuotationOpen}
-        onClose={() => setIsSendQuotationOpen(false)}
-        quote={quote}
-        documents={quotationDocuments}
-        onApproveQuote={handleApproveCurrentQuote}
-        onOpenTemplateManager={() => {
-          setIsSendQuotationOpen(false);
-          setIsEmailTemplatesOpen(true);
-        }}
-        onSuccess={(msg) => {
-          showToast(msg);
-          loadQuotationDocuments(quote.id);
-          handleUpdateStatus(quote.id, 'SENT');
-        }}
-      />
+      {isSendQuotationOpen && (
+        <SendQuotationModal
+          isOpen={isSendQuotationOpen}
+          onClose={() => setIsSendQuotationOpen(false)}
+          quote={quote}
+          documents={quotationDocuments}
+          onApproveQuote={handleApproveCurrentQuote}
+          onOpenTemplateManager={() => {
+            setIsSendQuotationOpen(false);
+            setIsEmailTemplatesOpen(true);
+          }}
+          onSuccess={(msg) => {
+            showToast(msg);
+            loadQuotationDocuments(quote.id);
+            handleUpdateStatus(quote.id, 'SENT');
+          }}
+        />
+      )}
 
-      <EmailTemplateManagementModal
-        isOpen={isEmailTemplatesOpen}
-        onClose={() => setIsEmailTemplatesOpen(false)}
-      />
+      {isEmailTemplatesOpen && (
+        <EmailTemplateManagementModal
+          isOpen={isEmailTemplatesOpen}
+          onClose={() => setIsEmailTemplatesOpen(false)}
+        />
+      )}
 
-      <FollowUpModal
-        isOpen={isFollowUpOpen}
-        onClose={() => setIsFollowUpOpen(false)}
-        quote={quote}
-        onSuccess={() => {
-          showToast('Đã lưu nhiệm vụ chăm sóc khách hàng thành công!');
-        }}
-      />
+      {isFollowUpOpen && (
+        <FollowUpModal
+          isOpen={isFollowUpOpen}
+          onClose={() => setIsFollowUpOpen(false)}
+          quote={quote}
+          onSuccess={() => {
+            showToast('Đã lưu nhiệm vụ chăm sóc khách hàng thành công!');
+          }}
+        />
+      )}
 
       {/* Phase 9: Advanced Business Intelligence & Sales Analytics Dashboard */}
       {isDashboardOpen && (
@@ -1477,41 +1509,49 @@ export default function App() {
       )}
 
       {/* Master Data Reference Modal (Ports, Container Types, Incoterms, Payment Terms) */}
-      <MasterDataReferenceModal
-        isOpen={isMasterDataRefOpen}
-        onClose={() => setIsMasterDataRefOpen(false)}
-        initialType={masterDataRefType}
-        language={appLanguage}
-      />
+      {isMasterDataRefOpen && (
+        <MasterDataReferenceModal
+          isOpen={isMasterDataRefOpen}
+          onClose={() => setIsMasterDataRefOpen(false)}
+          initialType={masterDataRefType}
+          language={appLanguage}
+        />
+      )}
 
       {/* Phase 14: Customer & Supplier Contract Management Hub */}
-      <ContractHubModal
-        isOpen={isContractsOpen}
-        onClose={() => setIsContractsOpen(false)}
-        customers={customers}
-        suppliers={[]}
-        carriers={[]}
-      />
+      {isContractsOpen && (
+        <ContractHubModal
+          isOpen={isContractsOpen}
+          onClose={() => setIsContractsOpen(false)}
+          customers={customers}
+          suppliers={[]}
+          carriers={[]}
+        />
+      )}
 
       {/* Phase 15: Profit & Margin Intelligence Modals */}
-      <ProfitIntelligenceModal
-        isOpen={isProfitIntelligenceOpen}
-        onClose={() => setIsProfitIntelligenceOpen(false)}
-        quote={quote}
-        activePolicy={activePricingPolicy}
-        onApplyWhatIfToQuote={handleApplyWhatIfToQuote}
-        onOpenPolicyManagement={() => {
-          setIsProfitIntelligenceOpen(false);
-          setIsPricingPolicyMgmtOpen(true);
-        }}
-      />
+      {isProfitIntelligenceOpen && (
+        <ProfitIntelligenceModal
+          isOpen={isProfitIntelligenceOpen}
+          onClose={() => setIsProfitIntelligenceOpen(false)}
+          quote={quote}
+          activePolicy={activePricingPolicy}
+          onApplyWhatIfToQuote={handleApplyWhatIfToQuote}
+          onOpenPolicyManagement={() => {
+            setIsProfitIntelligenceOpen(false);
+            setIsPricingPolicyMgmtOpen(true);
+          }}
+        />
+      )}
 
-      <PricingPolicyManagementModal
-        isOpen={isPricingPolicyMgmtOpen}
-        onClose={() => setIsPricingPolicyMgmtOpen(false)}
-        policies={pricingPolicies}
-        onPoliciesUpdated={loadPricingPoliciesData}
-      />
+      {isPricingPolicyMgmtOpen && (
+        <PricingPolicyManagementModal
+          isOpen={isPricingPolicyMgmtOpen}
+          onClose={() => setIsPricingPolicyMgmtOpen(false)}
+          policies={pricingPolicies}
+          onPoliciesUpdated={loadPricingPoliciesData}
+        />
+      )}
 
       {/* Phase 17: Cross-Device Concurrency Conflict Resolution Modal */}
       {conflictState.isOpen && conflictState.localQuote && conflictState.remoteQuote && (
