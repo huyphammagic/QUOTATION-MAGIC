@@ -103,6 +103,7 @@ const PricingPolicyManagementModal = lazy(() => import('./components/pricing/Pri
 const ConflictResolutionModal = lazy(() => import('./components/ConflictResolutionModal').then(m => ({ default: m.ConflictResolutionModal })));
 const MasterDataReferenceModal = lazy(() => import('./components/MasterDataReferenceModal').then(m => ({ default: m.MasterDataReferenceModal })));
 const SmartQuotationWorkspace = lazy(() => import('./components/smartQuotation/SmartQuotationWorkspace').then(m => ({ default: m.SmartQuotationWorkspace })));
+const DataIntegrityDashboardModal = lazy(() => import('./components/integrity/DataIntegrityDashboardModal').then(m => ({ default: m.DataIntegrityDashboardModal })));
 
 import { getDocumentRecordsForQuotation, getAllQuotationDocuments } from './services/quotation/quotationDocumentService';
 import { QuotationDocumentRecord } from './types/quotationDocument';
@@ -222,6 +223,9 @@ export default function App() {
   // Phase 14: Customer & Supplier Contract Management
   const [isContractsOpen, setIsContractsOpen] = useState(false);
   const [contractsCount, setContractsCount] = useState(0);
+
+  // Phase 24: Global Data Integrity & Sync Health Dashboard
+  const [isIntegrityDashboardOpen, setIsIntegrityDashboardOpen] = useState(false);
 
   // Phase 15: Profit & Margin Intelligence
   const [isProfitIntelligenceOpen, setIsProfitIntelligenceOpen] = useState(false);
@@ -1197,6 +1201,7 @@ export default function App() {
           onRoleChange={setAppUserRole}
           language={appLanguage}
           onLanguageChange={setAppLanguage}
+          onOpenIntegrityDashboard={() => setIsIntegrityDashboardOpen(true)}
         />
 
         {/* Right Main Application Workspace */}
@@ -1217,6 +1222,7 @@ export default function App() {
             quoteCount={savedQuotes.length}
             customerCount={customers.length}
             rateCount={rates.length}
+            onOpenIntegrityDashboard={() => setIsIntegrityDashboardOpen(true)}
           />
 
           {/* Main Content Area */}
@@ -1670,6 +1676,19 @@ export default function App() {
           }}
           onExportPdf={(q, curr) => exportQuoteToPdf(q, curr)}
           onExportExcel={(q, curr) => exportQuoteToExcel(q, curr)}
+        />
+      )}
+
+      {/* Phase 24: Global Data Integrity & Sync Health Dashboard */}
+      {isIntegrityDashboardOpen && (
+        <DataIntegrityDashboardModal
+          isOpen={isIntegrityDashboardOpen}
+          onClose={() => setIsIntegrityDashboardOpen(false)}
+          quotes={savedQuotes}
+          customers={customers}
+          onRefreshData={handleForceCloudSync}
+          onApplyFixedQuotes={(fixed) => setSavedQuotes(fixed)}
+          onApplyFixedCustomers={(fixed) => setCustomers(fixed)}
         />
       )}
       </Suspense>

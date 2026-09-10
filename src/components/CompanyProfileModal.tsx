@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { CompanyProfile } from '../types/logistics';
-import { Building2, X, Save, CreditCard, UserCheck, ShieldCheck, Eye, Check } from 'lucide-react';
+import { Building2, X, Save, CreditCard, UserCheck, ShieldCheck, Eye, Check, Upload, Image as ImageIcon, Trash2, Loader2 } from 'lucide-react';
+import { uploadCompanyLogo } from '../services/firebase/fileStorageService';
+import { syncHealthService } from '../services/integrity/syncHealthService';
 
 interface CompanyProfileModalProps {
   company: CompanyProfile;
@@ -19,6 +21,44 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'sales' | 'bank' | 'preview'>('profile');
   const [formData, setFormData] = useState<CompanyProfile>({ ...company });
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
+
+  const handleLogoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setLogoUploadError('Vui lòng chọn tệp hình ảnh (PNG, JPG, SVG, WebP).');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setLogoUploadError('Kích thước logo không được vượt quá 5MB.');
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    setLogoUploadError(null);
+    const uploadId = `logo_${Date.now()}`;
+    syncHealthService.startUpload(uploadId, file.name, file.size);
+
+    try {
+      const result = await uploadCompanyLogo(file);
+      setFormData(prev => ({ ...prev, logoUrl: result.downloadUrl }));
+      syncHealthService.finishUploadSuccess(uploadId, result.downloadUrl, result.storagePath);
+    } catch (err: any) {
+      const msg = err?.message || 'Không thể tải logo lên Firebase Storage.';
+      setLogoUploadError(msg);
+      syncHealthService.finishUploadFailed(uploadId, msg);
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setFormData(prev => ({ ...prev, logoUrl: '' }));
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -247,6 +287,88 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                     placeholder="Ví dụ: www.yourcompany.com.vn"
                   />
                 </div>
+
+                {/* Logo Upload Section */}
+                <div className="md:col-span-2 p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <ImageIcon className="w-4 h-4 text-blue-600" />
+                        Logo Doanh Nghiệp (Hiển thị trên Báo Giá & PDF)
+                      </span>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Được lưu trữ 100% trên Firebase Storage & tự động đồng bộ tới mọi thiết bị khác.
+                      </p>
+                    </div>
+                  </div>
+
+                  {formData.logoUrl ? (
+                    <div className="flex items-center gap-4 p-3 bg-white border border-slate-200 rounded-lg">
+                      <div className="w-24 h-16 bg-slate-50 border border-slate-200 rounded flex items-center justify-center p-1 shrink-0 overflow-hidden">
+                        <img 
+                          src={formData.logoUrl} 
+                          alt="Logo Preview" 
+                          className="max-h-full max-w-full object-contain"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5" /> Logo đã tải lên đám mây Firebase
+                        </span>
+                        <p className="text-[10px] text-slate-400 truncate mt-0.5 font-mono">
+                          {formData.logoUrl.slice(0, 60)}...
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveLogo}
+                        className="px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded border border-red-200 flex items-center gap-1 shrink-0"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Gỡ Logo
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-slate-300 hover:border-blue-400 rounded-lg p-4 text-center transition-colors bg-white">
+                      <label className="cursor-pointer flex flex-col items-center justify-center space-y-2">
+                        {isUploadingLogo ? (
+                          <div className="flex items-center gap-2 text-blue-600 font-bold text-xs py-2">
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <span>Đang tải logo lên Firebase Cloud...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                              <Upload className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold text-blue-700 hover:underline">
+                                Nhấp để chọn tệp logo
+                              </span>
+                              <span className="text-xs text-slate-500"> hoặc kéo thả vào đây</span>
+                            </div>
+                            <span className="text-[10px] text-slate-400">
+                              Hỗ trợ định dạng PNG, JPG, SVG, WebP (Tối đa 5MB)
+                            </span>
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={isUploadingLogo}
+                          onChange={handleLogoFileChange}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  )}
+
+                  {logoUploadError && (
+                    <div className="text-[11px] text-red-600 font-medium">
+                      ⚠️ {logoUploadError}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -388,16 +510,28 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
           {activeTab === 'preview' && (
             <div className="space-y-4">
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
-                <div className="border-b-2 border-blue-900 pb-3">
-                  <h4 className="font-extrabold text-blue-950 text-base uppercase">
-                    {formData.name || 'CHƯA CẤU HÌNH TÊN DOANH NGHIỆP'}
-                  </h4>
-                  {formData.englishName && <p className="text-slate-500 text-[11px] italic">{formData.englishName}</p>}
-                  <p className="text-slate-700 mt-1">ĐC: {formData.address || 'Chưa cấu hình địa chỉ'}</p>
-                  <p className="text-slate-700">
-                    MST: <span className="font-mono font-bold">{formData.taxId || 'N/A'}</span> | Tel: {formData.phone || 'N/A'} | Email: {formData.email || 'N/A'}
-                  </p>
-                  {formData.website && <p className="text-slate-700">Website: {formData.website}</p>}
+                <div className="border-b-2 border-blue-900 pb-3 flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <h4 className="font-extrabold text-blue-950 text-base uppercase">
+                      {formData.name || 'CHƯA CẤU HÌNH TÊN DOANH NGHIỆP'}
+                    </h4>
+                    {formData.englishName && <p className="text-slate-500 text-[11px] italic">{formData.englishName}</p>}
+                    <p className="text-slate-700 mt-1">ĐC: {formData.address || 'Chưa cấu hình địa chỉ'}</p>
+                    <p className="text-slate-700">
+                      MST: <span className="font-mono font-bold">{formData.taxId || 'N/A'}</span> | Tel: {formData.phone || 'N/A'} | Email: {formData.email || 'N/A'}
+                    </p>
+                    {formData.website && <p className="text-slate-700">Website: {formData.website}</p>}
+                  </div>
+                  {formData.logoUrl && (
+                    <div className="h-16 w-32 shrink-0 bg-white border border-slate-200 rounded p-1 flex items-center justify-center">
+                      <img 
+                        src={formData.logoUrl} 
+                        alt="Logo Preview" 
+                        className="max-h-full max-w-full object-contain"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="bg-white p-3 rounded border border-slate-200 text-[11px] space-y-1">

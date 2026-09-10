@@ -222,7 +222,13 @@ export interface CompanyProfile {
   salesRepTitle: string;
   salesRepPhone: string;
   salesRepEmail: string;
+  version?: number;
+  updatedAt?: string;
 }
+
+export type CustomerProfile = CustomerRecord;
+export type QuoteHistoryItem = QuoteData;
+export type MasterRateItem = any;
 
 export interface QuoteData {
   id: string;

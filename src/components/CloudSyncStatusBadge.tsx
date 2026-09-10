@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Cloud, CheckCircle2, RefreshCw, ShieldCheck, Database, Smartphone, Laptop, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Cloud, CheckCircle2, RefreshCw, ShieldCheck, Database, Laptop, Activity, Cpu } from 'lucide-react';
+import { syncHealthService, SystemHealthSnapshot } from '../services/integrity/syncHealthService';
 
 interface CloudSyncStatusBadgeProps {
   isSyncing: boolean;
@@ -8,6 +9,7 @@ interface CloudSyncStatusBadgeProps {
   quoteCount: number;
   customerCount: number;
   rateCount: number;
+  onOpenIntegrityDashboard?: () => void;
 }
 
 export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
@@ -17,13 +19,25 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
   quoteCount,
   customerCount,
   rateCount,
+  onOpenIntegrityDashboard,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [healthSnapshot, setHealthSnapshot] = useState<SystemHealthSnapshot>(syncHealthService.getSnapshot());
+
+  useEffect(() => {
+    const unsub = syncHealthService.subscribe(snap => {
+      setHealthSnapshot(snap);
+    });
+    return () => unsub();
+  }, []);
 
   const formatTime = (d: Date | null) => {
     if (!d) return 'Vừa mới đây';
     return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
+
+  const activeStreams = Object.values(healthSnapshot.listeners).filter((l: any) => l.status === 'CONNECTED' || l.status === 'HEALTHY').length;
+  const totalStreams = Object.values(healthSnapshot.listeners).length;
 
   return (
     <div className="relative inline-block text-left">
@@ -85,10 +99,20 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
 
               <div className="flex items-center justify-between text-slate-600">
                 <span className="flex items-center space-x-1.5">
+                  <Activity className="w-3.5 h-3.5 text-blue-500" />
+                  <span>Kênh luồng dữ liệu (Live):</span>
+                </span>
+                <span className="font-semibold text-emerald-700">
+                  {activeStreams} / {totalStreams > 0 ? totalStreams : 5} Hoạt động
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-slate-600">
+                <span className="flex items-center space-x-1.5">
                   <Laptop className="w-3.5 h-3.5 text-slate-400" />
                   <span>Đồng bộ đa thiết bị:</span>
                 </span>
-                <span className="font-medium text-slate-900">Khả dụng (A ⟷ B)</span>
+                <span className="font-medium text-slate-900">Khả dụng 100% (A ⟷ B)</span>
               </div>
 
               <div className="flex items-center justify-between text-slate-600">
@@ -115,6 +139,20 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
                 <div className="text-[10px] text-slate-500">Biểu cước</div>
               </div>
             </div>
+
+            {onOpenIntegrityDashboard && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenIntegrityDashboard();
+                }}
+                className="w-full mt-2.5 py-2 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 rounded-xl text-xs font-bold transition-colors flex items-center justify-center space-x-2 border border-indigo-200"
+              >
+                <Cpu className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Mở Trung Tâm Tự Chẩn Đoán Toàn Vẹn</span>
+              </button>
+            )}
 
             <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
               <span className="text-[10px] text-slate-400 italic">100% No Local Storage</span>

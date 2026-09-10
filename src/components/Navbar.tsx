@@ -17,6 +17,7 @@ interface NavbarProps {
   quoteCount?: number;
   customerCount?: number;
   rateCount?: number;
+  onOpenIntegrityDashboard?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -33,6 +34,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   quoteCount = 0,
   customerCount = 0,
   rateCount = 0,
+  onOpenIntegrityDashboard,
 }) => {
   return (
     <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-30 flex items-center justify-between px-3 sm:px-6 lg:px-8 shadow-xs">
@@ -50,9 +52,20 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         )}
 
-        <div className="w-10 h-10 bg-blue-700 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0">
-          <Ship className="w-5 h-5 text-white" />
-        </div>
+        {company.logoUrl ? (
+          <div className="h-10 w-12 bg-white rounded-lg flex items-center justify-center p-1 border border-slate-200 shrink-0 shadow-xs">
+            <img 
+              src={company.logoUrl} 
+              alt={company.name} 
+              className="max-h-full max-w-full object-contain"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+        ) : (
+          <div className="w-10 h-10 bg-blue-700 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0">
+            <Ship className="w-5 h-5 text-white" />
+          </div>
+        )}
         <div className="min-w-0">
           <div className="flex items-center space-x-2">
             <h1 className="text-sm sm:text-base lg:text-lg font-extrabold text-slate-900 tracking-tight uppercase truncate">
@@ -70,7 +83,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Right controls: Cloud Status, Auto-save status, Exchange Rate Adjuster & Quick New Quote */}
       <div className="flex items-center space-x-2 sm:space-x-3">
-        {/* Cloud Sync Status Badge (Phase 17) */}
+        {/* Cloud Sync Status Badge (Phase 17 & 24) */}
         {onForceCloudSync && (
           <CloudSyncStatusBadge
             isSyncing={isCloudSyncing}
@@ -79,6 +92,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             quoteCount={quoteCount}
             customerCount={customerCount}
             rateCount={rateCount}
+            onOpenIntegrityDashboard={onOpenIntegrityDashboard}
           />
         )}
 

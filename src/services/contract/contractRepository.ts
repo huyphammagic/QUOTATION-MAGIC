@@ -13,9 +13,11 @@ import {
   serverTimestamp,
   writeBatch,
   DocumentSnapshot,
-  updateDoc
+  updateDoc,
+  onSnapshot
 } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
+import { syncHealthService } from '../integrity/syncHealthService';
 import { 
   ContractItem, 
   ContractRateItem, 
@@ -617,3 +619,35 @@ export async function recordContractAudit(audit: ContractAuditLogItem): Promise<
     console.warn('Could not record contract audit log', err);
   }
 }
+
+/**
+ * Subscribes to real-time changes in Contracts across all devices
+ */
+export function subscribeToContracts(onUpdate: (contracts: ContractItem[]) => void): () => void {
+  if (!db) return () => {};
+  const listenerId = 'contracts_listener';
+  syncHealthService.registerListener(listenerId, 'Hợp Đồng Thời Gian Thực', COLLECTIONS.CONTRACTS);
+  try {
+    const q = query(
+      collection(db, COLLECTIONS.CONTRACTS),
+      orderBy('updatedAt', 'desc'),
+      limit(100)
+    );
+    return onSnapshot(q, (snapshot) => {
+      const items: ContractItem[] = [];
+      snapshot.forEach(docSnap => {
+        items.push({ ...docSnap.data() as ContractItem, id: docSnap.id });
+      });
+      syncHealthService.reportListenerEvent(listenerId, 'Contract', items.length);
+      onUpdate(items);
+    }, (err) => {
+      console.warn('[contractRepository] Live contracts snapshot notice:', err);
+      syncHealthService.reportListenerError(listenerId, err);
+    });
+  } catch (err) {
+    console.warn('[contractRepository] Error attaching contracts listener:', err);
+    syncHealthService.reportListenerError(listenerId, err);
+    return () => {};
+  }
+}
+

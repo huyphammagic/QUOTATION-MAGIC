@@ -45,6 +45,8 @@ import {
   fetchContractAudits
 } from '../../services/contract/contractRepository';
 import { analyzeContractExpiry } from '../../services/contract/contractExpiryService';
+import { uploadContractDocument } from '../../services/firebase/fileStorageService';
+import { syncHealthService } from '../../services/integrity/syncHealthService';
 import { ContractRateFormModal } from './ContractRateFormModal';
 
 interface ContractDetailModalProps {
@@ -89,6 +91,9 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
   const [docFileName, setDocFileName] = useState('');
   const [docType, setDocType] = useState<any>('SIGNED_CONTRACT');
   const [docNotes, setDocNotes] = useState('');
+  const [selectedDocFile, setSelectedDocFile] = useState<File | null>(null);
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+  const [docUploadError, setDocUploadError] = useState<string | null>(null);
 
   const expiryAnalysis = analyzeContractExpiry(contract.expiryDate);
 
@@ -215,25 +220,54 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
     e.preventDefault();
     if (!docFileName.trim()) return;
 
-    const docItem: ContractDocumentItem = {
-      id: `doc-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-      contractId: contract.id,
-      contractVersion: contract.currentVersion,
-      fileName: docFileName.trim(),
-      fileSize: 1024 * 150, // simulated size
-      mimeType: 'application/pdf',
-      storagePath: `contracts/${contract.id}/${docFileName}`,
-      documentType: docType,
-      uploadedBy: 'Pricing Specialist',
-      uploadedAt: new Date().toISOString(),
-      notes: docNotes,
-    };
+    setIsUploadingDoc(true);
+    setDocUploadError(null);
+    const uploadId = `doc_${Date.now()}`;
 
-    await saveContractDocument(docItem, 'Pricing Specialist');
-    setIsUploadDocModalOpen(false);
-    setDocFileName('');
-    setDocNotes('');
-    await loadDocuments();
+    try {
+      let downloadUrl = '';
+      let storagePath = `contracts/${contract.id}/${docFileName.trim()}`;
+      let finalFileSize = 1024 * 150;
+      let finalMimeType = 'application/pdf';
+
+      if (selectedDocFile) {
+        syncHealthService.startUpload(uploadId, selectedDocFile.name, selectedDocFile.size);
+        const res = await uploadContractDocument(contract.id, selectedDocFile, docFileName.trim());
+        downloadUrl = res.downloadUrl;
+        storagePath = res.storagePath;
+        finalFileSize = res.fileSizeBytes;
+        finalMimeType = selectedDocFile.type || 'application/pdf';
+        syncHealthService.finishUploadSuccess(uploadId, downloadUrl, storagePath);
+      }
+
+      const docItem: ContractDocumentItem = {
+        id: `doc-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+        contractId: contract.id,
+        contractVersion: contract.currentVersion,
+        fileName: docFileName.trim(),
+        fileSize: finalFileSize,
+        mimeType: finalMimeType,
+        storagePath,
+        downloadUrl,
+        documentType: docType,
+        uploadedBy: 'Pricing Specialist',
+        uploadedAt: new Date().toISOString(),
+        notes: docNotes,
+      };
+
+      await saveContractDocument(docItem, 'Pricing Specialist');
+      setIsUploadDocModalOpen(false);
+      setDocFileName('');
+      setDocNotes('');
+      setSelectedDocFile(null);
+      await loadDocuments();
+    } catch (err: any) {
+      const msg = err?.message || 'Không thể tải tài liệu lên Firebase Storage.';
+      setDocUploadError(msg);
+      syncHealthService.finishUploadFailed(uploadId, msg);
+    } finally {
+      setIsUploadingDoc(false);
+    }
   };
 
   const handleDeleteDoc = async (docId: string) => {
@@ -760,24 +794,44 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {documents.map(doc => (
-                    <div key={doc.id} className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-start justify-between text-xs">
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 bg-indigo-50 border border-indigo-200 rounded-lg mt-0.5">
+                    <div key={doc.id} className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-start justify-between text-xs hover:border-indigo-300 transition-colors">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className="p-2 bg-indigo-50 border border-indigo-200 rounded-lg mt-0.5 shrink-0">
                           <FileText className="w-4 h-4 text-indigo-600" />
                         </div>
-                        <div>
-                          <span className="font-bold text-slate-900 block">{doc.fileName}</span>
-                          <span className="text-[10px] font-semibold text-slate-500 uppercase">{doc.documentType} &bull; V{doc.contractVersion}</span>
-                          <span className="text-[10px] text-slate-400 block mt-0.5">Tải lên: {doc.uploadedAt.slice(0, 10)}</span>
+                        <div className="min-w-0">
+                          <span className="font-bold text-slate-900 block truncate" title={doc.fileName}>{doc.fileName}</span>
+                          <span className="text-[10px] font-semibold text-slate-500 uppercase">
+                            {doc.documentType} &bull; V{doc.contractVersion}
+                            {doc.fileSize ? ` • ${(doc.fileSize / 1024).toFixed(0)} KB` : ''}
+                          </span>
+                          <span className="text-[10px] text-slate-400 block mt-0.5">
+                            Tải lên: {doc.uploadedAt ? doc.uploadedAt.slice(0, 10) : 'Hôm nay'}
+                          </span>
+                          {doc.notes && <p className="text-[11px] text-slate-600 italic mt-1 bg-slate-50 p-1 rounded">{doc.notes}</p>}
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleDeleteDoc(doc.id)}
-                        className="p-1 text-slate-400 hover:text-rose-600 rounded"
-                        title="Xóa tài liệu"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1 shrink-0 ml-2">
+                        {doc.downloadUrl && (
+                          <a
+                            href={doc.downloadUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download={doc.fileName}
+                            className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                            title="Tải về / Mở tài liệu"
+                          >
+                            <Download className="w-4 h-4" />
+                          </a>
+                        )}
+                        <button
+                          onClick={() => handleDeleteDoc(doc.id)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                          title="Xóa tài liệu"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -888,11 +942,37 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
               <h3 className="text-sm font-bold text-slate-900 mb-1">Đính Kèm Tài Liệu Hợp Đồng</h3>
               <p className="text-xs text-slate-500 mb-4">Lưu trữ file hợp đồng đã ký hoặc bảng phụ lục giá</p>
               <form onSubmit={handleSaveDocSubmit} className="space-y-3 text-xs">
+                {/* File picker */}
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Chọn Tệp Đính Kèm (PDF, Word, Excel, Hình ảnh)</label>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
+                    disabled={isUploadingDoc}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) {
+                        setSelectedDocFile(f);
+                        if (!docFileName.trim()) {
+                          setDocFileName(f.name);
+                        }
+                      }
+                    }}
+                    className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                  />
+                  {selectedDocFile && (
+                    <p className="text-[11px] text-emerald-600 font-medium mt-1">
+                      ✓ Đã chọn: {selectedDocFile.name} ({(selectedDocFile.size / 1024).toFixed(0)} KB) - Lưu trữ đám mây Firebase
+                    </p>
+                  )}
+                </div>
+
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Tên Tệp / File Name *</label>
                   <input
                     type="text"
                     required
+                    disabled={isUploadingDoc}
                     value={docFileName}
                     onChange={(e) => setDocFileName(e.target.value)}
                     placeholder="VD: Hop-dong-ky-ket-2026.pdf"
@@ -903,6 +983,7 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
                   <label className="block font-bold text-slate-700 mb-1">Loại Tài Liệu</label>
                   <select
                     value={docType}
+                    disabled={isUploadingDoc}
                     onChange={(e) => setDocType(e.target.value as any)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg font-semibold"
                   >
@@ -917,25 +998,39 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
                   <label className="block font-bold text-slate-700 mb-1">Ghi Chú</label>
                   <input
                     type="text"
+                    disabled={isUploadingDoc}
                     value={docNotes}
                     onChange={(e) => setDocNotes(e.target.value)}
                     placeholder="Ghi chú thêm về văn bản"
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                   />
                 </div>
+
+                {docUploadError && (
+                  <div className="text-[11px] text-red-600 font-medium">
+                    ⚠️ {docUploadError}
+                  </div>
+                )}
+
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     type="button"
-                    onClick={() => setIsUploadDocModalOpen(false)}
+                    disabled={isUploadingDoc}
+                    onClick={() => {
+                      setIsUploadDocModalOpen(false);
+                      setSelectedDocFile(null);
+                      setDocUploadError(null);
+                    }}
                     className="px-3 py-1.5 font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-1.5 font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg"
+                    disabled={isUploadingDoc || !docFileName.trim()}
+                    className="px-4 py-1.5 font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50 flex items-center gap-1.5"
                   >
-                    Lưu Tài Liệu
+                    {isUploadingDoc ? 'Đang Tải Lên Firebase...' : 'Lưu Tài Liệu'}
                   </button>
                 </div>
               </form>

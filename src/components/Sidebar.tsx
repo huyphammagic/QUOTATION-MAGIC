@@ -92,6 +92,7 @@ export interface SidebarProps {
   language?: NavigationLanguage;
   onLanguageChange?: (lang: NavigationLanguage) => void;
   activeRouteId?: string;
+  onOpenIntegrityDashboard?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -136,6 +137,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   language = 'vi',
   onLanguageChange,
   activeRouteId = 'quotation_workbench',
+  onOpenIntegrityDashboard,
 }) => {
   // Collapsed state (icon-only mode)
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -583,6 +585,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Database,
       group: 'system',
       action: onOpenDataBackup,
+    },
+    {
+      id: 'sys_integrity',
+      label: 'Sức Khỏe & Toàn Vẹn Dữ Liệu',
+      icon: ShieldCheck,
+      group: 'system',
+      action: () => onOpenIntegrityDashboard && onOpenIntegrityDashboard(),
     },
   ];
 

@@ -43,6 +43,7 @@ import {
   getSavedRateHistories,
   addRateHistoryItem
 } from '../../utils/storage';
+import { syncHealthService } from '../integrity/syncHealthService';
 
 const COLLECTIONS = {
   QUOTES: 'quotes',
@@ -829,22 +830,26 @@ export async function getMissingRateEventsFromFirestore(): Promise<MissingRateEv
  */
 export function subscribeToQuotations(onUpdate: (quotes: QuoteData[]) => void): () => void {
   if (!db) return () => {};
+  const listenerId = 'quotes_listener';
+  syncHealthService.registerListener(listenerId, 'Báo Giá Thời Gian Thực', COLLECTIONS.QUOTES);
   try {
     const q = query(collection(db, COLLECTIONS.QUOTES));
     return onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) return;
       const items: QuoteData[] = [];
       snapshot.forEach(docSnap => {
         items.push({ ...docSnap.data() as QuoteData, id: docSnap.id });
       });
       items.sort((a, b) => (b.updatedDate || b.createdDate || '').localeCompare(a.updatedDate || a.createdDate || ''));
       saveQuotesList(items);
+      syncHealthService.reportListenerEvent(listenerId, 'Quotation', items.length);
       onUpdate(items);
     }, (err) => {
       console.warn('[firestoreService] Live quotes snapshot notice:', err);
+      syncHealthService.reportListenerError(listenerId, err);
     });
   } catch (err) {
     console.warn('[firestoreService] Could not attach listener to quotes:', err);
+    syncHealthService.reportListenerError(listenerId, err);
     return () => {};
   }
 }
@@ -854,22 +859,26 @@ export function subscribeToQuotations(onUpdate: (quotes: QuoteData[]) => void): 
  */
 export function subscribeToCustomers(onUpdate: (customers: CustomerRecord[]) => void): () => void {
   if (!db) return () => {};
+  const listenerId = 'customers_listener';
+  syncHealthService.registerListener(listenerId, 'Khách Hàng Thời Gian Thực', COLLECTIONS.CUSTOMERS);
   try {
     const q = query(collection(db, COLLECTIONS.CUSTOMERS));
     return onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) return;
       const items: CustomerRecord[] = [];
       snapshot.forEach(docSnap => {
         items.push({ ...docSnap.data() as CustomerRecord, id: docSnap.id });
       });
       items.sort((a, b) => (a.customerName || a.companyName || '').localeCompare(b.customerName || b.companyName || ''));
       saveCustomersList(items);
+      syncHealthService.reportListenerEvent(listenerId, 'Customer', items.length);
       onUpdate(items);
     }, (err) => {
       console.warn('[firestoreService] Live customers snapshot notice:', err);
+      syncHealthService.reportListenerError(listenerId, err);
     });
   } catch (err) {
     console.warn('[firestoreService] Could not attach listener to customers:', err);
+    syncHealthService.reportListenerError(listenerId, err);
     return () => {};
   }
 }
@@ -879,22 +888,26 @@ export function subscribeToCustomers(onUpdate: (customers: CustomerRecord[]) => 
  */
 export function subscribeToRateMasters(onUpdate: (rates: RateMasterItem[]) => void): () => void {
   if (!db) return () => {};
+  const listenerId = 'rates_listener';
+  syncHealthService.registerListener(listenerId, 'Biểu Cước Master Thời Gian Thực', COLLECTIONS.RATE_MASTERS);
   try {
     const q = query(collection(db, COLLECTIONS.RATE_MASTERS));
     return onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) return;
       const items: RateMasterItem[] = [];
       snapshot.forEach(docSnap => {
         items.push({ ...docSnap.data() as RateMasterItem, id: docSnap.id });
       });
       items.sort((a, b) => (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || ''));
       items.forEach(it => saveRateMasterItem(it));
+      syncHealthService.reportListenerEvent(listenerId, 'Rate', items.length);
       onUpdate(items);
     }, (err) => {
       console.warn('[firestoreService] Live rates snapshot notice:', err);
+      syncHealthService.reportListenerError(listenerId, err);
     });
   } catch (err) {
     console.warn('[firestoreService] Could not attach listener to rates:', err);
+    syncHealthService.reportListenerError(listenerId, err);
     return () => {};
   }
 }
@@ -904,21 +917,25 @@ export function subscribeToRateMasters(onUpdate: (rates: RateMasterItem[]) => vo
  */
 export function subscribeToSurcharges(onUpdate: (surcharges: SurchargeItem[]) => void): () => void {
   if (!db) return () => {};
+  const listenerId = 'surcharges_listener';
+  syncHealthService.registerListener(listenerId, 'Phụ Phí Thời Gian Thực', COLLECTIONS.SURCHARGES);
   try {
     const q = query(collection(db, COLLECTIONS.SURCHARGES));
     return onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) return;
       const items: SurchargeItem[] = [];
       snapshot.forEach(docSnap => {
         items.push({ ...docSnap.data() as SurchargeItem, id: docSnap.id });
       });
       saveSurchargesList(items);
+      syncHealthService.reportListenerEvent(listenerId, 'Surcharge', items.length);
       onUpdate(items);
     }, (err) => {
       console.warn('[firestoreService] Live surcharges snapshot notice:', err);
+      syncHealthService.reportListenerError(listenerId, err);
     });
   } catch (err) {
     console.warn('[firestoreService] Could not attach listener to surcharges:', err);
+    syncHealthService.reportListenerError(listenerId, err);
     return () => {};
   }
 }
@@ -928,21 +945,25 @@ export function subscribeToSurcharges(onUpdate: (surcharges: SurchargeItem[]) =>
  */
 export function subscribeToChargeMasters(onUpdate: (charges: ChargeMasterItem[]) => void): () => void {
   if (!db) return () => {};
+  const listenerId = 'charges_listener';
+  syncHealthService.registerListener(listenerId, 'Danh Mục Phụ Phí Chuẩn', COLLECTIONS.CHARGE_MASTERS);
   try {
     const q = query(collection(db, COLLECTIONS.CHARGE_MASTERS));
     return onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) return;
       const items: ChargeMasterItem[] = [];
       snapshot.forEach(docSnap => {
         items.push({ ...docSnap.data() as ChargeMasterItem, id: docSnap.id });
       });
       items.forEach(it => saveChargeMasterItem(it));
+      syncHealthService.reportListenerEvent(listenerId, undefined, items.length);
       onUpdate(items);
     }, (err) => {
       console.warn('[firestoreService] Live charge masters snapshot notice:', err);
+      syncHealthService.reportListenerError(listenerId, err);
     });
   } catch (err) {
     console.warn('[firestoreService] Could not attach listener to charge masters:', err);
+    syncHealthService.reportListenerError(listenerId, err);
     return () => {};
   }
 }
@@ -952,19 +973,29 @@ export function subscribeToChargeMasters(onUpdate: (charges: ChargeMasterItem[])
  */
 export function subscribeToCompanyProfile(onUpdate: (company: CompanyProfile) => void): () => void {
   if (!db) return () => {};
+  const listenerId = 'company_listener';
+  syncHealthService.registerListener(listenerId, 'Hồ Sơ Doanh Nghiệp Thời Gian Thực', COLLECTIONS.SETTINGS);
   try {
     const docRef = doc(db, COLLECTIONS.SETTINGS, 'company_profile');
     return onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data() as CompanyProfile;
         saveCompanyProfile(data);
+        syncHealthService.reportListenerEvent(listenerId, 'Company', 1);
+        syncHealthService.updateEntityHealth('Company', {
+          version: data.version || 1,
+          updatedBy: data.salesRepName || 'Admin',
+          status: 'HEALTHY',
+        });
         onUpdate(data);
       }
     }, (err) => {
       console.warn('[firestoreService] Live company profile snapshot notice:', err);
+      syncHealthService.reportListenerError(listenerId, err);
     });
   } catch (err) {
     console.warn('[firestoreService] Could not attach listener to company profile:', err);
+    syncHealthService.reportListenerError(listenerId, err);
     return () => {};
   }
 }

@@ -15,9 +15,20 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({ company, onOpenCompany
       {/* Header Bar */}
       <div className="p-4 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center space-x-3 min-w-0">
-          <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white shrink-0 shadow-xs">
-            <Building2 className="w-5 h-5" />
-          </div>
+          {company.logoUrl ? (
+            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1 shrink-0 shadow-xs border border-slate-700">
+              <img 
+                src={company.logoUrl} 
+                alt={company.name} 
+                className="max-h-full max-w-full object-contain"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          ) : (
+            <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white shrink-0 shadow-xs">
+              <Building2 className="w-5 h-5" />
+            </div>
+          )}
           <div className="min-w-0">
             <div className="flex items-center space-x-2">
               <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded border border-blue-400/30">
