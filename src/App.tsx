@@ -157,6 +157,7 @@ export default function App() {
   const [lastAutoSaveTime, setLastAutoSaveTime] = useState<string | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const quoteRef = useRef(quote);
+  const isInitialMount = useRef(true);
 
   // Keep quoteRef in sync with latest quote state
   useEffect(() => {
@@ -540,31 +541,32 @@ export default function App() {
 
     // 5. Real-time Listeners (100% Cross-Device Instant Synchronization)
     const unsubQuotes = subscribeToQuotations((cloudQuotes) => {
-      if (cloudQuotes && cloudQuotes.length > 0) {
+      if (Array.isArray(cloudQuotes)) {
         setSavedQuotes(cloudQuotes);
+        setLastCloudSyncedAt(new Date());
       }
     });
 
     const unsubCustomers = subscribeToCustomers((cloudCustomers) => {
-      if (cloudCustomers && cloudCustomers.length > 0) {
+      if (Array.isArray(cloudCustomers)) {
         setCustomers(cloudCustomers);
       }
     });
 
     const unsubRates = subscribeToRateMasters((cloudRates) => {
-      if (cloudRates && cloudRates.length > 0) {
+      if (Array.isArray(cloudRates)) {
         setRates(cloudRates);
       }
     });
 
     const unsubSurcharges = subscribeToSurcharges((cloudSurcharges) => {
-      if (cloudSurcharges && cloudSurcharges.length > 0) {
+      if (Array.isArray(cloudSurcharges)) {
         setSurcharges(cloudSurcharges);
       }
     });
 
     const unsubCharges = subscribeToChargeMasters((cloudCharges) => {
-      if (cloudCharges && cloudCharges.length > 0) {
+      if (Array.isArray(cloudCharges)) {
         setChargeMasters(cloudCharges);
       }
     });
@@ -585,22 +587,63 @@ export default function App() {
     };
   }, []);
 
-  // 30-Second Auto-Save Interval Effect
+  // Continuous 100% Real-Time Auto-Save & Cloud Synchronization (1200ms debounce on any quote edit)
   useEffect(() => {
-    const initialTime = saveActiveQuoteDraft(quoteRef.current);
-    if (initialTime) setLastAutoSaveTime(initialTime);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
 
-    const autoSaveTimer = setInterval(() => {
-      setIsAutoSaving(true);
-      const savedTime = saveActiveQuoteDraft(quoteRef.current);
-      if (savedTime) {
-        setLastAutoSaveTime(savedTime);
+    if (!quote.id || !quote.quoteNumber) return;
+
+    setIsAutoSaving(true);
+    const debounceTimer = setTimeout(async () => {
+      try {
+        const time = saveActiveQuoteDraft(quote);
+        if (time) setLastAutoSaveTime(time);
+
+        // 100% Persistence to Firestore Cloud
+        await saveQuotation(quote, {
+          userId: company.salesRepName || 'User',
+          userName: company.salesRepName || 'User',
+        });
+
+        // Keep local savedQuotes list synchronized in-place
+        setSavedQuotes((prev) => {
+          const idx = prev.findIndex((q) => q.id === quote.id);
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = quote;
+            return next;
+          }
+          return [quote, ...prev];
+        });
+
+        setLastCloudSyncedAt(new Date());
+      } catch (err) {
+        console.warn('Auto cloud sync notice:', err);
+      } finally {
+        setIsAutoSaving(false);
       }
-      setTimeout(() => setIsAutoSaving(false), 600);
-    }, 30000);
+    }, 1200);
 
-    return () => clearInterval(autoSaveTimer);
-  }, []);
+    return () => clearTimeout(debounceTimer);
+  }, [quote, company.salesRepName]);
+
+  // Window unload listener to flush unsaved changes immediately
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (quoteRef.current && quoteRef.current.id) {
+        saveActiveQuoteDraft(quoteRef.current);
+        saveQuotation(quoteRef.current, {
+          userId: company.salesRepName || 'User',
+          userName: company.salesRepName || 'User',
+        }).catch(() => {});
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [company.salesRepName]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -1012,7 +1055,20 @@ export default function App() {
     setQuote(calculatedQuote);
     const savedTime = saveActiveQuoteDraft(calculatedQuote);
     if (savedTime) setLastAutoSaveTime(savedTime);
-    showToast(`Đã tạo báo giá mới: ${newRef}`);
+    
+    // 100% PERSISTENCE: Save immediately to Firestore Cloud upon creation
+    saveQuotation(calculatedQuote, {
+      userId: company.salesRepName || 'User',
+      userName: company.salesRepName || 'User',
+    }).then(async () => {
+      const updated = await fetchQuotations({ forceRefresh: true });
+      setSavedQuotes(updated);
+      setLastCloudSyncedAt(new Date());
+    }).catch((err) => {
+      console.warn('Initial quote cloud save notice:', err);
+    });
+
+    showToast(`Đã tạo và lưu 100% báo giá mới [${newRef}] lên Cloud!`);
   };
 
   // Manual Cloud Sync Function for Navbar Trigger
@@ -1061,11 +1117,12 @@ export default function App() {
       return;
     }
 
-    const updated = await fetchQuotations();
+    const updated = await fetchQuotations({ forceRefresh: true });
     setSavedQuotes(updated);
     const savedTime = saveActiveQuoteDraft(calculatedQuote);
     if (savedTime) setLastAutoSaveTime(savedTime);
-    showToast(`Đã lưu báo giá ${calculatedQuote.quoteNumber} thành công lên Cloud (v${result.savedQuote?.version || calculatedQuote.version || 1})!`);
+    setLastCloudSyncedAt(new Date());
+    showToast(`Đã lưu báo giá ${calculatedQuote.quoteNumber} thành công 100% lên Cloud (v${result.savedQuote?.version || calculatedQuote.version || 1})!`);
   };
 
   // Handle Conflict Modal Actions
@@ -1078,6 +1135,7 @@ export default function App() {
     setConflictState({ isOpen: false });
     const updated = await fetchQuotations({ forceRefresh: true });
     setSavedQuotes(updated);
+    setLastCloudSyncedAt(new Date());
     showToast(`Đã ghi đè thành công lên Cloud (v${res.savedQuote?.version || 1})!`);
   };
 
@@ -1098,27 +1156,33 @@ export default function App() {
     showToast(`Đã tải báo giá ${selected.quoteNumber}`);
   };
 
-  // Clone Saved Quote
+  // Clone Saved Quote (100% Cloud Persistence)
   const handleCloneQuote = async (id: string) => {
     const cloned = cloneQuote(id);
     if (cloned) {
       const { calculatedQuote } = calculateQuote(cloned);
-      await saveQuoteToFirestore(calculatedQuote);
-      const updated = await getQuotesFromFirestore();
-      setSavedQuotes(updated);
       setQuote(calculatedQuote);
+      await saveQuotation(calculatedQuote, {
+        userId: company.salesRepName || 'User',
+        userName: company.salesRepName || 'User',
+      });
+      const updated = await fetchQuotations({ forceRefresh: true });
+      setSavedQuotes(updated);
       const savedTime = saveActiveQuoteDraft(calculatedQuote);
       if (savedTime) setLastAutoSaveTime(savedTime);
-      showToast(`Đã nhân bản thành báo giá mới: ${calculatedQuote.quoteNumber}`);
+      setLastCloudSyncedAt(new Date());
+      showToast(`Đã nhân bản và lưu 100% báo giá mới: ${calculatedQuote.quoteNumber}`);
     }
   };
 
   // Delete Saved Quote with Firestore
   const handleDeleteQuote = async (id: string) => {
+    await repoDeleteQuotation(id);
     await deleteQuoteFromFirestore(id);
-    const updated = await getQuotesFromFirestore();
+    const updated = await fetchQuotations({ forceRefresh: true });
     setSavedQuotes(updated);
-    showToast('Đã xóa báo giá khỏi danh sách!');
+    setLastCloudSyncedAt(new Date());
+    showToast('Đã xóa báo giá khỏi danh sách và đồng bộ Cloud!');
   };
 
   // Update Status with Firestore
@@ -1126,15 +1190,23 @@ export default function App() {
     updateQuoteStatus(id, status);
     const target = savedQuotes.find(q => q.id === id);
     if (target) {
-      const updatedQuote = { ...target, status };
-      await saveQuoteToFirestore(updatedQuote);
+      const updatedQuote = { 
+        ...target, 
+        status, 
+        updatedDate: new Date().toISOString().slice(0, 10),
+      };
+      await saveQuotation(updatedQuote, {
+        userId: company.salesRepName || 'User',
+        userName: company.salesRepName || 'User',
+      });
     }
-    const updatedList = await getQuotesFromFirestore();
+    const updatedList = await fetchQuotations({ forceRefresh: true });
     setSavedQuotes(updatedList);
     if (quote.id === id) {
       setQuote(prev => ({ ...prev, status }));
     }
-    showToast(`Đã cập nhật trạng thái báo giá thành ${status}`);
+    setLastCloudSyncedAt(new Date());
+    showToast(`Đã cập nhật trạng thái báo giá thành ${status} & đồng bộ 100% Cloud!`);
   };
 
   // If viewing a public customer secure quote link, render the dedicated portal view

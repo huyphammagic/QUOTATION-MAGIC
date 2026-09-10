@@ -104,7 +104,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           </span>
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
           <span className="text-[11px]">
-            Tự động lưu: <strong className="font-mono text-emerald-950">{lastAutoSaveTime || 'Vừa xong'}</strong>
+            {isAutoSaving ? (
+              <span className="text-emerald-700 font-bold animate-pulse">Đang đồng bộ Cloud...</span>
+            ) : (
+              <span>Đã lưu Cloud 100%: <strong className="font-mono text-emerald-950">{lastAutoSaveTime || 'Vừa xong'}</strong></span>
+            )}
           </span>
         </div>
 

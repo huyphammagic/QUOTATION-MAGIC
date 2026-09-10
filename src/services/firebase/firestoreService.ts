@@ -107,8 +107,13 @@ export async function getQuotesFromFirestore(): Promise<QuoteData[]> {
         const data = docSnap.data() as QuoteData;
         items.push({ ...data, id: docSnap.id });
       });
-      // Sort by updatedDate or createdDate desc
-      items.sort((a, b) => (b.updatedDate || b.createdDate || '').localeCompare(a.updatedDate || a.createdDate || ''));
+      // Sort by updatedDate or createdDate desc, secondary sort by id/quoteNumber desc
+      items.sort((a, b) => {
+        const dateA = a.updatedDate || a.createdDate || '';
+        const dateB = b.updatedDate || b.createdDate || '';
+        if (dateB !== dateA) return dateB.localeCompare(dateA);
+        return (b.id || b.quoteNumber || '').localeCompare(a.id || a.quoteNumber || '');
+      });
       saveQuotesList(items);
       return items;
     }
@@ -839,7 +844,12 @@ export function subscribeToQuotations(onUpdate: (quotes: QuoteData[]) => void): 
       snapshot.forEach(docSnap => {
         items.push({ ...docSnap.data() as QuoteData, id: docSnap.id });
       });
-      items.sort((a, b) => (b.updatedDate || b.createdDate || '').localeCompare(a.updatedDate || a.createdDate || ''));
+      items.sort((a, b) => {
+        const dateA = a.updatedDate || a.createdDate || '';
+        const dateB = b.updatedDate || b.createdDate || '';
+        if (dateB !== dateA) return dateB.localeCompare(dateA);
+        return (b.id || b.quoteNumber || '').localeCompare(a.id || a.quoteNumber || '');
+      });
       saveQuotesList(items);
       syncHealthService.reportListenerEvent(listenerId, 'Quotation', items.length);
       onUpdate(items);
