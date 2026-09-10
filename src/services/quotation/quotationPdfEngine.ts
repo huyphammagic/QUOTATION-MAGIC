@@ -1,7 +1,6 @@
 import { 
   QuotationDocumentSnapshot, 
   QuotationTemplate, 
-  QuotationDocumentType 
 } from '../../types/quotationDocument';
 import { DEFAULT_QUOTATION_TEMPLATES } from '../../data/defaultTemplates';
 import { 
@@ -10,7 +9,7 @@ import {
   formatNumber, 
   formatExchangeRate 
 } from '../../utils/formatters';
-import { removeVietnameseTones } from '../../utils/exportPdf';
+import { ensureUnicodeFonts, normalizeUnicode } from '../pdf/pdfFontLoader';
 
 export interface GeneratedPdfResult {
   doc: any;
@@ -43,7 +42,8 @@ function hexToRgb(hex: string, fallback: [number, number, number] = [22, 78, 99]
 
 /**
  * Enterprise PDF Quotation Generation Engine
- * Renders immutable approved snapshots into high-precision corporate PDF documents.
+ * Renders approved snapshots into high-precision corporate PDF documents
+ * with 100% full Vietnamese Unicode diacritics support.
  */
 export async function generateQuotationPdf(
   snapshot: QuotationDocumentSnapshot,
@@ -64,30 +64,34 @@ export async function generateQuotationPdf(
     format: 'a4',
   });
 
+  // Embed and activate Unicode TrueType font (Roboto)
+  await ensureUnicodeFonts(doc);
+
   const primaryRgb = hexToRgb(template.styles.primaryColor, [22, 78, 99]);
   const secondaryRgb = hexToRgb(template.styles.secondaryColor, [71, 85, 105]);
   const lightBgRgb = hexToRgb(template.styles.lightBgColor, [248, 250, 252]);
 
-  const fontFamily = template.styles.fontFamily || 'helvetica';
+  // Use 'Roboto' as default Unicode font
+  const fontFamily = template.styles.fontFamily === 'helvetica' || !template.styles.fontFamily ? 'Roboto' : template.styles.fontFamily;
 
   // 1. Top Decorative Brand Bar
   doc.setFillColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
   doc.rect(0, 0, 210, 6, 'F');
 
-  // 2. Company Header
+  // 2. Company Header (Full Vietnamese diacritics)
   const company = snapshot.company;
   doc.setFont(fontFamily, 'bold');
   doc.setFontSize(13);
   doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
-  doc.text(removeVietnameseTones(company.name || 'LOGISTICS & FREIGHT FORWARDING'), 14, 16);
+  doc.text(normalizeUnicode(company.name || 'LOGISTICS & FREIGHT FORWARDING'), 14, 16);
 
-  let currentHeaderY = 20;
+  let currentHeaderY = 20.5;
   if (template.sections.header.showEnglishName && company.englishName) {
     doc.setFont(fontFamily, 'italic');
     doc.setFontSize(8);
     doc.setTextColor(100, 116, 139);
-    doc.text(removeVietnameseTones(company.englishName), 14, currentHeaderY);
-    currentHeaderY += 4;
+    doc.text(normalizeUnicode(company.englishName), 14, currentHeaderY);
+    currentHeaderY += 4.2;
   }
 
   doc.setFont(fontFamily, 'normal');
@@ -95,26 +99,26 @@ export async function generateQuotationPdf(
   doc.setTextColor(secondaryRgb[0], secondaryRgb[1], secondaryRgb[2]);
 
   if (company.address) {
-    doc.text(`Address: ${removeVietnameseTones(company.address)}`, 14, currentHeaderY, { maxWidth: 182 });
-    currentHeaderY += 4;
+    doc.text(`Địa chỉ / Address: ${normalizeUnicode(company.address)}`, 14, currentHeaderY, { maxWidth: 182 });
+    currentHeaderY += 4.2;
   }
 
   if (template.sections.header.showContact) {
     const contactParts = [
-      (template.sections.header.showTaxId && company.taxId) ? `Tax ID: ${company.taxId}` : '',
-      company.phone ? `Tel: ${company.phone}` : '',
+      (template.sections.header.showTaxId && company.taxId) ? `MST / Tax ID: ${company.taxId}` : '',
+      company.phone ? `Hotline / Tel: ${company.phone}` : '',
       company.email ? `Email: ${company.email}` : '',
     ].filter(Boolean).join(' | ');
 
     if (contactParts) {
       doc.text(contactParts, 14, currentHeaderY);
-      currentHeaderY += 4;
+      currentHeaderY += 4.2;
     }
   }
 
   if (company.website) {
     doc.text(`Website: ${company.website}`, 14, currentHeaderY);
-    currentHeaderY += 4;
+    currentHeaderY += 4.2;
   }
 
   // Header Divider
@@ -136,25 +140,25 @@ export async function generateQuotationPdf(
     docTitle = `${template.sections.header.titleVi} / ${template.sections.header.titleEn}`;
   }
   if (isInternal) {
-    docTitle += ' (INTERNAL CONFIDENTIAL)';
+    docTitle += ' (NỘI BỘ - INTERNAL CONFIDENTIAL)';
   } else if (isConfirmation) {
-    docTitle = 'BOOKING CONFIRMATION & RATE NOTICE';
+    docTitle = 'XÁC NHẬN ĐẶT CHỖ / BOOKING CONFIRMATION & RATE NOTICE';
   }
 
-  doc.text(removeVietnameseTones(docTitle), 14, titleY);
+  doc.text(normalizeUnicode(docTitle), 14, titleY);
 
   // Quote Metadata Line
   doc.setFontSize(8);
   doc.setFont(fontFamily, 'normal');
   doc.setTextColor(100, 116, 139);
   const revStr = snapshot.revision > 0 ? `Rev ${String(snapshot.revision).padStart(2, '0')}` : 'Rev 01';
-  doc.text(`Quote Ref: ${snapshot.quoteNumber} (${revStr})`, 14, titleY + 5);
-  doc.text(`Date: ${snapshot.createdDate}`, 78, titleY + 5);
-  doc.text(`Valid Until: ${snapshot.terms.validityDate}`, 124, titleY + 5);
+  doc.text(`Mã báo giá / Quote Ref: ${snapshot.quoteNumber} (${revStr})`, 14, titleY + 5.5);
+  doc.text(`Ngày / Date: ${snapshot.createdDate}`, 82, titleY + 5.5);
+  doc.text(`Hiệu lực / Valid: ${snapshot.terms.validityDate || '15 ngày'}`, 128, titleY + 5.5);
 
   doc.setFont(fontFamily, 'bold');
   doc.setTextColor(isVnd ? 16 : primaryRgb[0], isVnd ? 117 : primaryRgb[1], isVnd ? 76 : primaryRgb[2]);
-  doc.text(`Currency: ${snapshot.currency}`, 174, titleY + 5);
+  doc.text(`Đồng tiền / Curr: ${snapshot.currency}`, 174, titleY + 5.5);
 
   // 4. Two-column Customer & Shipment Summary Boxes
   const boxY = titleY + 9;
@@ -168,24 +172,24 @@ export async function generateQuotationPdf(
   doc.setFont(fontFamily, 'bold');
   doc.setFontSize(8.5);
   doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
-  doc.text(language === 'en' ? 'CUSTOMER INFORMATION' : 'CUSTOMER / KHACH HANG', 18, boxY + 6);
+  doc.text(language === 'en' ? 'CUSTOMER INFORMATION' : 'THÔNG TIN KHÁCH HÀNG / CUSTOMER', 18, boxY + 6);
 
   doc.setFont(fontFamily, 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(30, 41, 59);
-  doc.text(`Company: ${removeVietnameseTones(snapshot.customer.companyName || 'N/A')}`, 18, boxY + 11.5, { maxWidth: 80 });
+  doc.text(`Công ty: ${normalizeUnicode(snapshot.customer.companyName || snapshot.customer.customerName || 'N/A')}`, 18, boxY + 11.5, { maxWidth: 80 });
 
   if (template.sections.customer.showContactPerson) {
-    doc.text(`Contact: ${removeVietnameseTones(snapshot.customer.contactPerson || snapshot.customer.customerName || 'N/A')}`, 18, boxY + 18);
+    doc.text(`Người liên hệ: ${normalizeUnicode(snapshot.customer.contactPerson || snapshot.customer.customerName || 'N/A')}`, 18, boxY + 18);
   }
   if (template.sections.customer.showTaxId) {
-    doc.text(`Tax ID: ${snapshot.customer.taxId || 'N/A'}`, 18, boxY + 23);
+    doc.text(`Mã số thuế: ${snapshot.customer.taxId || 'N/A'}`, 18, boxY + 23);
   }
   if (template.sections.customer.showPhoneEmail) {
-    doc.text(`Tel: ${snapshot.customer.phone || 'N/A'} | Email: ${snapshot.customer.email || 'N/A'}`, 18, boxY + 28, { maxWidth: 80 });
+    doc.text(`Điện thoại: ${snapshot.customer.phone || 'N/A'} | Email: ${snapshot.customer.email || 'N/A'}`, 18, boxY + 28, { maxWidth: 80 });
   }
   if (template.sections.customer.showAddress && snapshot.customer.address) {
-    doc.text(`Address: ${removeVietnameseTones(snapshot.customer.address)}`, 18, boxY + 33, { maxWidth: 80 });
+    doc.text(`Địa chỉ: ${normalizeUnicode(snapshot.customer.address)}`, 18, boxY + 33, { maxWidth: 80 });
   }
 
   // Right Box: Shipment Details
@@ -195,31 +199,31 @@ export async function generateQuotationPdf(
   doc.setFont(fontFamily, 'bold');
   doc.setFontSize(8.5);
   doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
-  doc.text(language === 'en' ? 'SHIPMENT ROUTING & DETAILS' : 'SHIPMENT DETAILS / THONG TIN LO HANG', 112, boxY + 6);
+  doc.text(language === 'en' ? 'SHIPMENT ROUTING & DETAILS' : 'THÔNG TIN LÔ HÀNG / SHIPMENT DETAILS', 112, boxY + 6);
 
   doc.setFont(fontFamily, 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(30, 41, 59);
-  doc.text(`Mode: ${snapshot.shipment.mode} (${snapshot.shipment.containerType})`, 112, boxY + 11.5);
-  doc.text(`POL: ${removeVietnameseTones(snapshot.shipment.pol)}`, 112, boxY + 16.5, { maxWidth: 80 });
-  doc.text(`POD: ${removeVietnameseTones(snapshot.shipment.pod)}`, 112, boxY + 21.5, { maxWidth: 80 });
-  doc.text(`Commodity: ${removeVietnameseTones(snapshot.shipment.commodity || 'General Cargo')}`, 112, boxY + 26.5, { maxWidth: 80 });
+  doc.text(`Phương thức: ${snapshot.shipment.mode} (${snapshot.shipment.containerType || 'Standard'})`, 112, boxY + 11.5);
+  doc.text(`Cảng đi (POL): ${normalizeUnicode(snapshot.shipment.pol || 'N/A')}`, 112, boxY + 16.5, { maxWidth: 80 });
+  doc.text(`Cảng đến (POD): ${normalizeUnicode(snapshot.shipment.pod || 'N/A')}`, 112, boxY + 21.5, { maxWidth: 80 });
+  doc.text(`Tên hàng: ${normalizeUnicode(snapshot.shipment.commodity || 'General Cargo')}`, 112, boxY + 26.5, { maxWidth: 80 });
 
   const qtyDetails = [
-    `${snapshot.shipment.quantity} Qty`,
+    `${snapshot.shipment.quantity} cont`,
     template.sections.shipment.showGrossWeight ? `${formatNumber(snapshot.shipment.grossWeightKg)} KGS` : '',
     template.sections.shipment.showVolumeCbm ? `${formatNumber(snapshot.shipment.volumeCbm)} CBM` : '',
   ].filter(Boolean).join(' | ');
 
-  doc.text(qtyDetails, 112, boxY + 31.5);
+  doc.text(`Quy cách: ${qtyDetails}`, 112, boxY + 31.5);
 
-  // 5. Line Items Table Rendering
+  // 5. Line Items Table Rendering with Full Vietnamese Diacritics
   const groupBy = template.sections.charges.groupBy || 'LOCATION';
   const tableBody: any[] = [];
   let itemCounter = 1;
 
   if (isInternal) {
-    // Internal Costing View: Displays Cost, Selling, Profit, Margin
+    // Internal Costing View
     snapshot.items.forEach((item) => {
       const unitCostFormatted = item.currency === 'USD' 
         ? formatUSD(item.costPrice || 0) 
@@ -241,11 +245,15 @@ export async function generateQuotationPdf(
         ? `${formatNumberVND(item.profitVnd || 0)} VND`
         : formatUSD(item.profitUsd || 0);
 
+      const descriptionText = item.note 
+        ? `${normalizeUnicode(item.description)}\n(${normalizeUnicode(item.note)})`
+        : normalizeUnicode(item.description);
+
       tableBody.push([
         itemCounter++,
-        removeVietnameseTones(`${item.description}${item.note ? `\n(${item.note})` : ''}`),
+        descriptionText,
         item.quantity,
-        removeVietnameseTones(item.unit),
+        normalizeUnicode(item.unit),
         unitCostFormatted,
         unitSellFormatted,
         totalCostFormatted,
@@ -257,19 +265,27 @@ export async function generateQuotationPdf(
 
     autoTable(doc, {
       startY: boxY + boxHeight + 5,
-      head: [['No', 'Description', 'Qty', 'Unit', 'Unit Cost', 'Unit Sell', 'Total Cost', 'Total Sell', 'Profit', 'Margin']],
+      head: [['STT', 'Hạng Mục Chi Phí', 'SL', 'ĐVT', 'Giá Vốn', 'Giá Bán', 'Tổng Vốn', 'Doanh Thu', 'Lợi Nhuận', 'Margin']],
       body: tableBody,
       theme: 'grid',
+      styles: {
+        font: fontFamily,
+        fontStyle: 'normal',
+        cellPadding: 2,
+      },
       headStyles: {
         fillColor: [51, 65, 85],
         textColor: [255, 255, 255],
         fontSize: 7.5,
+        font: fontFamily,
         fontStyle: 'bold',
         halign: 'center',
       },
       bodyStyles: {
         fontSize: 7,
         textColor: [30, 41, 59],
+        font: fontFamily,
+        fontStyle: 'normal',
         valign: 'middle',
       },
       columnStyles: {
@@ -288,14 +304,14 @@ export async function generateQuotationPdf(
     });
 
   } else {
-    // Customer-Facing Official Quotation Table (STRICT SANITIZATION: Zero internal costs)
+    // Customer-Facing Official Quotation Table
     if (groupBy === 'LOCATION') {
       const locations = ['POL', 'FREIGHT', 'POD', 'OTHER'] as const;
       const locTitleMap = {
-        POL: `1. POL LOCAL CHARGES (CHI PHI DAU XUAT - ${removeVietnameseTones(snapshot.shipment.pol || 'POL')})`,
-        FREIGHT: `2. OCEAN / AIR FREIGHT (CUOC VAN CHUYEN CHINH - ${snapshot.shipment.mode})`,
-        POD: `3. POD LOCAL CHARGES (CHI PHI DAU NHAP - ${removeVietnameseTones(snapshot.shipment.pod || 'POD')})`,
-        OTHER: '4. OTHER SERVICES & SURCHARGES (DICH VU CONG THEM)'
+        POL: `1. CHI PHÍ ĐẦU XUẤT / CẢNG ĐI (${normalizeUnicode(snapshot.shipment.pol || 'POL')})`,
+        FREIGHT: `2. CƯỚC VẬN CHUYỂN CHẶNG CHÍNH (${normalizeUnicode(snapshot.shipment.mode)})`,
+        POD: `3. CHI PHÍ ĐẦU NHẬP / CẢNG ĐÍCH (${normalizeUnicode(snapshot.shipment.pod || 'POD')})`,
+        OTHER: '4. DỊCH VỤ CỘNG THÊM & THỦ TỤC KHÁC'
       };
 
       locations.forEach((locKey) => {
@@ -311,11 +327,12 @@ export async function generateQuotationPdf(
         // Sub-Header Row
         tableBody.push([
           {
-            content: `${locTitleMap[locKey]} — Subtotal: ${groupSubtotalText}`,
+            content: `${locTitleMap[locKey]} — Tổng nhóm: ${groupSubtotalText}`,
             colSpan: 8,
             styles: {
               fillColor: lightBgRgb,
               textColor: primaryRgb,
+              font: fontFamily,
               fontStyle: 'bold',
               fontSize: 8,
             }
@@ -331,11 +348,15 @@ export async function generateQuotationPdf(
             ? formatNumberVND(item.amountVnd)
             : formatUSD(item.amountUsd);
 
+          const descriptionText = item.note 
+            ? `${normalizeUnicode(item.description)}\n(${normalizeUnicode(item.note)})`
+            : normalizeUnicode(item.description);
+
           tableBody.push([
             itemCounter++,
-            removeVietnameseTones(`${item.description}${item.note ? `\n(${item.note})` : ''}`),
+            descriptionText,
             item.quantity,
-            removeVietnameseTones(item.unit),
+            normalizeUnicode(item.unit),
             unitPriceFormatted,
             item.currency,
             `${item.vatRate}%`,
@@ -355,11 +376,15 @@ export async function generateQuotationPdf(
           ? formatNumberVND(item.amountVnd)
           : formatUSD(item.amountUsd);
 
+        const descriptionText = item.note 
+          ? `${normalizeUnicode(item.description)}\n(${normalizeUnicode(item.note)})`
+          : normalizeUnicode(item.description);
+
         tableBody.push([
           itemCounter++,
-          removeVietnameseTones(`${item.description}${item.note ? `\n(${item.note})` : ''}`),
+          descriptionText,
           item.quantity,
-          removeVietnameseTones(item.unit),
+          normalizeUnicode(item.unit),
           unitPriceFormatted,
           item.currency,
           `${item.vatRate}%`,
@@ -368,23 +393,31 @@ export async function generateQuotationPdf(
       });
     }
 
-    const amountColHeader = isVnd ? 'Amount (VND)' : 'Amount (USD)';
+    const amountColHeader = isVnd ? 'Thành tiền (VND)' : 'Thành tiền (USD)';
 
     autoTable(doc, {
       startY: boxY + boxHeight + 5,
-      head: [['No', 'Description / Hang Muc Chi Phi', 'Qty', 'Unit', 'Unit Price', 'Curr', 'VAT', amountColHeader]],
+      head: [['STT', 'Hạng Mục Chi Phí / Description', 'SL', 'ĐVT', 'Đơn Giá', 'Loại Tiền', 'VAT', amountColHeader]],
       body: tableBody,
       theme: template.styles.tableTheme || 'grid',
+      styles: {
+        font: fontFamily,
+        fontStyle: 'normal',
+        cellPadding: 2,
+      },
       headStyles: {
         fillColor: primaryRgb,
         textColor: [255, 255, 255],
         fontSize: 8,
+        font: fontFamily,
         fontStyle: 'bold',
         halign: 'center',
       },
       bodyStyles: {
         fontSize: 7.5,
         textColor: [30, 41, 59],
+        font: fontFamily,
+        fontStyle: 'normal',
         valign: 'middle',
       },
       columnStyles: {
@@ -393,9 +426,9 @@ export async function generateQuotationPdf(
         2: { halign: 'right', cellWidth: 12 },
         3: { halign: 'center', cellWidth: isVnd ? 16 : 18 },
         4: { halign: 'right', cellWidth: 24 },
-        5: { halign: 'center', cellWidth: 12 },
+        5: { halign: 'center', cellWidth: 14 },
         6: { halign: 'center', cellWidth: 12 },
-        7: { halign: 'right', cellWidth: isVnd ? 28 : 26 },
+        7: { halign: 'right', cellWidth: isVnd ? 30 : 26 },
       },
       margin: { left: 14, right: 14 },
     });
@@ -420,7 +453,7 @@ export async function generateQuotationPdf(
   doc.setFontSize(8);
   doc.setTextColor(secondaryRgb[0], secondaryRgb[1], secondaryRgb[2]);
 
-  doc.text(`Subtotal / Cong tien hang:`, 110, blockStartY + 6);
+  doc.text(`Cộng tiền hàng / Subtotal:`, 110, blockStartY + 6);
   doc.text(
     isVnd ? `${formatNumberVND(snapshot.subtotalVnd)} VND` : formatUSD(snapshot.subtotalUsd),
     192,
@@ -428,7 +461,7 @@ export async function generateQuotationPdf(
     { align: 'right' }
   );
 
-  doc.text(`VAT / Thue VAT:`, 110, blockStartY + 12);
+  doc.text(`Thuế GTGT / VAT:`, 110, blockStartY + 12);
   doc.text(
     isVnd ? `${formatNumberVND(snapshot.vatTotalVnd)} VND` : formatUSD(snapshot.vatTotalUsd),
     192,
@@ -442,7 +475,7 @@ export async function generateQuotationPdf(
   doc.setFont(fontFamily, 'bold');
   doc.setFontSize(8.5);
   doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
-  doc.text(`GRAND TOTAL (${snapshot.currency}):`, 110, blockStartY + 22);
+  doc.text(`TỔNG CỘNG / GRAND TOTAL (${snapshot.currency}):`, 110, blockStartY + 22);
   doc.text(
     isVnd ? `${formatNumberVND(snapshot.grandTotalVnd)} VND` : formatUSD(snapshot.grandTotalUsd),
     192,
@@ -454,18 +487,18 @@ export async function generateQuotationPdf(
   doc.setFont(fontFamily, 'italic');
   doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139);
-  doc.text(`* Ty gia quy doi (Ex.Rate): 1 USD = ${formatExchangeRate(snapshot.exchangeRate)} VND`, 14, blockStartY + 6);
+  doc.text(`* Tỷ giá quy đổi (Ex.Rate): 1 USD = ${formatExchangeRate(snapshot.exchangeRate)} VND`, 14, blockStartY + 6);
   if (isVnd) {
-    doc.text(`* Quy doi tuong duong USD: ~ ${formatUSD(snapshot.grandTotalUsd)}`, 14, blockStartY + 11);
+    doc.text(`* Quy đổi tương đương USD: ~ ${formatUSD(snapshot.grandTotalUsd)}`, 14, blockStartY + 11);
   } else if (snapshot.grandTotalVnd) {
-    doc.text(`* Tong thanh toan quy doi: ~ ${formatNumberVND(snapshot.grandTotalVnd)} VND`, 14, blockStartY + 11);
+    doc.text(`* Tổng thanh toán quy đổi: ~ ${formatNumberVND(snapshot.grandTotalVnd)} VND`, 14, blockStartY + 11);
   }
 
   // If internal quotation, display summary profit
   if (isInternal && snapshot.totalProfitUsd !== undefined) {
     doc.setFont(fontFamily, 'bold');
     doc.setTextColor(16, 185, 129);
-    doc.text(`[INTERNAL] Gross Profit: ${isVnd ? `${formatNumberVND(snapshot.totalProfitVnd || 0)} VND` : formatUSD(snapshot.totalProfitUsd)} (Margin: ${(snapshot.overallMarginPercent || 0).toFixed(1)}%)`, 14, blockStartY + 18);
+    doc.text(`[NỘI BỘ] Lợi nhuận gộp: ${isVnd ? `${formatNumberVND(snapshot.totalProfitVnd || 0)} VND` : formatUSD(snapshot.totalProfitUsd)} (Margin: ${(snapshot.overallMarginPercent || 0).toFixed(1)}%)`, 14, blockStartY + 18);
   }
 
   // 7. Terms & Conditions Block
@@ -478,16 +511,16 @@ export async function generateQuotationPdf(
   doc.setFont(fontFamily, 'bold');
   doc.setFontSize(8.5);
   doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
-  doc.text('TERMS & CONDITIONS / DIEU KHOAN BAO GIA', 14, termsY);
+  doc.text('ĐIỀU KHOẢN VÀ QUY ĐỊNH BÁO GIÁ / TERMS & CONDITIONS', 14, termsY);
 
   doc.setFont(fontFamily, 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(51, 65, 85);
 
   doc.text(`Incoterm: ${snapshot.terms.incoterm}`, 14, termsY + 4.5);
-  doc.text(`Payment Term: ${removeVietnameseTones(snapshot.terms.paymentTerm)}`, 14, termsY + 8.5, { maxWidth: 180 });
+  doc.text(`Điều khoản thanh toán: ${normalizeUnicode(snapshot.terms.paymentTerm)}`, 14, termsY + 8.5, { maxWidth: 180 });
 
-  const splitNotes = doc.splitTextToSize(`Exclusions & Notes: ${removeVietnameseTones(snapshot.terms.exclusionsNotes)}`, 180);
+  const splitNotes = doc.splitTextToSize(`Ghi chú & Miễn trừ trách nhiệm: ${normalizeUnicode(snapshot.terms.exclusionsNotes)}`, 180);
   doc.text(splitNotes, 14, termsY + 13);
 
   let nextY = termsY + 13 + splitNotes.length * 3.5;
@@ -495,9 +528,9 @@ export async function generateQuotationPdf(
   // Bank Info
   if (template.sections.terms.showBankInfo && snapshot.terms.bankAccountInfo) {
     doc.setFont(fontFamily, 'bold');
-    doc.text('BANK INFORMATION / THONG TIN CHUYEN KHOAN:', 14, nextY);
+    doc.text('THÔNG TIN CHUYỂN KHOẢN / BANK INFORMATION:', 14, nextY);
     doc.setFont(fontFamily, 'normal');
-    const splitBank = doc.splitTextToSize(removeVietnameseTones(snapshot.terms.bankAccountInfo), 180);
+    const splitBank = doc.splitTextToSize(normalizeUnicode(snapshot.terms.bankAccountInfo), 180);
     doc.text(splitBank, 14, nextY + 4);
     nextY += 4 + splitBank.length * 3.5;
   }
@@ -518,14 +551,14 @@ export async function generateQuotationPdf(
     doc.setFont(fontFamily, 'bold');
     doc.setFontSize(8);
     doc.setTextColor(30, 41, 59);
-    doc.text('CUSTOMER ACCEPTANCE / XAC NHAN KHACH HANG', 14, signY);
+    doc.text('XÁC NHẬN KHÁCH HÀNG / CUSTOMER ACCEPTANCE', 14, signY);
     doc.setFont(fontFamily, 'italic');
     doc.setFontSize(7);
     doc.setTextColor(148, 163, 184);
-    doc.text('(Sign & Stamp / Ky ten va dong dau)', 14, signY + 4);
+    doc.text('(Ký tên & đóng dấu / Sign & Stamp)', 14, signY + 4);
     doc.setFont(fontFamily, 'normal');
     doc.setTextColor(71, 85, 105);
-    doc.text(removeVietnameseTones(snapshot.customer.contactPerson || snapshot.customer.customerName || 'Authorized Representative'), 14, signY + 20);
+    doc.text(normalizeUnicode(snapshot.customer.contactPerson || snapshot.customer.customerName || 'Đại diện được ủy quyền'), 14, signY + 20);
   }
 
   if (template.sections.signature.showCompanySignature) {
@@ -533,20 +566,20 @@ export async function generateQuotationPdf(
     doc.setFont(fontFamily, 'bold');
     doc.setFontSize(8);
     doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
-    doc.text('FOR AND ON BEHALF OF / DAI DIEN BEN BAO GIA', 114, signY);
+    doc.text('ĐẠI DIỆN ĐƠN VỊ BÁO GIÁ / FOR AND ON BEHALF OF', 114, signY);
     doc.setFont(fontFamily, 'italic');
     doc.setFontSize(7);
     doc.setTextColor(100, 116, 139);
-    doc.text(removeVietnameseTones(company.shortName || company.name || 'LOGISTICS COMPANY'), 114, signY + 4);
+    doc.text(normalizeUnicode(company.shortName || company.name || 'LOGISTICS COMPANY'), 114, signY + 4);
     doc.setFont(fontFamily, 'bold');
     doc.setFontSize(8);
     doc.setTextColor(15, 23, 42);
-    doc.text(removeVietnameseTones(company.salesRepName || 'SALES REPRESENTATIVE'), 114, signY + 18);
+    doc.text(normalizeUnicode(company.salesRepName || 'ĐẠI DIỆN KINH DOANH'), 114, signY + 18);
     doc.setFont(fontFamily, 'normal');
     doc.setFontSize(7);
     doc.setTextColor(100, 116, 139);
     const repContact = [
-      company.salesRepTitle ? removeVietnameseTones(company.salesRepTitle) : '',
+      company.salesRepTitle ? normalizeUnicode(company.salesRepTitle) : '',
       company.salesRepPhone ? `Tel: ${company.salesRepPhone}` : ''
     ].filter(Boolean).join(' | ');
     if (repContact) {
@@ -554,7 +587,7 @@ export async function generateQuotationPdf(
     }
   }
 
-  // 9. Running Footers on ALL Pages (Page X of Y)
+  // 9. Running Footers on ALL Pages (Trang X / Y)
   const totalPages = (doc as any).internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
@@ -564,12 +597,12 @@ export async function generateQuotationPdf(
 
     // Left: Custom footer or template note
     const footerLeftText = template.sections.footer.customFooterText || 
-      `LogiQuote Enterprise - ${snapshot.quoteNumber} (Rev ${snapshot.revision}) - Generated on ${new Date().toLocaleDateString()}`;
-    doc.text(removeVietnameseTones(footerLeftText), 14, 290, { maxWidth: 140 });
+      `Hệ thống Báo giá LogiQuote - Số: ${snapshot.quoteNumber} (Bản ${snapshot.revision}) - Ngày tạo: ${new Date().toLocaleDateString('vi-VN')}`;
+    doc.text(normalizeUnicode(footerLeftText), 14, 290, { maxWidth: 140 });
 
     // Right: Page number
     if (template.sections.footer.showPageNumbers) {
-      doc.text(`Page ${i} of ${totalPages}`, 196, 290, { align: 'right' });
+      doc.text(`Trang / Page ${i} / ${totalPages}`, 196, 290, { align: 'right' });
     }
   }
 

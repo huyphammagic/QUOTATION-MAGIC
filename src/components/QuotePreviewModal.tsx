@@ -3,7 +3,7 @@ import { QuoteData, QuoteCurrency } from '../types/logistics';
 import { formatUSD, formatVND, formatNumber, formatExchangeRate } from '../utils/formatters';
 import { exportQuoteToPdf } from '../utils/exportPdf';
 import { exportQuoteToExcel } from '../utils/exportExcel';
-import { X, Printer, FileDown, FileSpreadsheet, Ship, Building2, Coins } from 'lucide-react';
+import { X, Printer, FileDown, FileSpreadsheet, Ship, Building2, Coins, Loader2 } from 'lucide-react';
 
 interface QuotePreviewModalProps {
   quote: QuoteData;
@@ -19,6 +19,19 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({
   onCurrencyChange,
 }) => {
   const [selectedCurrency, setSelectedCurrency] = useState<QuoteCurrency>(quote.quoteCurrency || 'USD');
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+
+  const handleExportPdf = async () => {
+    setIsExportingPdf(true);
+    try {
+      await exportQuoteToPdf(quote, selectedCurrency);
+    } catch (err) {
+      console.error('Lỗi khi xuất PDF:', err);
+      alert('Không thể tạo file PDF. Vui lòng kiểm tra lại kết nối hoặc font chữ.');
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
 
   useEffect(() => {
     if (quote.quoteCurrency) {
@@ -115,12 +128,17 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({
             </button>
 
             <button
-              onClick={() => exportQuoteToPdf(quote, selectedCurrency)}
-              className="flex items-center space-x-1.5 bg-rose-700 hover:bg-rose-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all shadow-xs"
-              title={`Xuất PDF theo tiền tệ ${selectedCurrency}`}
+              onClick={handleExportPdf}
+              disabled={isExportingPdf}
+              className="flex items-center space-x-1.5 bg-rose-700 hover:bg-rose-600 disabled:bg-rose-900 disabled:opacity-75 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all shadow-xs cursor-pointer disabled:cursor-not-allowed"
+              title={`Xuất PDF chuẩn Unicode (${selectedCurrency})`}
             >
-              <FileDown className="w-3.5 h-3.5" />
-              <span>PDF ({selectedCurrency})</span>
+              {isExportingPdf ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <FileDown className="w-3.5 h-3.5" />
+              )}
+              <span>{isExportingPdf ? 'Đang tạo PDF...' : `PDF (${selectedCurrency})`}</span>
             </button>
 
             <button

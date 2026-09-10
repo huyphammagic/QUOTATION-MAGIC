@@ -3,7 +3,7 @@ import { QuoteData, QuoteStatus } from '../types/logistics';
 import { formatUSD, formatVND } from '../utils/formatters';
 import { exportQuoteToPdf } from '../utils/exportPdf';
 import { exportQuoteToExcel } from '../utils/exportExcel';
-import { X, Search, FileText, Copy, Trash2, Edit3, FileDown, FileSpreadsheet, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Search, FileText, Copy, Trash2, Edit3, FileDown, FileSpreadsheet, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
 interface SavedQuotesModalProps {
   quotes: QuoteData[];
@@ -31,6 +31,19 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
+  const [exportingPdfId, setExportingPdfId] = useState<string | null>(null);
+
+  const handleExportPdf = async (quote: QuoteData) => {
+    setExportingPdfId(quote.id);
+    try {
+      await exportQuoteToPdf(quote);
+    } catch (err) {
+      console.error('Lỗi khi xuất PDF:', err);
+      alert('Không thể tạo file PDF. Vui lòng thử lại.');
+    } finally {
+      setExportingPdfId(null);
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -246,11 +259,16 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
 
                       {/* Export PDF */}
                       <button
-                        onClick={() => exportQuoteToPdf(quote)}
-                        className="p-1.5 text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
-                        title="Tải PDF"
+                        onClick={() => handleExportPdf(quote)}
+                        disabled={exportingPdfId === quote.id}
+                        className="p-1.5 text-rose-700 hover:bg-rose-50 disabled:opacity-50 rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed"
+                        title="Tải PDF chuẩn Unicode"
                       >
-                        <FileDown className="w-4 h-4" />
+                        {exportingPdfId === quote.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-rose-600" />
+                        ) : (
+                          <FileDown className="w-4 h-4" />
+                        )}
                       </button>
 
                       {/* Export Excel */}

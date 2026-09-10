@@ -22,7 +22,7 @@ export interface TemplateStyleConfig {
   secondaryColor: string;     // E.g. '#475569'
   accentColor: string;        // E.g. '#0284c7'
   lightBgColor: string;       // E.g. '#f8fafc'
-  fontFamily: 'helvetica' | 'times' | 'courier';
+  fontFamily: 'Roboto' | 'helvetica' | 'times' | 'courier';
   fontSizeScale: 'compact' | 'standard' | 'spacious';
   tableTheme: 'grid' | 'striped' | 'plain';
   showBorders: boolean;
