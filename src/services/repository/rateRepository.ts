@@ -52,19 +52,31 @@ export async function fetchRateMasters(forceRefresh = false): Promise<RateMaster
     return memoryRatesCache.data;
   }
 
-  if (!db) return [];
+  if (!db) return memoryRatesCache ? memoryRatesCache.data : [];
 
   try {
-    const q = query(
-      collection(db, COLLECTIONS.RATE_MASTERS),
-      orderBy('updatedAt', 'desc'),
-      limit(200)
-    );
-    const snap = await getDocs(q);
+    let snap: any = null;
+    try {
+      const q = query(
+        collection(db, COLLECTIONS.RATE_MASTERS),
+        orderBy('updatedAt', 'desc')
+      );
+      snap = await getDocs(q);
+    } catch {
+      // Fallback without orderBy if some documents lack the field or index is missing
+      const fallbackQ = query(collection(db, COLLECTIONS.RATE_MASTERS));
+      snap = await getDocs(fallbackQ);
+    }
+
     const items: RateMasterItem[] = [];
-    snap.forEach((d) => {
-      items.push({ ...d.data() as RateMasterItem, id: d.id });
-    });
+    if (snap && !snap.empty) {
+      snap.forEach((d: any) => {
+        items.push({ ...d.data() as RateMasterItem, id: d.id });
+      });
+    }
+
+    // Sort in memory by updatedAt or createdAt desc
+    items.sort((a, b) => (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || ''));
 
     memoryRatesCache = { data: items, cachedAt: now };
     return items;

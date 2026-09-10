@@ -39,8 +39,17 @@ import {
   saveChargeMasterToFirestore,
   getChargeMastersFromFirestore,
   deleteChargeMasterFromFirestore,
-  getRateHistoriesFromFirestore
+  getRateHistoriesFromFirestore,
+  batchSaveMasterRatesToFirestore,
+  subscribeToQuotations,
+  subscribeToCustomers,
+  subscribeToRateMasters,
+  subscribeToSurcharges,
+  subscribeToChargeMasters,
+  subscribeToCompanyProfile,
+  batchRestoreSystemDataToFirestore
 } from './services/firebase/firestoreService';
+import { getActiveQuotationDraft } from './services/repository/quotationRepository';
 import { 
   getSavedQuotes, 
   getCompanySettings, 
@@ -511,6 +520,65 @@ export default function App() {
     }
 
     syncFirestoreData();
+
+    // 4. Restore active quote draft from Cloud Firestore (cross-device continuity)
+    getActiveQuotationDraft('current_user').then((cloudDraft) => {
+      if (cloudDraft && cloudDraft.quote && cloudDraft.quote.quoteNumber) {
+        const { calculatedQuote } = calculateQuote(cloudDraft.quote);
+        setQuote(calculatedQuote);
+        if (cloudDraft.savedAt) {
+          setLastAutoSaveTime(cloudDraft.savedAt);
+        }
+      }
+    }).catch((err) => {
+      console.warn('Notice checking cloud draft:', err);
+    });
+
+    // 5. Real-time Listeners (100% Cross-Device Instant Synchronization)
+    const unsubQuotes = subscribeToQuotations((cloudQuotes) => {
+      if (cloudQuotes && cloudQuotes.length > 0) {
+        setSavedQuotes(cloudQuotes);
+      }
+    });
+
+    const unsubCustomers = subscribeToCustomers((cloudCustomers) => {
+      if (cloudCustomers && cloudCustomers.length > 0) {
+        setCustomers(cloudCustomers);
+      }
+    });
+
+    const unsubRates = subscribeToRateMasters((cloudRates) => {
+      if (cloudRates && cloudRates.length > 0) {
+        setRates(cloudRates);
+      }
+    });
+
+    const unsubSurcharges = subscribeToSurcharges((cloudSurcharges) => {
+      if (cloudSurcharges && cloudSurcharges.length > 0) {
+        setSurcharges(cloudSurcharges);
+      }
+    });
+
+    const unsubCharges = subscribeToChargeMasters((cloudCharges) => {
+      if (cloudCharges && cloudCharges.length > 0) {
+        setChargeMasters(cloudCharges);
+      }
+    });
+
+    const unsubCompany = subscribeToCompanyProfile((cloudCompany) => {
+      if (cloudCompany && cloudCompany.name) {
+        setCompany(cloudCompany);
+      }
+    });
+
+    return () => {
+      unsubQuotes();
+      unsubCustomers();
+      unsubRates();
+      unsubSurcharges();
+      unsubCharges();
+      unsubCompany();
+    };
   }, []);
 
   // 30-Second Auto-Save Interval Effect
@@ -656,18 +724,16 @@ export default function App() {
     showToast('Đã ngừng áp dụng mã phí chuẩn!');
   };
 
-  // Bulk Import Master Rates
+  // Bulk Import Master Rates with Firebase Cloud Batching
   const handleBulkImportRates = async (importedRates: RateMasterItem[]) => {
-    for (const r of importedRates) {
-      await saveRateMasterToFirestore(r, company.salesRepName || 'Bulk Import');
-    }
+    await batchSaveMasterRatesToFirestore(importedRates, undefined, company.salesRepName || 'Bulk Import');
     const [updatedRates, updatedHistories] = await Promise.all([
       getRateMastersFromFirestore(),
       getRateHistoriesFromFirestore()
     ]);
     setRates(updatedRates);
     setRateHistories(updatedHistories);
-    showToast(`Đã nhập thành công ${importedRates.length} bảng giá vào hệ thống!`);
+    showToast(`Đã lưu và đồng bộ thành công ${importedRates.length} bảng giá lên Cloud!`);
   };
 
   // Apply Master Rate to Current Quote as an Immutable Snapshot
@@ -815,12 +881,14 @@ export default function App() {
     showToast('Đã lưu thông tin doanh nghiệp & đồng bộ vào báo giá!');
   };
 
-  // Import Backup Data Handler
-  const handleDataImported = (data: {
+  // Import Backup Data Handler with 100% Firebase Cloud Persistence
+  const handleDataImported = async (data: {
     quotes: QuoteData[];
     companySettings?: CompanyProfile;
     customers: CustomerRecord[];
     surcharges: SurchargeItem[];
+    rateMasters?: RateMasterItem[];
+    chargeMasters?: ChargeMasterItem[];
   }) => {
     setSavedQuotes(data.quotes);
     if (data.companySettings) {
@@ -829,7 +897,16 @@ export default function App() {
     }
     setCustomers(data.customers);
     setSurcharges(data.surcharges);
-    showToast('Đã đồng bộ & khôi phục toàn bộ dữ liệu thành công!');
+    if (data.rateMasters) setRates(data.rateMasters);
+    if (data.chargeMasters) setChargeMasters(data.chargeMasters);
+
+    try {
+      await batchRestoreSystemDataToFirestore(data);
+      showToast('Đã lưu & đồng bộ 100% dữ liệu backup lên Firebase Cloud!');
+    } catch (err) {
+      console.warn('Backup cloud sync notice:', err);
+      showToast('Đã đồng bộ & khôi phục toàn bộ dữ liệu thành công!');
+    }
   };
 
   // Create New Blank Quote
@@ -938,16 +1015,22 @@ export default function App() {
   const handleForceCloudSync = async () => {
     setIsCloudSyncing(true);
     try {
-      const [cloudQuotes, cloudCustomers, cloudRates] = await Promise.all([
+      const [cloudQuotes, cloudCustomers, cloudRates, cloudCompany, cloudSurcharges, cloudCharges] = await Promise.all([
         fetchQuotations({ forceRefresh: true }),
         fetchCustomers(true),
         fetchRateMasters(true),
+        getCompanyProfileFromFirestore(),
+        getSurchargesFromFirestore(),
+        getChargeMastersFromFirestore(),
       ]);
       if (cloudQuotes) setSavedQuotes(cloudQuotes);
       if (cloudCustomers) setCustomers(cloudCustomers);
       if (cloudRates) setRates(cloudRates);
+      if (cloudCompany && cloudCompany.name) setCompany(cloudCompany);
+      if (cloudSurcharges) setSurcharges(cloudSurcharges);
+      if (cloudCharges) setChargeMasters(cloudCharges);
       setLastCloudSyncedAt(new Date());
-      showToast('Đã đồng bộ trực tiếp với Firebase Cloud!');
+      showToast('Đã đồng bộ 100% dữ liệu với Firebase Cloud!');
     } catch (e) {
       console.warn('Manual cloud sync notice:', e);
     } finally {

@@ -1,5 +1,5 @@
 import { CompanyProfile, QuoteData, CustomerRecord } from '../../types/logistics';
-import { calculateQuote } from '../../utils/calculations';
+import { calculateQuote } from '../pricing';
 
 export type DriftSeverity = 'CRITICAL' | 'WARNING' | 'INFO';
 

@@ -81,14 +81,19 @@ export async function fetchQuotations(options: FetchQuotationsOptions = {}): Pro
     constraints.push(orderBy('updatedDate', 'desc'));
     constraints.push(limit(limitCount));
 
-    const q = query(collRef, ...constraints);
     let snap: any = null;
     try {
+      const q = query(collRef, ...constraints);
       snap = await getDocs(q);
     } catch (queryErr: any) {
-      console.warn('[quotationRepository] Notice fetching quotations (client offline or reconnecting):', queryErr?.message || queryErr);
-      if (memoryQuotesCache) return memoryQuotesCache.data;
-      return [];
+      console.warn('[quotationRepository] Query with constraints notice, falling back to plain collection:', queryErr?.message || queryErr);
+      try {
+        snap = await getDocs(collRef);
+      } catch (collErr: any) {
+        console.warn('[quotationRepository] Notice fetching quotations:', collErr?.message || collErr);
+        if (memoryQuotesCache) return memoryQuotesCache.data;
+        return [];
+      }
     }
 
     if (snap && snap.empty) {
@@ -101,6 +106,9 @@ export async function fetchQuotations(options: FetchQuotationsOptions = {}): Pro
         items.push({ ...d.data() as QuoteData, id: d.id });
       });
     }
+
+    // Sort in memory by updatedDate or createdDate desc
+    items.sort((a, b) => (b.updatedDate || b.createdDate || '').localeCompare(a.updatedDate || a.createdDate || ''));
 
     // Update in-memory cache if this was an unfiltered query
     if (!status && !customerId && items.length > 0) {

@@ -51,7 +51,7 @@ const COLLECTIONS = {
   RATE_MASTERS: 'rateMasters',
   CHARGE_MASTERS: 'chargeMasters',
   RATE_HISTORIES: 'rateHistories',
-  SETTINGS: 'system_settings',
+  SETTINGS: 'settings',
   SUPPLIERS: 'suppliers',
   CARRIERS: 'carriers',
   RATE_APPROVALS: 'rateApprovals',
@@ -282,7 +282,11 @@ export async function getCompanyProfileFromFirestore(): Promise<CompanyProfile> 
 
   try {
     const docRef = doc(db, COLLECTIONS.SETTINGS, 'company_profile');
-    const docSnap = await getDoc(docRef);
+    let docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) {
+      const legacyRef = doc(db, 'system_settings', 'company_profile');
+      docSnap = await getDoc(legacyRef);
+    }
     if (docSnap.exists()) {
       const data = docSnap.data() as CompanyProfile;
       saveCompanyProfile(data);
@@ -680,9 +684,14 @@ export async function batchSaveMasterRatesToFirestore(
     const batch = writeBatch(db);
 
     for (const rate of chunk) {
-      const docRef = doc(db, COLLECTIONS.RATE_MASTERS, rate.id);
+      const rateId = rate.id || `rate-imp-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+      const docRef = doc(db, COLLECTIONS.RATE_MASTERS, rateId);
+      const nowIso = new Date().toISOString();
       batch.set(docRef, {
         ...rate,
+        id: rateId,
+        updatedAt: rate.updatedAt || nowIso,
+        createdAt: rate.createdAt || nowIso,
         importJobId: importJobId || rate.importJobId || null,
         _updatedAt: serverTimestamp(),
       }, { merge: true });
@@ -807,6 +816,241 @@ export async function getMissingRateEventsFromFirestore(): Promise<MissingRateEv
     console.warn('Firestore load missing rate events error:', error);
   }
   return [];
+}
+
+/**
+ * =========================================================================
+ * 14. REAL-TIME SYNCHRONIZATION SUBSCRIBERS (100% CROSS-DEVICE SYNC)
+ * =========================================================================
+ */
+
+/**
+ * Subscribes to real-time changes in Quotes collection across all devices
+ */
+export function subscribeToQuotations(onUpdate: (quotes: QuoteData[]) => void): () => void {
+  if (!db) return () => {};
+  try {
+    const q = query(collection(db, COLLECTIONS.QUOTES));
+    return onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) return;
+      const items: QuoteData[] = [];
+      snapshot.forEach(docSnap => {
+        items.push({ ...docSnap.data() as QuoteData, id: docSnap.id });
+      });
+      items.sort((a, b) => (b.updatedDate || b.createdDate || '').localeCompare(a.updatedDate || a.createdDate || ''));
+      saveQuotesList(items);
+      onUpdate(items);
+    }, (err) => {
+      console.warn('[firestoreService] Live quotes snapshot notice:', err);
+    });
+  } catch (err) {
+    console.warn('[firestoreService] Could not attach listener to quotes:', err);
+    return () => {};
+  }
+}
+
+/**
+ * Subscribes to real-time changes in Customers collection across all devices
+ */
+export function subscribeToCustomers(onUpdate: (customers: CustomerRecord[]) => void): () => void {
+  if (!db) return () => {};
+  try {
+    const q = query(collection(db, COLLECTIONS.CUSTOMERS));
+    return onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) return;
+      const items: CustomerRecord[] = [];
+      snapshot.forEach(docSnap => {
+        items.push({ ...docSnap.data() as CustomerRecord, id: docSnap.id });
+      });
+      items.sort((a, b) => (a.customerName || a.companyName || '').localeCompare(b.customerName || b.companyName || ''));
+      saveCustomersList(items);
+      onUpdate(items);
+    }, (err) => {
+      console.warn('[firestoreService] Live customers snapshot notice:', err);
+    });
+  } catch (err) {
+    console.warn('[firestoreService] Could not attach listener to customers:', err);
+    return () => {};
+  }
+}
+
+/**
+ * Subscribes to real-time changes in Master Rates across all devices
+ */
+export function subscribeToRateMasters(onUpdate: (rates: RateMasterItem[]) => void): () => void {
+  if (!db) return () => {};
+  try {
+    const q = query(collection(db, COLLECTIONS.RATE_MASTERS));
+    return onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) return;
+      const items: RateMasterItem[] = [];
+      snapshot.forEach(docSnap => {
+        items.push({ ...docSnap.data() as RateMasterItem, id: docSnap.id });
+      });
+      items.sort((a, b) => (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || ''));
+      items.forEach(it => saveRateMasterItem(it));
+      onUpdate(items);
+    }, (err) => {
+      console.warn('[firestoreService] Live rates snapshot notice:', err);
+    });
+  } catch (err) {
+    console.warn('[firestoreService] Could not attach listener to rates:', err);
+    return () => {};
+  }
+}
+
+/**
+ * Subscribes to real-time changes in Surcharges across all devices
+ */
+export function subscribeToSurcharges(onUpdate: (surcharges: SurchargeItem[]) => void): () => void {
+  if (!db) return () => {};
+  try {
+    const q = query(collection(db, COLLECTIONS.SURCHARGES));
+    return onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) return;
+      const items: SurchargeItem[] = [];
+      snapshot.forEach(docSnap => {
+        items.push({ ...docSnap.data() as SurchargeItem, id: docSnap.id });
+      });
+      saveSurchargesList(items);
+      onUpdate(items);
+    }, (err) => {
+      console.warn('[firestoreService] Live surcharges snapshot notice:', err);
+    });
+  } catch (err) {
+    console.warn('[firestoreService] Could not attach listener to surcharges:', err);
+    return () => {};
+  }
+}
+
+/**
+ * Subscribes to real-time changes in Charge Masters across all devices
+ */
+export function subscribeToChargeMasters(onUpdate: (charges: ChargeMasterItem[]) => void): () => void {
+  if (!db) return () => {};
+  try {
+    const q = query(collection(db, COLLECTIONS.CHARGE_MASTERS));
+    return onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) return;
+      const items: ChargeMasterItem[] = [];
+      snapshot.forEach(docSnap => {
+        items.push({ ...docSnap.data() as ChargeMasterItem, id: docSnap.id });
+      });
+      items.forEach(it => saveChargeMasterItem(it));
+      onUpdate(items);
+    }, (err) => {
+      console.warn('[firestoreService] Live charge masters snapshot notice:', err);
+    });
+  } catch (err) {
+    console.warn('[firestoreService] Could not attach listener to charge masters:', err);
+    return () => {};
+  }
+}
+
+/**
+ * Subscribes to real-time changes in Company Profile across all devices
+ */
+export function subscribeToCompanyProfile(onUpdate: (company: CompanyProfile) => void): () => void {
+  if (!db) return () => {};
+  try {
+    const docRef = doc(db, COLLECTIONS.SETTINGS, 'company_profile');
+    return onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data() as CompanyProfile;
+        saveCompanyProfile(data);
+        onUpdate(data);
+      }
+    }, (err) => {
+      console.warn('[firestoreService] Live company profile snapshot notice:', err);
+    });
+  } catch (err) {
+    console.warn('[firestoreService] Could not attach listener to company profile:', err);
+    return () => {};
+  }
+}
+
+/**
+ * Restores full system backup data to Firestore so all other devices receive it
+ */
+export async function batchRestoreSystemDataToFirestore(data: {
+  quotes?: QuoteData[];
+  companySettings?: CompanyProfile;
+  customers?: CustomerRecord[];
+  surcharges?: SurchargeItem[];
+  rateMasters?: RateMasterItem[];
+  chargeMasters?: ChargeMasterItem[];
+}): Promise<void> {
+  if (!db) return;
+
+  // 1. Batch quotes
+  if (data.quotes && data.quotes.length > 0) {
+    const CHUNK_SIZE = 400;
+    for (let i = 0; i < data.quotes.length; i += CHUNK_SIZE) {
+      const chunk = data.quotes.slice(i, i + CHUNK_SIZE);
+      const batch = writeBatch(db);
+      for (const q of chunk) {
+        batch.set(doc(db, COLLECTIONS.QUOTES, q.id), {
+          ...q,
+          _updatedAt: serverTimestamp(),
+        }, { merge: true });
+      }
+      try {
+        await batch.commit();
+      } catch (e) {
+        console.warn('Restore quotes batch notice:', e);
+      }
+    }
+  }
+
+  // 2. Batch customers
+  if (data.customers && data.customers.length > 0) {
+    const CHUNK_SIZE = 400;
+    for (let i = 0; i < data.customers.length; i += CHUNK_SIZE) {
+      const chunk = data.customers.slice(i, i + CHUNK_SIZE);
+      const batch = writeBatch(db);
+      for (const c of chunk) {
+        batch.set(doc(db, COLLECTIONS.CUSTOMERS, c.id), {
+          ...c,
+          _updatedAt: serverTimestamp(),
+        }, { merge: true });
+      }
+      try {
+        await batch.commit();
+      } catch (e) {
+        console.warn('Restore customers batch notice:', e);
+      }
+    }
+  }
+
+  // 3. Batch surcharges
+  if (data.surcharges && data.surcharges.length > 0) {
+    const CHUNK_SIZE = 400;
+    for (let i = 0; i < data.surcharges.length; i += CHUNK_SIZE) {
+      const chunk = data.surcharges.slice(i, i + CHUNK_SIZE);
+      const batch = writeBatch(db);
+      for (const s of chunk) {
+        batch.set(doc(db, COLLECTIONS.SURCHARGES, s.id), {
+          ...s,
+          _updatedAt: serverTimestamp(),
+        }, { merge: true });
+      }
+      try {
+        await batch.commit();
+      } catch (e) {
+        console.warn('Restore surcharges batch notice:', e);
+      }
+    }
+  }
+
+  // 4. Batch rate masters
+  if (data.rateMasters && data.rateMasters.length > 0) {
+    await batchSaveMasterRatesToFirestore(data.rateMasters, 'BACKUP_RESTORE', 'BACKUP_RESTORE');
+  }
+
+  // 5. Company settings
+  if (data.companySettings) {
+    await saveCompanyProfileToFirestore(data.companySettings);
+  }
 }
 
 

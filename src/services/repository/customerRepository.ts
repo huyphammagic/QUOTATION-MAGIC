@@ -38,23 +38,31 @@ export async function fetchCustomers(forceRefresh = false): Promise<CustomerReco
   }
 
   if (!db) {
-    console.warn('[customerRepository] Firestore not initialized');
     return memoryCustomersCache ? memoryCustomersCache.data : [];
   }
 
   try {
-    const q = query(collection(db, COLLECTION_NAME), orderBy('customerName', 'asc'), limit(100));
-    const snap = await getDocs(q);
+    let snap: any = null;
+    try {
+      const q = query(collection(db, COLLECTION_NAME));
+      snap = await getDocs(q);
+    } catch (queryErr) {
+      console.warn('[customerRepository] Notice fetching customers:', queryErr);
+      snap = null;
+    }
 
-    if (snap.empty) {
+    if (!snap || snap.empty) {
       memoryCustomersCache = { data: [], cachedAt: now };
       return [];
     }
 
     const items: CustomerRecord[] = [];
-    snap.forEach((d) => {
+    snap.forEach((d: any) => {
       items.push({ ...d.data() as CustomerRecord, id: d.id });
     });
+
+    // Sort alphabetically by customerName or companyName
+    items.sort((a, b) => (a.customerName || a.companyName || '').localeCompare(b.customerName || b.companyName || ''));
 
     memoryCustomersCache = { data: items, cachedAt: now };
     return items;
