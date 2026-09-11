@@ -3,6 +3,16 @@ import { CompanyProfile, QuoteData } from '../types/logistics';
 import { UserRole, ROLE_PERMISSIONS } from '../types/analytics';
 import { NavigationLanguage, NAVIGATION_I18N } from '../i18n/navigation';
 import { 
+  loadSavedPinnedFavorites, 
+  persistPinnedFavorites,
+  loadSavedExpandedGroups,
+  persistExpandedGroups,
+  loadSavedSidebarCollapsed,
+  persistSidebarCollapsed,
+  STORAGE_KEY_PINNED_FAVORITES,
+} from '../utils/userPreferences';
+import { subscribeToUserPreferences } from '../services/firebase/firestoreService';
+import { 
   Folder, 
   FolderOpen, 
   ChevronDown, 
@@ -140,7 +150,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenIntegrityDashboard,
 }) => {
   // Collapsed state (icon-only mode)
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => loadSavedSidebarCollapsed());
   const [searchQuery, setSearchQuery] = useState('');
   const [activeRole, setActiveRole] = useState<UserRole>(currentUserRole);
   const [activeLang, setActiveLang] = useState<NavigationLanguage>(language);
@@ -158,30 +168,70 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const t = NAVIGATION_I18N[activeLang];
 
-  // Pinned favorite items IDs
-  const [pinnedIds, setPinnedIds] = useState<string[]>([
-    'quotations_all',
-    'pricing_rates',
-    'master_customers',
-    'pricing_contracts',
-  ]);
+  // Pinned favorite items IDs - 100% persisted across page reloads & cloud sync
+  const [pinnedIds, setPinnedIds] = useState<string[]>(() => loadSavedPinnedFavorites());
 
-  // Collapsible Group states
-  const [expandedGroups, setExpandedGroups] = useState<{ [key: string]: boolean }>({
-    main: true,
-    quotation: true,
-    pricing: true,
-    masterData: false,
-    operations: false,
-    analytics: false,
-    system: false,
-  });
+  // Collapsible Group states - persisted
+  const [expandedGroups, setExpandedGroups] = useState<{ [key: string]: boolean }>(() => loadSavedExpandedGroups());
+
+  // Listen for favorite updates across tabs and from real-time cloud Firestore
+  useEffect(() => {
+    const handleFavoritesChanged = (e: any) => {
+      if (Array.isArray(e.detail)) {
+        setPinnedIds(e.detail);
+      }
+    };
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY_PINNED_FAVORITES && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) {
+            setPinnedIds(parsed);
+          }
+        } catch {}
+      }
+    };
+
+    window.addEventListener('logistics_pinned_favorites_changed', handleFavoritesChanged);
+    window.addEventListener('storage', handleStorageChange);
+
+    // Live cloud listener for user preferences across all devices
+    const unsubCloud = subscribeToUserPreferences((prefs) => {
+      if (prefs && Array.isArray(prefs.pinnedNavIds)) {
+        setPinnedIds(current => {
+          const isDiff = current.length !== prefs.pinnedNavIds!.length ||
+            !current.every((id, idx) => id === prefs.pinnedNavIds![idx]);
+          if (isDiff) {
+            try {
+              localStorage.setItem(STORAGE_KEY_PINNED_FAVORITES, JSON.stringify(prefs.pinnedNavIds));
+            } catch {}
+            return prefs.pinnedNavIds!;
+          }
+          return current;
+        });
+      }
+      if (prefs && prefs.expandedGroups) {
+        setExpandedGroups(current => ({ ...current, ...prefs.expandedGroups }));
+      }
+    });
+
+    return () => {
+      window.removeEventListener('logistics_pinned_favorites_changed', handleFavoritesChanged);
+      window.removeEventListener('storage', handleStorageChange);
+      unsubCloud();
+    };
+  }, []);
 
   const toggleGroup = (groupKey: string) => {
-    setExpandedGroups(prev => ({
-      ...prev,
-      [groupKey]: !prev[groupKey],
-    }));
+    setExpandedGroups(prev => {
+      const next = {
+        ...prev,
+        [groupKey]: !prev[groupKey],
+      };
+      persistExpandedGroups(next);
+      return next;
+    });
   };
 
   const handleAction = (callback: () => void) => {
@@ -193,9 +243,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const togglePin = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    setPinnedIds(prev => 
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-    );
+    setPinnedIds(prev => {
+      const next = prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id];
+      persistPinnedFavorites(next);
+      return next;
+    });
+  };
+
+  const toggleSidebarCollapse = (val?: boolean) => {
+    setIsCollapsed(prev => {
+      const next = typeof val === 'boolean' ? val : !prev;
+      persistSidebarCollapsed(next);
+      return next;
+    });
   };
 
   // Keyboard shortcut Ctrl+K to search navigation & Escape to close mobile
@@ -678,8 +738,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Desktop Collapse / Expand Toggle */}
           <button
             type="button"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden lg:flex p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors"
+            onClick={() => toggleSidebarCollapse()}
+            className="hidden lg:flex p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors cursor-pointer"
             title={isCollapsed ? t.expandSidebar : t.collapseSidebar}
             aria-label={isCollapsed ? t.expandSidebar : t.collapseSidebar}
           >
@@ -694,7 +754,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={onCloseMobile}
-            className="lg:hidden p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md"
+            className="lg:hidden p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md cursor-pointer"
             aria-label="Đóng menu"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -718,7 +778,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs font-bold"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs font-bold cursor-pointer"
                 >
                   &times;
                 </button>
@@ -728,31 +788,53 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
 
         {/* Quick Pinned Favorites Tray (When Expanded and not searching) */}
-        {!isCollapsed && !searchQuery && pinnedItems.length > 0 && (
+        {!isCollapsed && !searchQuery && (
           <div className="px-3 py-1.5 border-b border-slate-800/60 bg-slate-950/30">
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
                 <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
                 <span>{t.favorites}</span>
+                {pinnedItems.length > 0 && (
+                  <span className="text-[10px] font-mono text-slate-500 font-semibold">({pinnedItems.length})</span>
+                )}
               </span>
+              {pinnedItems.length === 0 && (
+                <span className="text-[10px] text-slate-500 italic">
+                  {t.noFavorites}
+                </span>
+              )}
             </div>
-            <div className="flex flex-wrap gap-1">
-              {pinnedItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={`pinned-${item.id}`}
-                    type="button"
-                    onClick={() => handleAction(item.action)}
-                    className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 hover:text-white text-[11px] border border-slate-700/60 transition-colors group"
-                    title={item.label}
-                  >
-                    <Icon className="w-3 h-3 text-blue-400 group-hover:text-blue-300 shrink-0" />
-                    <span className="truncate max-w-[120px]">{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+            {pinnedItems.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {pinnedItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div
+                      key={`pinned-${item.id}`}
+                      className="inline-flex items-center rounded bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 hover:text-white text-[11px] border border-slate-700/60 transition-colors group"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleAction(item.action)}
+                        className="flex items-center gap-1.5 px-2 py-1 cursor-pointer"
+                        title={item.label}
+                      >
+                        <Icon className="w-3 h-3 text-blue-400 group-hover:text-blue-300 shrink-0" />
+                        <span className="truncate max-w-[110px]">{item.label}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => togglePin(e, item.id)}
+                        className="pr-1.5 pl-0.5 py-1 text-slate-500 hover:text-amber-400 transition-colors cursor-pointer"
+                        title={`${t.unpinFromFavorites}: ${item.label}`}
+                      >
+                        <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
         )}
 
@@ -770,27 +852,47 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {activeLang === 'vi' ? 'Không tìm thấy chức năng phù hợp' : 'No matching menu item'}
                 </div>
               ) : (
-                filteredNavItems.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      handleAction(item.action);
-                      setSearchQuery('');
-                    }}
-                    className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors text-left group border border-slate-800"
-                  >
-                    <div className="flex items-center space-x-2.5 min-w-0">
-                      <item.icon className="w-4 h-4 text-blue-400 group-hover:text-blue-300 shrink-0" />
-                      <span className="text-xs truncate">{item.label}</span>
+                filteredNavItems.map((item) => {
+                  const isItemPinned = pinnedIds.includes(item.id);
+                  return (
+                    <div
+                      key={item.id}
+                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors text-left group border border-slate-800"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleAction(item.action);
+                          setSearchQuery('');
+                        }}
+                        className="flex items-center space-x-2.5 min-w-0 flex-1 text-left cursor-pointer"
+                      >
+                        <item.icon className="w-4 h-4 text-blue-400 group-hover:text-blue-300 shrink-0" />
+                        <span className="text-xs truncate">{item.label}</span>
+                      </button>
+                      <div className="flex items-center space-x-1.5 shrink-0 ml-2">
+                        {item.badge && (
+                          <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-bold ${item.badgeColor || 'bg-slate-700 text-white'}`}>
+                            {item.badge}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => togglePin(e, item.id)}
+                          className={`p-1 rounded transition-all cursor-pointer ${
+                            isItemPinned
+                              ? 'text-amber-400 opacity-100 hover:text-amber-300 hover:scale-110'
+                              : 'text-slate-500 opacity-0 group-hover:opacity-100 hover:text-amber-400 hover:scale-110'
+                          }`}
+                          title={isItemPinned ? t.unpinFromFavorites : t.pinToFavorites}
+                          aria-label={isItemPinned ? t.unpinFromFavorites : t.pinToFavorites}
+                        >
+                          <Star className={`w-3 h-3 ${isItemPinned ? 'fill-amber-400' : ''}`} />
+                        </button>
+                      </div>
                     </div>
-                    {item.badge && (
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-bold ${item.badgeColor || 'bg-slate-700 text-white'}`}>
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                ))
+                  );
+                })
               )}
             </div>
           ) : (
@@ -951,14 +1053,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     </span>
                                   )}
 
-                                  {/* Pin toggle on hover */}
+                                  {/* Pin toggle button */}
                                   <button
                                     type="button"
                                     onClick={(e) => togglePin(e, item.id)}
-                                    className={`p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:text-amber-300 ${
-                                      isPinned ? 'text-amber-400 opacity-100' : 'text-slate-500'
+                                    className={`p-1 rounded transition-all cursor-pointer ${
+                                      isPinned 
+                                        ? 'text-amber-400 opacity-100 hover:text-amber-300 hover:scale-110' 
+                                        : 'text-slate-500 opacity-0 group-hover:opacity-100 hover:text-amber-400 hover:scale-110'
                                     }`}
                                     title={isPinned ? t.unpinFromFavorites : t.pinToFavorites}
+                                    aria-label={isPinned ? t.unpinFromFavorites : t.pinToFavorites}
                                   >
                                     <Star className={`w-3 h-3 ${isPinned ? 'fill-amber-400' : ''}`} />
                                   </button>

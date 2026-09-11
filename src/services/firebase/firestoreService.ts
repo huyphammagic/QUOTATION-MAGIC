@@ -1057,5 +1057,73 @@ export async function batchRestoreSystemDataToFirestore(data: {
   }
 }
 
+/**
+ * =========================================================================
+ * 12. USER UI PREFERENCES (PINNED FAVORITES, EXPANDED GROUPS, SIDEBAR)
+ * =========================================================================
+ */
+
+export interface UserUiPreferences {
+  pinnedNavIds?: string[];
+  expandedGroups?: Record<string, boolean>;
+  sidebarCollapsed?: boolean;
+  _updatedAt?: any;
+}
+
+/**
+ * Persists user UI preferences (such as pinned favorites) to Firestore
+ */
+export async function saveUserPreferencesToFirestore(prefs: Partial<UserUiPreferences>): Promise<void> {
+  if (!db) return;
+  try {
+    const docRef = doc(db, COLLECTIONS.SETTINGS, 'ui_preferences');
+    await setDoc(docRef, {
+      ...prefs,
+      _updatedAt: serverTimestamp(),
+    }, { merge: true });
+  } catch (error) {
+    console.warn('[firestoreService] Save user preferences notice:', error);
+  }
+}
+
+/**
+ * Retrieves user UI preferences from Firestore
+ */
+export async function getUserPreferencesFromFirestore(): Promise<UserUiPreferences | null> {
+  if (!db) return null;
+  try {
+    const docRef = doc(db, COLLECTIONS.SETTINGS, 'ui_preferences');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data() as UserUiPreferences;
+    }
+    return null;
+  } catch (error) {
+    console.warn('[firestoreService] Get user preferences notice:', error);
+    return null;
+  }
+}
+
+/**
+ * Subscribes to real-time changes in user UI preferences across all devices
+ */
+export function subscribeToUserPreferences(onUpdate: (prefs: UserUiPreferences) => void): () => void {
+  if (!db) return () => {};
+  try {
+    const docRef = doc(db, COLLECTIONS.SETTINGS, 'ui_preferences');
+    return onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data() as UserUiPreferences;
+        onUpdate(data);
+      }
+    }, (err) => {
+      console.warn('[firestoreService] Live user preferences listener notice:', err);
+    });
+  } catch (error) {
+    console.warn('[firestoreService] Could not attach listener to ui_preferences:', error);
+    return () => {};
+  }
+}
+
 
 
