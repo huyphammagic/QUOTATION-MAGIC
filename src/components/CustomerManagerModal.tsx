@@ -2,16 +2,19 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { CustomerRecord } from '../types/logistics';
 import { 
   Users, Plus, Search, Edit2, Trash2, Building2, Phone, Mail, 
-  MapPin, Check, X, FileText, UserCheck, ShieldCheck, ChevronLeft, ChevronRight
+  MapPin, Check, X, FileText, UserCheck, ShieldCheck, ChevronLeft, ChevronRight,
+  RefreshCw, Cloud, AlertCircle
 } from 'lucide-react';
 
 interface CustomerManagerModalProps {
   isOpen: boolean;
   onClose: () => void;
   customers: CustomerRecord[];
-  onSaveCustomer: (customer: CustomerRecord) => void;
-  onDeleteCustomer: (id: string) => void;
+  onSaveCustomer: (customer: CustomerRecord) => Promise<void> | void;
+  onDeleteCustomer: (id: string) => Promise<void> | void;
   onSelectCustomerForQuote?: (customer: CustomerRecord) => void;
+  onForceRefresh?: () => Promise<void>;
+  isSyncing?: boolean;
 }
 
 export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
@@ -20,7 +23,9 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
   customers,
   onSaveCustomer,
   onDeleteCustomer,
-  onSelectCustomerForQuote
+  onSelectCustomerForQuote,
+  onForceRefresh,
+  isSyncing = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -28,6 +33,9 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
   const [editingCustomer, setEditingCustomer] = useState<Partial<CustomerRecord>>({});
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isRefreshingLocal, setIsRefreshingLocal] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -40,6 +48,12 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     setCurrentPage(1);
+    // Auto-refresh from Firebase Cloud to guarantee 100% up-to-date data across devices
+    if (onForceRefresh) {
+      onForceRefresh().catch(err => {
+        console.warn('[CustomerManagerModal] Auto-refresh on open notice:', err);
+      });
+    }
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
@@ -47,7 +61,7 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, onForceRefresh]);
 
   if (!isOpen) return null;
 
@@ -93,26 +107,34 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
     setIsEditing(true);
   };
 
-  const handleSubmitForm = (e: React.FormEvent) => {
+  const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalCustomer: CustomerRecord = {
-      id: editingCustomer.id || `cust-${Date.now()}`,
-      code: editingCustomer.code || `KH-${Math.floor(100 + Math.random() * 900)}`,
-      companyName: editingCustomer.companyName || editingCustomer.customerName || 'Khách hàng vãng lai',
-      customerName: editingCustomer.customerName || editingCustomer.companyName || '—',
-      contactPerson: editingCustomer.contactPerson || '',
-      taxId: editingCustomer.taxId || '',
-      address: editingCustomer.address || '',
-      email: editingCustomer.email || '',
-      phone: editingCustomer.phone || '',
-      group: editingCustomer.group || 'Chung',
-      notes: editingCustomer.notes || '',
-      createdDate: editingCustomer.createdDate || new Date().toISOString().slice(0, 10)
-    };
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      const finalCustomer: CustomerRecord = {
+        id: editingCustomer.id || `cust-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
+        code: (editingCustomer.code || `KH-${Math.floor(100 + Math.random() * 900)}`).trim(),
+        companyName: (editingCustomer.companyName || editingCustomer.customerName || 'Khách hàng vãng lai').trim(),
+        customerName: (editingCustomer.customerName || editingCustomer.companyName || '—').trim(),
+        contactPerson: (editingCustomer.contactPerson || '').trim(),
+        taxId: (editingCustomer.taxId || '').trim(),
+        address: (editingCustomer.address || '').trim(),
+        email: (editingCustomer.email || '').trim(),
+        phone: (editingCustomer.phone || '').trim(),
+        group: (editingCustomer.group || 'Khách Thương Mại').trim(),
+        notes: (editingCustomer.notes || '').trim(),
+        createdDate: (editingCustomer.createdDate || new Date().toISOString().slice(0, 10)).trim()
+      };
 
-    onSaveCustomer(finalCustomer);
-    setIsEditing(false);
-    setEditingCustomer({});
+      await onSaveCustomer(finalCustomer);
+      setIsEditing(false);
+      setEditingCustomer({});
+    } catch (err: any) {
+      setSaveError(err?.message || 'Lỗi khi lưu dữ liệu lên Cloud Firestore. Vui lòng thử lại.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -162,6 +184,32 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
             <span className="text-xs font-bold text-slate-500 font-mono">
               Tổng: {filteredCustomers.length} KH
             </span>
+
+            <div className="hidden lg:flex items-center gap-1.5 px-2 py-1 bg-emerald-50 border border-emerald-200 rounded text-[11px] font-semibold text-emerald-800">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Cloud Firestore 100%</span>
+            </div>
+
+            {onForceRefresh && (
+              <button
+                type="button"
+                onClick={async () => {
+                  setIsRefreshingLocal(true);
+                  try {
+                    await onForceRefresh();
+                  } finally {
+                    setIsRefreshingLocal(false);
+                  }
+                }}
+                disabled={isSyncing || isRefreshingLocal}
+                className="flex items-center space-x-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs px-2.5 py-1.5 rounded-lg shadow-2xs transition-colors disabled:opacity-60"
+                title="Lấy dữ liệu khách hàng mới nhất từ Firebase Cloud (đồng bộ giữa các máy tính)"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-blue-600 ${isSyncing || isRefreshingLocal ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Làm Mới Cloud</span>
+              </button>
+            )}
+
             <button
               onClick={handleAddNew}
               className="flex items-center space-x-1.5 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-colors"
@@ -303,20 +351,38 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
                 </div>
               </div>
 
+              {saveError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-center gap-2 text-xs text-rose-700">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{saveError}</span>
+                </div>
+              )}
+
               <div className="flex justify-end space-x-2 pt-2 border-t border-slate-200">
                 <button
                   type="button"
+                  disabled={isSaving}
                   onClick={() => setIsEditing(false)}
-                  className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded"
+                  className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded disabled:opacity-50"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white rounded shadow-2xs flex items-center gap-1"
+                  disabled={isSaving}
+                  className="px-4 py-1.5 text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white rounded shadow-2xs flex items-center gap-1.5 disabled:opacity-60"
                 >
-                  <Check className="w-4 h-4" />
-                  <span>Lưu Hồ Sơ Khách Hàng</span>
+                  {isSaving ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Đang lưu lên Cloud...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Lưu Hồ Sơ Khách Hàng</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

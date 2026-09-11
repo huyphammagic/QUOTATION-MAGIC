@@ -51,6 +51,13 @@ import {
 } from './services/firebase/firestoreService';
 import { getActiveQuotationDraft } from './services/repository/quotationRepository';
 import { 
+  fetchCustomers, 
+  saveCustomer, 
+  deleteCustomer, 
+  autoUpsertCustomerFromQuote, 
+  syncMissingCustomersFromQuotes 
+} from './services/repository/customerRepository';
+import { 
   getSavedQuotes, 
   getCompanySettings, 
   getSavedCustomers, 
@@ -132,7 +139,6 @@ import {
   deleteQuotation as repoDeleteQuotation, 
   fetchQuotations 
 } from './services/repository/quotationRepository';
-import { fetchCustomers } from './services/repository/customerRepository';
 import { fetchRateMasters } from './services/repository/rateRepository';
 import { UserRole } from './types/analytics';
 
@@ -496,7 +502,7 @@ export default function App() {
           cloudHistories
         ] = await Promise.all([
           fetchQuotations(),
-          fetchCustomers(),
+          fetchCustomers(true),
           getSurchargesFromFirestore(),
           getCompanyProfileFromFirestore(),
           fetchRateMasters(),
@@ -505,7 +511,9 @@ export default function App() {
         ]);
 
         if (cloudQuotes && cloudQuotes.length > 0) setSavedQuotes(cloudQuotes);
-        if (cloudCustomers && cloudCustomers.length > 0) setCustomers(cloudCustomers);
+        if (Array.isArray(cloudCustomers) && cloudCustomers.length > 0) {
+          setCustomers(cloudCustomers);
+        }
         if (cloudSurcharges && cloudSurcharges.length > 0) setSurcharges(cloudSurcharges);
         if (cloudCompany) {
           setCompany(cloudCompany);
@@ -513,6 +521,18 @@ export default function App() {
         if (cloudRates && cloudRates.length > 0) setRates(cloudRates);
         if (cloudChargeMasters && cloudChargeMasters.length > 0) setChargeMasters(cloudChargeMasters);
         if (cloudHistories && cloudHistories.length > 0) setRateHistories(cloudHistories);
+
+        // Auto-recover any missing customers from historical quotations into Cloud CRM
+        if (cloudQuotes && cloudQuotes.length > 0) {
+          syncMissingCustomersFromQuotes(cloudQuotes).then((recovered) => {
+            if (recovered > 0) {
+              console.log(`[AutoRecovery] Recovered ${recovered} customer(s) from quotes into Cloud CRM`);
+              fetchCustomers(true).then((fresh) => {
+                if (fresh && fresh.length > 0) setCustomers(fresh);
+              });
+            }
+          });
+        }
 
         // Sync Phase 15 Pricing Policies
         await loadPricingPoliciesData();
@@ -607,6 +627,13 @@ export default function App() {
           userId: company.salesRepName || 'User',
           userName: company.salesRepName || 'User',
         });
+
+        // Continuous sync customer into Cloud CRM so other computers immediately have access to this customer
+        if (quote.customer && (quote.customer.companyName || quote.customer.taxId)) {
+          autoUpsertCustomerFromQuote(quote.customer).catch((cErr) => {
+            console.warn('[AutoSave CRM] Customer sync notice:', cErr);
+          });
+        }
 
         // Keep local savedQuotes list synchronized in-place
         setSavedQuotes((prev) => {
@@ -704,18 +731,52 @@ export default function App() {
   };
 
   // Customer Manager CRUD with Firestore
+  const [isSavingCustomerToCrm, setIsSavingCustomerToCrm] = useState(false);
+
   const handleSaveCustomer = async (cust: CustomerRecord) => {
-    await saveCustomerToFirestore(cust);
-    const updated = await getCustomersFromFirestore();
-    setCustomers(updated);
-    showToast(`Đã lưu dữ liệu khách hàng [${cust.code}] thành công!`);
+    try {
+      await saveCustomer(cust);
+      const updated = await fetchCustomers(true);
+      setCustomers(updated);
+      showToast(`Đã lưu và đồng bộ 100% khách hàng [${cust.code}] lên Cloud!`);
+    } catch (err: any) {
+      console.error('Lỗi khi lưu khách hàng:', err);
+      showToast(`Lỗi khi lưu khách hàng lên Cloud: ${err?.message || 'Vui lòng thử lại'}`);
+      throw err;
+    }
   };
 
   const handleDeleteCustomer = async (id: string) => {
-    await deleteCustomerFromFirestore(id);
-    const updated = await getCustomersFromFirestore();
-    setCustomers(updated);
-    showToast('Đã xóa thông tin khách hàng khỏi hệ thống!');
+    try {
+      await deleteCustomer(id);
+      const updated = await fetchCustomers(true);
+      setCustomers(updated);
+      showToast('Đã xóa thông tin khách hàng khỏi hệ thống!');
+    } catch (err: any) {
+      console.error('Lỗi khi xóa khách hàng:', err);
+      showToast('Lỗi khi xóa khách hàng khỏi Cloud');
+      throw err;
+    }
+  };
+
+  const handleSaveCurrentCustomerToCrm = async () => {
+    if (!quote.customer || (!quote.customer.companyName && !quote.customer.taxId)) {
+      showToast('Vui lòng nhập Tên Doanh Nghiệp hoặc Mã Số Thuế để lưu vào danh bạ CRM.');
+      return;
+    }
+    setIsSavingCustomerToCrm(true);
+    try {
+      const saved = await autoUpsertCustomerFromQuote(quote.customer);
+      if (saved) {
+        const fresh = await fetchCustomers(true);
+        setCustomers(fresh);
+        showToast(`Đã lưu [${saved.companyName}] (${saved.code}) vào Danh Bạ CRM và đồng bộ lên Cloud!`);
+      }
+    } catch (err: any) {
+      showToast(`Lỗi khi lưu khách hàng vào CRM: ${err?.message || 'Không thể đồng bộ'}`);
+    } finally {
+      setIsSavingCustomerToCrm(false);
+    }
   };
 
   // Surcharge Catalog CRUD with Firestore
@@ -1102,6 +1163,21 @@ export default function App() {
   const handleSaveQuoteAction = async () => {
     const { calculatedQuote } = calculateQuote(quote);
     setQuote(calculatedQuote);
+
+    // Auto-upsert customer to Cloud CRM database if companyName or taxId is present
+    if (calculatedQuote.customer && (calculatedQuote.customer.companyName || calculatedQuote.customer.taxId)) {
+      try {
+        const savedCrmCust = await autoUpsertCustomerFromQuote(calculatedQuote.customer);
+        if (savedCrmCust) {
+          fetchCustomers(true).then(fresh => {
+            if (fresh && fresh.length > 0) setCustomers(fresh);
+          });
+        }
+      } catch (custErr) {
+        console.warn('[AutoCRM] Notice auto-upserting customer from quote:', custErr);
+      }
+    }
+
     const result = await saveQuotation(calculatedQuote, {
       userId: company.salesRepName || 'User',
       userName: company.salesRepName || 'User',
@@ -1323,9 +1399,13 @@ export default function App() {
                 validityDate={quote.terms.validityDate}
                 status={quote.status}
                 salesRepName={company.salesRepName}
+                customers={customers}
                 onChangeCustomer={handleChangeCustomer}
                 onChangeQuoteMeta={handleChangeQuoteMeta}
                 onOpenCustomerManager={() => setIsCustomersOpen(true)}
+                onSaveToCrm={handleSaveCurrentCustomerToCrm}
+                onSelectCustomer={handleSelectCustomerForQuote}
+                isSavingToCrm={isSavingCustomerToCrm}
               />
 
               <ShipmentForm
@@ -1467,6 +1547,12 @@ export default function App() {
           onSaveCustomer={handleSaveCustomer}
           onDeleteCustomer={handleDeleteCustomer}
           onSelectCustomerForQuote={handleSelectCustomerForQuote}
+          onForceRefresh={async () => {
+            const fresh = await fetchCustomers(true);
+            setCustomers(fresh);
+            showToast(`Đã đồng bộ ${fresh.length} khách hàng từ Firebase Cloud!`);
+          }}
+          isSyncing={isCloudSyncing}
         />
       )}
 

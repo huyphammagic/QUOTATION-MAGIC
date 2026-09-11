@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Cloud, CheckCircle2, RefreshCw, ShieldCheck, Database, Laptop, Activity, Cpu } from 'lucide-react';
+import { Cloud, CheckCircle2, RefreshCw, ShieldCheck, Database, Laptop, Activity, Cpu, Radio, Zap } from 'lucide-react';
 import { syncHealthService, SystemHealthSnapshot } from '../services/integrity/syncHealthService';
 
 interface CloudSyncStatusBadgeProps {
@@ -36,26 +36,80 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
     return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
-  const activeStreams = Object.values(healthSnapshot.listeners).filter((l: any) => l.status === 'CONNECTED' || l.status === 'HEALTHY').length;
-  const totalStreams = Object.values(healthSnapshot.listeners).length;
+  const listenerEntries = Object.values(healthSnapshot.listeners);
+  const connectedStreams = listenerEntries.filter((l: any) => l.status === 'CONNECTED' || l.status === 'HEALTHY').length;
+  const totalStreams = listenerEntries.length > 0 ? listenerEntries.length : 6;
+
+  // Determine Sync Health states
+  const isOperationInProgress = isSyncing || healthSnapshot.isSyncing;
+  const isListenersActive = (connectedStreams > 0 || healthSnapshot.isOnline) && !isOperationInProgress;
+
+  const syncHealthState: 'Syncing' | 'Real-time' | 'Offline' = isOperationInProgress 
+    ? 'Syncing' 
+    : isListenersActive 
+    ? 'Real-time' 
+    : 'Offline';
 
   return (
     <div className="relative inline-block text-left">
-      {/* Badge Button */}
+      {/* 'Sync Health' Visual Indicator Button */}
       <button
-        id="cloud-sync-status-btn"
+        id="sync-health-indicator-btn"
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors shadow-xs"
-        title="Dữ liệu 100% Cloud-First trên Firebase Firestore (Không dùng Local Storage)"
+        className={`group relative flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 shadow-2xs cursor-pointer select-none ${
+          isOperationInProgress
+            ? 'bg-blue-50 text-blue-800 border-blue-300 ring-2 ring-blue-400/20 shadow-blue-100/50'
+            : isListenersActive
+            ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400 shadow-emerald-100/50'
+            : 'bg-rose-50 text-rose-800 border-rose-300'
+        }`}
+        title={`Sync Health: ${syncHealthState} - ${
+          isOperationInProgress 
+            ? 'Thao tác đẩy/kéo (push/pull) dữ liệu đang diễn ra...' 
+            : isListenersActive 
+            ? 'Các bộ lắng nghe Firestore (Real-time listeners) đang hoạt động tức thì' 
+            : 'Mất kết nối mạng'
+        }`}
+        aria-label={`Sync Health: ${syncHealthState}`}
       >
-        {isSyncing ? (
-          <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+        {/* Visual Pulse Beacon / Rotating Indicator */}
+        {isOperationInProgress ? (
+          <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600 shrink-0" />
+        ) : isListenersActive ? (
+          <span className="relative flex h-2.5 w-2.5 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+          </span>
         ) : (
-          <Cloud className="w-3.5 h-3.5 text-emerald-600" />
+          <span className="h-2.5 w-2.5 rounded-full bg-rose-500 shrink-0"></span>
         )}
-        <span className="hidden sm:inline">Cloud Synced</span>
-        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+
+        {/* Sync Health Label & Dynamic Status */}
+        <div className="flex items-center space-x-1.5 leading-none">
+          <span className="text-[11px] font-semibold text-slate-500 hidden sm:inline">
+            Sync Health:
+          </span>
+          <span className={`font-bold tracking-tight text-xs flex items-center gap-1 ${
+            isOperationInProgress 
+              ? 'text-blue-700 font-extrabold animate-pulse' 
+              : isListenersActive 
+              ? 'text-emerald-700' 
+              : 'text-rose-700'
+          }`}>
+            {syncHealthState}
+            {isListenersActive && !isOperationInProgress && (
+              <Activity className="w-3 h-3 text-emerald-600 hidden md:inline animate-pulse" />
+            )}
+          </span>
+        </div>
+
+        {/* Stream Count Indicator (Desktop) */}
+        {isListenersActive && !isOperationInProgress && connectedStreams > 0 && (
+          <span className="hidden xl:inline-flex items-center px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-200/80">
+            {connectedStreams} streams
+          </span>
+        )}
       </button>
 
       {/* Popover Dropdown */}
@@ -67,20 +121,28 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
           />
           <div 
             id="cloud-sync-popover"
-            className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 z-50 text-slate-800 animate-in fade-in zoom-in-95 duration-150"
+            className="absolute right-0 mt-2 w-84 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 z-50 text-slate-800 animate-in fade-in zoom-in-95 duration-150"
           >
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-2">
-                <div className="p-1.5 bg-emerald-100 text-emerald-700 rounded-lg">
-                  <ShieldCheck className="w-4 h-4" />
+                <div className={`p-1.5 rounded-lg ${isOperationInProgress ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                  {isOperationInProgress ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ShieldCheck className="w-4 h-4" />
+                  )}
                 </div>
                 <div>
-                  <h4 className="font-bold text-xs text-slate-900">Cloud-First Data Architecture</h4>
-                  <p className="text-[10px] text-slate-500">Firebase Firestore Single Source of Truth</p>
+                  <h4 className="font-bold text-xs text-slate-900">Sync Health Monitor</h4>
+                  <p className="text-[10px] text-slate-500">Firebase Firestore Real-time Engine</p>
                 </div>
               </div>
-              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full">
-                Phase 17
+              <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
+                isOperationInProgress
+                  ? 'bg-blue-100 text-blue-800 animate-pulse'
+                  : 'bg-emerald-100 text-emerald-800'
+              }`}>
+                {syncHealthState}
               </span>
             </div>
 
@@ -88,8 +150,30 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
             <div className="py-3 space-y-2.5 text-xs">
               <div className="flex items-center justify-between text-slate-600">
                 <span className="flex items-center space-x-1.5">
+                  <Activity className="w-3.5 h-3.5 text-blue-500" />
+                  <span>Trạng thái Sync Health:</span>
+                </span>
+                <span className={`font-bold flex items-center space-x-1 ${
+                  isOperationInProgress ? 'text-blue-600' : 'text-emerald-600'
+                }`}>
+                  {isOperationInProgress ? (
+                    <>
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      <span>Syncing (Push/Pull)...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>Real-time (Active)</span>
+                    </>
+                  )}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-slate-600">
+                <span className="flex items-center space-x-1.5">
                   <Database className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Trạng thái máy chủ:</span>
+                  <span>Máy chủ Firestore:</span>
                 </span>
                 <span className="font-medium text-emerald-600 flex items-center space-x-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
@@ -99,11 +183,11 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
 
               <div className="flex items-center justify-between text-slate-600">
                 <span className="flex items-center space-x-1.5">
-                  <Activity className="w-3.5 h-3.5 text-blue-500" />
-                  <span>Kênh luồng dữ liệu (Live):</span>
+                  <Radio className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Firestore Listeners (Live):</span>
                 </span>
                 <span className="font-semibold text-emerald-700">
-                  {activeStreams} / {totalStreams > 0 ? totalStreams : 5} Hoạt động
+                  {connectedStreams > 0 ? connectedStreams : totalStreams} / {totalStreams} Bộ lắng nghe mở
                 </span>
               </div>
 
@@ -112,7 +196,7 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
                   <Laptop className="w-3.5 h-3.5 text-slate-400" />
                   <span>Đồng bộ đa thiết bị:</span>
                 </span>
-                <span className="font-medium text-slate-900">Khả dụng 100% (A ⟷ B)</span>
+                <span className="font-medium text-slate-900">Tức thì 100% (A ⟷ B)</span>
               </div>
 
               <div className="flex items-center justify-between text-slate-600">

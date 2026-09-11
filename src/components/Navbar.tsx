@@ -83,10 +83,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Right controls: Cloud Status, Auto-save status, Exchange Rate Adjuster & Quick New Quote */}
       <div className="flex items-center space-x-2 sm:space-x-3">
-        {/* Cloud Sync Status Badge (Phase 17 & 24) */}
+        {/* Sync Health Visual Indicator */}
         {onForceCloudSync && (
           <CloudSyncStatusBadge
-            isSyncing={isCloudSyncing}
+            isSyncing={isCloudSyncing || Boolean(isAutoSaving)}
             onForceSync={onForceCloudSync}
             lastSyncedAt={lastCloudSyncedAt}
             quoteCount={quoteCount}

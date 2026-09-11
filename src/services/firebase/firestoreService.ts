@@ -44,6 +44,12 @@ import {
   addRateHistoryItem
 } from '../../utils/storage';
 import { syncHealthService } from '../integrity/syncHealthService';
+import { 
+  saveCustomer as repoSaveCustomer, 
+  fetchCustomers as repoFetchCustomers, 
+  deleteCustomer as repoDeleteCustomer, 
+  sanitizeCustomerRecord 
+} from '../repository/customerRepository';
 
 const COLLECTIONS = {
   QUOTES: 'quotes',
@@ -144,58 +150,15 @@ export async function deleteQuoteFromFirestore(id: string): Promise<void> {
  */
 
 export async function saveCustomerToFirestore(customer: CustomerRecord): Promise<void> {
-  const local = loadSavedCustomers();
-  const idx = local.findIndex(c => c.id === customer.id);
-  const updated = idx >= 0 ? local.map((c, i) => i === idx ? customer : c) : [customer, ...local];
-  saveCustomersList(updated);
-
-  if (!db) return;
-
-  try {
-    const docRef = doc(db, COLLECTIONS.CUSTOMERS, customer.id);
-    await setDoc(docRef, {
-      ...customer,
-      _updatedAt: serverTimestamp(),
-    }, { merge: true });
-  } catch (error) {
-    console.warn('Firestore customer save notice:', error);
-  }
+  await repoSaveCustomer(customer);
 }
 
 export async function getCustomersFromFirestore(): Promise<CustomerRecord[]> {
-  if (!db) {
-    return loadSavedCustomers();
-  }
-
-  try {
-    const q = query(collection(db, COLLECTIONS.CUSTOMERS));
-    const snapshot = await getDocs(q);
-    if (!snapshot.empty) {
-      const items: CustomerRecord[] = [];
-      snapshot.forEach(docSnap => {
-        items.push({ ...docSnap.data() as CustomerRecord, id: docSnap.id });
-      });
-      saveCustomersList(items);
-      return items;
-    }
-  } catch (error) {
-    console.warn('Firestore load customers fallback to local:', error);
-  }
-
-  return loadSavedCustomers();
+  return await repoFetchCustomers(true);
 }
 
 export async function deleteCustomerFromFirestore(id: string): Promise<void> {
-  const local = loadSavedCustomers().filter(c => c.id !== id);
-  saveCustomersList(local);
-
-  if (!db) return;
-
-  try {
-    await deleteDoc(doc(db, COLLECTIONS.CUSTOMERS, id));
-  } catch (error) {
-    console.warn('Firestore delete customer error:', error);
-  }
+  await repoDeleteCustomer(id);
 }
 
 /**
@@ -876,7 +839,7 @@ export function subscribeToCustomers(onUpdate: (customers: CustomerRecord[]) => 
     return onSnapshot(q, (snapshot) => {
       const items: CustomerRecord[] = [];
       snapshot.forEach(docSnap => {
-        items.push({ ...docSnap.data() as CustomerRecord, id: docSnap.id });
+        items.push(sanitizeCustomerRecord({ ...docSnap.data(), id: docSnap.id }));
       });
       items.sort((a, b) => (a.customerName || a.companyName || '').localeCompare(b.customerName || b.companyName || ''));
       saveCustomersList(items);

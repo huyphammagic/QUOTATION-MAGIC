@@ -1,5 +1,23 @@
 {
   "entities": {
+    "Customer": {
+      "collection": "customers",
+      "fields": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "customerName": { "type": "string" },
+        "companyName": { "type": "string" },
+        "contactPerson": { "type": "string" },
+        "taxId": { "type": "string" },
+        "address": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "group": { "type": "string" },
+        "segment": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdDate": { "type": "string" }
+      }
+    },
     "Contract": {
       "collection": "contracts",
       "fields": {

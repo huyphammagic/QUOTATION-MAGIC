@@ -23,16 +23,22 @@ export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfi
 
 // Initialize Firestore with Persistent Local Cache for offline support
 let firestoreDb: Firestore | null = null;
+const databaseId = (firebaseConfigJson as any).firestoreDatabaseId || undefined;
+
 try {
-  firestoreDb = initializeFirestore(app, {
-    localCache: persistentLocalCache({
-      tabManager: persistentMultipleTabManager(),
-    }),
-  });
+  firestoreDb = initializeFirestore(
+    app, 
+    {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+    },
+    databaseId
+  );
 } catch (error) {
   // If already initialized or if IndexedDB is restricted in iframe/container
   try {
-    firestoreDb = getFirestore(app);
+    firestoreDb = getFirestore(app, databaseId);
   } catch (err) {
     console.warn('Firebase Firestore initialization notice:', err);
   }
