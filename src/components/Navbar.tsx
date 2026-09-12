@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ship, RefreshCw, CheckCircle2, Menu, Plus } from 'lucide-react';
+import { Ship, RefreshCw, Menu, Plus } from 'lucide-react';
 import { CompanyProfile } from '../types/logistics';
 import { CloudSyncStatusBadge } from './CloudSyncStatusBadge';
 
@@ -81,36 +81,20 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Right controls: Cloud Status, Auto-save status, Exchange Rate Adjuster & Quick New Quote */}
+      {/* Right controls: Sync Health indicator, Exchange Rate Adjuster & Quick New Quote */}
       <div className="flex items-center space-x-2 sm:space-x-3">
-        {/* Sync Health Visual Indicator */}
-        {onForceCloudSync && (
-          <CloudSyncStatusBadge
-            isSyncing={isCloudSyncing || Boolean(isAutoSaving)}
-            onForceSync={onForceCloudSync}
-            lastSyncedAt={lastCloudSyncedAt}
-            quoteCount={quoteCount}
-            customerCount={customerCount}
-            rateCount={rateCount}
-            onOpenIntegrityDashboard={onOpenIntegrityDashboard}
-          />
-        )}
-
-        {/* Auto-Save Badge */}
-        <div className="hidden md:flex items-center space-x-1.5 bg-emerald-50/80 border border-emerald-200/90 text-emerald-900 px-3 py-1 rounded-full text-xs font-medium shadow-2xs">
-          <span className="relative flex h-2 w-2">
-            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 ${isAutoSaving ? 'opacity-100 scale-125' : 'opacity-75'}`}></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-          <span className="text-[11px]">
-            {isAutoSaving ? (
-              <span className="text-emerald-700 font-bold animate-pulse">Đang đồng bộ Cloud...</span>
-            ) : (
-              <span>Đã lưu Cloud 100%: <strong className="font-mono text-emerald-950">{lastAutoSaveTime || 'Vừa xong'}</strong></span>
-            )}
-          </span>
-        </div>
+        {/* Sync Health Visual Indicator (Replaces the static Firestore status label) */}
+        <CloudSyncStatusBadge
+          isSyncing={Boolean(isCloudSyncing)}
+          isAutoSaving={Boolean(isAutoSaving)}
+          onForceSync={onForceCloudSync}
+          lastSyncedAt={lastCloudSyncedAt}
+          lastAutoSaveTime={lastAutoSaveTime}
+          quoteCount={quoteCount}
+          customerCount={customerCount}
+          rateCount={rateCount}
+          onOpenIntegrityDashboard={onOpenIntegrityDashboard}
+        />
 
         {/* Exchange Rate Quick Adjuster */}
         <div className="flex items-center bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-600 space-x-2">

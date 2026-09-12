@@ -211,9 +211,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           return current;
         });
       }
-      if (prefs && prefs.expandedGroups) {
-        setExpandedGroups(current => ({ ...current, ...prefs.expandedGroups }));
-      }
     });
 
     return () => {
@@ -941,14 +938,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       </div>
                     </button>
                   ) : (
-                    /* Collapsed Group Divider Icon */
-                    <div className="py-1 text-center border-b border-slate-800/60" title={group.title}>
-                      <GroupIcon className="w-4 h-4 mx-auto text-slate-400" />
-                    </div>
+                    /* Collapsed Group Divider / Toggle Button */
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(group.key)}
+                      className={`w-full py-2 flex items-center justify-center border-b border-slate-800/60 hover:bg-slate-800/60 transition-colors cursor-pointer ${
+                        hasActiveChild ? 'bg-blue-900/30' : ''
+                      }`}
+                      title={`${group.title} (Nhấn để ${isExpanded ? 'thu gọn' : 'mở rộng'})`}
+                      aria-label={group.title}
+                    >
+                      <GroupIcon className={`w-4 h-4 mx-auto ${hasActiveChild ? 'text-blue-400' : 'text-slate-400 hover:text-slate-200'}`} />
+                    </button>
                   )}
 
-                  {/* Group Menu Items */}
-                  {(isExpanded || isCollapsed) && (
+                  {/* Group Menu Items - Only shown when category is expanded */}
+                  {isExpanded && (
                     <div className={`${isCollapsed ? 'py-1 space-y-1' : 'px-1.5 pb-1.5 space-y-0.5'}`}>
                       {groupItems.map((item) => {
                         const Icon = item.icon;

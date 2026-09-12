@@ -54,35 +54,27 @@ export function persistPinnedFavorites(ids: string[]): void {
   });
 }
 
+export const DEFAULT_EXPANDED_GROUPS: Record<string, boolean> = {
+  main: false,
+  quotation: false,
+  pricing: false,
+  masterData: false,
+  operations: false,
+  analytics: false,
+  system: false,
+};
+
 /**
- * Loads expanded group states from localStorage
+ * Loads expanded group states.
+ * Defaults to all false so that whenever accessing the app,
+ * all navigation categories/groups are in the collapsed state (thu gọn).
  */
 export function loadSavedExpandedGroups(): Record<string, boolean> {
-  const defaults = {
-    main: true,
-    quotation: true,
-    pricing: true,
-    masterData: false,
-    operations: false,
-    analytics: false,
-    system: false,
-  };
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_EXPANDED_GROUPS);
-    if (raw !== null) {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') {
-        return { ...defaults, ...parsed };
-      }
-    }
-  } catch (err) {
-    console.warn('[userPreferences] Error reading expanded groups:', err);
-  }
-  return defaults;
+  return { ...DEFAULT_EXPANDED_GROUPS };
 }
 
 /**
- * Persists expanded groups to localStorage and Firestore
+ * Persists expanded groups to localStorage
  */
 export function persistExpandedGroups(groups: Record<string, boolean>): void {
   try {
@@ -94,19 +86,16 @@ export function persistExpandedGroups(groups: Record<string, boolean>): void {
 }
 
 /**
- * Loads sidebar collapsed preference
+ * Loads sidebar collapsed preference.
+ * Defaults to true (collapsed) so that whenever the user accesses the app,
+ * the sidebar is always in the collapsed state (trạng thái thu gọn).
  */
 export function loadSavedSidebarCollapsed(): boolean {
-  try {
-    const val = localStorage.getItem(STORAGE_KEY_SIDEBAR_COLLAPSED);
-    return val === 'true';
-  } catch {
-    return false;
-  }
+  return true;
 }
 
 /**
- * Persists sidebar collapsed preference
+ * Persists sidebar collapsed preference for temporary session/cloud logging
  */
 export function persistSidebarCollapsed(collapsed: boolean): void {
   try {

@@ -1,24 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { Cloud, CheckCircle2, RefreshCw, ShieldCheck, Database, Laptop, Activity, Cpu, Radio, Zap } from 'lucide-react';
+import { 
+  CheckCircle2, 
+  RefreshCw, 
+  ShieldCheck, 
+  Database, 
+  Laptop, 
+  Activity, 
+  Cpu, 
+  Radio, 
+  WifiOff, 
+  Clock 
+} from 'lucide-react';
 import { syncHealthService, SystemHealthSnapshot } from '../services/integrity/syncHealthService';
 
-interface CloudSyncStatusBadgeProps {
+export interface CloudSyncStatusBadgeProps {
   isSyncing: boolean;
-  onForceSync: () => Promise<void>;
-  lastSyncedAt: Date | null;
-  quoteCount: number;
-  customerCount: number;
-  rateCount: number;
+  isAutoSaving?: boolean;
+  onForceSync?: () => Promise<void>;
+  lastSyncedAt?: Date | null;
+  lastAutoSaveTime?: string | null;
+  quoteCount?: number;
+  customerCount?: number;
+  rateCount?: number;
   onOpenIntegrityDashboard?: () => void;
 }
 
 export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
   isSyncing,
+  isAutoSaving = false,
   onForceSync,
-  lastSyncedAt,
-  quoteCount,
-  customerCount,
-  rateCount,
+  lastSyncedAt = null,
+  lastAutoSaveTime = null,
+  quoteCount = 0,
+  customerCount = 0,
+  rateCount = 0,
   onOpenIntegrityDashboard,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -32,7 +47,7 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
   }, []);
 
   const formatTime = (d: Date | null) => {
-    if (!d) return 'Vừa mới đây';
+    if (!d) return lastAutoSaveTime || 'Vừa xong';
     return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
@@ -40,15 +55,26 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
   const connectedStreams = listenerEntries.filter((l: any) => l.status === 'CONNECTED' || l.status === 'HEALTHY').length;
   const totalStreams = listenerEntries.length > 0 ? listenerEntries.length : 6;
 
-  // Determine Sync Health states
-  const isOperationInProgress = isSyncing || healthSnapshot.isSyncing;
-  const isListenersActive = (connectedStreams > 0 || healthSnapshot.isOnline) && !isOperationInProgress;
+  // Determine Sync Health states:
+  // 1. Connection check: Offline if network is lost
+  const isOnline = healthSnapshot.isOnline && (typeof navigator === 'undefined' || navigator.onLine);
+  
+  // 2. Syncing check: Manual push or auto-save push is in progress
+  const isOperationInProgress = Boolean(isSyncing || isAutoSaving || healthSnapshot.isSyncing);
 
-  const syncHealthState: 'Syncing' | 'Real-time' | 'Offline' = isOperationInProgress 
-    ? 'Syncing' 
-    : isListenersActive 
-    ? 'Real-time' 
-    : 'Offline';
+  // 3. Listeners active check: Firestore live listeners are active and connected
+  const isListenersActive = isOnline && (connectedStreams > 0 || listenerEntries.length === 0);
+
+  let syncHealthState: 'Real-time' | 'Syncing' | 'Offline';
+  if (!isOnline) {
+    syncHealthState = 'Offline';
+  } else if (isOperationInProgress) {
+    syncHealthState = 'Syncing';
+  } else if (isListenersActive) {
+    syncHealthState = 'Real-time';
+  } else {
+    syncHealthState = 'Offline';
+  }
 
   return (
     <div className="relative inline-block text-left">
@@ -57,56 +83,76 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
         id="sync-health-indicator-btn"
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`group relative flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 shadow-2xs cursor-pointer select-none ${
-          isOperationInProgress
-            ? 'bg-blue-50 text-blue-800 border-blue-300 ring-2 ring-blue-400/20 shadow-blue-100/50'
-            : isListenersActive
-            ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400 shadow-emerald-100/50'
-            : 'bg-rose-50 text-rose-800 border-rose-300'
+        className={`group relative flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 shadow-xs cursor-pointer select-none focus:outline-none ${
+          syncHealthState === 'Real-time'
+            ? 'bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20'
+            : syncHealthState === 'Syncing'
+            ? 'bg-amber-50 text-amber-900 border-amber-300 ring-2 ring-amber-400/20 hover:bg-amber-100 hover:border-amber-400 focus:ring-2 focus:ring-amber-500/30'
+            : 'bg-rose-50 text-rose-900 border-rose-300 hover:bg-rose-100 hover:border-rose-400 focus:ring-2 focus:ring-rose-500/20'
         }`}
         title={`Sync Health: ${syncHealthState} - ${
-          isOperationInProgress 
-            ? 'Thao tác đẩy/kéo (push/pull) dữ liệu đang diễn ra...' 
-            : isListenersActive 
-            ? 'Các bộ lắng nghe Firestore (Real-time listeners) đang hoạt động tức thì' 
-            : 'Mất kết nối mạng'
+          syncHealthState === 'Syncing'
+            ? 'Thao tác đẩy/kéo (push/pull) dữ liệu Firestore đang diễn ra...'
+            : syncHealthState === 'Real-time'
+            ? 'Các bộ lắng nghe Firestore (Real-time listeners) đang hoạt động tức thì'
+            : 'Mất kết nối mạng - Chế độ ngoại tuyến an toàn'
         }`}
         aria-label={`Sync Health: ${syncHealthState}`}
       >
-        {/* Visual Pulse Beacon / Rotating Indicator */}
-        {isOperationInProgress ? (
-          <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600 shrink-0" />
-        ) : isListenersActive ? (
-          <span className="relative flex h-2.5 w-2.5 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-          </span>
-        ) : (
-          <span className="h-2.5 w-2.5 rounded-full bg-rose-500 shrink-0"></span>
+        {/* Animated Pulse Beacon Icon */}
+        <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden="true">
+          <span
+            className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+              syncHealthState === 'Real-time'
+                ? 'bg-emerald-400'
+                : syncHealthState === 'Syncing'
+                ? 'bg-amber-400'
+                : 'bg-rose-400'
+            }`}
+          />
+          <span
+            className={`relative inline-flex rounded-full h-2.5 w-2.5 shadow-xs ${
+              syncHealthState === 'Real-time'
+                ? 'bg-emerald-500'
+                : syncHealthState === 'Syncing'
+                ? 'bg-amber-500'
+                : 'bg-rose-500'
+            }`}
+          />
+        </span>
+
+        {/* Dynamic Context Icon */}
+        {syncHealthState === 'Real-time' && (
+          <Activity className="w-3.5 h-3.5 text-emerald-600 animate-pulse shrink-0 hidden sm:inline" />
+        )}
+        {syncHealthState === 'Syncing' && (
+          <RefreshCw className="w-3.5 h-3.5 text-amber-600 animate-spin shrink-0" />
+        )}
+        {syncHealthState === 'Offline' && (
+          <WifiOff className="w-3.5 h-3.5 text-rose-600 shrink-0" />
         )}
 
         {/* Sync Health Label & Dynamic Status */}
-        <div className="flex items-center space-x-1.5 leading-none">
+        <div className="flex items-center space-x-1.5 leading-none whitespace-nowrap">
           <span className="text-[11px] font-semibold text-slate-500 hidden sm:inline">
             Sync Health:
           </span>
-          <span className={`font-bold tracking-tight text-xs flex items-center gap-1 ${
-            isOperationInProgress 
-              ? 'text-blue-700 font-extrabold animate-pulse' 
-              : isListenersActive 
-              ? 'text-emerald-700' 
-              : 'text-rose-700'
-          }`}>
+          <span
+            className={`font-bold tracking-tight text-xs flex items-center gap-1 ${
+              syncHealthState === 'Real-time'
+                ? 'text-emerald-700'
+                : syncHealthState === 'Syncing'
+                ? 'text-amber-800 animate-pulse'
+                : 'text-rose-700'
+            }`}
+          >
             {syncHealthState}
-            {isListenersActive && !isOperationInProgress && (
-              <Activity className="w-3 h-3 text-emerald-600 hidden md:inline animate-pulse" />
-            )}
           </span>
         </div>
 
         {/* Stream Count Indicator (Desktop) */}
-        {isListenersActive && !isOperationInProgress && connectedStreams > 0 && (
-          <span className="hidden xl:inline-flex items-center px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-200/80">
+        {syncHealthState === 'Real-time' && connectedStreams > 0 && (
+          <span className="hidden xl:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100/80 text-emerald-800 border border-emerald-200">
             {connectedStreams} streams
           </span>
         )}
@@ -120,17 +166,21 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
             onClick={() => setIsOpen(false)}
           />
           <div 
-            id="cloud-sync-popover"
+            id="sync-health-popover"
             className="absolute right-0 mt-2 w-84 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 z-50 text-slate-800 animate-in fade-in zoom-in-95 duration-150"
           >
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-2">
-                <div className={`p-1.5 rounded-lg ${isOperationInProgress ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                  {isOperationInProgress ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <ShieldCheck className="w-4 h-4" />
-                  )}
+                <div className={`p-1.5 rounded-lg ${
+                  syncHealthState === 'Real-time'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : syncHealthState === 'Syncing'
+                    ? 'bg-amber-100 text-amber-700'
+                    : 'bg-rose-100 text-rose-700'
+                }`}>
+                  {syncHealthState === 'Real-time' && <ShieldCheck className="w-4 h-4" />}
+                  {syncHealthState === 'Syncing' && <RefreshCw className="w-4 h-4 animate-spin" />}
+                  {syncHealthState === 'Offline' && <WifiOff className="w-4 h-4" />}
                 </div>
                 <div>
                   <h4 className="font-bold text-xs text-slate-900">Sync Health Monitor</h4>
@@ -138,9 +188,11 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
                 </div>
               </div>
               <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
-                isOperationInProgress
-                  ? 'bg-blue-100 text-blue-800 animate-pulse'
-                  : 'bg-emerald-100 text-emerald-800'
+                syncHealthState === 'Real-time'
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : syncHealthState === 'Syncing'
+                  ? 'bg-amber-100 text-amber-800 animate-pulse'
+                  : 'bg-rose-100 text-rose-800'
               }`}>
                 {syncHealthState}
               </span>
@@ -154,17 +206,28 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
                   <span>Trạng thái Sync Health:</span>
                 </span>
                 <span className={`font-bold flex items-center space-x-1 ${
-                  isOperationInProgress ? 'text-blue-600' : 'text-emerald-600'
+                  syncHealthState === 'Real-time'
+                    ? 'text-emerald-600'
+                    : syncHealthState === 'Syncing'
+                    ? 'text-amber-600'
+                    : 'text-rose-600'
                 }`}>
-                  {isOperationInProgress ? (
+                  {syncHealthState === 'Real-time' && (
                     <>
-                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Real-time (Active)</span>
+                    </>
+                  )}
+                  {syncHealthState === 'Syncing' && (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                       <span>Syncing (Push/Pull)...</span>
                     </>
-                  ) : (
+                  )}
+                  {syncHealthState === 'Offline' && (
                     <>
-                      <CheckCircle2 className="w-3 h-3" />
-                      <span>Real-time (Active)</span>
+                      <WifiOff className="w-3.5 h-3.5" />
+                      <span>Offline (Mất kết nối)</span>
                     </>
                   )}
                 </span>
@@ -175,9 +238,20 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
                   <Database className="w-3.5 h-3.5 text-slate-400" />
                   <span>Máy chủ Firestore:</span>
                 </span>
-                <span className="font-medium text-emerald-600 flex items-center space-x-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Kết nối trực tiếp</span>
+                <span className={`font-medium flex items-center space-x-1 ${
+                  isOnline ? 'text-emerald-600' : 'text-rose-600'
+                }`}>
+                  {isOnline ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Kết nối trực tiếp</span>
+                    </>
+                  ) : (
+                    <>
+                      <WifiOff className="w-3.5 h-3.5" />
+                      <span>Mất kết nối</span>
+                    </>
+                  )}
                 </span>
               </div>
 
@@ -206,6 +280,16 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
                 </span>
                 <span className="font-mono text-slate-700">{formatTime(lastSyncedAt)}</span>
               </div>
+
+              {lastAutoSaveTime && (
+                <div className="flex items-center justify-between text-slate-600">
+                  <span className="flex items-center space-x-1.5">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Lần tự động lưu:</span>
+                  </span>
+                  <span className="font-mono text-emerald-700 font-semibold">{lastAutoSaveTime}</span>
+                </div>
+              )}
             </div>
 
             {/* Cloud Counts */}
@@ -226,12 +310,13 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
 
             {onOpenIntegrityDashboard && (
               <button
+                id="open-integrity-center-btn"
                 type="button"
                 onClick={() => {
                   setIsOpen(false);
                   onOpenIntegrityDashboard();
                 }}
-                className="w-full mt-2.5 py-2 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 rounded-xl text-xs font-bold transition-colors flex items-center justify-center space-x-2 border border-indigo-200"
+                className="w-full mt-2.5 py-2 px-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 rounded-xl text-xs font-bold transition-colors flex items-center justify-center space-x-2 border border-indigo-200"
               >
                 <Cpu className="w-3.5 h-3.5 text-indigo-600" />
                 <span>Mở Trung Tâm Tự Chẩn Đoán Toàn Vẹn</span>
@@ -239,19 +324,22 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
             )}
 
             <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-[10px] text-slate-400 italic">100% No Local Storage</span>
-              <button
-                type="button"
-                disabled={isSyncing}
-                onClick={async () => {
-                  await onForceSync();
-                  setIsOpen(false);
-                }}
-                className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors flex items-center space-x-1.5 disabled:opacity-50"
-              >
-                <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
-                <span>{isSyncing ? 'Đang tải...' : 'Đồng bộ ngay'}</span>
-              </button>
+              <span className="text-[10px] text-slate-400 italic">Dữ liệu đám mây Firestore</span>
+              {onForceSync && (
+                <button
+                  id="force-sync-btn"
+                  type="button"
+                  disabled={isSyncing || isOperationInProgress}
+                  onClick={async () => {
+                    await onForceSync();
+                    setIsOpen(false);
+                  }}
+                  className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors flex items-center space-x-1.5 disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3 h-3 ${isSyncing || isOperationInProgress ? 'animate-spin' : ''}`} />
+                  <span>{isSyncing || isOperationInProgress ? 'Đang tải...' : 'Đồng bộ ngay'}</span>
+                </button>
+              )}
             </div>
           </div>
         </>
