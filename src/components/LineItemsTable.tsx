@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { LineItem, FeeCategory, ChargeLocation, ChargeBasis, PercentageBase } from '../types/logistics';
+import { PricingWarningItem } from '../types/pricingIntelligence';
 import { PRESET_LOCAL_CHARGES } from '../data/presets';
 import { calculateLineItem, formatUSD, formatVND, formatPercent, formatNumber } from '../utils/formatters';
 import { 
@@ -20,13 +21,18 @@ import {
   Info,
   RefreshCw,
   Edit3,
-  ShieldCheck
+  ShieldCheck,
+  AlertTriangle,
+  AlertOctagon,
+  Clock,
+  ShieldAlert
 } from 'lucide-react';
 
 interface LineItemsTableProps {
   items: LineItem[];
   exchangeRate: number;
   onUpdateItems: (items: LineItem[]) => void;
+  pricingWarnings?: PricingWarningItem[];
   onOpenSurchargeCatalog?: () => void;
   onOpenRateSearch?: () => void;
   onOpenSmartAssistant?: () => void;
@@ -38,6 +44,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
   items, 
   exchangeRate, 
   onUpdateItems, 
+  pricingWarnings = [],
   onOpenSurchargeCatalog,
   onOpenRateSearch,
   onOpenSmartAssistant,
@@ -46,6 +53,31 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
 }) => {
   // Toggle between Compact Customer View and Full Cost/Profit Pricing Engine View
   const [showCostAndProfit, setShowCostAndProfit] = useState(true);
+
+  // Rate Source Traceability & Warning Aggregates
+  const rateTraceabilityAlerts = useMemo(() => {
+    const now = new Date();
+    let expired = 0;
+    let expiring = 0;
+    let lossCount = 0;
+
+    items.forEach(item => {
+      if (item.effectiveTo) {
+        const exp = new Date(item.effectiveTo);
+        if (exp < now) {
+          expired++;
+        } else {
+          const diffDays = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          if (diffDays <= 7) expiring++;
+        }
+      }
+      if (item.costPrice !== undefined && item.costPrice > 0 && item.unitPrice < item.costPrice) {
+        lossCount++;
+      }
+    });
+
+    return { expired, expiring, lossCount };
+  }, [items]);
 
   const handleAddItem = (category: FeeCategory = 'LOCAL_CHARGE', defaultLocation: ChargeLocation = 'POL') => {
     const newItem: LineItem = {
@@ -339,6 +371,51 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
         </div>
       </div>
 
+      {/* Rate Traceability & Intelligence Alert Banner */}
+      {(rateTraceabilityAlerts.expired > 0 || rateTraceabilityAlerts.lossCount > 0 || pricingWarnings.length > 0) && (
+        <div className="mx-4 p-3 bg-gradient-to-r from-amber-50 via-rose-50 to-amber-50 border border-amber-300/80 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center space-x-2.5">
+            <div className="p-1.5 bg-amber-100 text-amber-900 rounded-lg">
+              <ShieldAlert className="w-4 h-4 text-amber-700" />
+            </div>
+            <div>
+              <div className="font-bold text-slate-900 flex items-center gap-2">
+                <span>Kiểm soát nguồn cước & Cảnh báo định giá</span>
+                {rateTraceabilityAlerts.lossCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                    {rateTraceabilityAlerts.lossCount} mục bán lỗ
+                  </span>
+                )}
+                {rateTraceabilityAlerts.expired > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                    {rateTraceabilityAlerts.expired} cước hết hạn
+                  </span>
+                )}
+                {rateTraceabilityAlerts.expiring > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                    {rateTraceabilityAlerts.expiring} cước sắp hết hạn
+                  </span>
+                )}
+              </div>
+              <div className="text-[11px] text-slate-600 mt-0.5">
+                Vui lòng kiểm tra các dòng phí được gắn nhãn cảnh báo trước khi xuất báo giá gửi khách hàng.
+              </div>
+            </div>
+          </div>
+
+          {onCheckRateUpdates && (
+            <button
+              type="button"
+              onClick={onCheckRateUpdates}
+              className="px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-amber-900 font-semibold text-xs hover:bg-amber-50 transition-colors shadow-2xs flex items-center space-x-1.5"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-amber-700" />
+              <span>Đối chiếu biểu cước Master</span>
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Line Items Table Grid */}
       <div className="overflow-x-auto border-t border-b border-slate-200">
         <table className="w-full text-left border-collapse text-xs">
@@ -441,6 +518,76 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                         Đã Sửa Giá
                       </span>
                     )}
+
+                    {/* Rate Validity / Expiry Status Traceability */}
+                    {item.effectiveTo && (() => {
+                      const expDate = new Date(item.effectiveTo);
+                      const now = new Date();
+                      const isExpired = expDate < now;
+                      const diffDays = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                      const isExpiringSoon = !isExpired && diffDays <= 7;
+                      
+                      if (isExpired) {
+                        return (
+                          <span 
+                            className="shrink-0 text-[10px] font-bold bg-rose-100 text-rose-900 border border-rose-300 px-1.5 py-0.5 rounded flex items-center gap-1 shadow-2xs"
+                            title={`Cước nguồn đã hết hiệu lực từ ngày ${item.effectiveTo}`}
+                          >
+                            <Clock className="w-2.5 h-2.5 text-rose-700" />
+                            Hết Hạn
+                          </span>
+                        );
+                      }
+                      if (isExpiringSoon) {
+                        return (
+                          <span 
+                            className="shrink-0 text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-1 shadow-2xs"
+                            title={`Cước nguồn sắp hết hạn sau ${diffDays} ngày (${item.effectiveTo})`}
+                          >
+                            <Clock className="w-2.5 h-2.5 text-amber-700" />
+                            Còn {diffDays}d
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    {/* Carrier Traceability Badge */}
+                    {item.carrier && (
+                      <span 
+                        className="shrink-0 text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-300 px-1.5 py-0.5 rounded"
+                        title={`Hãng vận tải: ${item.carrier}`}
+                      >
+                        {item.carrier}
+                      </span>
+                    )}
+
+                    {/* Negative Profit Warning Badge */}
+                    {item.costPrice !== undefined && item.costPrice > 0 && item.unitPrice < item.costPrice && (
+                      <span 
+                        className="shrink-0 text-[10px] font-bold bg-red-100 text-red-900 border border-red-300 px-1.5 py-0.5 rounded flex items-center gap-1 shadow-2xs animate-pulse"
+                        title={`Cảnh báo: Giá bán (${item.unitPrice}) thấp hơn giá vốn (${item.costPrice})!`}
+                      >
+                        <AlertOctagon className="w-2.5 h-2.5 text-red-700" />
+                        Lỗ Dòng
+                      </span>
+                    )}
+
+                    {/* Line-Specific Intelligence Warnings */}
+                    {pricingWarnings.filter(w => w.itemId === item.id).map(w => (
+                      <span 
+                        key={w.id}
+                        className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow-2xs ${
+                          w.severity === 'CRITICAL' 
+                            ? 'bg-rose-100 text-rose-900 border border-rose-300' 
+                            : 'bg-amber-100 text-amber-900 border border-amber-300'
+                        }`}
+                        title={`${w.titleVi}: ${w.messageVi}${w.actionableSuggestionVi ? `\n💡 Gợi ý: ${w.actionableSuggestionVi}` : ''}`}
+                      >
+                        <AlertTriangle className="w-2.5 h-2.5" />
+                        {w.titleVi}
+                      </span>
+                    ))}
                   </div>
                   <input
                     type="text"
@@ -575,14 +722,19 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                 )}
 
                 {/* Selling Unit Price (Giá bán) */}
-                <td className="px-2.5 py-2.5 bg-blue-50/30">
+                <td className={`px-2.5 py-2.5 ${item.costPrice !== undefined && item.costPrice > 0 && item.unitPrice < item.costPrice ? 'bg-rose-50/50' : 'bg-blue-50/30'}`}>
                   <input
                     type="number"
                     min="0"
                     step="any"
                     value={item.unitPrice}
                     onChange={(e) => handleItemChange(item.id, 'unitPrice', Number(e.target.value) || 0)}
-                    className="w-full px-2 py-1.5 rounded border border-blue-300 text-right font-bold text-blue-950 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                    className={`w-full px-2 py-1.5 rounded text-right font-bold font-mono text-xs focus:outline-none focus:ring-2 ${
+                      item.costPrice !== undefined && item.costPrice > 0 && item.unitPrice < item.costPrice
+                        ? 'border border-rose-400 text-rose-950 bg-rose-50 focus:ring-rose-500'
+                        : 'border border-blue-300 text-blue-950 bg-white focus:ring-blue-500'
+                    }`}
+                    title={item.costPrice !== undefined && item.costPrice > 0 && item.unitPrice < item.costPrice ? `Cảnh báo: Giá bán thấp hơn giá vốn (${item.costPrice})` : undefined}
                   />
                 </td>
 

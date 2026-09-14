@@ -1461,6 +1461,7 @@ export default function App() {
                 items={quote.items}
                 exchangeRate={quote.exchangeRate}
                 onUpdateItems={handleUpdateItems}
+                pricingWarnings={quote.pricingWarnings}
                 onOpenSurchargeCatalog={() => setIsSurchargesOpen(true)}
                 onOpenRateSearch={() => setIsRateSearchOpen(true)}
                 onOpenSmartAssistant={() => setIsSmartAssistantOpen(true)}
@@ -1837,16 +1838,18 @@ export default function App() {
         />
       )}
 
-      {/* Phase 24: Global Data Integrity & Sync Health Dashboard */}
+      {/* Phase 24 & 27: Global Data Integrity & Sync Health Recovery Hub */}
       {isIntegrityDashboardOpen && (
         <DataIntegrityDashboardModal
           isOpen={isIntegrityDashboardOpen}
           onClose={() => setIsIntegrityDashboardOpen(false)}
           quotes={savedQuotes}
           customers={customers}
+          company={company}
           onRefreshData={handleForceCloudSync}
           onApplyFixedQuotes={(fixed) => setSavedQuotes(fixed)}
           onApplyFixedCustomers={(fixed) => setCustomers(fixed)}
+          lang={appLanguage}
         />
       )}
       </Suspense>

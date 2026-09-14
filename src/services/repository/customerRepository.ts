@@ -16,6 +16,7 @@ import {
 import { db } from '../firebase/firebaseConfig';
 import { CustomerRecord, CustomerInfo, QuoteData } from '../../types/logistics';
 import { saveCustomersList, getSavedCustomers } from '../../utils/storage';
+import { syncHealthService } from '../integrity/syncHealthService';
 
 const COLLECTION_NAME = 'customers';
 
@@ -156,20 +157,26 @@ export async function saveCustomer(customer: Partial<CustomerRecord>): Promise<C
     return record;
   }
 
-  try {
-    const docRef = doc(db, COLLECTION_NAME, record.id);
-    await setDoc(docRef, {
-      ...record,
-      _updatedAt: serverTimestamp(),
-    }, { merge: true });
+  const opKey = `save_customer_${record.id}_${Date.now()}`;
+  return syncHealthService.executeWithSafeRetry(
+    opKey,
+    async () => {
+      const docRef = doc(db, COLLECTION_NAME, record.id);
+      await setDoc(docRef, {
+        ...record,
+        _updatedAt: serverTimestamp(),
+      }, { merge: true });
 
-    invalidateCustomerCache();
-    console.log(`[customerRepository] Saved customer ${record.code} (${record.id}) to Firestore successfully.`);
-    return record;
-  } catch (error) {
-    console.error(`[customerRepository] CRITICAL: Failed saving customer ${record.id} to Firestore:`, error);
-    throw error;
-  }
+      invalidateCustomerCache();
+      console.log(`[customerRepository] Saved customer ${record.code} (${record.id}) to Firestore successfully.`);
+      return record;
+    },
+    {
+      entityType: 'Customer',
+      entityId: record.id,
+      maxRetries: 3,
+    }
+  );
 }
 
 /**

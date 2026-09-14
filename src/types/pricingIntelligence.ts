@@ -9,6 +9,93 @@ export type MarginStatus =
   | 'NO_COST'         // Chưa có giá vốn (Cost = 0)
   | 'NO_SELL';        // Chưa có giá bán (Sell = 0)
 
+export type PriceRiskLevel = 
+  | 'SAFE'            // Biên lãi cao hoặc an toàn (>= Target Margin)
+  | 'NORMAL'          // Biên lãi bình thường (nằm giữa ngưỡng an toàn và mục tiêu)
+  | 'LOW_MARGIN'      // Biên lãi thấp (< Minimum Margin)
+  | 'HIGH_RISK'       // Rủi ro cao (sát ngưỡng sàn hoặc gần mức hoà vốn)
+  | 'LOSS'            // Lỗ gộp (Gross Profit < 0)
+  | 'BLOCKED'         // Bị chặn (Vi phạm ngưỡng sàn nghiêm trọng)
+  | 'NO_COST'         // Chưa nhập giá vốn
+  | 'NO_SELL';        // Chưa có giá bán
+
+export interface DiscountIntelligenceSummary {
+  originalSellingPriceUsd: number;
+  originalSellingPriceVnd: number;
+  discountAmountUsd: number;
+  discountAmountVnd: number;
+  discountPercent: number;
+  finalSellingPriceUsd: number;
+  finalSellingPriceVnd: number;
+  netProfitUsd: number;
+  netProfitVnd: number;
+  netMarginPercent: number;
+  maxAllowedDiscountAmountUsd: number;
+  maxAllowedDiscountPercent: number;
+  isDiscountExcessive: boolean;
+}
+
+export type PricingWarningCode =
+  | 'MISSING_COST'
+  | 'MISSING_SELL_PRICE'
+  | 'MISSING_CURRENCY'
+  | 'MISSING_EXCHANGE_RATE'
+  | 'EXPIRED_RATE'
+  | 'EXPIRING_RATE'
+  | 'LOW_MARGIN'
+  | 'LOSS'
+  | 'DISCOUNT_TOO_HIGH'
+  | 'MISSING_CONTRACT_RATE'
+  | 'PRICE_BELOW_SAFE_PRICE'
+  | 'DATA_INTEGRITY_ISSUE';
+
+export interface PricingWarningItem {
+  id: string;
+  code: PricingWarningCode;
+  severity: 'CRITICAL' | 'WARNING' | 'INFO';
+  titleVi: string;
+  titleEn: string;
+  messageVi: string;
+  messageEn: string;
+  itemId?: string;
+  actionableSuggestionVi?: string;
+  actionableSuggestionEn?: string;
+}
+
+export interface PricingRecommendationItem {
+  id: string;
+  type: 'PRICE_INCREASE' | 'DISCOUNT_LIMIT' | 'CONTRACT_AVAILABLE' | 'POLICY_ALIGNMENT' | 'EXPIRY_REVIEW';
+  titleVi: string;
+  titleEn: string;
+  descriptionVi: string;
+  descriptionEn: string;
+  suggestedSellPriceUsd?: number;
+  suggestedSellPriceVnd?: number;
+  expectedMarginPercent?: number;
+  expectedProfitUsd?: number;
+  impactSummaryVi?: string;
+  impactSummaryEn?: string;
+}
+
+export interface RateSourceTraceabilityItem {
+  itemId: string;
+  itemCode: string;
+  itemDescription: string;
+  category: string;
+  location?: string;
+  priceSource: 'CUSTOMER_CONTRACT' | 'SUPPLIER_CONTRACT' | 'STANDARD_RATE' | 'SPOT_RATE' | 'MANUAL';
+  sourceId?: string;
+  sourceContractNumber?: string;
+  carrier?: string;
+  effectiveTo?: string;
+  expiryStatus: 'VALID' | 'EXPIRING_SOON' | 'EXPIRED' | 'UNKNOWN';
+  daysToExpiry?: number;
+  costCurrency: Currency;
+  costUnitPrice: number;
+  sellUnitPrice: number;
+  marginPercent: number;
+}
+
 export type PricingPolicyScope = 
   | 'GLOBAL'             // Áp dụng toàn công ty
   | 'CUSTOMER'           // Khách hàng cụ thể
@@ -120,11 +207,21 @@ export interface ProfitMarginSummary {
   
   // Health & Approval Assessment
   marginStatus: MarginStatus;
+  priceRiskLevel: PriceRiskLevel;
   approvalLevel: ApprovalLevel;
   isBelowTarget: boolean;
   isBelowMinimum: boolean;
   isBlocked: boolean;
   
+  // Minimum Safe Selling Price Floor Intelligence
+  minimumSafeSellPriceUsd: number;
+  minimumSafeSellPriceVnd: number;
+  isMinimumMarginRuleConfigured: boolean;
+  minimumMarginRuleSource: 'CUSTOMER_CONTRACT' | 'PRICING_POLICY' | 'COMPANY_CONFIG' | 'NONE';
+
+  // Discount Intelligence
+  discountIntelligence: DiscountIntelligenceSummary;
+
   // Natural Language Traceability & Explanations
   statusExplanationVi: string;
   statusExplanationEn: string;
@@ -138,6 +235,18 @@ export interface ProfitMarginSummary {
 
   // Line-by-line profit details
   lineDetails: LineProfitabilityDetail[];
+
+  // Phase 28: Warnings, Recommendations & Rate Traceability
+  pricingWarnings: PricingWarningItem[];
+  pricingRecommendations: PricingRecommendationItem[];
+  rateSourceTraceability: RateSourceTraceabilityItem[];
+}
+
+export interface PricingScenarioComparison {
+  current: WhatIfScenarioResult;
+  scenarioA: WhatIfScenarioResult; // Target Margin (e.g. 20%)
+  scenarioB: WhatIfScenarioResult; // Competitive Discount (e.g. 5%)
+  scenarioC: WhatIfScenarioResult; // Safe Floor (Minimum Margin)
 }
 
 export type WhatIfAdjustmentMode = 

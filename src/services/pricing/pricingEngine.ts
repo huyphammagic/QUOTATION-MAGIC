@@ -19,8 +19,12 @@ import {
   calculateMarkupPercent, 
   calculateRecommendedSellPrice, 
   calculateMinimumSellPrice, 
-  evaluateMarginStatus 
+  evaluateMarginStatus,
+  calculateMinimumSafeSellingPrice,
+  evaluatePriceRiskLevel,
+  calculateCompleteProfitSummary
 } from './profitIntelligenceEngine';
+import { DEFAULT_GLOBAL_PRICING_POLICY } from './pricingPolicyService';
 
 /**
  * Creates an empty group breakdown object
@@ -292,6 +296,21 @@ export function calculateQuote(
     },
   };
 
+  const minSafeFloor = calculateMinimumSafeSellingPrice(
+    roundedTotalCostUsd,
+    exchangeRate,
+    DEFAULT_GLOBAL_PRICING_POLICY,
+    (rawQuote as any)?.customerPricingRule
+  );
+
+  const priceRiskLevel = evaluatePriceRiskLevel(
+    profitUsdCalc.marginPercent,
+    profitUsdCalc.profit,
+    DEFAULT_GLOBAL_PRICING_POLICY,
+    roundedTotalCostUsd,
+    roundedSubtotalUsd
+  );
+
   // Construct Full Calculated QuoteData
   const calculatedQuote: QuoteData = {
     id: rawQuote.id || `quote-${Date.now()}`,
@@ -345,12 +364,27 @@ export function calculateQuote(
       roundedTotalCostUsd,
       roundedSubtotalUsd
     ),
+    priceRiskLevel,
+    minimumSafeSellPriceUsd: minSafeFloor.minimumSafeSellPriceUsd,
+    minimumSafeSellPriceVnd: minSafeFloor.minimumSafeSellPriceVnd,
+    isMinimumMarginRuleConfigured: minSafeFloor.isConfigured,
+    minimumMarginRuleSource: minSafeFloor.source,
     recommendedSellPriceUsd: calculateRecommendedSellPrice(roundedTotalCostUsd, rawQuote.targetMarginPercent || 20),
     minimumSellPriceUsd: calculateMinimumSellPrice(roundedTotalCostUsd, rawQuote.minimumMarginPercent || 15),
     priceFloorType: rawQuote.priceFloorType || 'MIN_MARGIN',
     pricingPolicyId: rawQuote.pricingPolicyId,
     pricingPolicyCode: rawQuote.pricingPolicyCode,
   };
+
+  // Run Profit Intelligence engine on the prepared quote to obtain complete audit & recommendations
+  try {
+    const completeProfitSummary = calculateCompleteProfitSummary(calculatedQuote, DEFAULT_GLOBAL_PRICING_POLICY, calculatedQuote.quoteCurrency);
+    calculatedQuote.profitSummary = completeProfitSummary;
+    calculatedQuote.pricingWarnings = completeProfitSummary.pricingWarnings;
+    calculatedQuote.pricingRecommendations = completeProfitSummary.pricingRecommendations;
+  } catch (err) {
+    console.warn('[pricingEngine] Could not attach completeProfitSummary:', err);
+  }
 
   // Run Validation Engine
   const validation = validateQuote(calculatedQuote);

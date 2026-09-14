@@ -15,6 +15,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { QuoteData } from '../../types/logistics';
+import { syncHealthService } from '../integrity/syncHealthService';
+import { recordHealthAudit } from '../audit/systemHealthAuditService';
 
 const COLLECTION_NAME = 'quotes';
 const DRAFT_COLLECTION = 'quotationDrafts';
@@ -201,6 +203,13 @@ export async function saveQuotation(
     };
   }
 
+  const opKey = `save_quote_${quoteId}_${Date.now()}`;
+  syncHealthService.startOperation(opKey, {
+    entityType: 'Quotation',
+    entityId: quoteId,
+    action: 'UPDATE',
+  });
+
   try {
     const docRef = doc(db, COLLECTION_NAME, quoteId);
 
@@ -227,6 +236,20 @@ export async function saveQuotation(
 
         if (remoteVersion > localVersion) {
           console.warn(`[quotationRepository] Concurrency conflict on quote ${quoteId}. Cloud v${remoteVersion} > Local v${localVersion}`);
+          syncHealthService.setSaveState('CONFLICT', `Xung đột phiên bản: Cloud v${remoteVersion} > Máy này v${localVersion}`);
+          syncHealthService.endOperation(opKey, false, new Error('Xung đột phiên bản'));
+
+          await recordHealthAudit({
+            userId: options?.userId || 'Sales User',
+            companyId: 'company_profile',
+            entityType: 'Quotation',
+            entityId: quoteId,
+            action: 'CONFLICT_DETECTED',
+            result: 'WARNING',
+            correlationId: opKey,
+            details: `Xung đột đa thiết bị: Cloud v${remoteVersion} vs Local v${localVersion}`,
+          });
+
           return {
             success: false,
             conflict: true,
@@ -264,6 +287,14 @@ export async function saveQuotation(
       cachedAt: Date.now(),
     });
 
+    if (savedToCloud) {
+      syncHealthService.setSaveState('SAVED', `Đã lưu thành công lên Cloud (v${newVersion})`);
+      syncHealthService.endOperation(opKey, true);
+    } else {
+      syncHealthService.setSaveState('SAVE_FAILED', 'Đã lưu ngoại tuyến, chờ kết nối Cloud');
+      syncHealthService.endOperation(opKey, false, new Error('Chế độ ngoại tuyến'));
+    }
+
     return {
       success: true,
       conflict: false,
@@ -274,6 +305,8 @@ export async function saveQuotation(
     };
   } catch (error: any) {
     console.warn('[quotationRepository] Handled notice saving quotation:', error?.message || error);
+    syncHealthService.setSaveState('SAVE_FAILED', error?.message || 'Lỗi khi lưu');
+    syncHealthService.endOperation(opKey, false, error);
     const fallbackPayload: QuoteData = {
       ...quote,
       id: quoteId,

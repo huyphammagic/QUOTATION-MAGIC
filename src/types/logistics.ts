@@ -137,6 +137,11 @@ export interface LineItem {
   sourceVersion?: number | string; // e.g. 1, 2, or 'V1'
   sourceRateId?: string;       // e.g. CRATE-001
   priceTraceability?: string;  // e.g. "Hợp đồng KH: CTR-2026-001 (V1) - Giá SELL"
+
+  // Phase 28: Discount Intelligence & Original Price
+  originalSellingPrice?: number;
+  discountPercent?: number;
+  discountAmount?: number;
 }
 
 export interface CustomerRecord extends CustomerInfo {
@@ -266,6 +271,18 @@ export interface QuoteData {
   maximumDiscountUsd?: number;
   maximumDiscountPercent?: number;
   marginStatus?: string;
+  priceRiskLevel?: 'LOSS' | 'BLOCKED' | 'LOW_MARGIN' | 'HIGH_RISK' | 'NORMAL' | 'SAFE' | 'NO_COST' | 'NO_SELL';
+  minimumSafeSellPriceUsd?: number;
+  minimumSafeSellPriceVnd?: number;
+  isMinimumMarginRuleConfigured?: boolean;
+  minimumMarginRuleSource?: 'CUSTOMER_CONTRACT' | 'PRICING_POLICY' | 'COMPANY_CONFIG' | 'NONE';
+  originalSubtotalUsd?: number;
+  originalSubtotalVnd?: number;
+  discountPercent?: number;
+  discountAmountUsd?: number;
+  discountAmountVnd?: number;
+  pricingWarnings?: any[];
+  pricingRecommendations?: any[];
   priceFloorType?: any;
   priceLocked?: boolean;
   priceOverrideReason?: string;

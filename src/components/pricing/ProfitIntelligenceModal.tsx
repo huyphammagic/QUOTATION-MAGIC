@@ -6,11 +6,17 @@ import {
   WhatIfAdjustmentMode, 
   WhatIfScenarioRequest, 
   WhatIfScenarioResult,
-  UserProfitPermissions
+  UserProfitPermissions,
+  PricingWarningItem,
+  PricingRecommendationItem,
+  RateSourceTraceabilityItem,
+  PriceRiskLevel,
+  PricingScenarioComparison
 } from '../../types/pricingIntelligence';
 import { 
   calculateCompleteProfitSummary, 
-  simulateWhatIfPricing 
+  simulateWhatIfPricing,
+  generateMultiScenarioComparison
 } from '../../services/pricing/profitIntelligenceEngine';
 import { roundCurrency } from '../../services/pricing/currencyCalculator';
 import { formatUSD, formatVND, formatPercent } from '../../utils/formatters';
@@ -21,9 +27,11 @@ import {
   ShieldAlert, 
   CheckCircle2, 
   AlertTriangle, 
+  AlertOctagon,
   XCircle, 
   HelpCircle, 
   ArrowRight, 
+  ArrowUpRight,
   Sparkles, 
   RotateCcw, 
   FileCheck, 
@@ -33,7 +41,11 @@ import {
   DollarSign,
   Percent,
   Lock,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Clock,
+  ShieldCheck,
+  Activity,
+  Tag
 } from 'lucide-react';
 
 interface ProfitIntelligenceModalProps {
@@ -41,8 +53,8 @@ interface ProfitIntelligenceModalProps {
   onClose: () => void;
   quote: QuoteData;
   activePolicy: PricingPolicyItem;
-  allPolicies: PricingPolicyItem[];
-  onSelectPolicy: (policy: PricingPolicyItem) => void;
+  allPolicies?: PricingPolicyItem[];
+  onSelectPolicy?: (policy: PricingPolicyItem) => void;
   onApplyWhatIfToQuote: (newItems: LineItem[], appliedReason?: string) => void;
   onOpenPolicyManagement: () => void;
   userPermissions?: UserProfitPermissions;
@@ -196,6 +208,87 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
         );
       default:
         return <span>{level}</span>;
+    }
+  };
+
+  // Price Risk Level Badge
+  const renderRiskBadge = (riskLevel: PriceRiskLevel = 'NORMAL') => {
+    switch (riskLevel) {
+      case 'SAFE':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            AN TOÀN (SAFE)
+          </span>
+        );
+      case 'NORMAL':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-teal-500/10 text-teal-400 border border-teal-500/30">
+            <CheckCircle2 className="w-3.5 h-3.5 text-teal-400" />
+            TIÊU CHUẨN (NORMAL)
+          </span>
+        );
+      case 'LOW_MARGIN':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+            BIÊN LÃI THẤP (LOW MARGIN)
+          </span>
+        );
+      case 'HIGH_RISK':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-orange-500/10 text-orange-400 border border-orange-500/30">
+            <AlertTriangle className="w-3.5 h-3.5 text-orange-400" />
+            RỦI RO CAO (HIGH RISK)
+          </span>
+        );
+      case 'LOSS':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-600/20 text-rose-400 border border-rose-500/50">
+            <AlertOctagon className="w-3.5 h-3.5 text-rose-400" />
+            BÁN LỖ (NEGATIVE PROFIT)
+          </span>
+        );
+      case 'BLOCKED':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-600/20 text-red-400 border border-red-500/50">
+            <XCircle className="w-3.5 h-3.5 text-red-400" />
+            BỊ CHẶN PHÁT HÀNH
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
+  // Multi-Scenario Comparison Matrix (O(n) memoized)
+  const multiScenarios: PricingScenarioComparison = useMemo(() => {
+    return generateMultiScenarioComparison(quote, activePolicy, currency);
+  }, [quote, activePolicy, currency]);
+
+  // Handler to Apply a Recommendation Directly into What-If Simulator
+  const handleApplyRecommendationToWhatIf = (rec: PricingRecommendationItem) => {
+    if (rec.suggestedSellPriceUsd && rec.suggestedSellPriceUsd > 0) {
+      setWhatIfMode('DIRECT_SELL');
+      setTargetSellInput(isVnd ? rec.suggestedSellPriceUsd * exchangeRate : rec.suggestedSellPriceUsd);
+    } else if (rec.expectedMarginPercent && rec.expectedMarginPercent > 0) {
+      setWhatIfMode('TARGET_MARGIN');
+      setTargetMarginInput(rec.expectedMarginPercent);
+    }
+    setActiveTab('WHAT_IF');
+  };
+
+  // Handler to Load a Specific Scenario from the Comparison Matrix
+  const handleSelectScenario = (sc: WhatIfScenarioResult) => {
+    if (sc.request.mode === 'TARGET_MARGIN' && sc.request.targetMarginPercent !== undefined) {
+      setWhatIfMode('TARGET_MARGIN');
+      setTargetMarginInput(sc.request.targetMarginPercent);
+    } else if (sc.request.mode === 'DISCOUNT_PERCENT' && sc.request.discountPercent !== undefined) {
+      setWhatIfMode('DISCOUNT_PERCENT');
+      setDiscountPercentInput(sc.request.discountPercent);
+    } else if (sc.request.mode === 'DIRECT_SELL' && sc.request.targetSellPrice !== undefined) {
+      setWhatIfMode('DIRECT_SELL');
+      setTargetSellInput(sc.request.targetSellPrice);
     }
   };
 
@@ -453,8 +546,9 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
               {/* Status Explanation Banner */}
               <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center flex-wrap gap-2">
                     {renderStatusBadge(currentSummary)}
+                    {renderRiskBadge(currentSummary.priceRiskLevel)}
                     <span className="text-xs text-slate-400 font-medium">| Cấp độ duyệt:</span>
                     {renderApprovalLevelBadge(currentSummary.approvalLevel)}
                   </div>
@@ -524,6 +618,209 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                   </p>
                 </div>
               </div>
+
+              {/* Pricing Warnings & Risk Alerts Section */}
+              {currentSummary.pricingWarnings && currentSummary.pricingWarnings.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-rose-300 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-rose-400" />
+                      <span>Cảnh Báo & Rủi Ro Định Giá ({currentSummary.pricingWarnings.length})</span>
+                    </h3>
+                    <span className="text-[11px] text-slate-400">
+                      Tự động phân tích từ cơ cấu giá vốn & chính sách biên lãi
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {currentSummary.pricingWarnings.map((warn) => {
+                      const isCritical = warn.severity === 'CRITICAL';
+                      const isWarning = warn.severity === 'WARNING';
+                      return (
+                        <div 
+                          key={warn.id}
+                          className={`p-3.5 rounded-xl border flex flex-col justify-between space-y-2 ${
+                            isCritical
+                              ? 'bg-rose-950/30 border-rose-800/60 text-rose-200'
+                              : isWarning
+                              ? 'bg-amber-950/30 border-amber-800/60 text-amber-200'
+                              : 'bg-blue-950/30 border-blue-800/60 text-blue-200'
+                          }`}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-bold flex items-center gap-1.5">
+                                {isCritical ? (
+                                  <AlertOctagon className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                                ) : isWarning ? (
+                                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                ) : (
+                                  <Info className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                                )}
+                                <span>{warn.titleVi}</span>
+                              </span>
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
+                                isCritical
+                                  ? 'bg-rose-900/80 text-rose-300 border border-rose-700'
+                                  : isWarning
+                                  ? 'bg-amber-900/80 text-amber-300 border border-amber-700'
+                                  : 'bg-blue-900/80 text-blue-300 border border-blue-700'
+                              }`}>
+                                {warn.severity}
+                              </span>
+                            </div>
+                            <p className="text-[11px] mt-1.5 text-slate-300 leading-relaxed">
+                              {warn.messageVi}
+                            </p>
+                          </div>
+                          {warn.actionableSuggestionVi && (
+                            <div className="pt-2 border-t border-slate-800/80 flex items-start gap-1.5 text-[11px] text-slate-400">
+                              <span className="font-semibold text-cyan-300">Gợi ý:</span>
+                              <span>{warn.actionableSuggestionVi}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Actionable Smart Recommendations Section */}
+              {currentSummary.pricingRecommendations && currentSummary.pricingRecommendations.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-emerald-400" />
+                      <span>Khuyến Nghị Định Giá Thông Minh ({currentSummary.pricingRecommendations.length})</span>
+                    </h3>
+                    <span className="text-[11px] text-slate-400">
+                      Gợi ý tối ưu hóa lợi nhuận và hỗ trợ đàm phán thương mại
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {currentSummary.pricingRecommendations.map((rec) => (
+                      <div
+                        key={rec.id}
+                        className="p-4 rounded-xl bg-slate-950/80 border border-emerald-900/40 hover:border-emerald-700/60 transition-all flex flex-col justify-between space-y-3"
+                      >
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                              <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              <span>{rec.titleVi}</span>
+                            </span>
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                              {rec.type}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-300 leading-relaxed">
+                            {rec.descriptionVi}
+                          </p>
+                          <div className="p-2 rounded-lg bg-slate-900/90 border border-slate-800 text-[11px] space-y-1">
+                            <div className="flex justify-between font-mono">
+                              <span className="text-slate-400">Tác động tài chính:</span>
+                              <span className="text-emerald-300 font-bold">{rec.impactSummaryVi}</span>
+                            </div>
+                            {rec.suggestedSellPriceUsd && (
+                              <div className="flex justify-between font-mono">
+                                <span className="text-slate-400">Giá bán đề xuất:</span>
+                                <span className="text-cyan-300 font-bold">
+                                  {formatMoney(rec.suggestedSellPriceUsd, rec.suggestedSellPriceUsd * exchangeRate)}
+                                </span>
+                              </div>
+                            )}
+                            {rec.expectedMarginPercent && (
+                              <div className="flex justify-between font-mono">
+                                <span className="text-slate-400">Biên lãi mục tiêu:</span>
+                                <span className="text-amber-300 font-bold">
+                                  {formatPercent(rec.expectedMarginPercent, 1)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleApplyRecommendationToWhatIf(rec)}
+                          className="w-full py-2 px-3 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Mô Phỏng Kịch Bản Này (What-If)</span>
+                          <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Rate Source Traceability & Contract Expiry Section */}
+              {currentSummary.rateSourceTraceability && currentSummary.rateSourceTraceability.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-cyan-400" />
+                      <span>Truy Xuất Nguồn Cước & Hạn Hiệu Lực ({currentSummary.rateSourceTraceability.length} Dòng)</span>
+                    </h3>
+                    <span className="text-[11px] text-slate-400">
+                      Kiểm soát hợp đồng cung ứng và cảnh báo trượt giá vốn
+                    </span>
+                  </div>
+                  <div className="border border-slate-800 rounded-xl overflow-x-auto bg-slate-950/60">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800">
+                        <tr>
+                          <th className="p-2.5">Khoản Phí</th>
+                          <th className="p-2.5">Nguồn Định Giá</th>
+                          <th className="p-2.5">Nhà Cung Cấp / HĐ</th>
+                          <th className="p-2.5">Hạn Hiệu Lực</th>
+                          <th className="p-2.5 text-center">Trạng Thái Hạn</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {currentSummary.rateSourceTraceability.map((trace) => {
+                          return (
+                            <tr key={trace.itemId} className="hover:bg-slate-900/40">
+                              <td className="p-2.5 font-bold text-slate-200">
+                                {trace.itemDescription || trace.itemId}
+                              </td>
+                              <td className="p-2.5">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700">
+                                  {trace.sourceType === 'CUSTOMER_CONTRACT' ? 'HĐ Khách Hàng' :
+                                   trace.sourceType === 'SUPPLIER_CONTRACT' ? 'HĐ Nhà Cung Cấp' :
+                                   trace.sourceType === 'MASTER_SNAPSHOT' ? 'Biểu Cước Chuẩn' : 'Nhập Thủ Công'}
+                                </span>
+                              </td>
+                              <td className="p-2.5 font-mono text-slate-300">
+                                {trace.supplierName || trace.sourceReferenceId || 'N/A'}
+                              </td>
+                              <td className="p-2.5 font-mono text-slate-300">
+                                {trace.validTo || 'Không thời hạn'}
+                              </td>
+                              <td className="p-2.5 text-center">
+                                {trace.isExpired ? (
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-800">
+                                    ĐÃ HẾT HẠN
+                                  </span>
+                                ) : trace.isExpiringSoon ? (
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800">
+                                    SẮP HẾT HẠN ({trace.daysUntilExpiry} ngày)
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                                    HỢP LỆ
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               {/* Line-by-Line Profitability Table */}
               <div className="space-y-2">
@@ -625,6 +922,177 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                   <p className="text-slate-400 leading-relaxed">
                     Công cụ chạy hoàn toàn in-memory trên trình duyệt của bạn (Zero Firebase queries). Bạn có thể thử nghiệm các kịch bản giảm giá hoặc điều chỉnh biên lãi, kiểm tra trước tác động lợi nhuận và hạn mức phê duyệt trước khi quyết định áp dụng vào báo giá.
                   </p>
+                </div>
+              </div>
+
+              {/* Multi-Scenario Comparison Matrix */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-amber-400" />
+                    <span>Bảng So Sánh Đa Kịch Bản Định Giá (Logistics Scenario Matrix)</span>
+                  </h3>
+                  <span className="text-[11px] text-slate-400">
+                    Bấm &quot;Chọn Kịch Bản&quot; để nạp tức thì vào bộ điều khiển mô phỏng bên dưới
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {/* Scenario 1: Current Baseline */}
+                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col justify-between space-y-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-300 uppercase">1. HIỆN TẠI</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400">Baseline</span>
+                      </div>
+                      <div className="text-base font-black font-mono text-white">
+                        {formatMoney(multiScenarios.current.simulatedSummary.totalSellUsd, multiScenarios.current.simulatedSummary.totalSellVnd)}
+                      </div>
+                      <div className="text-[11px] space-y-1 font-mono pt-1 text-slate-400 border-t border-slate-900">
+                        <div className="flex justify-between">
+                          <span>Lãi gộp:</span>
+                          <span className="text-emerald-400 font-bold">
+                            +{formatMoney(multiScenarios.current.simulatedSummary.grossProfitUsd, multiScenarios.current.simulatedSummary.grossProfitVnd)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Margin:</span>
+                          <span className="text-cyan-400 font-bold">
+                            {formatPercent(multiScenarios.current.simulatedSummary.grossMarginPercent, 1)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t border-slate-900">
+                      {renderStatusBadge(multiScenarios.current.simulatedSummary)}
+                    </div>
+                  </div>
+
+                  {/* Scenario 2: Target Margin */}
+                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-emerald-900/50 hover:border-emerald-700/60 transition-all flex flex-col justify-between space-y-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-emerald-400 uppercase">2. MỤC TIÊU ({activePolicy.targetMarginPercent}%)</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-800">Chuẩn</span>
+                      </div>
+                      <div className="text-base font-black font-mono text-white">
+                        {formatMoney(multiScenarios.scenarioA.simulatedSummary.totalSellUsd, multiScenarios.scenarioA.simulatedSummary.totalSellVnd)}
+                      </div>
+                      <div className="text-[11px] space-y-1 font-mono pt-1 text-slate-400 border-t border-slate-900">
+                        <div className="flex justify-between">
+                          <span>Lãi gộp:</span>
+                          <span className="text-emerald-400 font-bold">
+                            +{formatMoney(multiScenarios.scenarioA.simulatedSummary.grossProfitUsd, multiScenarios.scenarioA.simulatedSummary.grossProfitVnd)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Margin:</span>
+                          <span className="text-emerald-400 font-bold">
+                            {formatPercent(multiScenarios.scenarioA.simulatedSummary.grossMarginPercent, 1)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-[10px]">
+                          <span>Chênh lệch:</span>
+                          <span className={multiScenarios.scenarioA.diffProfitUsd >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                            {multiScenarios.scenarioA.diffProfitUsd >= 0 ? '+' : ''}
+                            {formatMoney(multiScenarios.scenarioA.diffProfitUsd, multiScenarios.scenarioA.diffProfitVnd)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectScenario(multiScenarios.scenarioA)}
+                      className="w-full py-1.5 px-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-1 transition-all"
+                    >
+                      <span>Chọn Kịch Bản Này</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  {/* Scenario 3: Competitive Discount (-5%) */}
+                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-cyan-900/50 hover:border-cyan-700/60 transition-all flex flex-col justify-between space-y-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-cyan-400 uppercase">3. GIẢM GIÁ (-5%)</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-cyan-950 text-cyan-300 border border-cyan-800">Cạnh Tranh</span>
+                      </div>
+                      <div className="text-base font-black font-mono text-white">
+                        {formatMoney(multiScenarios.scenarioB.simulatedSummary.totalSellUsd, multiScenarios.scenarioB.simulatedSummary.totalSellVnd)}
+                      </div>
+                      <div className="text-[11px] space-y-1 font-mono pt-1 text-slate-400 border-t border-slate-900">
+                        <div className="flex justify-between">
+                          <span>Lãi gộp:</span>
+                          <span className="text-emerald-400 font-bold">
+                            +{formatMoney(multiScenarios.scenarioB.simulatedSummary.grossProfitUsd, multiScenarios.scenarioB.simulatedSummary.grossProfitVnd)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Margin:</span>
+                          <span className="text-cyan-400 font-bold">
+                            {formatPercent(multiScenarios.scenarioB.simulatedSummary.grossMarginPercent, 1)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-[10px]">
+                          <span>Chênh lệch:</span>
+                          <span className={multiScenarios.scenarioB.diffProfitUsd >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                            {multiScenarios.scenarioB.diffProfitUsd >= 0 ? '+' : ''}
+                            {formatMoney(multiScenarios.scenarioB.diffProfitUsd, multiScenarios.scenarioB.diffProfitVnd)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectScenario(multiScenarios.scenarioB)}
+                      className="w-full py-1.5 px-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold flex items-center justify-center gap-1 transition-all"
+                    >
+                      <span>Chọn Kịch Bản Này</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  {/* Scenario 4: Floor Margin */}
+                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-amber-900/50 hover:border-amber-700/60 transition-all flex flex-col justify-between space-y-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-amber-400 uppercase">4. SÀN MIN ({activePolicy.minimumMarginPercent}%)</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-950 text-amber-300 border border-amber-800">An Toàn</span>
+                      </div>
+                      <div className="text-base font-black font-mono text-white">
+                        {formatMoney(multiScenarios.scenarioC.simulatedSummary.totalSellUsd, multiScenarios.scenarioC.simulatedSummary.totalSellVnd)}
+                      </div>
+                      <div className="text-[11px] space-y-1 font-mono pt-1 text-slate-400 border-t border-slate-900">
+                        <div className="flex justify-between">
+                          <span>Lãi gộp:</span>
+                          <span className="text-amber-400 font-bold">
+                            +{formatMoney(multiScenarios.scenarioC.simulatedSummary.grossProfitUsd, multiScenarios.scenarioC.simulatedSummary.grossProfitVnd)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Margin:</span>
+                          <span className="text-amber-400 font-bold">
+                            {formatPercent(multiScenarios.scenarioC.simulatedSummary.grossMarginPercent, 1)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-[10px]">
+                          <span>Chênh lệch:</span>
+                          <span className={multiScenarios.scenarioC.diffProfitUsd >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                            {multiScenarios.scenarioC.diffProfitUsd >= 0 ? '+' : ''}
+                            {formatMoney(multiScenarios.scenarioC.diffProfitUsd, multiScenarios.scenarioC.diffProfitVnd)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectScenario(multiScenarios.scenarioC)}
+                      className="w-full py-1.5 px-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center justify-center gap-1 transition-all"
+                    >
+                      <span>Chọn Kịch Bản Này</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
               </div>
 

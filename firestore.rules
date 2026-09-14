@@ -177,5 +177,15 @@ service cloud.firestore {
     match /companies/{companyId}/{document=**} {
       allow read, write: if true;
     }
+
+    // Phase 27: System Health & Data Integrity Issue Center
+    match /dataIntegrityIssues/{issueId} {
+      allow read, write: if true;
+    }
+
+    // Phase 27: System Health Audits & Concurrency Logs
+    match /systemHealthAudits/{auditId} {
+      allow read, write: if true;
+    }
   }
 }
