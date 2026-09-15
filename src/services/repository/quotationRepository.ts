@@ -18,6 +18,8 @@ import { QuoteData } from '../../types/logistics';
 import { syncHealthService } from '../integrity/syncHealthService';
 import { recordHealthAudit } from '../audit/systemHealthAuditService';
 
+import { validateQuotationIntegrity, isQuotationLocked } from '../integrity/quotationIntegrityEngine';
+
 const COLLECTION_NAME = 'quotes';
 const DRAFT_COLLECTION = 'quotationDrafts';
 
@@ -213,7 +215,8 @@ export async function saveQuotation(
   try {
     const docRef = doc(db, COLLECTION_NAME, quoteId);
 
-    // 1. Conflict Detection: only check if not forcing overwrite
+    // 1. Conflict Detection & Integrity Verification
+    let existingQuoteData: QuoteData | null = null;
     if (!options?.forceOverwrite) {
       let existingSnap: DocumentSnapshot | null = null;
       try {
@@ -231,6 +234,7 @@ export async function saveQuotation(
 
       if (existingSnap && existingSnap.exists()) {
         const remoteData = existingSnap.data() as QuoteData;
+        existingQuoteData = remoteData;
         const remoteVersion = remoteData.version || 1;
         const localVersion = quote.version || 1;
 
@@ -260,6 +264,24 @@ export async function saveQuotation(
 
         newVersion = Math.max(remoteVersion, localVersion) + 1;
       }
+    }
+
+    // Integrity & State Transition Validation (Phase 32)
+    const integrityCheck = validateQuotationIntegrity(quote, {
+      isExistingQuote: !!existingQuoteData,
+      existingStatus: existingQuoteData?.status,
+      userRole: (options as any)?.userRole || 'SALES_REP',
+    });
+
+    if (!integrityCheck.canSave) {
+      const criticalMsg = integrityCheck.issues.filter(i => i.severity === 'CRITICAL').map(i => i.messageVi).join('; ');
+      syncHealthService.setSaveState('SAVE_FAILED', criticalMsg || 'Vi phạm toàn vẹn dữ liệu.');
+      syncHealthService.endOperation(opKey, false, new Error(criticalMsg));
+      return {
+        success: false,
+        conflict: false,
+        message: `Không thể lưu báo giá: ${criticalMsg}`,
+      };
     }
 
     const payload: QuoteData = {

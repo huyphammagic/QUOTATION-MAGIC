@@ -23,8 +23,15 @@ import {
   Clock,
   ExternalLink,
   HelpCircle,
-  ArrowUpRight
+  ArrowUpRight,
+  Sparkles,
+  Terminal,
+  Play
 } from 'lucide-react';
+import { 
+  runAutomatedRegressionSuite, 
+  RegressionSuiteReport 
+} from '../../services/integrity/regressionProtectionEngine';
 import { syncHealthService, SystemHealthSnapshot } from '../../services/integrity/syncHealthService';
 import { 
   runTargetedIntegrityScan, 
@@ -60,7 +67,7 @@ interface DataIntegrityDashboardModalProps {
   lang?: IntegrityLanguage;
 }
 
-type ActiveTab = 'HEALTH' | 'ISSUES' | 'SCAN' | 'STORAGE' | 'AUDIT';
+type ActiveTab = 'HEALTH' | 'ISSUES' | 'SCAN' | 'STORAGE' | 'AUDIT' | 'REGRESSION';
 
 export const DataIntegrityDashboardModal: React.FC<DataIntegrityDashboardModalProps> = ({
   isOpen,
@@ -82,6 +89,10 @@ export const DataIntegrityDashboardModal: React.FC<DataIntegrityDashboardModalPr
   const [scanReport, setScanReport] = useState<IntegrityScanReport | null>(null);
   const [isRecovering, setIsRecovering] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
+
+  // Automated Regression Test Suite state (Phase 32)
+  const [isRunningRegression, setIsRunningRegression] = useState(false);
+  const [regressionReport, setRegressionReport] = useState<RegressionSuiteReport | null>(null);
 
   // Issues Center state
   const [issuesList, setIssuesList] = useState<IntegrityIssueRecord[]>([]);
@@ -328,6 +339,23 @@ export const DataIntegrityDashboardModal: React.FC<DataIntegrityDashboardModalPr
             <History className="w-3.5 h-3.5 text-slate-600" />
             <span>{t.tabAuditLogs}</span>
             <span className="text-[10px] font-mono text-slate-400">({auditLogs.length})</span>
+          </button>
+
+          <button
+            id="tab-regression-suite"
+            type="button"
+            onClick={() => setActiveTab('REGRESSION')}
+            className={`px-3.5 py-2.5 border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+              activeTab === 'REGRESSION'
+                ? 'border-emerald-600 text-emerald-800 bg-white font-bold'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+            }`}
+          >
+            <Terminal className="w-3.5 h-3.5 text-violet-600" />
+            <span>Kiểm thử hồi quy (Regression)</span>
+            <span className="px-1.5 py-0.2 bg-violet-100 text-violet-700 rounded-full text-[10px] font-bold">
+              PHASE 32
+            </span>
           </button>
         </div>
 
@@ -761,6 +789,146 @@ export const DataIntegrityDashboardModal: React.FC<DataIntegrityDashboardModalPr
                   )}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* TAB 6: AUTOMATED REGRESSION SUITE (PHASE 32) */}
+          {activeTab === 'REGRESSION' && (
+            <div className="space-y-4">
+              <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <Terminal className="w-4 h-4 text-violet-600" />
+                    <span>Bộ Kiểm Thử Hồi Quy Toàn Diện (Automated Regression Engine)</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Kiểm định 10 kịch bản nghiệp vụ: Air CW, LCL W/M, Money Safety, Rounding Rules, Immutability & Concurrency.
+                  </p>
+                </div>
+                <button
+                  id="run-regression-suite-btn"
+                  type="button"
+                  disabled={isRunningRegression}
+                  onClick={async () => {
+                    setIsRunningRegression(true);
+                    try {
+                      const report = await runAutomatedRegressionSuite();
+                      setRegressionReport(report);
+                    } finally {
+                      setIsRunningRegression(false);
+                    }
+                  }}
+                  className="px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-bold rounded-xl flex items-center gap-2 shadow-xs transition-colors"
+                >
+                  {isRunningRegression ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Play className="w-4 h-4" />
+                  )}
+                  <span>{isRunningRegression ? 'Đang chạy kiểm định...' : 'Chạy kiểm thử ngay'}</span>
+                </button>
+              </div>
+
+              {regressionReport ? (
+                <div className="space-y-3">
+                  <div className={`p-4 rounded-xl border flex items-center justify-between ${
+                    regressionReport.allPassed 
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-900' 
+                      : 'bg-rose-50 border-rose-200 text-rose-900'
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      {regressionReport.allPassed ? (
+                        <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                      ) : (
+                        <AlertCircle className="w-6 h-6 text-rose-600" />
+                      )}
+                      <div>
+                        <div className="font-extrabold text-sm">
+                          {regressionReport.allPassed ? '100% KIỂM THỬ THÀNH CÔNG (PASSED)' : 'CÓ BÀI KIỂM THỬ KHÔNG ĐẠT'}
+                        </div>
+                        <div className="text-[11px] opacity-80 mt-0.5">
+                          Đã vượt qua {regressionReport.passedCount}/{regressionReport.totalTests} bài test trong {regressionReport.totalDurationMs}ms &bull; Zero Write to Firestore
+                        </div>
+                      </div>
+                    </div>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                      regressionReport.allPassed ? 'bg-emerald-200 text-emerald-800' : 'bg-rose-200 text-rose-800'
+                    }`}>
+                      {regressionReport.passedCount} / {regressionReport.totalTests} ĐẠT
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                    {regressionReport.results.map((test) => (
+                      <div
+                        key={test.id}
+                        className={`p-3 rounded-lg border text-xs flex items-center justify-between ${
+                          test.passed 
+                            ? 'bg-white border-slate-200 hover:border-emerald-300' 
+                            : 'bg-rose-50 border-rose-300'
+                        }`}
+                      >
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded border">
+                              {test.id}
+                            </span>
+                            <span className="font-bold text-slate-800">{test.nameVi}</span>
+                            <span className="text-[10px] text-slate-400 font-mono">({test.category})</span>
+                          </div>
+                          <div className="text-[11px] text-slate-500">{test.nameEn}</div>
+                          {test.error && (
+                            <div className="text-[11px] font-bold text-rose-600 mt-1 font-mono">
+                              Lỗi: {test.error}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {test.executionTimeMs}ms
+                          </span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            test.passed 
+                              ? 'bg-emerald-100 text-emerald-800' 
+                              : 'bg-rose-100 text-rose-800'
+                          }`}>
+                            {test.passed ? 'PASSED' : 'FAILED'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-8 bg-white rounded-xl border border-slate-200 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center mx-auto">
+                    <Terminal className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-800">Sẵn sàng chạy bộ kiểm thử hồi quy Phase 32</h4>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
+                      Bộ kiểm định tự động chạy hoàn toàn trong bộ nhớ RAM, kiểm chứng độ chính xác của các công thức tính giá, làm tròn tiền tệ và bảo vệ tính bất biến của dữ liệu.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setIsRunningRegression(true);
+                      try {
+                        const report = await runAutomatedRegressionSuite();
+                        setRegressionReport(report);
+                      } finally {
+                        setIsRunningRegression(false);
+                      }
+                    }}
+                    className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl text-xs inline-flex items-center gap-2 transition-colors"
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                    <span>Kích hoạt Kiểm thử ngay</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
