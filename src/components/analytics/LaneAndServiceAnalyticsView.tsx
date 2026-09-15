@@ -41,8 +41,8 @@ export const LaneAndServiceAnalyticsView: React.FC<LaneAndServiceAnalyticsViewPr
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-2">
           {services.map(s => {
-            const valUsd = s.totalValueByCurrency['USD'] || 0;
-            const valVnd = s.totalValueByCurrency['VND'] || 0;
+            const valUsd = s.totalValueByCurrency?.['USD'] || 0;
+            const valVnd = s.totalValueByCurrency?.['VND'] || 0;
 
             return (
               <div key={s.serviceKey} className="rounded-xl border border-slate-200 p-4 bg-slate-50/50 hover:bg-white hover:border-blue-400 transition-all shadow-2xs">
@@ -129,7 +129,7 @@ export const LaneAndServiceAnalyticsView: React.FC<LaneAndServiceAnalyticsViewPr
                 </tr>
               ) : (
                 lanes.map((l, idx) => {
-                  const valUsd = l.totalValueByCurrency['USD'] || 0;
+                  const valUsd = l.totalValueByCurrency?.['USD'] || 0;
 
                   return (
                     <tr key={l.laneKey} className="hover:bg-slate-50/80 transition-colors">

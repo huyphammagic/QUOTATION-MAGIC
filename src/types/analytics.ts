@@ -238,18 +238,22 @@ export interface ServiceAnalyticsItem {
 
 export interface AgingBucketItem {
   bucketId: string;
+  bucketKey?: string;
   labelVi: string;
   labelEn: string;
   minDays: number;
   maxDays: number;
   count: number;
   percentOfTotal: number;
+  totalValueByCurrency?: CurrencyAmountMap;
   quotes: {
     id: string;
+    quoteId?: string;
     quoteNumber: string;
     customerName: string;
     createdDate: string;
     daysOpen: number;
+    daysOld?: number;
     status: string;
     grandTotalUsd: number;
     grandTotalVnd: number;
@@ -259,26 +263,34 @@ export interface AgingBucketItem {
 
 export interface ExpiringQuoteItem {
   id: string;
+  quoteId?: string;
   quoteNumber: string;
   customerName: string;
   validityDate: string;
+  validUntil?: string;
   daysRemaining: number;
   isExpired: boolean;
   status: string;
   grandTotalUsd: number;
   grandTotalVnd: number;
+  totalValueByCurrency?: CurrencyAmountMap;
   salesRep: string;
 }
 
 export interface FollowUpAnalyticsSummary {
   totalFollowUps: number;
+  totalTasks?: number;
   openCount: number;
   inProgressCount: number;
   completedCount: number;
+  completedTasks?: number;
   overdueCount: number;
+  overdueTasks?: number;
   dueTodayCount: number;
+  dueTodayTasks?: number;
   upcomingCount: number;
   completionRatePercent: number;
+  completionRate?: number;
   avgCompletionTimeDays: number | null;
 }
 

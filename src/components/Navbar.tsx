@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ship, RefreshCw, Menu, Plus } from 'lucide-react';
+import { Ship, RefreshCw, Menu, Plus, LayoutDashboard } from 'lucide-react';
 import { CompanyProfile } from '../types/logistics';
 import { CloudSyncStatusBadge } from './CloudSyncStatusBadge';
 
@@ -11,6 +11,7 @@ interface NavbarProps {
   onToggleSidebar?: () => void;
   onExchangeRateChange: (rate: number) => void;
   onNewQuote?: () => void;
+  onOpenDashboard?: (tab?: string) => void;
   isCloudSyncing?: boolean;
   onForceCloudSync?: () => Promise<void>;
   lastCloudSyncedAt?: Date | null;
@@ -28,6 +29,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleSidebar,
   onExchangeRateChange,
   onNewQuote,
+  onOpenDashboard,
   isCloudSyncing = false,
   onForceCloudSync,
   lastCloudSyncedAt = null,
@@ -112,12 +114,26 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="text-[11px] font-medium text-slate-400">VND</span>
         </div>
 
+        {/* Dashboard & BI Quick Action */}
+        {onOpenDashboard && (
+          <button
+            type="button"
+            id="btn-navbar-open-dashboard"
+            onClick={() => onOpenDashboard('OVERVIEW')}
+            className="flex items-center space-x-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold text-xs sm:text-sm px-2.5 sm:px-3 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
+            title="Mở Dashboard & BI Tổng Quan"
+          >
+            <LayoutDashboard className="w-4 h-4 text-indigo-600" />
+            <span className="hidden md:inline">Dashboard & BI</span>
+          </button>
+        )}
+
         {/* New Quote Quick Action */}
         {onNewQuote && (
           <button
             type="button"
             onClick={onNewQuote}
-            className="flex items-center space-x-1.5 bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs sm:text-sm px-3 sm:px-3.5 py-1.5 rounded-lg shadow-2xs transition-colors"
+            className="flex items-center space-x-1.5 bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs sm:text-sm px-3 sm:px-3.5 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
             title="Tạo báo giá mới"
           >
             <Plus className="w-4 h-4" />

@@ -27,8 +27,9 @@ interface PricingPolicyManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
   policies: PricingPolicyItem[];
-  onRefreshPolicies: () => Promise<void>;
-  showToast: (msg: string) => void;
+  onRefreshPolicies?: () => Promise<void>;
+  onPoliciesUpdated?: () => Promise<void>;
+  showToast?: (msg: string) => void;
 }
 
 export const PricingPolicyManagementModal: React.FC<PricingPolicyManagementModalProps> = ({
@@ -36,8 +37,11 @@ export const PricingPolicyManagementModal: React.FC<PricingPolicyManagementModal
   onClose,
   policies,
   onRefreshPolicies,
+  onPoliciesUpdated,
   showToast,
 }) => {
+  const refreshHandler = onRefreshPolicies || onPoliciesUpdated || (async () => {});
+  const notify = showToast || ((msg: string) => console.log(msg));
   const [editingPolicy, setEditingPolicy] = useState<PricingPolicyItem | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -84,20 +88,20 @@ export const PricingPolicyManagementModal: React.FC<PricingPolicyManagementModal
       return;
     }
     if (editingPolicy.minimumMarginPercent > editingPolicy.targetMarginPercent) {
-      showToast('Biên lãi tối thiểu không được lớn hơn Biên lãi mục tiêu!');
+      notify('Biên lãi tối thiểu không được lớn hơn Biên lãi mục tiêu!');
       return;
     }
 
     setIsSaving(true);
     try {
       await savePricingPolicyToFirestore(editingPolicy);
-      await onRefreshPolicies();
-      showToast(`Đã lưu chính sách [${editingPolicy.policyCode}] thành công!`);
+      await refreshHandler();
+      notify(`Đã lưu chính sách [${editingPolicy.policyCode}] thành công!`);
       setEditingPolicy(null);
       setIsCreatingNew(false);
     } catch (err) {
       console.error('Error saving policy:', err);
-      showToast('Có lỗi xảy ra khi lưu chính sách!');
+      notify('Có lỗi xảy ra khi lưu chính sách!');
     } finally {
       setIsSaving(false);
     }
@@ -107,13 +111,13 @@ export const PricingPolicyManagementModal: React.FC<PricingPolicyManagementModal
     if (confirm(`Bạn có chắc chắn muốn xóa chính sách [${code}]?`)) {
       try {
         await deletePricingPolicyFromFirestore(id);
-        await onRefreshPolicies();
-        showToast(`Đã xóa chính sách [${code}]!`);
+        await refreshHandler();
+        notify(`Đã xóa chính sách [${code}]!`);
         if (editingPolicy?.id === id) {
           setEditingPolicy(null);
         }
       } catch (err) {
-        showToast('Lỗi khi xóa chính sách!');
+        notify('Lỗi khi xóa chính sách!');
       }
     }
   };

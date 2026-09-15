@@ -23,7 +23,7 @@ export const CustomerAnalyticsTable: React.FC<CustomerAnalyticsTableProps> = ({
     if (sortBy === 'winRate') return b.winRate - a.winRate;
     if (sortBy === 'engagement') return b.engagementScore - a.engagementScore;
     if (sortBy === 'quotes') return b.totalQuotes - a.totalQuotes;
-    return (b.wonValueByCurrency['USD'] || 0) - (a.wonValueByCurrency['USD'] || 0);
+    return (b.wonValueByCurrency?.['USD'] || 0) - (a.wonValueByCurrency?.['USD'] || 0);
   });
 
   const formatVal = (val?: number, curr: string = 'USD') => {

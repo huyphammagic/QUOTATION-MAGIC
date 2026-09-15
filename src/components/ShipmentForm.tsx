@@ -29,7 +29,7 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({ shipment, onChangeSh
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-2xs space-y-4">
+    <div id="shipment-form-section" className="bg-white rounded-xl border border-slate-200 shadow-2xs space-y-4">
       
       {/* Title Header */}
       <div className="p-4 border-b border-slate-100 flex items-center space-x-2">

@@ -123,7 +123,6 @@ export const RateFormModal: React.FC<RateFormModalProps> = ({
         if (found) {
           updated.chargeName = found.chargeName;
           updated.category = found.category;
-          updated.defaultVatRate = found.defaultVatRate;
           updated.vatRate = found.defaultVatRate;
         }
       }

@@ -186,6 +186,10 @@ export interface ShipmentDetails {
   mode: TransportMode;
   pol: string;             // Port of Loading (Cảng bốc hàng)
   pod: string;             // Port of Discharge (Cảng dỡ hàng)
+  origin?: string;         // Origin / Place of receipt / POL alias
+  destination?: string;    // Destination / Place of delivery / POD alias
+  carrier?: string;        // Carrier / Shipping line / Airline
+  serviceType?: string;    // Service type (e.g. OCEAN_FCL, OCEAN_LCL, AIR)
   commodity: string;       // Tên hàng hóa
   containerType: ContainerType;
   quantity: number;        // Số lượng Container / Chuyến / Lô

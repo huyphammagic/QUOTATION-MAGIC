@@ -55,6 +55,9 @@ export interface SupplierItem {
   contactPerson?: string;
   email?: string;
   phone?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  paymentTerms?: string;
   address?: string;
   taxId?: string;
   status: 'ACTIVE' | 'INACTIVE';
@@ -77,6 +80,9 @@ export interface CarrierItem {
   contactPerson?: string;
   email?: string;
   phone?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  rating?: number;
   status: 'ACTIVE' | 'INACTIVE';
   isPreferred?: boolean;
   notes?: string;
@@ -277,9 +283,11 @@ export interface RateHistoryItem {
     | 'RATE_EXPIRED';
   timestamp: string;
   actor: string;
+  performedBy?: string;
   changes?: Record<string, { oldValue: any; newValue: any }>;
   snapshot: Partial<RateMasterItem>;
   note?: string;
+  details?: string;
 }
 
 export interface RateApprovalRequest {

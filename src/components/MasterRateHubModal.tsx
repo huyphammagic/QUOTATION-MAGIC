@@ -66,8 +66,13 @@ interface MasterRateHubModalProps {
   isOpen: boolean;
   onClose: () => void;
   rates: RateMasterItem[];
-  chargeMasters: ChargeMasterItem[];
-  rateHistories: RateHistoryItem[];
+  chargeMasters?: ChargeMasterItem[];
+  charges?: ChargeMasterItem[];
+  rateHistories?: RateHistoryItem[];
+  histories?: RateHistoryItem[];
+  exchangeRate?: number;
+  currentUser?: string;
+  onSelectRateForQuote?: (selectedRate: RateMasterItem) => void;
   onSaveRate: (rate: RateMasterItem) => Promise<void>;
   onDeleteRate: (id: string, softDelete?: boolean) => Promise<void>;
   onSaveCharge: (charge: ChargeMasterItem) => Promise<void>;
@@ -80,8 +85,13 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
   isOpen,
   onClose,
   rates,
-  chargeMasters,
-  rateHistories,
+  chargeMasters: propChargeMasters,
+  charges: propCharges,
+  rateHistories: propRateHistories,
+  histories: propHistories,
+  exchangeRate = 25400,
+  currentUser = 'Pricing Specialist',
+  onSelectRateForQuote,
   onSaveRate,
   onDeleteRate,
   onSaveCharge,
@@ -89,6 +99,8 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
   onBulkImportRates,
   initialTab = 'RATES',
 }) => {
+  const chargeMasters = propChargeMasters || propCharges || [];
+  const rateHistories = propRateHistories || propHistories || [];
   const [activeTab, setActiveTab] = useState<
     'RATES' | 'COMPARISON' | 'MATCHING' | 'EXPIRING' | 'APPROVALS' | 'REQUESTS' | 'ENTITIES' | 'CHARGES' | 'AUDIT'
   >(initialTab);

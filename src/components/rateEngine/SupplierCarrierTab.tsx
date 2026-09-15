@@ -49,7 +49,7 @@ export const SupplierCarrierTab: React.FC<SupplierCarrierTabProps> = ({
       id: `carrier-${Date.now()}`,
       code: '',
       name: '',
-      mode: 'SEA_FCL',
+      mode: 'OCEAN',
       rating: 5,
       status: 'ACTIVE',
       createdAt: new Date().toISOString(),
@@ -63,7 +63,7 @@ export const SupplierCarrierTab: React.FC<SupplierCarrierTabProps> = ({
       id: `sup-${Date.now()}`,
       code: `SUP-${Date.now().toString().slice(-4)}`,
       name: '',
-      type: 'CO_LOADER',
+      type: 'CO-LOADER',
       paymentTerms: 'Credit 30 days',
       status: 'ACTIVE',
       createdAt: new Date().toISOString(),
@@ -274,13 +274,13 @@ export const SupplierCarrierTab: React.FC<SupplierCarrierTabProps> = ({
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">Phương Thức</label>
                   <select
-                    value={editingCarrier.mode || 'SEA_FCL'}
-                    onChange={(e) => setEditingCarrier(prev => ({ ...prev, mode: e.target.value as TransportMode }))}
+                    value={editingCarrier.mode || 'OCEAN'}
+                    onChange={(e) => setEditingCarrier(prev => ({ ...prev, mode: e.target.value as 'OCEAN' | 'AIR' | 'TRUCK' }))}
                     className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
                   >
-                    <option value="SEA_FCL">Sea Freight</option>
-                    <option value="AIR_FREIGHT">Air Freight</option>
-                    <option value="INLAND_TRUCKING">Trucking</option>
+                    <option value="OCEAN">Đường Biển (Ocean)</option>
+                    <option value="AIR">Đường Hàng Không (Air)</option>
+                    <option value="TRUCK">Đường Bộ (Truck)</option>
                   </select>
                 </div>
                 <div>
@@ -377,16 +377,17 @@ export const SupplierCarrierTab: React.FC<SupplierCarrierTabProps> = ({
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">Phân Loại Đối Tác</label>
                   <select
-                    value={editingSupplier.type || 'CO_LOADER'}
+                    value={editingSupplier.type || 'CO-LOADER'}
                     onChange={(e) => setEditingSupplier(prev => ({ ...prev, type: e.target.value as any }))}
                     className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
                   >
-                    <option value="SHIPPING_LINE">Hãng Tàu (Shipping Line)</option>
-                    <option value="AIRLINE">Hãng Hàng Không (Airline)</option>
-                    <option value="CO_LOADER">Tổng Đại Lý Gom Hàng (Co-Loader)</option>
-                    <option value="TRUCKING_VENDOR">Nhà Xe Nội Địa (Trucking)</option>
-                    <option value="CUSTOMS_BROKER">Đại Lý Hải Quan (Broker)</option>
-                    <option value="OVERSEAS_AGENT">Đại Lý Quốc Tế (Agent)</option>
+                    <option value="CARRIER">Hãng Vận Tải (Carrier)</option>
+                    <option value="CO-LOADER">Tổng Đại Lý Gom Hàng (Co-Loader)</option>
+                    <option value="TRUCKING">Nhà Xe Vận Tải (Trucking)</option>
+                    <option value="CUSTOMS_BROKER">Đại Lý Hải Quan (Customs Broker)</option>
+                    <option value="OVERSEAS_AGENT">Đại Lý Quốc Tế (Overseas Agent)</option>
+                    <option value="WAREHOUSE">Kho Bãi (Warehouse)</option>
+                    <option value="OTHER">Khác (Other)</option>
                   </select>
                 </div>
                 <div>

@@ -34,14 +34,14 @@ export const KpiCardsGrid: React.FC<KpiCardsGridProps> = ({
     return val.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   };
 
-  const wonUsd = kpis.wonValueByCurrency['USD'] || 0;
-  const wonVnd = kpis.wonValueByCurrency['VND'] || 0;
-  const lostUsd = kpis.lostValueByCurrency['USD'] || 0;
-  const lostVnd = kpis.lostValueByCurrency['VND'] || 0;
-  const totalUsd = kpis.totalValueByCurrency['USD'] || 0;
-  const totalVnd = kpis.totalValueByCurrency['VND'] || 0;
-  const avgUsd = kpis.avgQuoteValueByCurrency['USD'] || 0;
-  const avgVnd = kpis.avgQuoteValueByCurrency['VND'] || 0;
+  const wonUsd = kpis?.wonValueByCurrency?.['USD'] || 0;
+  const wonVnd = kpis?.wonValueByCurrency?.['VND'] || 0;
+  const lostUsd = kpis?.lostValueByCurrency?.['USD'] || 0;
+  const lostVnd = kpis?.lostValueByCurrency?.['VND'] || 0;
+  const totalUsd = kpis?.totalValueByCurrency?.['USD'] || 0;
+  const totalVnd = kpis?.totalValueByCurrency?.['VND'] || 0;
+  const avgUsd = kpis?.avgQuoteValueByCurrency?.['USD'] || 0;
+  const avgVnd = kpis?.avgQuoteValueByCurrency?.['VND'] || 0;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">

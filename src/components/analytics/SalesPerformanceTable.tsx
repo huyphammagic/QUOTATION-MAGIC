@@ -22,7 +22,7 @@ export const SalesPerformanceTable: React.FC<SalesPerformanceTableProps> = ({
   filtered.sort((a, b) => {
     if (sortBy === 'winRate') return b.winRate - a.winRate;
     if (sortBy === 'quotes') return b.totalQuotes - a.totalQuotes;
-    return (b.wonValueByCurrency['USD'] || 0) - (a.wonValueByCurrency['USD'] || 0);
+    return (b.wonValueByCurrency?.['USD'] || 0) - (a.wonValueByCurrency?.['USD'] || 0);
   });
 
   const formatVal = (val?: number, curr: string = 'USD') => {

@@ -141,6 +141,14 @@ import {
 } from './services/repository/quotationRepository';
 import { fetchRateMasters } from './services/repository/rateRepository';
 import { UserRole } from './types/analytics';
+import { AppRouteId } from './navigation/routeTypes';
+import { APP_ROUTES, parseRouteFromUrl, checkRoutePermission } from './navigation/navigationRegistry';
+import { RouteErrorBoundary } from './components/common/RouteErrorBoundary';
+import { AccessDeniedModal } from './components/common/AccessDeniedModal';
+import { NotFoundViewModal } from './components/common/NotFoundViewModal';
+import { QuotationCommunicationModal } from './components/communication/QuotationCommunicationModal';
+import { loadSuppliers, loadCarriers } from './services/masterRate/supplierCarrierService';
+import { SupplierItem, CarrierItem } from './types/masterRate';
 
 import { Check, Ship, ShieldCheck, Sparkles } from 'lucide-react';
 
@@ -240,6 +248,74 @@ export default function App() {
   const [pricingPolicies, setPricingPolicies] = useState<PricingPolicyItem[]>([DEFAULT_GLOBAL_PRICING_POLICY]);
   const [activePricingPolicy, setActivePricingPolicy] = useState<PricingPolicyItem>(DEFAULT_GLOBAL_PRICING_POLICY);
 
+  // Phase 30: Central Routing, Module Access & Reliability Engine States
+  const [activeRouteId, setActiveRouteId] = useState<string>('quotation_workbench');
+  const [accessDeniedState, setAccessDeniedState] = useState<{ isOpen: boolean; moduleName: string; requiredDesc: string }>({
+    isOpen: false,
+    moduleName: '',
+    requiredDesc: '',
+  });
+  const [notFoundPath, setNotFoundPath] = useState<string | null>(null);
+  const [contractSuppliers, setContractSuppliers] = useState<SupplierItem[]>([]);
+  const [contractCarriers, setContractCarriers] = useState<CarrierItem[]>([]);
+
+  // Preload real Suppliers and Carriers for Contract and Rate Hubs (100% Cloud-First)
+  const ensureSuppliersAndCarriersLoaded = async () => {
+    if (contractSuppliers.length === 0) {
+      try {
+        const sups = await loadSuppliers();
+        if (Array.isArray(sups)) setContractSuppliers(sups);
+      } catch (e) {
+        console.warn('Notice loading suppliers from Cloud:', e);
+      }
+    }
+    if (contractCarriers.length === 0) {
+      try {
+        const cars = await loadCarriers();
+        if (Array.isArray(cars)) setContractCarriers(cars);
+      } catch (e) {
+        console.warn('Notice loading carriers from Cloud:', e);
+      }
+    }
+  };
+
+  const closeAllModals = () => {
+    setIsDashboardOpen(false);
+    setIsSmartQuotationWorkspaceOpen(false);
+    setIsSavedOpen(false);
+    setIsCustomersOpen(false);
+    setIsSurchargesOpen(false);
+    setIsMasterRateHubOpen(false);
+    setIsRateSearchOpen(false);
+    setIsSmartAssistantOpen(false);
+    setIsComparisonModalOpen(false);
+    setIsCompanyOpen(false);
+    setIsDataBackupOpen(false);
+    setIsPreviewOpen(false);
+    setIsDocumentHistoryOpen(false);
+    setIsTemplateBuilderOpen(false);
+    setIsGeneratePdfOpen(false);
+    setIsSendQuotationOpen(false);
+    setIsCommunicationPanelOpen(false);
+    setIsEmailTemplatesOpen(false);
+    setIsFollowUpOpen(false);
+    setIsMasterDataRefOpen(false);
+    setIsContractsOpen(false);
+    setIsProfitIntelligenceOpen(false);
+    setIsPricingPolicyMgmtOpen(false);
+    setIsIntegrityDashboardOpen(false);
+    setViewingSecureToken(null);
+    setNotFoundPath(null);
+  };
+
+  const handleModalClose = () => {
+    closeAllModals();
+    setActiveRouteId('quotation_workbench');
+    if (window.location.hash) {
+      window.history.pushState(null, '', window.location.pathname);
+    }
+  };
+
   const loadPricingPoliciesData = async () => {
     try {
       const list = await getPricingPoliciesFromFirestore();
@@ -264,32 +340,207 @@ export default function App() {
     loadContractsCount();
   }, [isContractsOpen]);
 
-  // Listen for secure quote URLs like /q/:token or #q/:token or #dashboard
+  // Unified Route Navigation Function (Phase 30)
+  const navigateToRoute = (routeId: AppRouteId | 'workbench', param?: string, options?: { skipHistory?: boolean }) => {
+    // 1. Strict RBAC Permission Check
+    if (routeId !== 'workbench') {
+      const perm = checkRoutePermission(routeId, appUserRole);
+      if (!perm.hasAccess) {
+        setAccessDeniedState({
+          isOpen: true,
+          moduleName: APP_ROUTES[routeId]?.titleVi || routeId,
+          requiredDesc: perm.requiredDesc,
+        });
+        return;
+      }
+    }
+
+    // 2. Clear open modals
+    closeAllModals();
+
+    // 3. Return to Quotation Workbench
+    if (routeId === 'workbench') {
+      setActiveRouteId('quotation_workbench');
+      if (!options?.skipHistory && window.location.hash) {
+        window.history.pushState(null, '', window.location.pathname);
+      }
+      return;
+    }
+
+    // 4. Update route state and URL hash
+    setActiveRouteId(routeId);
+    const routeDef = APP_ROUTES[routeId];
+    if (!options?.skipHistory && routeDef?.hash && window.location.hash !== routeDef.hash) {
+      window.history.pushState(null, '', routeDef.hash);
+    }
+
+    // 5. Dispatch to corresponding module
+    switch (routeId) {
+      case 'main_dashboard':
+        handleOpenDashboard('OVERVIEW');
+        break;
+      case 'analytics_overview':
+        handleOpenDashboard('OVERVIEW');
+        break;
+      case 'analytics_funnel':
+        handleOpenDashboard('FUNNEL');
+        break;
+      case 'analytics_sales':
+        handleOpenDashboard('SALES');
+        break;
+      case 'analytics_profit':
+        handleOpenDashboard('PROFITABILITY');
+        break;
+      case 'analytics_lanes':
+        handleOpenDashboard('LANES_SERVICES');
+        break;
+      case 'smart_quotation_workspace':
+        setIsSmartQuotationWorkspaceOpen(true);
+        break;
+      case 'quotation_new':
+        handleNewQuote();
+        setActiveRouteId('quotation_workbench');
+        if (!options?.skipHistory) {
+          window.history.pushState(null, '', window.location.pathname);
+        }
+        break;
+      case 'quotations_all':
+        handleOpenSavedQuotes('ALL');
+        break;
+      case 'quotations_draft':
+        handleOpenSavedQuotes('DRAFT');
+        break;
+      case 'quotations_pending':
+        handleOpenSavedQuotes('PENDING_APPROVAL');
+        break;
+      case 'quotations_sent':
+        handleOpenSavedQuotes('SENT');
+        break;
+      case 'quotation_preview':
+        setIsPreviewOpen(true);
+        break;
+      case 'quotation_snapshots':
+        setIsDocumentHistoryOpen(true);
+        break;
+      case 'quotation_templates':
+        setIsTemplateBuilderOpen(true);
+        break;
+      case 'quotation_send':
+        loadQuotationDocuments(quote.id);
+        setIsSendQuotationOpen(true);
+        break;
+      case 'quotation_communication':
+        loadQuotationDocuments(quote.id);
+        setIsCommunicationPanelOpen(true);
+        break;
+      case 'quotation_email_templates':
+        setIsEmailTemplatesOpen(true);
+        break;
+      case 'quotation_followup':
+        setIsFollowUpOpen(true);
+        break;
+      case 'pricing_rates':
+        handleOpenMasterRateHub('RATES');
+        break;
+      case 'pricing_contracts':
+        ensureSuppliersAndCarriersLoaded();
+        setIsContractsOpen(true);
+        break;
+      case 'pricing_policies':
+        setIsPricingPolicyMgmtOpen(true);
+        break;
+      case 'pricing_profit':
+        setIsProfitIntelligenceOpen(true);
+        break;
+      case 'pricing_smart':
+        setIsSmartAssistantOpen(true);
+        break;
+      case 'pricing_search':
+        setIsRateSearchOpen(true);
+        break;
+      case 'master_customers':
+        setIsCustomersOpen(true);
+        break;
+      case 'master_suppliers':
+        ensureSuppliersAndCarriersLoaded();
+        handleOpenMasterRateHub('SUPPLIERS');
+        break;
+      case 'master_charges':
+        handleOpenMasterRateHub('CHARGES');
+        break;
+      case 'master_surcharges':
+        setIsSurchargesOpen(true);
+        break;
+      case 'master_ports':
+        handleOpenMasterDataRef('PORT');
+        break;
+      case 'master_containers':
+        handleOpenMasterDataRef('CONTAINER_TYPE');
+        break;
+      case 'master_incoterms':
+        handleOpenMasterDataRef('INCOTERM');
+        break;
+      case 'master_payment_terms':
+        handleOpenMasterDataRef('PAYMENT_TERM');
+        break;
+      case 'ops_ocean':
+        handleSelectTransportMode('SEA_FCL');
+        break;
+      case 'ops_air':
+        handleSelectTransportMode('AIR_FREIGHT');
+        break;
+      case 'ops_trucking':
+        handleSelectTransportMode('INLAND_TRUCKING');
+        break;
+      case 'ops_customs':
+        handleSelectTransportMode('CUSTOMS_CLEARANCE');
+        break;
+      case 'sys_profile':
+        handleOpenCompanyProfile('profile');
+        break;
+      case 'sys_sales_bank':
+        handleOpenCompanyProfile('sales');
+        break;
+      case 'sys_audit':
+        handleOpenMasterRateHub('AUDIT');
+        break;
+      case 'sys_backup':
+        setIsDataBackupOpen(true);
+        break;
+      case 'sys_integrity':
+        setIsIntegrityDashboardOpen(true);
+        break;
+      case 'secure_quote_portal':
+        if (param) setViewingSecureToken(param);
+        break;
+      default:
+        setActiveRouteId('quotation_workbench');
+        break;
+    }
+  };
+
+  // Synchronize Browser Address Bar (Path and Hash) with Navigation Engine
   useEffect(() => {
-    const checkRoute = () => {
-      const path = window.location.pathname;
-      const hash = window.location.hash;
-      if (path.startsWith('/q/')) {
-        const tok = path.replace('/q/', '').trim();
-        if (tok) setViewingSecureToken(tok);
-      } else if (hash.startsWith('#/q/') || hash.startsWith('#q/')) {
-        const tok = hash.replace(/^#(?:|\/)q\//, '').trim();
-        if (tok) setViewingSecureToken(tok);
-      } else if (
-        hash === '#analytics' || 
-        hash === '#dashboard' || 
-        hash.startsWith('#/analytics') || 
-        hash.startsWith('#/dashboard') ||
-        path === '/analytics' ||
-        path === '/dashboard'
-      ) {
-        setIsDashboardOpen(true);
+    const handleUrlRouteSync = () => {
+      const parsed = parseRouteFromUrl(window.location.pathname, window.location.hash);
+      if (parsed.isNotFound) {
+        setNotFoundPath(window.location.hash || window.location.pathname);
+      } else if (parsed.routeId) {
+        navigateToRoute(parsed.routeId, parsed.param, { skipHistory: true });
+      } else {
+        closeAllModals();
+        setActiveRouteId('quotation_workbench');
       }
     };
-    checkRoute();
-    window.addEventListener('hashchange', checkRoute);
-    return () => window.removeEventListener('hashchange', checkRoute);
-  }, []);
+
+    handleUrlRouteSync();
+    window.addEventListener('popstate', handleUrlRouteSync);
+    window.addEventListener('hashchange', handleUrlRouteSync);
+    return () => {
+      window.removeEventListener('popstate', handleUrlRouteSync);
+      window.removeEventListener('hashchange', handleUrlRouteSync);
+    };
+  }, [appUserRole]);
 
   // Load comprehensive analytics data across all collections
   const loadAnalyticsData = async () => {
@@ -1320,36 +1571,73 @@ export default function App() {
           isAutoSaving={isAutoSaving}
           isOpenMobile={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
-          onNewQuote={handleNewQuote}
-          onOpenSavedQuotes={handleOpenSavedQuotes}
-          onOpenCompanyProfile={handleOpenCompanyProfile}
-          onOpenCustomers={() => setIsCustomersOpen(true)}
-          onOpenSurchargeCatalog={() => setIsSurchargesOpen(true)}
-          onOpenMasterRateHub={handleOpenMasterRateHub}
-          onOpenRateSearch={() => setIsRateSearchOpen(true)}
-          onOpenSmartAssistant={() => setIsSmartAssistantOpen(true)}
-          onOpenDataBackup={() => setIsDataBackupOpen(true)}
-          onOpenPreview={() => setIsPreviewOpen(true)}
-          onOpenDocumentHistory={() => setIsDocumentHistoryOpen(true)}
-          onOpenTemplateBuilder={() => setIsTemplateBuilderOpen(true)}
+          onNewQuote={() => navigateToRoute('quotation_new')}
+          onOpenSavedQuotes={(filter) => {
+            if (filter === 'DRAFT') navigateToRoute('quotations_draft');
+            else if (filter === 'PENDING_APPROVAL') navigateToRoute('quotations_pending');
+            else if (filter === 'SENT') navigateToRoute('quotations_sent');
+            else navigateToRoute('quotations_all');
+          }}
+          onOpenCompanyProfile={(tab) => {
+            if (tab === 'sales') navigateToRoute('sys_sales_bank');
+            else navigateToRoute('sys_profile');
+          }}
+          onOpenCustomers={() => navigateToRoute('master_customers')}
+          onOpenSurchargeCatalog={() => navigateToRoute('master_surcharges')}
+          onOpenMasterRateHub={(tab) => {
+            if (tab === 'SUPPLIERS') navigateToRoute('master_suppliers');
+            else if (tab === 'CHARGES') navigateToRoute('master_charges');
+            else if (tab === 'AUDIT') navigateToRoute('sys_audit');
+            else navigateToRoute('pricing_rates');
+          }}
+          onOpenRateSearch={() => navigateToRoute('pricing_search')}
+          onOpenSmartAssistant={() => navigateToRoute('pricing_smart')}
+          onOpenDataBackup={() => navigateToRoute('sys_backup')}
+          onOpenPreview={() => navigateToRoute('quotation_preview')}
+          onOpenDocumentHistory={() => navigateToRoute('quotation_snapshots')}
+          onOpenTemplateBuilder={() => navigateToRoute('quotation_templates')}
           onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
-          onOpenSendModal={() => setIsSendQuotationOpen(true)}
-          onOpenCommunication={() => setIsCommunicationPanelOpen(true)}
-          onOpenSmartQuotationWorkspace={() => setIsSmartQuotationWorkspaceOpen(true)}
-          onOpenEmailTemplates={() => setIsEmailTemplatesOpen(true)}
-          onOpenFollowUps={() => setIsFollowUpOpen(true)}
-          onOpenDashboard={handleOpenDashboard}
-          onOpenContracts={() => setIsContractsOpen(true)}
+          onOpenSendModal={() => navigateToRoute('quotation_send')}
+          onOpenCommunication={() => navigateToRoute('quotation_communication')}
+          onOpenSmartQuotationWorkspace={() => navigateToRoute('smart_quotation_workspace')}
+          onOpenEmailTemplates={() => navigateToRoute('quotation_email_templates')}
+          onOpenFollowUps={() => navigateToRoute('quotation_followup')}
+          onOpenDashboard={(tab) => {
+            if (tab === 'FUNNEL') navigateToRoute('analytics_funnel');
+            else if (tab === 'SALES') navigateToRoute('analytics_sales');
+            else if (tab === 'PROFITABILITY') navigateToRoute('analytics_profit');
+            else if (tab === 'LANES_SERVICES') navigateToRoute('analytics_lanes');
+            else navigateToRoute('main_dashboard');
+          }}
+          onOpenContracts={() => navigateToRoute('pricing_contracts')}
           contractsCount={contractsCount}
-          onOpenProfitIntelligence={() => setIsProfitIntelligenceOpen(true)}
-          onOpenPricingPolicies={() => setIsPricingPolicyMgmtOpen(true)}
-          onOpenMasterDataReference={handleOpenMasterDataRef}
-          onSelectTransportMode={handleSelectTransportMode}
+          onOpenProfitIntelligence={() => navigateToRoute('pricing_profit')}
+          onOpenPricingPolicies={() => navigateToRoute('pricing_policies')}
+          onOpenMasterDataReference={(type) => {
+            if (type === 'PORT') navigateToRoute('master_ports');
+            else if (type === 'CONTAINER_TYPE') navigateToRoute('master_containers');
+            else if (type === 'INCOTERM') navigateToRoute('master_incoterms');
+            else if (type === 'PAYMENT_TERM') navigateToRoute('master_payment_terms');
+          }}
+          onSelectTransportMode={(mode) => {
+            if (mode === 'SEA_FCL' || mode === 'SEA_LCL') navigateToRoute('ops_ocean');
+            else if (mode === 'AIR_FREIGHT') navigateToRoute('ops_air');
+            else if (mode === 'INLAND_TRUCKING') navigateToRoute('ops_trucking');
+            else if (mode === 'CUSTOMS_CLEARANCE') navigateToRoute('ops_customs');
+          }}
           currentUserRole={appUserRole}
           onRoleChange={setAppUserRole}
           language={appLanguage}
           onLanguageChange={setAppLanguage}
-          onOpenIntegrityDashboard={() => setIsIntegrityDashboardOpen(true)}
+          activeRouteId={activeRouteId}
+          onOpenIntegrityDashboard={() => navigateToRoute('sys_integrity')}
+          onAccessDenied={(moduleName, requiredRoleDesc) => {
+            setAccessDeniedState({
+              isOpen: true,
+              moduleName,
+              requiredDesc: requiredRoleDesc,
+            });
+          }}
         />
 
         {/* Right Main Application Workspace */}
@@ -1371,6 +1659,7 @@ export default function App() {
             customerCount={customers.length}
             rateCount={rates.length}
             onOpenIntegrityDashboard={() => setIsIntegrityDashboardOpen(true)}
+            onOpenDashboard={handleOpenDashboard}
           />
 
           {/* Main Content Area */}
@@ -1530,328 +1819,425 @@ export default function App() {
       </div>
 
       {/* Modals */}
-      <Suspense fallback={null}>
+      <Suspense fallback={
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl shadow-xl px-6 py-4 flex items-center gap-3 border border-slate-200">
+            <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <span className="text-xs font-semibold text-slate-700">Đang tải phân hệ...</span>
+          </div>
+        </div>
+      }>
         {isPreviewOpen && (
-          <QuotePreviewModal
-            quote={quote}
-            isOpen={isPreviewOpen}
-            onClose={() => setIsPreviewOpen(false)}
-            onCurrencyChange={handleQuoteCurrencyChange}
-          />
+          <RouteErrorBoundary routeName="Xem Trước Báo Giá" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+            <QuotePreviewModal
+              quote={quote}
+              isOpen={isPreviewOpen}
+              onClose={handleModalClose}
+              onCurrencyChange={handleQuoteCurrencyChange}
+            />
+          </RouteErrorBoundary>
         )}
 
       {isCustomersOpen && (
-        <CustomerManagerModal
-          isOpen={isCustomersOpen}
-          onClose={() => setIsCustomersOpen(false)}
-          customers={customers}
-          onSaveCustomer={handleSaveCustomer}
-          onDeleteCustomer={handleDeleteCustomer}
-          onSelectCustomerForQuote={handleSelectCustomerForQuote}
-          onForceRefresh={async () => {
-            const fresh = await fetchCustomers(true);
-            setCustomers(fresh);
-            showToast(`Đã đồng bộ ${fresh.length} khách hàng từ Firebase Cloud!`);
-          }}
-          isSyncing={isCloudSyncing}
-        />
+        <RouteErrorBoundary routeName="Quản Lý Khách Hàng CRM" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <CustomerManagerModal
+            isOpen={isCustomersOpen}
+            onClose={handleModalClose}
+            customers={customers}
+            onSaveCustomer={handleSaveCustomer}
+            onDeleteCustomer={handleDeleteCustomer}
+            onSelectCustomerForQuote={handleSelectCustomerForQuote}
+            onForceRefresh={async () => {
+              const fresh = await fetchCustomers(true);
+              setCustomers(fresh);
+              showToast(`Đã đồng bộ ${fresh.length} khách hàng từ Firebase Cloud!`);
+            }}
+            isSyncing={isCloudSyncing}
+          />
+        </RouteErrorBoundary>
       )}
 
       {isSurchargesOpen && (
-        <SurchargeCatalogModal
-          isOpen={isSurchargesOpen}
-          onClose={() => setIsSurchargesOpen(false)}
-          surcharges={surcharges}
-          exchangeRate={quote.exchangeRate}
-          onSaveSurcharge={handleSaveSurcharge}
-          onDeleteSurcharge={handleDeleteSurcharge}
-          onAddSurchargeToQuote={handleAddSurchargeToQuote}
-        />
+        <RouteErrorBoundary routeName="Biểu Phí Phụ Phí Surcharges" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <SurchargeCatalogModal
+            isOpen={isSurchargesOpen}
+            onClose={handleModalClose}
+            surcharges={surcharges}
+            exchangeRate={quote.exchangeRate}
+            onSaveSurcharge={handleSaveSurcharge}
+            onDeleteSurcharge={handleDeleteSurcharge}
+            onAddSurchargeToQuote={handleAddSurchargeToQuote}
+          />
+        </RouteErrorBoundary>
       )}
 
       {isMasterRateHubOpen && (
-        <MasterRateHubModal
-          isOpen={isMasterRateHubOpen}
-          onClose={() => setIsMasterRateHubOpen(false)}
-          initialTab={masterRateHubTab}
-          rates={rates}
-          charges={chargeMasters}
-          histories={rateHistories}
-          exchangeRate={quote.exchangeRate}
-          currentUser={company.salesRepName || 'Pricing Manager'}
-          onSaveRate={handleSaveRate}
-          onDeleteRate={handleDeleteRate}
-          onSaveCharge={handleSaveCharge}
-          onDeleteCharge={handleDeleteCharge}
-          onBulkImportRates={handleBulkImportRates}
-          onSelectRateForQuote={handleSelectRateForQuote}
-        />
+        <RouteErrorBoundary routeName="Trung Tâm Biểu Cước Master Rates" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <MasterRateHubModal
+            isOpen={isMasterRateHubOpen}
+            onClose={handleModalClose}
+            initialTab={masterRateHubTab}
+            rates={rates}
+            charges={chargeMasters}
+            histories={rateHistories}
+            exchangeRate={quote.exchangeRate}
+            currentUser={company.salesRepName || 'Pricing Manager'}
+            onSaveRate={handleSaveRate}
+            onDeleteRate={handleDeleteRate}
+            onSaveCharge={handleSaveCharge}
+            onDeleteCharge={handleDeleteCharge}
+            onBulkImportRates={handleBulkImportRates}
+            onSelectRateForQuote={handleSelectRateForQuote}
+          />
+        </RouteErrorBoundary>
       )}
 
       {isRateSearchOpen && (
-        <RateSearchModal
-          isOpen={isRateSearchOpen}
-          onClose={() => setIsRateSearchOpen(false)}
-          rates={rates}
-          exchangeRate={quote.exchangeRate}
-          shipment={quote.shipment}
-          onSelectRate={(selectedRate) => {
-            handleSelectRateForQuote(selectedRate);
-            setIsRateSearchOpen(false);
-          }}
-        />
+        <RouteErrorBoundary routeName="Tra Cứu Nhanh Biểu Cước" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <RateSearchModal
+            isOpen={isRateSearchOpen}
+            onClose={handleModalClose}
+            rates={rates}
+            exchangeRate={quote.exchangeRate}
+            shipment={quote.shipment}
+            onSelectRate={(selectedRate) => {
+              handleSelectRateForQuote(selectedRate);
+              setIsRateSearchOpen(false);
+            }}
+          />
+        </RouteErrorBoundary>
       )}
 
       {isSmartAssistantOpen && (
-        <SmartRateAssistantModal
-          isOpen={isSmartAssistantOpen}
-          onClose={() => setIsSmartAssistantOpen(false)}
-          shipment={quote.shipment}
-          customer={quote.customer}
-          rates={rates}
-          exchangeRate={quote.exchangeRate}
-          existingItemRateIds={quote.items.map(i => i.rateId).filter(Boolean) as string[]}
-          onAddSelectedRates={handleAddSmartRates}
-          onAddSingleRate={handleSelectRateForQuote}
-          onOpenManualAdd={() => {
-            setIsSmartAssistantOpen(false);
-          }}
-        />
+        <RouteErrorBoundary routeName="Trợ Lý Định Giá AI" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <SmartRateAssistantModal
+            isOpen={isSmartAssistantOpen}
+            onClose={handleModalClose}
+            shipment={quote.shipment}
+            customer={quote.customer}
+            rates={rates}
+            exchangeRate={quote.exchangeRate}
+            existingItemRateIds={quote.items.map(i => i.rateId).filter(Boolean) as string[]}
+            onAddSelectedRates={handleAddSmartRates}
+            onAddSingleRate={handleSelectRateForQuote}
+            onOpenManualAdd={() => {
+              setIsSmartAssistantOpen(false);
+            }}
+          />
+        </RouteErrorBoundary>
       )}
 
       {isComparisonModalOpen && (
-        <RateComparisonModal
-          isOpen={isComparisonModalOpen}
-          onClose={() => setIsComparisonModalOpen(false)}
-          diffs={outdatedRatesDiffs}
-          onConfirmUpdate={handleConfirmRateUpdates}
-        />
+        <RouteErrorBoundary routeName="So Sánh Biến Động Biểu Cước" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <RateComparisonModal
+            isOpen={isComparisonModalOpen}
+            onClose={handleModalClose}
+            diffs={outdatedRatesDiffs}
+            onConfirmUpdate={handleConfirmRateUpdates}
+          />
+        </RouteErrorBoundary>
       )}
 
       {isSavedOpen && (
-        <SavedQuotesModal
-          quotes={savedQuotes}
-          isOpen={isSavedOpen}
-          initialStatusFilter={savedQuotesInitialFilter}
-          onClose={() => setIsSavedOpen(false)}
-          onSelectQuote={handleSelectQuote}
-          onCloneQuote={handleCloneQuote}
-          onDeleteQuote={handleDeleteQuote}
-          onUpdateStatus={handleUpdateStatus}
-        />
+        <RouteErrorBoundary routeName="Danh Sách Báo Giá" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <SavedQuotesModal
+            quotes={savedQuotes}
+            isOpen={isSavedOpen}
+            initialStatusFilter={savedQuotesInitialFilter}
+            onClose={handleModalClose}
+            onSelectQuote={handleSelectQuote}
+            onCloneQuote={handleCloneQuote}
+            onDeleteQuote={handleDeleteQuote}
+            onUpdateStatus={handleUpdateStatus}
+          />
+        </RouteErrorBoundary>
       )}
 
       {isCompanyOpen && (
-        <CompanyProfileModal
-          company={company}
-          isOpen={isCompanyOpen}
-          initialTab={companyModalTab}
-          onClose={() => setIsCompanyOpen(false)}
-          onSaveCompany={handleSaveCompanyProfile}
-        />
+        <RouteErrorBoundary routeName="Hồ Sơ Doanh Nghiệp" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <CompanyProfileModal
+            company={company}
+            isOpen={isCompanyOpen}
+            initialTab={companyModalTab}
+            onClose={handleModalClose}
+            onSaveCompany={handleSaveCompanyProfile}
+          />
+        </RouteErrorBoundary>
       )}
 
       {isDataBackupOpen && (
-        <DataBackupModal
-          isOpen={isDataBackupOpen}
-          onClose={() => setIsDataBackupOpen(false)}
-          onDataImported={handleDataImported}
-          savedQuotesCount={savedQuotes.length}
-          customersCount={customers.length}
-          surchargesCount={surcharges.length}
-        />
+        <RouteErrorBoundary routeName="Sao Lưu & Khôi Phục Dữ Liệu" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <DataBackupModal
+            isOpen={isDataBackupOpen}
+            onClose={handleModalClose}
+            onDataImported={handleDataImported}
+            savedQuotesCount={savedQuotes.length}
+            customersCount={customers.length}
+            surchargesCount={surcharges.length}
+          />
+        </RouteErrorBoundary>
       )}
 
       {/* Phase 7: Professional Quotation PDF Engine Modals */}
       {isGeneratePdfOpen && (
-        <GeneratePdfModal
-          isOpen={isGeneratePdfOpen}
-          onClose={() => setIsGeneratePdfOpen(false)}
-          quote={quote}
-          onOpenTemplateBuilder={() => setIsTemplateBuilderOpen(true)}
-          onDocumentGenerated={(rec) => {
-            showToast(`Đã phát hành file PDF ${rec.fileName} (Rev ${rec.revision}) thành công!`);
-          }}
-        />
+        <RouteErrorBoundary routeName="Xuất Bản Báo Giá PDF" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <GeneratePdfModal
+            isOpen={isGeneratePdfOpen}
+            onClose={handleModalClose}
+            quote={quote}
+            onOpenTemplateBuilder={() => setIsTemplateBuilderOpen(true)}
+            onDocumentGenerated={(rec) => {
+              showToast(`Đã phát hành file PDF ${rec.fileName} (Rev ${rec.revision}) thành công!`);
+            }}
+          />
+        </RouteErrorBoundary>
       )}
 
       {isTemplateBuilderOpen && (
-        <QuotationTemplateBuilderModal
-          isOpen={isTemplateBuilderOpen}
-          onClose={() => setIsTemplateBuilderOpen(false)}
-          sampleQuote={quote}
-          onTemplatesUpdated={() => {
-            showToast('Đã cập nhật hệ thống mẫu báo giá!');
-          }}
-        />
+        <RouteErrorBoundary routeName="Thiết Kế Mẫu Báo Giá" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <QuotationTemplateBuilderModal
+            isOpen={isTemplateBuilderOpen}
+            onClose={handleModalClose}
+            sampleQuote={quote}
+            onTemplatesUpdated={() => {
+              showToast('Đã cập nhật hệ thống mẫu báo giá!');
+            }}
+          />
+        </RouteErrorBoundary>
       )}
 
       {isDocumentHistoryOpen && (
-        <DocumentHistoryModal
-          isOpen={isDocumentHistoryOpen}
-          onClose={() => setIsDocumentHistoryOpen(false)}
-          quotationId={quote.id}
-          quotationNumber={quote.quoteNumber}
-        />
+        <RouteErrorBoundary routeName="Lịch Sử Ấn Bản Snapshots" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <DocumentHistoryModal
+            isOpen={isDocumentHistoryOpen}
+            onClose={handleModalClose}
+            quotationId={quote.id}
+            quotationNumber={quote.quoteNumber}
+          />
+        </RouteErrorBoundary>
       )}
 
       {/* Phase 8: Quotation Communication & Secure Dispatch Modals */}
       {isSendQuotationOpen && (
-        <SendQuotationModal
-          isOpen={isSendQuotationOpen}
-          onClose={() => setIsSendQuotationOpen(false)}
-          quote={quote}
-          documents={quotationDocuments}
-          onApproveQuote={handleApproveCurrentQuote}
-          onOpenTemplateManager={() => {
-            setIsSendQuotationOpen(false);
-            setIsEmailTemplatesOpen(true);
-          }}
-          onSuccess={(msg) => {
-            showToast(msg);
-            loadQuotationDocuments(quote.id);
-            handleUpdateStatus(quote.id, 'SENT');
-          }}
-        />
+        <RouteErrorBoundary routeName="Gửi Báo Giá & Email" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <SendQuotationModal
+            isOpen={isSendQuotationOpen}
+            onClose={handleModalClose}
+            quote={quote}
+            documents={quotationDocuments}
+            onApproveQuote={handleApproveCurrentQuote}
+            onOpenTemplateManager={() => {
+              setIsSendQuotationOpen(false);
+              setIsEmailTemplatesOpen(true);
+            }}
+            onSuccess={(msg) => {
+              showToast(msg);
+              loadQuotationDocuments(quote.id);
+              handleUpdateStatus(quote.id, 'SENT');
+            }}
+          />
+        </RouteErrorBoundary>
+      )}
+
+      {/* Quotation Communication Modal Dialog */}
+      {isCommunicationPanelOpen && (
+        <RouteErrorBoundary routeName="Trung Tâm Giao Tiếp" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <QuotationCommunicationModal
+            isOpen={isCommunicationPanelOpen}
+            onClose={handleModalClose}
+            quote={quote}
+            documents={quotationDocuments}
+            onOpenSendModal={() => {
+              setIsCommunicationPanelOpen(false);
+              navigateToRoute('quotation_send');
+            }}
+            onOpenFollowUpModal={() => {
+              setIsCommunicationPanelOpen(false);
+              navigateToRoute('quotation_followup');
+            }}
+            onOpenSecureLinkPreview={(token) => {
+              setIsCommunicationPanelOpen(false);
+              navigateToRoute('secure_quote_portal', token);
+            }}
+            onRefreshQuote={() => handleSelectQuote(quote)}
+          />
+        </RouteErrorBoundary>
       )}
 
       {isEmailTemplatesOpen && (
-        <EmailTemplateManagementModal
-          isOpen={isEmailTemplatesOpen}
-          onClose={() => setIsEmailTemplatesOpen(false)}
-        />
+        <RouteErrorBoundary routeName="Mẫu Email Báo Giá" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <EmailTemplateManagementModal
+            isOpen={isEmailTemplatesOpen}
+            onClose={handleModalClose}
+          />
+        </RouteErrorBoundary>
       )}
 
       {isFollowUpOpen && (
-        <FollowUpModal
-          isOpen={isFollowUpOpen}
-          onClose={() => setIsFollowUpOpen(false)}
-          quote={quote}
-          onSuccess={() => {
-            showToast('Đã lưu nhiệm vụ chăm sóc khách hàng thành công!');
-          }}
-        />
+        <RouteErrorBoundary routeName="Kế Hoạch Chăm Sóc Khách Hàng" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <FollowUpModal
+            isOpen={isFollowUpOpen}
+            onClose={handleModalClose}
+            quote={quote}
+            onSuccess={() => {
+              showToast('Đã lưu nhiệm vụ chăm sóc khách hàng thành công!');
+            }}
+          />
+        </RouteErrorBoundary>
       )}
 
       {/* Phase 9: Advanced Business Intelligence & Sales Analytics Dashboard */}
       {isDashboardOpen && (
-        <AdvancedAnalyticsDashboard
-          quotes={savedQuotes}
-          communications={allCommunications}
-          customerResponses={allResponses}
-          documents={allDocuments}
-          followUpTasks={allFollowUps}
-          shareLinks={allLinks}
-          currentUserRole={appUserRole}
-          currentSalesName={company.salesRepName}
-          initialTab={dashboardInitialTab as any}
-          onSelectQuote={(qId) => {
-            const target = savedQuotes.find(q => q.id === qId || q.quoteNumber === qId);
-            if (target) {
-              handleSelectQuote(target);
-            }
-            setIsDashboardOpen(false);
-          }}
-          onClose={() => setIsDashboardOpen(false)}
-        />
+        <RouteErrorBoundary routeName="Dashboard & BI Doanh Nghiệp" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <AdvancedAnalyticsDashboard
+            quotes={savedQuotes}
+            communications={allCommunications}
+            customerResponses={allResponses}
+            documents={allDocuments}
+            followUpTasks={allFollowUps}
+            shareLinks={allLinks}
+            currentUserRole={appUserRole}
+            currentSalesName={company.salesRepName}
+            initialTab={dashboardInitialTab as any}
+            onSelectQuote={(qId) => {
+              const target = savedQuotes.find(q => q.id === qId || q.quoteNumber === qId);
+              if (target) {
+                handleSelectQuote(target);
+              }
+              handleModalClose();
+            }}
+            onClose={handleModalClose}
+          />
+        </RouteErrorBoundary>
       )}
 
       {/* Master Data Reference Modal (Ports, Container Types, Incoterms, Payment Terms) */}
       {isMasterDataRefOpen && (
-        <MasterDataReferenceModal
-          isOpen={isMasterDataRefOpen}
-          onClose={() => setIsMasterDataRefOpen(false)}
-          initialType={masterDataRefType}
-          language={appLanguage}
-        />
+        <RouteErrorBoundary routeName="Dữ Liệu Danh Mục Master" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <MasterDataReferenceModal
+            isOpen={isMasterDataRefOpen}
+            onClose={handleModalClose}
+            initialType={masterDataRefType}
+            language={appLanguage}
+          />
+        </RouteErrorBoundary>
       )}
 
       {/* Phase 14: Customer & Supplier Contract Management Hub */}
       {isContractsOpen && (
-        <ContractHubModal
-          isOpen={isContractsOpen}
-          onClose={() => setIsContractsOpen(false)}
-          customers={customers}
-          suppliers={[]}
-          carriers={[]}
-        />
+        <RouteErrorBoundary routeName="Quản Lý Hợp Đồng" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <ContractHubModal
+            isOpen={isContractsOpen}
+            onClose={handleModalClose}
+            customers={customers}
+            suppliers={contractSuppliers}
+            carriers={contractCarriers}
+          />
+        </RouteErrorBoundary>
       )}
 
       {/* Phase 15: Profit & Margin Intelligence Modals */}
       {isProfitIntelligenceOpen && (
-        <ProfitIntelligenceModal
-          isOpen={isProfitIntelligenceOpen}
-          onClose={() => setIsProfitIntelligenceOpen(false)}
-          quote={quote}
-          activePolicy={activePricingPolicy}
-          onApplyWhatIfToQuote={handleApplyWhatIfToQuote}
-          onOpenPolicyManagement={() => {
-            setIsProfitIntelligenceOpen(false);
-            setIsPricingPolicyMgmtOpen(true);
-          }}
-        />
+        <RouteErrorBoundary routeName="Phân Tích Lợi Nhuận" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <ProfitIntelligenceModal
+            isOpen={isProfitIntelligenceOpen}
+            onClose={handleModalClose}
+            quote={quote}
+            activePolicy={activePricingPolicy}
+            onApplyWhatIfToQuote={handleApplyWhatIfToQuote}
+            onOpenPolicyManagement={() => {
+              setIsProfitIntelligenceOpen(false);
+              navigateToRoute('pricing_policies');
+            }}
+          />
+        </RouteErrorBoundary>
       )}
 
       {isPricingPolicyMgmtOpen && (
-        <PricingPolicyManagementModal
-          isOpen={isPricingPolicyMgmtOpen}
-          onClose={() => setIsPricingPolicyMgmtOpen(false)}
-          policies={pricingPolicies}
-          onPoliciesUpdated={loadPricingPoliciesData}
-        />
+        <RouteErrorBoundary routeName="Chính Sách Định Giá" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <PricingPolicyManagementModal
+            isOpen={isPricingPolicyMgmtOpen}
+            onClose={handleModalClose}
+            policies={pricingPolicies}
+            onPoliciesUpdated={loadPricingPoliciesData}
+          />
+        </RouteErrorBoundary>
       )}
 
       {/* Phase 17: Cross-Device Concurrency Conflict Resolution Modal */}
       {conflictState.isOpen && conflictState.localQuote && conflictState.remoteQuote && (
-        <ConflictResolutionModal
-          isOpen={conflictState.isOpen}
-          onClose={() => setConflictState({ isOpen: false })}
-          localQuote={conflictState.localQuote}
-          remoteQuote={conflictState.remoteQuote}
-          onForceOverwrite={handleForceOverwriteConflict}
-          onReloadRemote={handleReloadRemoteConflict}
-        />
+        <RouteErrorBoundary routeName="Xử Lý Xung Đột Dữ Liệu" onReset={() => setConflictState({ isOpen: false })} onNavigateHome={handleModalClose}>
+          <ConflictResolutionModal
+            isOpen={conflictState.isOpen}
+            onClose={() => setConflictState({ isOpen: false })}
+            localQuote={conflictState.localQuote}
+            remoteQuote={conflictState.remoteQuote}
+            onForceOverwrite={handleForceOverwriteConflict}
+            onReloadRemote={handleReloadRemoteConflict}
+          />
+        </RouteErrorBoundary>
       )}
 
       {/* Phase 20: Smart Quotation Workspace & Intelligent Pricing Assistant */}
       {isSmartQuotationWorkspaceOpen && (
-        <SmartQuotationWorkspace
-          isOpen={isSmartQuotationWorkspaceOpen}
-          onClose={() => setIsSmartQuotationWorkspaceOpen(false)}
-          initialQuote={quote}
-          company={company}
-          currentUserRole={appUserRole}
-          onSaveQuoteToDatabase={async (updatedQuote) => {
-            const { calculatedQuote } = calculateQuote(updatedQuote);
-            setQuote(calculatedQuote);
-            const result = await saveQuotation(calculatedQuote, {
-              userId: company.salesRepName || 'User',
-              userName: company.salesRepName || 'User',
-            });
-            const updated = await fetchQuotations();
-            setSavedQuotes(updated);
-            showToast(`Đã lưu báo giá ${calculatedQuote.quoteNumber} và Snapshot thành công!`);
-            return true;
-          }}
-          onExportPdf={(q, curr) => exportQuoteToPdf(q, curr)}
-          onExportExcel={(q, curr) => exportQuoteToExcel(q, curr)}
-        />
+        <RouteErrorBoundary routeName="Bàn Làm Việc Báo Giá Nâng Cao" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <SmartQuotationWorkspace
+            isOpen={isSmartQuotationWorkspaceOpen}
+            onClose={handleModalClose}
+            initialQuote={quote}
+            company={company}
+            currentUserRole={appUserRole}
+            onSaveQuoteToDatabase={async (updatedQuote) => {
+              const { calculatedQuote } = calculateQuote(updatedQuote);
+              setQuote(calculatedQuote);
+              const result = await saveQuotation(calculatedQuote, {
+                userId: company.salesRepName || 'User',
+                userName: company.salesRepName || 'User',
+              });
+              const updated = await fetchQuotations();
+              setSavedQuotes(updated);
+              showToast(`Đã lưu báo giá ${calculatedQuote.quoteNumber} và Snapshot thành công!`);
+              return true;
+            }}
+            onExportPdf={(q, curr) => exportQuoteToPdf(q, curr)}
+            onExportExcel={(q, curr) => exportQuoteToExcel(q, curr)}
+          />
+        </RouteErrorBoundary>
       )}
 
       {/* Phase 24 & 27: Global Data Integrity & Sync Health Recovery Hub */}
       {isIntegrityDashboardOpen && (
-        <DataIntegrityDashboardModal
-          isOpen={isIntegrityDashboardOpen}
-          onClose={() => setIsIntegrityDashboardOpen(false)}
-          quotes={savedQuotes}
-          customers={customers}
-          company={company}
-          onRefreshData={handleForceCloudSync}
-          onApplyFixedQuotes={(fixed) => setSavedQuotes(fixed)}
-          onApplyFixedCustomers={(fixed) => setCustomers(fixed)}
-          lang={appLanguage}
-        />
+        <RouteErrorBoundary routeName="Kiểm Tra Toàn Vẹn Dữ Liệu" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <DataIntegrityDashboardModal
+            isOpen={isIntegrityDashboardOpen}
+            onClose={handleModalClose}
+            quotes={savedQuotes}
+            customers={customers}
+            company={company}
+            onRefreshData={handleForceCloudSync}
+            onApplyFixedQuotes={(fixed) => setSavedQuotes(fixed)}
+            onApplyFixedCustomers={(fixed) => setCustomers(fixed)}
+            lang={appLanguage}
+          />
+        </RouteErrorBoundary>
       )}
+
+      {/* Access Denied Modal (RBAC Guard) */}
+      <AccessDeniedModal
+        isOpen={accessDeniedState.isOpen}
+        onClose={() => setAccessDeniedState({ isOpen: false, moduleName: '', requiredDesc: '' })}
+        currentRole={appUserRole}
+        requiredRoleDesc={accessDeniedState.requiredDesc}
+        moduleName={accessDeniedState.moduleName}
+        onSwitchRole={setAppUserRole}
+      />
+
+      {/* 404 Route Not Found Modal */}
+      <NotFoundViewModal
+        isOpen={notFoundPath !== null}
+        onClose={handleModalClose}
+        requestedPath={notFoundPath || undefined}
+      />
       </Suspense>
 
     </div>

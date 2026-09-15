@@ -107,12 +107,32 @@ export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProp
 
   const [filters, setFilters] = useState<AnalyticsFilterState>(initialFilter);
 
+  // Lock body scroll when dashboard is opened, restore on unmount
+  useEffect(() => {
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalStyle || 'unset';
+    };
+  }, []);
+
+  // Keyboard shortcut Esc to close dashboard
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && onClose) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   // Extract unique sales reps & modes from quotes
   const availableSalesReps = useMemo(() => {
     const reps = new Set<string>();
     quotes.forEach(q => {
-      const rep = (q as any).salesRepName || (q as any).salesRep;
-      if (rep && rep.trim()) reps.add(rep.trim());
+      const rep = (q as any).salesRepName || (q as any).salesRep || q.company?.salesRepName;
+      if (rep && String(rep).trim()) reps.add(String(rep).trim());
     });
     return Array.from(reps).sort();
   }, [quotes]);
@@ -162,33 +182,34 @@ export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProp
     const canViewProfit = permissions.includes('profitability.view');
 
     const rows = quotes.map(q => {
-      const rev = (q as any).version || (q as any).revision || 1;
-      const origin = q.routing?.originPort || (q as any).origin || '';
-      const dest = q.routing?.destinationPort || (q as any).destination || '';
-      const mode = q.pricing?.transportMode || (q as any).transportMode || '';
-      const curr = q.pricing?.currency || (q as any).currency || 'USD';
-      const sell = q.pricing?.totalPrice || (q as any).totalAmount || 0;
-      const cost = canViewProfit ? ((q as any).totalBuyCost || (q as any).totalCost || 0) : 'RESTRICTED';
-      const profit = canViewProfit && typeof cost === 'number' ? (sell - cost) : 'RESTRICTED';
-      const margin = canViewProfit && typeof cost === 'number' && sell > 0 ? Math.round(((sell - cost) / sell) * 100) : 'RESTRICTED';
+      const qAny = q as any;
+      const rev = qAny.version || qAny.revision || 1;
+      const origin = q.shipment?.origin || q.shipment?.pol || qAny.origin || '';
+      const dest = q.shipment?.destination || q.shipment?.pod || qAny.destination || '';
+      const mode = q.shipment?.mode || qAny.transportMode || '';
+      const curr = q.quoteCurrency || qAny.currency || 'USD';
+      const sell = curr === 'USD' ? (q.grandTotalUsd ?? qAny.totalAmount ?? 0) : (q.grandTotalVnd ?? qAny.totalAmount ?? 0);
+      const cost = canViewProfit ? (curr === 'USD' ? (q.totalCostUsd ?? 0) : (q.totalCostVnd ?? 0)) : 'RESTRICTED';
+      const profit = canViewProfit && typeof cost === 'number' ? (curr === 'USD' ? (q.totalProfitUsd ?? (sell - cost)) : (q.totalProfitVnd ?? (sell - cost))) : 'RESTRICTED';
+      const margin = canViewProfit && typeof cost === 'number' && sell > 0 ? (q.overallMarginPercent ?? Math.round(((sell - cost) / sell) * 100)) : 'RESTRICTED';
       
       return [
-        `"${q.header?.quoteNumber || (q as any).quoteNumber || ''}"`,
-        `"${(q as any).rootQuoteNumber || q.header?.quoteNumber || ''}"`,
+        `"${String(q.quoteNumber || qAny.quoteNumber || '')}"`,
+        `"${String(qAny.rootQuoteNumber || q.quoteNumber || '')}"`,
         rev,
-        `"${(q.header?.customerName || (q as any).customerName || '').replace(/"/g, '""')}"`,
-        `"${origin}"`,
-        `"${dest}"`,
-        `"${mode}"`,
-        `"${q.header?.status || (q as any).status || ''}"`,
+        `"${String(q.customer?.customerName || qAny.customerName || '').replace(/"/g, '""')}"`,
+        `"${String(origin)}"`,
+        `"${String(dest)}"`,
+        `"${String(mode)}"`,
+        `"${String(q.status || qAny.status || '')}"`,
         curr,
         sell,
         cost,
         profit,
         margin,
-        `"${q.header?.date || (q as any).createdAt || ''}"`,
-        `"${q.header?.validUntil || (q as any).validUntil || ''}"`,
-        `"${(q.header?.preparedBy || (q as any).salesRep || '').replace(/"/g, '""')}"`
+        `"${String(q.createdDate || qAny.createdAt || '')}"`,
+        `"${String(q.terms?.validityDate || qAny.validityDate || qAny.validUntil || '')}"`,
+        `"${String(q.company?.salesRepName || qAny.salesRep || '').replace(/"/g, '""')}"`
       ].join(',');
     });
 
@@ -203,7 +224,14 @@ export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProp
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-800 pb-16">
+    <div 
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 backdrop-blur-xs flex flex-col"
+      id="modal-advanced-analytics-dashboard"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dashboard-modal-title"
+    >
+      <div className="min-h-full bg-slate-100 text-slate-800 flex flex-col w-full shadow-2xl">
       
       {/* Top Header Bar */}
       <header className="sticky top-0 z-30 bg-slate-900 text-white border-b border-slate-800 shadow-md">
@@ -216,7 +244,7 @@ export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProp
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold tracking-tight text-white">
+                <h1 id="dashboard-modal-title" className="text-base font-bold tracking-tight text-white">
                   LOGIQUOTE BUSINESS INTELLIGENCE
                 </h1>
                 <span className="text-[10px] font-mono font-bold bg-blue-500/30 text-blue-300 border border-blue-400/40 px-1.5 py-0.2 rounded">
@@ -254,7 +282,7 @@ export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProp
             <button
               type="button"
               onClick={() => setLanguage(isVi ? 'en' : 'vi')}
-              className="flex items-center space-x-1 bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1.5 rounded-lg border border-slate-700 transition-colors"
+              className="flex items-center space-x-1 bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1.5 rounded-lg border border-slate-700 transition-colors cursor-pointer"
               title={isVi ? 'Chuyển sang tiếng Anh' : 'Switch to Vietnamese'}
             >
               <Globe className="w-3.5 h-3.5 text-sky-400" />
@@ -265,7 +293,7 @@ export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProp
             <button
               type="button"
               onClick={handleExportCsv}
-              className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors shadow-xs"
+              className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors shadow-xs cursor-pointer"
               title={isVi ? 'Xuất toàn bộ báo cáo phân tích ra file CSV' : 'Export analytics report to CSV'}
             >
               <FileSpreadsheet className="w-3.5 h-3.5" />
@@ -276,11 +304,13 @@ export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProp
             {onClose && (
               <button
                 type="button"
+                id="btn-close-analytics-dashboard"
                 onClick={onClose}
-                className="p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
-                title={isVi ? 'Đóng Dashboard' : 'Close Dashboard'}
+                className="flex items-center space-x-1 px-3 py-1.5 text-white bg-rose-600 hover:bg-rose-700 font-bold rounded-lg transition-colors cursor-pointer shadow-xs"
+                title={isVi ? 'Đóng Dashboard (Esc)' : 'Close Dashboard (Esc)'}
               >
                 <X className="w-4 h-4" />
+                <span>{isVi ? 'Đóng (Esc)' : 'Close (Esc)'}</span>
               </button>
             )}
 
@@ -550,6 +580,7 @@ export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProp
 
       </main>
 
+      </div>
     </div>
   );
 };

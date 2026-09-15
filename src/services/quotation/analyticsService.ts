@@ -807,7 +807,7 @@ export function computeAggregatedAnalytics(params: {
     });
   });
 
-  customerAnalytics.sort((a, b) => (b.wonValueByCurrency['USD'] || 0) - (a.wonValueByCurrency['USD'] || 0));
+  customerAnalytics.sort((a, b) => (b.wonValueByCurrency?.['USD'] || 0) - (a.wonValueByCurrency?.['USD'] || 0));
 
   // 7. Sales Performance & Leaderboard
   const salesMap = new Map<string, DeduplicatedQuote[]>();
@@ -867,7 +867,7 @@ export function computeAggregatedAnalytics(params: {
     });
   });
 
-  salesPerformance.sort((a, b) => (b.wonValueByCurrency['USD'] || 0) - (a.wonValueByCurrency['USD'] || 0));
+  salesPerformance.sort((a, b) => (b.wonValueByCurrency?.['USD'] || 0) - (a.wonValueByCurrency?.['USD'] || 0));
 
   // 8. Profitability Analytics (Protected by Permission)
   const userPerms = ROLE_PERMISSIONS[userRole] || [];

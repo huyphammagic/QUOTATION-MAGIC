@@ -31,7 +31,8 @@ interface SendQuotationModalProps {
   onClose: () => void;
   quote: QuoteData;
   documents: QuotationDocumentRecord[];
-  onApproveQuote?: () => void;
+  onApproveQuote?: () => void | Promise<void>;
+  onOpenTemplateManager?: () => void;
   onSuccess?: (message: string) => void;
 }
 
@@ -41,6 +42,7 @@ export const SendQuotationModal: React.FC<SendQuotationModalProps> = ({
   quote,
   documents,
   onApproveQuote,
+  onOpenTemplateManager,
   onSuccess
 }) => {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
@@ -59,7 +61,7 @@ export const SendQuotationModal: React.FC<SendQuotationModalProps> = ({
 
   // Attachments & Document selection
   // Filter for Customer Quotation documents only
-  const customerDocs = documents.filter(d => d.documentType === 'CUSTOMER_QUOTATION' && d.status === 'ACTIVE');
+  const customerDocs = documents.filter(d => d.documentType === 'CUSTOMER_QUOTATION' && d.status !== 'ARCHIVED');
   const [selectedDocId, setSelectedDocId] = useState<string>(customerDocs[0]?.id || '');
   const [includePdfAttachment, setIncludePdfAttachment] = useState<boolean>(true);
 

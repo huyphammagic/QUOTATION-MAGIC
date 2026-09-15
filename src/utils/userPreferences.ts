@@ -5,6 +5,7 @@ import {
 } from '../services/firebase/firestoreService';
 
 export const DEFAULT_PINNED_NAV_IDS: string[] = [
+  'main_dashboard',
   'quotations_all',
   'pricing_rates',
   'master_customers',

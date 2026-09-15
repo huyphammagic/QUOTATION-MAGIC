@@ -787,25 +787,26 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                               </td>
                               <td className="p-2.5">
                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700">
-                                  {trace.sourceType === 'CUSTOMER_CONTRACT' ? 'HĐ Khách Hàng' :
-                                   trace.sourceType === 'SUPPLIER_CONTRACT' ? 'HĐ Nhà Cung Cấp' :
-                                   trace.sourceType === 'MASTER_SNAPSHOT' ? 'Biểu Cước Chuẩn' : 'Nhập Thủ Công'}
+                                  {trace.priceSource === 'CUSTOMER_CONTRACT' ? 'HĐ Khách Hàng' :
+                                   trace.priceSource === 'SUPPLIER_CONTRACT' ? 'HĐ Nhà Cung Cấp' :
+                                   trace.priceSource === 'STANDARD_RATE' ? 'Biểu Cước Chuẩn' : 
+                                   trace.priceSource === 'SPOT_RATE' ? 'Cước Spot' : 'Nhập Thủ Công'}
                                 </span>
                               </td>
                               <td className="p-2.5 font-mono text-slate-300">
-                                {trace.supplierName || trace.sourceReferenceId || 'N/A'}
+                                {trace.carrier || trace.sourceContractNumber || trace.sourceId || 'N/A'}
                               </td>
                               <td className="p-2.5 font-mono text-slate-300">
-                                {trace.validTo || 'Không thời hạn'}
+                                {trace.effectiveTo || 'Không thời hạn'}
                               </td>
                               <td className="p-2.5 text-center">
-                                {trace.isExpired ? (
+                                {trace.expiryStatus === 'EXPIRED' ? (
                                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-800">
                                     ĐÃ HẾT HẠN
                                   </span>
-                                ) : trace.isExpiringSoon ? (
+                                ) : trace.expiryStatus === 'EXPIRING_SOON' ? (
                                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800">
-                                    SẮP HẾT HẠN ({trace.daysUntilExpiry} ngày)
+                                    SẮP HẾT HẠN ({trace.daysToExpiry ?? 0} ngày)
                                   </span>
                                 ) : (
                                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">

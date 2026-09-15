@@ -25,7 +25,7 @@ export const AgingAndFollowUpView: React.FC<AgingAndFollowUpViewProps> = ({
     return val.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
   };
 
-  const selectedBucket = agingBuckets.find(b => b.bucketKey === selectedBucketKey);
+  const selectedBucket = agingBuckets.find(b => (b.bucketKey || b.bucketId) === selectedBucketKey);
 
   return (
     <div className="space-y-6">
@@ -42,10 +42,10 @@ export const AgingAndFollowUpView: React.FC<AgingAndFollowUpViewProps> = ({
             <CheckSquare className="w-4 h-4 text-blue-600" />
           </div>
           <div className="mt-2 text-2xl font-extrabold text-slate-900 font-mono">
-            {followUpSummary.totalTasks}
+            {followUpSummary.totalFollowUps ?? followUpSummary.totalTasks ?? 0}
           </div>
           <div className="mt-2 text-[11px] text-slate-500">
-            {isVi ? 'Tỷ lệ hoàn thành:' : 'Completion Rate:'} <strong className="text-blue-700 font-mono">{followUpSummary.completionRate}%</strong>
+            {isVi ? 'Tỷ lệ hoàn thành:' : 'Completion Rate:'} <strong className="text-blue-700 font-mono">{followUpSummary.completionRatePercent ?? followUpSummary.completionRate ?? 0}%</strong>
           </div>
         </div>
 
@@ -58,7 +58,7 @@ export const AgingAndFollowUpView: React.FC<AgingAndFollowUpViewProps> = ({
             <Calendar className="w-4 h-4 text-amber-600" />
           </div>
           <div className="mt-2 text-2xl font-extrabold text-amber-950 font-mono">
-            {followUpSummary.dueTodayTasks}
+            {followUpSummary.dueTodayCount ?? followUpSummary.dueTodayTasks ?? 0}
           </div>
           <div className="mt-2 text-[11px] text-amber-700 font-medium">
             {isVi ? 'Cần xử lý và liên hệ khách ngay' : 'Immediate client action needed'}
@@ -74,7 +74,7 @@ export const AgingAndFollowUpView: React.FC<AgingAndFollowUpViewProps> = ({
             <AlertCircle className="w-4 h-4 text-rose-600" />
           </div>
           <div className="mt-2 text-2xl font-extrabold text-rose-950 font-mono">
-            {followUpSummary.overdueTasks}
+            {followUpSummary.overdueCount ?? followUpSummary.overdueTasks ?? 0}
           </div>
           <div className="mt-2 text-[11px] text-rose-700 font-medium">
             {isVi ? 'Nguy cơ mất khách hàng' : 'High churn risk'}
@@ -90,7 +90,7 @@ export const AgingAndFollowUpView: React.FC<AgingAndFollowUpViewProps> = ({
             <CheckSquare className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="mt-2 text-2xl font-extrabold text-emerald-950 font-mono">
-            {followUpSummary.completedTasks}
+            {followUpSummary.completedCount ?? followUpSummary.completedTasks ?? 0}
           </div>
           <div className="mt-2 text-[11px] text-emerald-700 font-medium">
             {isVi ? 'Nỗ lực chăm sóc tốt' : 'Customer nurturing executed'}
@@ -129,20 +129,21 @@ export const AgingAndFollowUpView: React.FC<AgingAndFollowUpViewProps> = ({
         {/* Aging Buckets Cards Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {agingBuckets.map(b => {
-            const isSelected = selectedBucketKey === b.bucketKey;
-            const usdVal = b.totalValueByCurrency['USD'] || 0;
+            const bucketKey = b.bucketKey || b.bucketId;
+            const isSelected = selectedBucketKey === bucketKey;
+            const usdVal = b.totalValueByCurrency ? (b.totalValueByCurrency['USD'] || 0) : 0;
 
             let colorScheme = 'border-slate-200 hover:border-blue-300';
-            if (b.bucketKey === '60_plus' || b.bucketKey === '31_60') {
+            if (bucketKey === '60_plus' || bucketKey === '31_60') {
               colorScheme = 'border-rose-200 bg-rose-50/20 hover:border-rose-400';
-            } else if (b.bucketKey === '15_30') {
+            } else if (bucketKey === '15_30') {
               colorScheme = 'border-amber-200 bg-amber-50/20 hover:border-amber-400';
             }
 
             return (
               <div
-                key={b.bucketKey}
-                onClick={() => setSelectedBucketKey(isSelected ? null : b.bucketKey)}
+                key={bucketKey}
+                onClick={() => setSelectedBucketKey(isSelected ? null : bucketKey)}
                 className={`rounded-xl border p-3.5 transition-all cursor-pointer ${colorScheme} ${
                   isSelected ? 'ring-2 ring-blue-600 bg-blue-50/40 border-blue-500 shadow-sm' : ''
                 }`}
@@ -175,22 +176,26 @@ export const AgingAndFollowUpView: React.FC<AgingAndFollowUpViewProps> = ({
             </div>
 
             <div className="divide-y divide-slate-200 max-h-48 overflow-y-auto">
-              {selectedBucket.quotes.map(q => (
-                <div 
-                  key={q.quoteId} 
-                  onClick={() => onSelectQuote?.(q.quoteId)}
-                  className="py-2 flex items-center justify-between text-xs hover:bg-white px-2 rounded cursor-pointer transition-colors"
-                >
-                  <div className="flex items-center space-x-2">
-                    <span className="font-mono font-bold text-blue-700">{q.quoteNumber}</span>
-                    <span className="text-slate-700 font-medium truncate max-w-xs">{q.customerName}</span>
+              {selectedBucket.quotes.map(q => {
+                const quoteId = q.quoteId || q.id;
+                const daysOld = q.daysOld ?? q.daysOpen ?? 0;
+                return (
+                  <div 
+                    key={quoteId} 
+                    onClick={() => onSelectQuote?.(quoteId)}
+                    className="py-2 flex items-center justify-between text-xs hover:bg-white px-2 rounded cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <span className="font-mono font-bold text-blue-700">{q.quoteNumber}</span>
+                      <span className="text-slate-700 font-medium truncate max-w-xs">{q.customerName}</span>
+                    </div>
+                    <div className="flex items-center space-x-3 text-[11px] text-slate-500">
+                      <span>{q.salesRep}</span>
+                      <span className="font-mono font-bold text-slate-800">{daysOld} {isVi ? 'ngày' : 'days'}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-3 text-[11px] text-slate-500">
-                    <span>{q.salesRep}</span>
-                    <span className="font-mono font-bold text-slate-800">{q.daysOld} {isVi ? 'ngày' : 'days'}</span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -233,6 +238,10 @@ export const AgingAndFollowUpView: React.FC<AgingAndFollowUpViewProps> = ({
                 </tr>
               ) : (
                 expiringQuotes.map(eq => {
+                  const quoteId = eq.quoteId || eq.id;
+                  const validUntil = eq.validUntil || eq.validityDate;
+                  const totalUsd = eq.totalValueByCurrency ? (eq.totalValueByCurrency['USD'] || 0) : (eq.grandTotalUsd || 0);
+
                   let urgencyBadge = 'bg-amber-50 text-amber-800 border-amber-300';
                   let urgencyText = `${eq.daysRemaining} ${isVi ? 'ngày nữa' : 'days left'}`;
 
@@ -246,8 +255,8 @@ export const AgingAndFollowUpView: React.FC<AgingAndFollowUpViewProps> = ({
 
                   return (
                     <tr 
-                      key={eq.quoteId} 
-                      onClick={() => onSelectQuote?.(eq.quoteId)}
+                      key={quoteId} 
+                      onClick={() => onSelectQuote?.(quoteId)}
                       className="hover:bg-slate-50/80 transition-colors cursor-pointer"
                     >
                       <td className="py-3 px-4 font-mono font-bold text-blue-700">
@@ -260,7 +269,7 @@ export const AgingAndFollowUpView: React.FC<AgingAndFollowUpViewProps> = ({
                         {eq.salesRep}
                       </td>
                       <td className="py-3 px-3 font-mono text-slate-600">
-                        {eq.validUntil}
+                        {validUntil}
                       </td>
                       <td className="py-3 px-4 text-center">
                         <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-mono border ${urgencyBadge}`}>
@@ -268,7 +277,7 @@ export const AgingAndFollowUpView: React.FC<AgingAndFollowUpViewProps> = ({
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right font-mono font-bold text-slate-900">
-                        ${formatVal(eq.totalValueByCurrency['USD'])}
+                        ${formatVal(totalUsd)}
                       </td>
                     </tr>
                   );

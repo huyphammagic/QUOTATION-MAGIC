@@ -17,21 +17,25 @@ export const DataQualityView: React.FC<DataQualityViewProps> = ({
   const [severityFilter, setSeverityFilter] = useState<string>('ALL');
   const [search, setSearch] = useState('');
 
-  const filteredIssues = report.issues.filter(issue => {
+  const issues = report?.issues || [];
+  const filteredIssues = issues.filter(issue => {
     if (severityFilter !== 'ALL' && issue.severity !== severityFilter) return false;
     const q = search.toLowerCase();
     return (
-      issue.quoteNumber.toLowerCase().includes(q) ||
+      (issue.quoteNumber || '').toLowerCase().includes(q) ||
       (issue.customerName || '').toLowerCase().includes(q) ||
-      (issue.salesRep || '').toLowerCase().includes(q) ||
-      issue.messageVi.toLowerCase().includes(q) ||
-      issue.messageEn.toLowerCase().includes(q)
+      (issue.field || '').toLowerCase().includes(q) ||
+      (issue.descriptionVi || '').toLowerCase().includes(q) ||
+      (issue.descriptionEn || '').toLowerCase().includes(q)
     );
   });
 
+  const healthScore = report?.healthScorePercent ?? 100;
+  const criticalIssuesCount = issues.filter(i => i.severity === 'CRITICAL').length;
+
   let scoreColor = 'text-emerald-700 bg-emerald-50 border-emerald-300';
-  if (report.overallHealthScore < 70) scoreColor = 'text-rose-700 bg-rose-50 border-rose-300';
-  else if (report.overallHealthScore < 90) scoreColor = 'text-amber-700 bg-amber-50 border-amber-300';
+  if (healthScore < 70) scoreColor = 'text-rose-700 bg-rose-50 border-rose-300';
+  else if (healthScore < 90) scoreColor = 'text-amber-700 bg-amber-50 border-amber-300';
 
   return (
     <div className="space-y-6">
@@ -49,16 +53,16 @@ export const DataQualityView: React.FC<DataQualityViewProps> = ({
           </div>
           <div className="mt-2 flex items-baseline gap-1">
             <span className="text-3xl font-extrabold text-slate-900 font-mono">
-              {report.overallHealthScore}%
+              {healthScore}%
             </span>
           </div>
           <div className="mt-2 w-full bg-slate-100 h-2 rounded-full overflow-hidden">
             <div 
               className={`h-full transition-all duration-500 ${
-                report.overallHealthScore >= 90 ? 'bg-emerald-500' :
-                report.overallHealthScore >= 70 ? 'bg-amber-500' : 'bg-rose-500'
+                healthScore >= 90 ? 'bg-emerald-500' :
+                healthScore >= 70 ? 'bg-amber-500' : 'bg-rose-500'
               }`}
-              style={{ width: `${report.overallHealthScore}%` }}
+              style={{ width: `${healthScore}%` }}
             />
           </div>
         </div>
@@ -72,7 +76,7 @@ export const DataQualityView: React.FC<DataQualityViewProps> = ({
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="mt-2 text-2xl font-extrabold text-emerald-950 font-mono">
-            {report.cleanQuotesCount} / {report.totalChecked}
+            {report?.cleanQuotesCount ?? 0} / {report?.totalQuotesChecked ?? 0}
           </div>
           <div className="mt-2 text-[11px] text-emerald-700 font-medium">
             {isVi ? 'Đầy đủ thông tin nghiệp vụ' : 'Fully verified logistics records'}
@@ -88,7 +92,7 @@ export const DataQualityView: React.FC<DataQualityViewProps> = ({
             <AlertTriangle className="w-4 h-4 text-amber-600" />
           </div>
           <div className="mt-2 text-2xl font-extrabold text-amber-950 font-mono">
-            {report.quotesWithIssuesCount}
+            {report?.quotesWithIssuesCount ?? 0}
           </div>
           <div className="mt-2 text-[11px] text-amber-700 font-medium">
             {isVi ? 'Cần bổ sung hoặc chuẩn hóa' : 'Requires field enrichment'}
@@ -104,7 +108,7 @@ export const DataQualityView: React.FC<DataQualityViewProps> = ({
             <AlertOctagon className="w-4 h-4 text-rose-600" />
           </div>
           <div className="mt-2 text-2xl font-extrabold text-rose-950 font-mono">
-            {report.criticalIssuesCount}
+            {criticalIssuesCount}
           </div>
           <div className="mt-2 text-[11px] text-rose-700 font-medium">
             {isVi ? 'Thiếu cảng, giá 0, ngày âm' : 'Missing routes, zero pricing'}
@@ -214,7 +218,7 @@ export const DataQualityView: React.FC<DataQualityViewProps> = ({
 
                   return (
                     <tr 
-                      key={`${issue.quoteId}_${issue.code}_${idx}`} 
+                      key={`${issue.quoteId}_${issue.type}_${idx}`} 
                       onClick={() => onSelectQuote?.(issue.quoteId)}
                       className="hover:bg-slate-50/80 transition-colors cursor-pointer"
                     >
@@ -229,14 +233,14 @@ export const DataQualityView: React.FC<DataQualityViewProps> = ({
                       <td className="py-3 px-4 font-medium text-slate-900 truncate max-w-xs">
                         {issue.customerName || '-'}
                       </td>
-                      <td className="py-3 px-3 text-slate-600">
-                        {issue.salesRep || '-'}
+                      <td className="py-3 px-3 text-slate-600 font-mono text-xs">
+                        {issue.field || '-'}
                       </td>
                       <td className="py-3 px-4 text-slate-900 font-medium">
-                        {isVi ? issue.messageVi : issue.messageEn}
+                        {isVi ? issue.descriptionVi : issue.descriptionEn}
                       </td>
                       <td className="py-3 px-4 text-slate-500 text-[11px] italic">
-                        {isVi ? issue.recommendationVi : issue.recommendationEn}
+                        {issue.type}
                       </td>
                     </tr>
                   );

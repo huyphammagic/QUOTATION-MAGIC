@@ -103,6 +103,7 @@ export interface SidebarProps {
   onLanguageChange?: (lang: NavigationLanguage) => void;
   activeRouteId?: string;
   onOpenIntegrityDashboard?: () => void;
+  onAccessDenied?: (moduleName: string, requiredRoleDesc: string) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -148,6 +149,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLanguageChange,
   activeRouteId = 'quotation_workbench',
   onOpenIntegrityDashboard,
+  onAccessDenied,
 }) => {
   // Collapsed state (icon-only mode)
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => loadSavedSidebarCollapsed());
@@ -173,6 +175,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Collapsible Group states - persisted
   const [expandedGroups, setExpandedGroups] = useState<{ [key: string]: boolean }>(() => loadSavedExpandedGroups());
+
+  // Auto-expand group containing active route if activeRouteId is set
+  useEffect(() => {
+    if (activeRouteId) {
+      const activeItem = allNavItems.find(i => i.id === activeRouteId);
+      if (activeItem && activeItem.group) {
+        setExpandedGroups(prev => {
+          if (!prev[activeItem.group]) {
+            const next = { ...prev, [activeItem.group]: true };
+            persistExpandedGroups(next);
+            return next;
+          }
+          return prev;
+        });
+      }
+    }
+  }, [activeRouteId]);
 
   // Listen for favorite updates across tabs and from real-time cloud Firestore
   useEffect(() => {
@@ -584,6 +603,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     // --- ANALYTICS ---
     {
+      id: 'analytics_overview',
+      label: t.analyticsDashboard,
+      icon: LayoutDashboard,
+      group: 'analytics',
+      action: () => onOpenDashboard && onOpenDashboard('OVERVIEW'),
+      badge: 'KPIs',
+      badgeColor: 'bg-blue-600/80 text-blue-100',
+    },
+    {
       id: 'analytics_funnel',
       label: t.quotationFunnel,
       icon: TrendingUp,
@@ -941,11 +969,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     /* Collapsed Group Divider / Toggle Button */
                     <button
                       type="button"
-                      onClick={() => toggleGroup(group.key)}
+                      onClick={() => {
+                        if (group.key === 'main' && onOpenDashboard) {
+                          onOpenDashboard('OVERVIEW');
+                        }
+                        toggleGroup(group.key);
+                      }}
                       className={`w-full py-2 flex items-center justify-center border-b border-slate-800/60 hover:bg-slate-800/60 transition-colors cursor-pointer ${
                         hasActiveChild ? 'bg-blue-900/30' : ''
                       }`}
-                      title={`${group.title} (Nhấn để ${isExpanded ? 'thu gọn' : 'mở rộng'})`}
+                      title={`${group.title} (Nhấn để mở & ${isExpanded ? 'thu gọn' : 'mở rộng'})`}
                       aria-label={group.title}
                     >
                       <GroupIcon className={`w-4 h-4 mx-auto ${hasActiveChild ? 'text-blue-400' : 'text-slate-400 hover:text-slate-200'}`} />
@@ -1001,17 +1034,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 type="button"
                                 onClick={() => {
                                   if (item.restricted) {
-                                    alert(`${t.permissionRestricted}: ${item.requiredRoleDesc || activeRole}`);
+                                    if (onAccessDenied) {
+                                      onAccessDenied(item.label, item.requiredRoleDesc || activeRole);
+                                    }
                                     return;
                                   }
                                   handleAction(item.action);
                                 }}
-                                disabled={item.restricted}
-                                className={`w-full flex items-center justify-center p-2.5 rounded-lg transition-all text-left ${
+                                className={`w-full flex items-center justify-center p-2.5 rounded-lg transition-all text-left cursor-pointer ${
                                   isActive 
                                     ? 'bg-blue-600/20 text-white border border-blue-500/50 shadow-2xs' 
                                     : 'hover:bg-slate-800/80 text-slate-300 hover:text-white'
-                                } ${item.restricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                } ${item.restricted ? 'opacity-60' : ''}`}
                                 aria-label={item.label}
                               >
                                 <Icon className={`w-3.5 h-3.5 shrink-0 ${
@@ -1024,19 +1058,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                   isActive 
                                     ? 'bg-blue-600/20 text-white border border-blue-500/50 shadow-2xs font-semibold' 
                                     : 'hover:bg-slate-800/80 text-slate-300 hover:text-white'
-                                } ${item.restricted ? 'opacity-50' : ''}`}
+                                } ${item.restricted ? 'opacity-70' : ''}`}
                               >
                                 <button
                                   type="button"
                                   onClick={() => {
                                     if (item.restricted) {
-                                      alert(`${t.permissionRestricted}: ${item.requiredRoleDesc || activeRole}`);
+                                      if (onAccessDenied) {
+                                        onAccessDenied(item.label, item.requiredRoleDesc || activeRole);
+                                      }
                                       return;
                                     }
                                     handleAction(item.action);
                                   }}
-                                  disabled={item.restricted}
-                                  className="flex-1 flex items-center space-x-2 min-w-0 text-left bg-transparent border-0 p-0 text-inherit cursor-pointer disabled:cursor-not-allowed"
+                                  className="flex-1 flex items-center space-x-2 min-w-0 text-left bg-transparent border-0 p-0 text-inherit cursor-pointer"
                                   aria-label={item.label}
                                 >
                                   <Icon className={`w-3.5 h-3.5 shrink-0 ${
@@ -1047,7 +1082,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                                 <div className="flex items-center space-x-1.5 ml-2 shrink-0">
                                   {item.restricted && (
-                                    <Lock className="w-3 h-3 text-rose-400 shrink-0" title={item.requiredRoleDesc} />
+                                    <span title={item.requiredRoleDesc} className="inline-flex items-center">
+                                      <Lock className="w-3 h-3 text-rose-400 shrink-0" />
+                                    </span>
                                   )}
 
                                   {item.badge && (
