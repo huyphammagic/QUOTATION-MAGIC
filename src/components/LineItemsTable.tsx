@@ -428,9 +428,8 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
               <th className="px-2.5 py-3 min-w-[100px]">Mã Phí</th>
               <th className="px-2.5 py-3 min-w-[130px]">Chặng / Vị Trí</th>
               <th className="px-2.5 py-3 min-w-[130px]">Phân Loại</th>
-              <th className="px-2.5 py-3 min-w-[125px]">Cách Tính (Basis)</th>
+              <th className="px-2.5 py-3 min-w-[200px]">Cách tính (Basiss)</th>
               <th className="px-2.5 py-3 min-w-[70px] text-right">SL</th>
-              <th className="px-2.5 py-3 min-w-[90px]">Đơn Vị</th>
               
               {/* Cost Price Column */}
               {showCostAndProfit && (
@@ -639,29 +638,63 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                   </select>
                 </td>
 
-                {/* Basis Selector (Pricing Engine Unit/Base Rule) */}
+                {/* Combined Basis & Unit Selector */}
                 <td className="px-2.5 py-2.5">
-                  <select
-                    value={item.basis || 'PER_CONTAINER'}
-                    onChange={(e) => handleItemChange(item.id, 'basis', e.target.value as ChargeBasis)}
-                    className="w-full px-2 py-1.5 rounded border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="PER_CONTAINER">Per Container</option>
-                    <option value="PER_BL">Per B/L</option>
-                    <option value="PER_SHIPMENT">Per Shipment</option>
-                    <option value="PER_WM">Per W/M (LCL)</option>
-                    <option value="PER_CHARGEABLE_KG">Per CW (Air/Kg)</option>
-                    <option value="PER_KG">Per Gross KG</option>
-                    <option value="PER_CBM">Per CBM</option>
-                    <option value="PER_TRUCK">Per Truck</option>
-                    <option value="PER_TRIP">Per Trip</option>
-                    <option value="PER_DOCUMENT">Per Document</option>
-                    <option value="PER_PALLET">Per Pallet</option>
-                    <option value="PER_PACKAGE">Per Package</option>
-                    <option value="PER_UNIT">Per Unit</option>
-                    <option value="PERCENTAGE">Percentage (%)</option>
-                    <option value="FIXED">Fixed Amount</option>
-                  </select>
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      value={item.basis || 'PER_CONTAINER'}
+                      onChange={(e) => {
+                        const newBasis = e.target.value as ChargeBasis;
+                        handleItemChange(item.id, 'basis', newBasis);
+                        // Auto populate default unit if unit is empty or matches previous default
+                        if (!item.unit || item.unit === 'Container' || item.unit === 'B/L' || item.unit === 'Shipment' || item.unit === 'W/M' || item.unit === 'CW' || item.unit === 'KG' || item.unit === 'CBM' || item.unit === 'Truck' || item.unit === 'Trip' || item.unit === 'Doc' || item.unit === 'Pallet' || item.unit === 'Pkg' || item.unit === '%') {
+                          let autoUnit = item.unit;
+                          if (newBasis === 'PER_CONTAINER') autoUnit = 'Container';
+                          else if (newBasis === 'PER_BL') autoUnit = 'B/L';
+                          else if (newBasis === 'PER_SHIPMENT') autoUnit = 'Shipment';
+                          else if (newBasis === 'PER_WM') autoUnit = 'W/M';
+                          else if (newBasis === 'PER_CHARGEABLE_KG') autoUnit = 'CW';
+                          else if (newBasis === 'PER_KG') autoUnit = 'KG';
+                          else if (newBasis === 'PER_CBM') autoUnit = 'CBM';
+                          else if (newBasis === 'PER_TRUCK') autoUnit = 'Truck';
+                          else if (newBasis === 'PER_TRIP') autoUnit = 'Trip';
+                          else if (newBasis === 'PER_DOCUMENT') autoUnit = 'Doc';
+                          else if (newBasis === 'PER_PALLET') autoUnit = 'Pallet';
+                          else if (newBasis === 'PER_PACKAGE') autoUnit = 'Pkg';
+                          else if (newBasis === 'PERCENTAGE') autoUnit = '%';
+                          if (autoUnit !== item.unit) {
+                            handleItemChange(item.id, 'unit', autoUnit);
+                          }
+                        }
+                      }}
+                      className="w-28 shrink-0 px-2 py-1.5 rounded border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="PER_CONTAINER">Per Container</option>
+                      <option value="PER_BL">Per B/L</option>
+                      <option value="PER_SHIPMENT">Per Shipment</option>
+                      <option value="PER_WM">Per W/M (LCL)</option>
+                      <option value="PER_CHARGEABLE_KG">Per CW (Air/Kg)</option>
+                      <option value="PER_KG">Per Gross KG</option>
+                      <option value="PER_CBM">Per CBM</option>
+                      <option value="PER_TRUCK">Per Truck</option>
+                      <option value="PER_TRIP">Per Trip</option>
+                      <option value="PER_DOCUMENT">Per Document</option>
+                      <option value="PER_PALLET">Per Pallet</option>
+                      <option value="PER_PACKAGE">Per Package</option>
+                      <option value="PER_UNIT">Per Unit</option>
+                      <option value="PERCENTAGE">Percentage (%)</option>
+                      <option value="FIXED">Fixed Amount</option>
+                    </select>
+
+                    <input
+                      type="text"
+                      value={item.unit}
+                      onChange={(e) => handleItemChange(item.id, 'unit', e.target.value)}
+                      className="w-20 px-2 py-1.5 rounded border border-slate-200 text-slate-900 font-medium bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
+                      placeholder="Đơn vị..."
+                      title="Đơn vị tính (Cont, Bill, CBM, Kg...)"
+                    />
+                  </div>
 
                   {item.basis === 'PERCENTAGE' && (
                     <div className="mt-1">
@@ -691,17 +724,6 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                     value={item.quantity}
                     onChange={(e) => handleItemChange(item.id, 'quantity', Number(e.target.value) || 0)}
                     className="w-full px-2 py-1.5 rounded border border-slate-200 text-right font-bold text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
-                  />
-                </td>
-
-                {/* Unit */}
-                <td className="px-2.5 py-2.5">
-                  <input
-                    type="text"
-                    value={item.unit}
-                    onChange={(e) => handleItemChange(item.id, 'unit', e.target.value)}
-                    className="w-full px-2 py-1.5 rounded border border-slate-200 text-slate-900 font-medium bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
-                    placeholder="Cont / Bill..."
                   />
                 </td>
 
