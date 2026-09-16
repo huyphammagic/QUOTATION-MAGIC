@@ -21,26 +21,39 @@ const firebaseConfig = {
 // Initialize Firebase safely (avoiding duplicate app initialization in hot reloads)
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-// Initialize Firestore with Persistent Local Cache for offline support
+// Initialize Firestore with Long Polling enabled for iframe & proxy stability
 let firestoreDb: Firestore | null = null;
-const databaseId = (firebaseConfigJson as any).firestoreDatabaseId || undefined;
+const rawDatabaseId = (firebaseConfigJson as any).firestoreDatabaseId;
+const databaseId = rawDatabaseId && rawDatabaseId !== '(default)' ? rawDatabaseId : undefined;
 
 try {
+  // Primary attempt: Persistent local cache + Long Polling for sandboxed iframe stability
   firestoreDb = initializeFirestore(
     app, 
     {
+      experimentalForceLongPolling: true,
       localCache: persistentLocalCache({
         tabManager: persistentMultipleTabManager(),
       }),
     },
     databaseId
   );
-} catch (error) {
-  // If already initialized or if IndexedDB is restricted in iframe/container
+} catch (primaryError) {
+  // Secondary attempt: Fallback to memory cache + Long Polling if IndexedDB is restricted in sandboxed iframe
   try {
-    firestoreDb = getFirestore(app, databaseId);
-  } catch (err) {
-    console.warn('Firebase Firestore initialization notice:', err);
+    firestoreDb = initializeFirestore(
+      app,
+      {
+        experimentalForceLongPolling: true,
+      },
+      databaseId
+    );
+  } catch (fallbackError) {
+    try {
+      firestoreDb = getFirestore(app, databaseId);
+    } catch (err) {
+      console.warn('Firebase Firestore initialization notice:', err);
+    }
   }
 }
 

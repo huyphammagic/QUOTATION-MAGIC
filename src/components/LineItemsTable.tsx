@@ -428,7 +428,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
               <th className="px-2.5 py-3 min-w-[100px]">Mã Phí</th>
               <th className="px-2.5 py-3 min-w-[130px]">Chặng / Vị Trí</th>
               <th className="px-2.5 py-3 min-w-[130px]">Phân Loại</th>
-              <th className="px-2.5 py-3 min-w-[200px]">Cách tính (Basiss)</th>
+              <th className="px-2.5 py-3 min-w-[130px]">Cách tính (Basis)</th>
               <th className="px-2.5 py-3 min-w-[70px] text-right">SL</th>
               
               {/* Cost Price Column */}
