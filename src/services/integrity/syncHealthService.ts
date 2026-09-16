@@ -353,12 +353,26 @@ class SyncHealthService {
   public reportListenerError(id: string, error: any): void {
     const item = this.listeners.get(id);
     const errorMessage = error?.message || String(error);
+    const isOfflineOrUnavailable = error?.code === 'unavailable' || 
+      errorMessage.includes('offline') || 
+      errorMessage.includes('Could not reach Cloud Firestore');
+
     if (item) {
-      item.status = 'ERROR';
+      item.status = isOfflineOrUnavailable ? 'CONNECTING' : 'ERROR';
       item.reconnectAttempts += 1;
       item.lastErrorMessage = errorMessage;
     }
-    this.recordError(id, 'ERROR', `Lỗi kết nối bộ lắng nghe ${item?.name || id}: ${errorMessage}`, 'LISTENER_ERROR');
+    
+    // If it's a transient offline/reconnecting event, record as WARNING instead of critical ERROR
+    const severity = isOfflineOrUnavailable ? 'WARNING' : 'ERROR';
+    this.recordError(
+      id, 
+      severity, 
+      isOfflineOrUnavailable
+        ? `Bộ lắng nghe ${item?.name || id} đang hoạt động ở chế độ ngoại tuyến (sẵn sàng tự kết nối lại).`
+        : `Lỗi kết nối bộ lắng nghe ${item?.name || id}: ${errorMessage}`,
+      'LISTENER_ERROR'
+    );
     this.notifySubscribers();
   }
 
