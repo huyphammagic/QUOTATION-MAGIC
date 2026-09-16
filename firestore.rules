@@ -173,8 +173,16 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // Phase 17: Multi-tenant Company Hierarchy
-    match /companies/{companyId}/{document=**} {
+    // Phase 17 & Phase 37: Multi-tenant Company Hierarchy & Companies
+    match /companies/{companyId} {
+      allow read, write: if true;
+      match /{document=**} {
+        allow read, write: if true;
+      }
+    }
+
+    // Phase 37: Company Memberships
+    match /companyMemberships/{membershipId} {
       allow read, write: if true;
     }
 

@@ -1,4 +1,4 @@
-import { QuoteData, QuoteCurrency } from '../../types/logistics';
+import { QuoteData, QuoteCurrency, CompanyProfile } from '../../types/logistics';
 import { normalizeUnicode } from './pdfFontLoader';
 import { 
   formatUSD, 
@@ -41,6 +41,8 @@ export interface CanonicalDocumentViewModel {
     documentTitle: string;
   };
   company: {
+    companyId?: string;
+    companyCode?: string;
     name: string;
     englishName: string;
     address: string;
@@ -48,6 +50,7 @@ export interface CanonicalDocumentViewModel {
     phone: string;
     email: string;
     website: string;
+    logoUrl?: string;
     salesRepName: string;
     salesRepTitle: string;
     salesRepPhone: string;
@@ -115,24 +118,28 @@ export function buildQuotationDocumentModel(
   const currency: QuoteCurrency = targetCurrency || quote.quoteCurrency || 'USD';
   const isVnd = currency === 'VND';
 
-  // 1. Normalized Company
-  const companyData: any = quote.company || {};
+  // 1. Normalized Company (Phase 37: Prioritize Immutable Company Snapshot)
+  const snap = quote.companySnapshot;
+  const legacy = (quote.company || {}) as Partial<CompanyProfile>;
   const company = {
-    name: normalizeUnicode(companyData.name || ''),
-    englishName: normalizeUnicode(companyData.englishName || ''),
-    address: normalizeUnicode(companyData.address || ''),
-    taxId: normalizeUnicode(companyData.taxId || ''),
-    phone: normalizeUnicode(companyData.phone || ''),
-    email: normalizeUnicode(companyData.email || ''),
-    website: normalizeUnicode(companyData.website || ''),
-    salesRepName: normalizeUnicode(companyData.salesRepName || ''),
-    salesRepTitle: normalizeUnicode(companyData.salesRepTitle || ''),
-    salesRepPhone: normalizeUnicode(companyData.salesRepPhone || ''),
-    salesRepEmail: normalizeUnicode(companyData.salesRepEmail || ''),
-    bankName: normalizeUnicode(companyData.bankName || ''),
-    bankAccountNo: normalizeUnicode(companyData.bankAccountNo || ''),
-    bankAccountHolder: normalizeUnicode(companyData.bankAccountHolder || ''),
-    bankBranch: normalizeUnicode(companyData.bankBranch || ''),
+    companyId: snap?.companyId || quote.companyId || 'company_profile',
+    companyCode: snap?.companyCode || '',
+    name: normalizeUnicode(snap?.displayName || snap?.legalName || legacy.name || ''),
+    englishName: normalizeUnicode(snap?.legalName || legacy.englishName || legacy.name || ''),
+    address: normalizeUnicode(snap?.address || legacy.address || ''),
+    taxId: normalizeUnicode(snap?.taxCode || legacy.taxId || ''),
+    phone: normalizeUnicode(snap?.phone || legacy.phone || ''),
+    email: normalizeUnicode(snap?.email || legacy.email || ''),
+    website: normalizeUnicode(snap?.website || legacy.website || ''),
+    logoUrl: snap?.logoUrl || legacy.logoUrl || '',
+    salesRepName: normalizeUnicode(snap?.salesRepName || legacy.salesRepName || ''),
+    salesRepTitle: normalizeUnicode(snap?.salesRepTitle || legacy.salesRepTitle || ''),
+    salesRepPhone: normalizeUnicode(snap?.salesRepPhone || legacy.salesRepPhone || ''),
+    salesRepEmail: normalizeUnicode(snap?.salesRepEmail || legacy.salesRepEmail || ''),
+    bankName: normalizeUnicode(snap?.bankName || legacy.bankName || ''),
+    bankAccountNo: normalizeUnicode(snap?.bankAccountNo || legacy.bankAccountNo || ''),
+    bankAccountHolder: normalizeUnicode(snap?.bankAccountHolder || legacy.bankAccountHolder || ''),
+    bankBranch: normalizeUnicode(snap?.bankBranch || (legacy as any).bankBranch || ''),
   };
 
   // 2. Normalized Customer

@@ -2,6 +2,7 @@ import React from 'react';
 import { Ship, RefreshCw, Menu, Plus, LayoutDashboard } from 'lucide-react';
 import { CompanyProfile } from '../types/logistics';
 import { CloudSyncStatusBadge } from './CloudSyncStatusBadge';
+import { CompanySwitcher } from './company/CompanySwitcher';
 
 interface NavbarProps {
   company: CompanyProfile;
@@ -19,6 +20,8 @@ interface NavbarProps {
   customerCount?: number;
   rateCount?: number;
   onOpenIntegrityDashboard?: () => void;
+  onOpenCompanyProfile?: () => void;
+  onOpenCreateCompany?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -37,11 +40,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   customerCount = 0,
   rateCount = 0,
   onOpenIntegrityDashboard,
+  onOpenCompanyProfile,
+  onOpenCreateCompany,
 }) => {
   return (
     <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-30 flex items-center justify-between px-3 sm:px-6 lg:px-8 shadow-xs">
       
-      {/* Left section with toggle and brand */}
+      {/* Left section with toggle, brand and Company Switcher */}
       <div className="flex items-center space-x-3 min-w-0">
         {onToggleSidebar && (
           <button
@@ -54,33 +59,27 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         )}
 
-        {company.logoUrl ? (
-          <div className="h-10 w-12 bg-white rounded-lg flex items-center justify-center p-1 border border-slate-200 shrink-0 shadow-xs">
-            <img 
-              src={company.logoUrl} 
-              alt={company.name} 
-              className="max-h-full max-w-full object-contain"
-              referrerPolicy="no-referrer"
+        <div className="hidden sm:flex items-center space-x-2 shrink-0">
+          <div className="w-8 h-8 bg-blue-700 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-2xs">
+            <Ship className="w-4 h-4 text-white" />
+          </div>
+          <div className="hidden lg:block">
+            <h1 className="text-xs font-extrabold text-slate-900 tracking-tight uppercase">
+              LOGISTICS PRO
+            </h1>
+            <span className="text-[9px] font-mono text-slate-400 block -mt-0.5">Enterprise v2.5</span>
+          </div>
+        </div>
+
+        {/* Phase 37 Multi-Company Switcher */}
+        {onOpenCompanyProfile && (
+          <div className="ml-1">
+            <CompanySwitcher
+              onOpenManageCompany={onOpenCompanyProfile}
+              onOpenCreateCompany={onOpenCreateCompany}
             />
           </div>
-        ) : (
-          <div className="w-10 h-10 bg-blue-700 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0">
-            <Ship className="w-5 h-5 text-white" />
-          </div>
         )}
-        <div className="min-w-0">
-          <div className="flex items-center space-x-2">
-            <h1 className="text-sm sm:text-base lg:text-lg font-extrabold text-slate-900 tracking-tight uppercase truncate">
-              LOGISTICS QUOTATION PRO
-            </h1>
-            <span className="hidden sm:inline-block px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded uppercase tracking-wider border border-blue-200">
-              v2.5 Master
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-500 font-medium truncate max-w-[200px] sm:max-w-xs md:max-w-md">
-            {company.name}
-          </p>
-        </div>
       </div>
 
       {/* Right controls: Sync Health indicator, Exchange Rate Adjuster & Quick New Quote */}

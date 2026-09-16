@@ -85,6 +85,24 @@
         "performedBy": { "type": "string" },
         "timestamp": { "type": "string" }
       }
+    },
+    "Company": {
+      "collection": "companies",
+      "fields": {
+        "companyId": { "type": "string" },
+        "companyCode": { "type": "string" },
+        "legalName": { "type": "string" },
+        "displayName": { "type": "string" },
+        "shortName": { "type": "string" },
+        "taxCode": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "bankName": { "type": "string" },
+        "bankAccountNo": { "type": "string" },
+        "bankAccountHolder": { "type": "string" },
+        "status": { "type": "string" }
+      }
     }
   }
 }

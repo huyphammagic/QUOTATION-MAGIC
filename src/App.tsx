@@ -149,17 +149,36 @@ import { NotFoundViewModal } from './components/common/NotFoundViewModal';
 import { QuotationCommunicationModal } from './components/communication/QuotationCommunicationModal';
 import { loadSuppliers, loadCarriers } from './services/masterRate/supplierCarrierService';
 import { SupplierItem, CarrierItem } from './types/masterRate';
+import { useMultiCompany } from './context/MultiCompanyContext';
+import { MultiCompanyManagementModal } from './components/company/MultiCompanyManagementModal';
+import { createQuotationCompanySnapshot } from './types/multiCompany';
 
 import { Check, Ship, ShieldCheck, Sparkles } from 'lucide-react';
 
 export default function App() {
+  // Phase 37: Multi-Company Active Context
+  const { 
+    activeCompanyId, 
+    activeCompanyProfile, 
+    activeCompanyRecord,
+    generateNextQuoteNumber,
+    updateCurrentCompany 
+  } = useMultiCompany();
+
   // Saved data states
   const [savedQuotes, setSavedQuotes] = useState<QuoteData[]>([]);
-  const [company, setCompany] = useState<CompanyProfile>(DEFAULT_COMPANY_PROFILE);
+  const [company, setCompany] = useState<CompanyProfile>(() => activeCompanyProfile || DEFAULT_COMPANY_PROFILE);
   const [quote, setQuote] = useState<QuoteData>(() => {
-    const { calculatedQuote } = calculateQuote(createEmptyQuote(DEFAULT_COMPANY_PROFILE));
+    const { calculatedQuote } = calculateQuote(createEmptyQuote(activeCompanyProfile || DEFAULT_COMPANY_PROFILE));
     return calculatedQuote;
   });
+
+  // Sync local company state whenever activeCompanyProfile updates
+  useEffect(() => {
+    if (activeCompanyProfile) {
+      setCompany(activeCompanyProfile);
+    }
+  }, [activeCompanyProfile]);
   
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [surcharges, setSurcharges] = useState<SurchargeItem[]>([]);
@@ -194,7 +213,8 @@ export default function App() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isSavedOpen, setIsSavedOpen] = useState(false);
   const [isCompanyOpen, setIsCompanyOpen] = useState(false);
-  const [companyModalTab, setCompanyModalTab] = useState<'profile' | 'sales' | 'bank' | 'preview'>('profile');
+  const [isCreateCompanyOpen, setIsCreateCompanyOpen] = useState(false);
+  const [companyModalTab, setCompanyModalTab] = useState<'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview'>('profile');
   const [isCustomersOpen, setIsCustomersOpen] = useState(false);
   const [isSurchargesOpen, setIsSurchargesOpen] = useState(false);
   const [isMasterRateHubOpen, setIsMasterRateHubOpen] = useState(false);
@@ -290,6 +310,7 @@ export default function App() {
     setIsSmartAssistantOpen(false);
     setIsComparisonModalOpen(false);
     setIsCompanyOpen(false);
+    setIsCreateCompanyOpen(false);
     setIsDataBackupOpen(false);
     setIsPreviewOpen(false);
     setIsDocumentHistoryOpen(false);
@@ -676,7 +697,8 @@ export default function App() {
     return checkQuoteForRateUpdates(quote.items, rates);
   }, [quote.items, rates]);
 
-  const handleOpenCompanyProfile = (tab: 'profile' | 'sales' | 'bank' | 'preview' = 'profile') => {
+  const handleOpenCompanyProfile = (tab: 'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview' = 'profile') => {
+    setIsCreateCompanyOpen(false);
     setCompanyModalTab(tab);
     setIsCompanyOpen(true);
   };
@@ -1225,13 +1247,20 @@ export default function App() {
     showToast(`Đã chọn hiển thị báo giá bằng tiền ${currency === 'VND' ? 'VNĐ' : 'USD'}`);
   };
 
-  // Company Settings Save with Firestore
+  // Company Settings Save with Firestore & Multi-Company Context
   const handleSaveCompanyProfile = async (updatedCompany: CompanyProfile) => {
     setCompany(updatedCompany);
-    await saveCompanyProfileToFirestore(updatedCompany);
+    await updateCurrentCompany(updatedCompany);
     const bankStr = `${updatedCompany.bankName}\nSố TK: ${updatedCompany.bankAccountNo}\nChủ TK: ${updatedCompany.bankAccountHolder}${updatedCompany.bankSwiftCode ? `\nSWIFT Code: ${updatedCompany.bankSwiftCode}` : ''}`;
+    
+    // Create new snapshot for quote
+    const currentCompany = activeCompanyRecord || updatedCompany;
+    const companySnapshot = createQuotationCompanySnapshot(currentCompany);
+
     updateQuoteState({
       company: updatedCompany,
+      companyId: activeCompanyId,
+      companySnapshot,
       terms: {
         ...quote.terms,
         bankAccountInfo: bankStr,
@@ -1269,11 +1298,22 @@ export default function App() {
   };
 
   // Create New Blank Quote
-  const handleNewQuote = () => {
-    const newRef = generateQuoteNumber();
+  const handleNewQuote = async () => {
+    let newRef: string;
+    try {
+      newRef = await generateNextQuoteNumber();
+    } catch {
+      newRef = generateQuoteNumber();
+    }
+
+    const currentCompany = activeCompanyRecord || company;
+    const companySnapshot = createQuotationCompanySnapshot(currentCompany);
+
     const rawFreshQuote: Partial<QuoteData> = {
       id: `quote-${Date.now()}`,
       quoteNumber: newRef,
+      companyId: activeCompanyId,
+      companySnapshot: companySnapshot,
       createdDate: new Date().toISOString().slice(0, 10),
       updatedDate: new Date().toISOString().slice(0, 10),
       status: 'DRAFT',
@@ -1412,7 +1452,15 @@ export default function App() {
 
   // Save Quote Handler with Firestore Sync & Cross-Device Conflict Handling
   const handleSaveQuoteAction = async () => {
-    const { calculatedQuote } = calculateQuote(quote);
+    // Ensure companyId and companySnapshot exist on the quote before calculation
+    const currentCompany = activeCompanyRecord || company;
+    const quoteWithSnapshot: QuoteData = {
+      ...quote,
+      companyId: quote.companyId || activeCompanyId,
+      companySnapshot: quote.companySnapshot || createQuotationCompanySnapshot(currentCompany),
+    };
+
+    const { calculatedQuote } = calculateQuote(quoteWithSnapshot);
     setQuote(calculatedQuote);
 
     // Auto-upsert customer to Cloud CRM database if companyName or taxId is present
@@ -1485,9 +1533,33 @@ export default function App() {
 
   // Clone Saved Quote (100% Cloud Persistence)
   const handleCloneQuote = async (id: string) => {
-    const cloned = cloneQuote(id);
-    if (cloned) {
-      const { calculatedQuote } = calculateQuote(cloned);
+    let target = savedQuotes.find((q) => q.id === id);
+    if (!target) {
+      target = cloneQuote(id) || undefined;
+    }
+    if (target) {
+      let newRef: string;
+      try {
+        newRef = await generateNextQuoteNumber();
+      } catch {
+        newRef = generateQuoteNumber();
+      }
+      const currentCompany = activeCompanyRecord || company;
+      const companySnapshot = createQuotationCompanySnapshot(currentCompany);
+
+      const clonedQuote: QuoteData = {
+        ...JSON.parse(JSON.stringify(target)),
+        id: `quote-${Date.now()}`,
+        quoteNumber: newRef,
+        companyId: activeCompanyId,
+        companySnapshot: companySnapshot,
+        version: 1,
+        createdDate: new Date().toISOString().slice(0, 10),
+        updatedDate: new Date().toISOString().slice(0, 10),
+        status: 'DRAFT',
+      };
+
+      const { calculatedQuote } = calculateQuote(clonedQuote);
       setQuote(calculatedQuote);
       await saveQuotation(calculatedQuote, {
         userId: company.salesRepName || 'User',
@@ -1660,6 +1732,16 @@ export default function App() {
             rateCount={rates.length}
             onOpenIntegrityDashboard={() => setIsIntegrityDashboardOpen(true)}
             onOpenDashboard={handleOpenDashboard}
+            onOpenCompanyProfile={() => {
+              setCompanyModalTab('profile');
+              setIsCreateCompanyOpen(false);
+              setIsCompanyOpen(true);
+            }}
+            onOpenCreateCompany={() => {
+              setCompanyModalTab('profile');
+              setIsCreateCompanyOpen(true);
+              setIsCompanyOpen(true);
+            }}
           />
 
           {/* Main Content Area */}
@@ -1954,13 +2036,12 @@ export default function App() {
       )}
 
       {isCompanyOpen && (
-        <RouteErrorBoundary routeName="Hồ Sơ Doanh Nghiệp" onReset={handleModalClose} onNavigateHome={handleModalClose}>
-          <CompanyProfileModal
-            company={company}
+        <RouteErrorBoundary routeName="Hồ Sơ Doanh Nghiệp & Multi-Entity" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <MultiCompanyManagementModal
             isOpen={isCompanyOpen}
             initialTab={companyModalTab}
+            startCreateNew={isCreateCompanyOpen}
             onClose={handleModalClose}
-            onSaveCompany={handleSaveCompanyProfile}
           />
         </RouteErrorBoundary>
       )}
@@ -2188,9 +2269,15 @@ export default function App() {
             company={company}
             currentUserRole={appUserRole}
             onSaveQuoteToDatabase={async (updatedQuote) => {
-              const { calculatedQuote } = calculateQuote(updatedQuote);
+              const currentCompany = activeCompanyRecord || company;
+              const quoteWithCompany: QuoteData = {
+                ...updatedQuote,
+                companyId: updatedQuote.companyId || activeCompanyId,
+                companySnapshot: updatedQuote.companySnapshot || createQuotationCompanySnapshot(currentCompany),
+              };
+              const { calculatedQuote } = calculateQuote(quoteWithCompany);
               setQuote(calculatedQuote);
-              const result = await saveQuotation(calculatedQuote, {
+              await saveQuotation(calculatedQuote, {
                 userId: company.salesRepName || 'User',
                 userName: company.salesRepName || 'User',
               });

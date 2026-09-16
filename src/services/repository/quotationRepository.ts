@@ -38,6 +38,7 @@ export function invalidateQuotationCache(): void {
 }
 
 export interface FetchQuotationsOptions {
+  companyId?: string;
   status?: string;
   customerId?: string;
   limitCount?: number;
@@ -57,11 +58,11 @@ export interface SaveQuotationResult {
  * Does NOT scan entire database blindly; uses limits and sorting.
  */
 export async function fetchQuotations(options: FetchQuotationsOptions = {}): Promise<QuoteData[]> {
-  const { status, customerId, limitCount = 50, forceRefresh = false } = options;
+  const { companyId, status, customerId, limitCount = 50, forceRefresh = false } = options;
 
   // 1. Check in-memory cache if no specific filters
   const now = Date.now();
-  if (!forceRefresh && !status && !customerId && memoryQuotesCache && (now - memoryQuotesCache.cachedAt < CACHE_TTL_MS)) {
+  if (!forceRefresh && !companyId && !status && !customerId && memoryQuotesCache && (now - memoryQuotesCache.cachedAt < CACHE_TTL_MS)) {
     return memoryQuotesCache.data;
   }
 
@@ -74,6 +75,9 @@ export async function fetchQuotations(options: FetchQuotationsOptions = {}): Pro
     const collRef = collection(db, COLLECTION_NAME);
     const constraints: any[] = [];
 
+    if (companyId) {
+      constraints.push(where('companyId', '==', companyId));
+    }
     if (status && status !== 'ALL') {
       constraints.push(where('status', '==', status));
     }
