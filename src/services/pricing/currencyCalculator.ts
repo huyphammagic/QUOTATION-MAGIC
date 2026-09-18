@@ -1,28 +1,69 @@
 import { Currency } from '../../types/logistics';
+import { CompanyRoundingRules, RoundingMethod } from '../../types/financialConfig';
 
 export interface CurrencyRoundingPolicy {
   usdDecimals: number;
   vndDecimals: number;
+  eurDecimals?: number;
+  method?: RoundingMethod;
+  enableNearestHundredVnd?: boolean;
 }
 
 export const DEFAULT_ROUNDING_POLICY: CurrencyRoundingPolicy = {
   usdDecimals: 2,
   vndDecimals: 0,
+  eurDecimals: 2,
+  method: 'HALF_UP',
+  enableNearestHundredVnd: false,
 };
 
 /**
- * Rounds an amount based on currency policy
- * USD: 2 decimal places (cents)
- * VND: 0 decimal places (VND has no fractional denomination)
+ * Applies a specific rounding method to a floating point number
  */
-export function roundCurrency(amount: number, currency: Currency, policy = DEFAULT_ROUNDING_POLICY): number {
+function applyRoundingMethod(value: number, decimals: number, method: RoundingMethod = 'HALF_UP'): number {
+  const factor = Math.pow(10, decimals);
+  switch (method) {
+    case 'FLOOR':
+      return Math.floor(value * factor) / factor;
+    case 'CEIL':
+      return Math.ceil(value * factor) / factor;
+    case 'ROUND_NEAREST_100':
+      return Math.round(value / 100) * 100;
+    case 'ROUND_NEAREST_1000':
+      return Math.round(value / 1000) * 1000;
+    case 'HALF_UP':
+    default:
+      return Math.round((value + Number.EPSILON) * factor) / factor;
+  }
+}
+
+/**
+ * Rounds an amount based on currency policy and company configuration
+ * USD: decimals (default 2)
+ * VND: decimals (default 0, optional nearest 100 or 1000)
+ */
+export function roundCurrency(
+  amount: number, 
+  currency: Currency, 
+  policy: CurrencyRoundingPolicy | CompanyRoundingRules = DEFAULT_ROUNDING_POLICY
+): number {
   if (isNaN(amount) || !isFinite(amount)) return 0;
   
+  const method = ('method' in policy && policy.method) ? policy.method : 'HALF_UP';
+  const usdDec = policy.usdDecimals !== undefined ? policy.usdDecimals : 2;
+  const vndDec = policy.vndDecimals !== undefined ? policy.vndDecimals : 0;
+  const enableNearest100 = 'enableNearestHundredVnd' in policy && !!policy.enableNearestHundredVnd;
+
   if (currency === 'USD') {
-    const factor = Math.pow(10, policy.usdDecimals);
-    return Math.round((amount + Number.EPSILON) * factor) / factor;
+    return applyRoundingMethod(amount, usdDec, method);
   } else {
-    return Math.round(amount);
+    if (enableNearest100 || method === 'ROUND_NEAREST_100') {
+      return Math.round(amount / 100) * 100;
+    }
+    if (method === 'ROUND_NEAREST_1000') {
+      return Math.round(amount / 1000) * 1000;
+    }
+    return applyRoundingMethod(amount, vndDec, method);
   }
 }
 

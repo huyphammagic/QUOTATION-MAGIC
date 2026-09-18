@@ -75,7 +75,7 @@ export interface SidebarProps {
   onCloseMobile: () => void;
   onNewQuote: () => void;
   onOpenSavedQuotes: (filter?: string) => void;
-  onOpenCompanyProfile: (tab?: 'profile' | 'sales' | 'bank' | 'preview') => void;
+  onOpenCompanyProfile: (tab?: 'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview' | 'financial') => void;
   onOpenCustomers: () => void;
   onOpenSurchargeCatalog: () => void;
   onOpenMasterRateHub?: (tab?: 'RATES' | 'CHARGES' | 'SUPPLIERS' | 'APPROVAL' | 'REQUESTS' | 'EXPIRING' | 'AUDIT') => void;
@@ -649,6 +649,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Building2,
       group: 'system',
       action: () => onOpenCompanyProfile('profile'),
+    },
+    {
+      id: 'sys_financial',
+      label: activeLang === 'vi' ? 'Tài Chính & Thuế (P38)' : 'Financial & Tax Engine (P38)',
+      icon: Receipt,
+      group: 'system',
+      action: () => onOpenCompanyProfile('financial'),
+      badge: 'P38',
+      badgeColor: 'bg-emerald-900/80 text-emerald-200 border border-emerald-700/50',
     },
     {
       id: 'sys_sales_bank',

@@ -29,17 +29,19 @@ import {
   ArrowRight,
   ExternalLink,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Receipt
 } from 'lucide-react';
 import { CompanyRecord, CompanyStatus } from '../../types/multiCompany';
 import { useMultiCompany } from '../../context/MultiCompanyContext';
 import { uploadCompanyLogo } from '../../services/firebase/fileStorageService';
 import { syncHealthService } from '../../services/integrity/syncHealthService';
+import { CompanyFinancialEngineTab } from './CompanyFinancialEngineTab';
 
 interface MultiCompanyManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialTab?: 'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview';
+  initialTab?: 'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview' | 'financial';
   startCreateNew?: boolean;
 }
 
@@ -59,7 +61,7 @@ export const MultiCompanyManagementModal: React.FC<MultiCompanyManagementModalPr
     refreshCompanies,
   } = useMultiCompany();
 
-  const [activeTab, setActiveTab] = useState<'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview' | 'financial'>(initialTab);
   const [formData, setFormData] = useState<Partial<CompanyRecord>>({});
   const [isCreatingNew, setIsCreatingNew] = useState(startCreateNew);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
@@ -339,6 +341,19 @@ export const MultiCompanyManagementModal: React.FC<MultiCompanyManagementModalPr
 
           <button
             type="button"
+            onClick={() => setActiveTab('financial')}
+            className={`flex items-center space-x-1.5 py-2.5 px-3 border-b-2 font-bold transition-all ${
+              activeTab === 'financial'
+                ? 'border-blue-600 text-blue-700 bg-white rounded-t-lg shadow-2xs'
+                : 'border-transparent text-emerald-700 hover:text-emerald-900 bg-emerald-50/50 hover:bg-emerald-50'
+            }`}
+          >
+            <Receipt className="w-4 h-4 text-emerald-600" />
+            <span>5. Tài Chính & Thuế (P38)</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('preview')}
             className={`flex items-center space-x-1.5 py-2.5 px-3 border-b-2 font-bold transition-all ${
               activeTab === 'preview'
@@ -347,7 +362,7 @@ export const MultiCompanyManagementModal: React.FC<MultiCompanyManagementModalPr
             }`}
           >
             <Eye className="w-4 h-4" />
-            <span>5. Xem Trước Header</span>
+            <span>6. Xem Trước Header</span>
           </button>
         </div>
 
@@ -973,6 +988,11 @@ export const MultiCompanyManagementModal: React.FC<MultiCompanyManagementModalPr
                 </button>
               </div>
             </div>
+          )}
+
+          {/* TAB 6: Multi-Company Financial & Commercial Configuration (Phase 38) */}
+          {activeTab === 'financial' && (
+            <CompanyFinancialEngineTab />
           )}
 
         </div>

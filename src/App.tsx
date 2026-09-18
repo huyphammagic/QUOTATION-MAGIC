@@ -84,33 +84,34 @@ import { SummaryCard } from './components/SummaryCard';
 
 import { QuotationCommunicationPanel } from './components/communication/QuotationCommunicationPanel';
 import type { MasterDataType } from './components/MasterDataReferenceModal';
+import { lazyWithRetry } from './utils/lazyWithRetry';
 
-// Lazy loaded modals for on-demand bundle splitting
-const QuotePreviewModal = lazy(() => import('./components/QuotePreviewModal').then(m => ({ default: m.QuotePreviewModal })));
-const SavedQuotesModal = lazy(() => import('./components/SavedQuotesModal').then(m => ({ default: m.SavedQuotesModal })));
-const CompanyProfileModal = lazy(() => import('./components/CompanyProfileModal').then(m => ({ default: m.CompanyProfileModal })));
-const CustomerManagerModal = lazy(() => import('./components/CustomerManagerModal').then(m => ({ default: m.CustomerManagerModal })));
-const SurchargeCatalogModal = lazy(() => import('./components/SurchargeCatalogModal').then(m => ({ default: m.SurchargeCatalogModal })));
-const MasterRateHubModal = lazy(() => import('./components/MasterRateHubModal').then(m => ({ default: m.MasterRateHubModal })));
-const RateSearchModal = lazy(() => import('./components/RateSearchModal').then(m => ({ default: m.RateSearchModal })));
-const SmartRateAssistantModal = lazy(() => import('./components/SmartRateAssistantModal').then(m => ({ default: m.SmartRateAssistantModal })));
-const RateComparisonModal = lazy(() => import('./components/RateComparisonModal').then(m => ({ default: m.RateComparisonModal })));
-const DataBackupModal = lazy(() => import('./components/DataBackupModal').then(m => ({ default: m.DataBackupModal })));
-const GeneratePdfModal = lazy(() => import('./components/GeneratePdfModal').then(m => ({ default: m.GeneratePdfModal })));
-const QuotationTemplateBuilderModal = lazy(() => import('./components/QuotationTemplateBuilderModal').then(m => ({ default: m.QuotationTemplateBuilderModal })));
-const DocumentHistoryModal = lazy(() => import('./components/DocumentHistoryModal').then(m => ({ default: m.DocumentHistoryModal })));
-const SendQuotationModal = lazy(() => import('./components/communication/SendQuotationModal').then(m => ({ default: m.SendQuotationModal })));
-const CustomerSecureQuotePage = lazy(() => import('./components/communication/CustomerSecureQuotePage').then(m => ({ default: m.CustomerSecureQuotePage })));
-const EmailTemplateManagementModal = lazy(() => import('./components/communication/EmailTemplateManagementModal').then(m => ({ default: m.EmailTemplateManagementModal })));
-const FollowUpModal = lazy(() => import('./components/communication/FollowUpModal').then(m => ({ default: m.FollowUpModal })));
-const AdvancedAnalyticsDashboard = lazy(() => import('./components/analytics/AdvancedAnalyticsDashboard').then(m => ({ default: m.AdvancedAnalyticsDashboard })));
-const ContractHubModal = lazy(() => import('./components/contract/ContractHubModal').then(m => ({ default: m.ContractHubModal })));
-const ProfitIntelligenceModal = lazy(() => import('./components/pricing/ProfitIntelligenceModal').then(m => ({ default: m.ProfitIntelligenceModal })));
-const PricingPolicyManagementModal = lazy(() => import('./components/pricing/PricingPolicyManagementModal').then(m => ({ default: m.PricingPolicyManagementModal })));
-const ConflictResolutionModal = lazy(() => import('./components/ConflictResolutionModal').then(m => ({ default: m.ConflictResolutionModal })));
-const MasterDataReferenceModal = lazy(() => import('./components/MasterDataReferenceModal').then(m => ({ default: m.MasterDataReferenceModal })));
-const SmartQuotationWorkspace = lazy(() => import('./components/smartQuotation/SmartQuotationWorkspace').then(m => ({ default: m.SmartQuotationWorkspace })));
-const DataIntegrityDashboardModal = lazy(() => import('./components/integrity/DataIntegrityDashboardModal').then(m => ({ default: m.DataIntegrityDashboardModal })));
+// Lazy loaded modals with auto-retry and chunk failure self-healing
+const QuotePreviewModal = lazyWithRetry(() => import('./components/QuotePreviewModal').then(m => ({ default: m.QuotePreviewModal })), 'QuotePreviewModal');
+const SavedQuotesModal = lazyWithRetry(() => import('./components/SavedQuotesModal').then(m => ({ default: m.SavedQuotesModal })), 'SavedQuotesModal');
+const CompanyProfileModal = lazyWithRetry(() => import('./components/CompanyProfileModal').then(m => ({ default: m.CompanyProfileModal })), 'CompanyProfileModal');
+const CustomerManagerModal = lazyWithRetry(() => import('./components/CustomerManagerModal').then(m => ({ default: m.CustomerManagerModal })), 'CustomerManagerModal');
+const SurchargeCatalogModal = lazyWithRetry(() => import('./components/SurchargeCatalogModal').then(m => ({ default: m.SurchargeCatalogModal })), 'SurchargeCatalogModal');
+const MasterRateHubModal = lazyWithRetry(() => import('./components/MasterRateHubModal').then(m => ({ default: m.MasterRateHubModal })), 'MasterRateHubModal');
+const RateSearchModal = lazyWithRetry(() => import('./components/RateSearchModal').then(m => ({ default: m.RateSearchModal })), 'RateSearchModal');
+const SmartRateAssistantModal = lazyWithRetry(() => import('./components/SmartRateAssistantModal').then(m => ({ default: m.SmartRateAssistantModal })), 'SmartRateAssistantModal');
+const RateComparisonModal = lazyWithRetry(() => import('./components/RateComparisonModal').then(m => ({ default: m.RateComparisonModal })), 'RateComparisonModal');
+const DataBackupModal = lazyWithRetry(() => import('./components/DataBackupModal').then(m => ({ default: m.DataBackupModal })), 'DataBackupModal');
+const GeneratePdfModal = lazyWithRetry(() => import('./components/GeneratePdfModal').then(m => ({ default: m.GeneratePdfModal })), 'GeneratePdfModal');
+const QuotationTemplateBuilderModal = lazyWithRetry(() => import('./components/QuotationTemplateBuilderModal').then(m => ({ default: m.QuotationTemplateBuilderModal })), 'QuotationTemplateBuilderModal');
+const DocumentHistoryModal = lazyWithRetry(() => import('./components/DocumentHistoryModal').then(m => ({ default: m.DocumentHistoryModal })), 'DocumentHistoryModal');
+const SendQuotationModal = lazyWithRetry(() => import('./components/communication/SendQuotationModal').then(m => ({ default: m.SendQuotationModal })), 'SendQuotationModal');
+const CustomerSecureQuotePage = lazyWithRetry(() => import('./components/communication/CustomerSecureQuotePage').then(m => ({ default: m.CustomerSecureQuotePage })), 'CustomerSecureQuotePage');
+const EmailTemplateManagementModal = lazyWithRetry(() => import('./components/communication/EmailTemplateManagementModal').then(m => ({ default: m.EmailTemplateManagementModal })), 'EmailTemplateManagementModal');
+const FollowUpModal = lazyWithRetry(() => import('./components/communication/FollowUpModal').then(m => ({ default: m.FollowUpModal })), 'FollowUpModal');
+const AdvancedAnalyticsDashboard = lazyWithRetry(() => import('./components/analytics/AdvancedAnalyticsDashboard').then(m => ({ default: m.AdvancedAnalyticsDashboard })), 'AdvancedAnalyticsDashboard');
+const ContractHubModal = lazyWithRetry(() => import('./components/contract/ContractHubModal').then(m => ({ default: m.ContractHubModal })), 'ContractHubModal');
+const ProfitIntelligenceModal = lazyWithRetry(() => import('./components/pricing/ProfitIntelligenceModal').then(m => ({ default: m.ProfitIntelligenceModal })), 'ProfitIntelligenceModal');
+const PricingPolicyManagementModal = lazyWithRetry(() => import('./components/pricing/PricingPolicyManagementModal').then(m => ({ default: m.PricingPolicyManagementModal })), 'PricingPolicyManagementModal');
+const ConflictResolutionModal = lazyWithRetry(() => import('./components/ConflictResolutionModal').then(m => ({ default: m.ConflictResolutionModal })), 'ConflictResolutionModal');
+const MasterDataReferenceModal = lazyWithRetry(() => import('./components/MasterDataReferenceModal').then(m => ({ default: m.MasterDataReferenceModal })), 'MasterDataReferenceModal');
+const SmartQuotationWorkspace = lazyWithRetry(() => import('./components/smartQuotation/SmartQuotationWorkspace').then(m => ({ default: m.SmartQuotationWorkspace })), 'SmartQuotationWorkspace');
+const DataIntegrityDashboardModal = lazyWithRetry(() => import('./components/integrity/DataIntegrityDashboardModal').then(m => ({ default: m.DataIntegrityDashboardModal })), 'DataIntegrityDashboardModal');
 
 import { getDocumentRecordsForQuotation, getAllQuotationDocuments } from './services/quotation/quotationDocumentService';
 import { QuotationDocumentRecord } from './types/quotationDocument';
@@ -150,6 +151,7 @@ import { QuotationCommunicationModal } from './components/communication/Quotatio
 import { loadSuppliers, loadCarriers } from './services/masterRate/supplierCarrierService';
 import { SupplierItem, CarrierItem } from './types/masterRate';
 import { useMultiCompany } from './context/MultiCompanyContext';
+import { useFinancialConfig } from './context/FinancialConfigContext';
 import { MultiCompanyManagementModal } from './components/company/MultiCompanyManagementModal';
 import { createQuotationCompanySnapshot } from './types/multiCompany';
 
@@ -164,6 +166,9 @@ export default function App() {
     generateNextQuoteNumber,
     updateCurrentCompany 
   } = useMultiCompany();
+
+  // Phase 38: Multi-Company Financial & Commercial Snapshot Engine
+  const { createSnapshotsForQuote, financialSettings } = useFinancialConfig();
 
   // Saved data states
   const [savedQuotes, setSavedQuotes] = useState<QuoteData[]>([]);
@@ -214,7 +219,7 @@ export default function App() {
   const [isSavedOpen, setIsSavedOpen] = useState(false);
   const [isCompanyOpen, setIsCompanyOpen] = useState(false);
   const [isCreateCompanyOpen, setIsCreateCompanyOpen] = useState(false);
-  const [companyModalTab, setCompanyModalTab] = useState<'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview'>('profile');
+  const [companyModalTab, setCompanyModalTab] = useState<'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview' | 'financial'>('profile');
   const [isCustomersOpen, setIsCustomersOpen] = useState(false);
   const [isSurchargesOpen, setIsSurchargesOpen] = useState(false);
   const [isMasterRateHubOpen, setIsMasterRateHubOpen] = useState(false);
@@ -519,6 +524,10 @@ export default function App() {
       case 'sys_profile':
         handleOpenCompanyProfile('profile');
         break;
+      case 'sys_financial':
+      case 'sys_financial_config':
+        handleOpenCompanyProfile('financial');
+        break;
       case 'sys_sales_bank':
         handleOpenCompanyProfile('sales');
         break;
@@ -697,7 +706,7 @@ export default function App() {
     return checkQuoteForRateUpdates(quote.items, rates);
   }, [quote.items, rates]);
 
-  const handleOpenCompanyProfile = (tab: 'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview' = 'profile') => {
+  const handleOpenCompanyProfile = (tab: 'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview' | 'financial' = 'profile') => {
     setIsCreateCompanyOpen(false);
     setCompanyModalTab(tab);
     setIsCompanyOpen(true);
@@ -1454,11 +1463,21 @@ export default function App() {
   const handleSaveQuoteAction = async () => {
     // Ensure companyId and companySnapshot exist on the quote before calculation
     const currentCompany = activeCompanyRecord || company;
-    const quoteWithSnapshot: QuoteData = {
+    let quoteWithSnapshot: QuoteData = {
       ...quote,
       companyId: quote.companyId || activeCompanyId,
       companySnapshot: quote.companySnapshot || createQuotationCompanySnapshot(currentCompany),
     };
+
+    // Phase 38: Attach immutable financial snapshot when quote is Approved or Sent
+    if (quoteWithSnapshot.status === 'APPROVED' || quoteWithSnapshot.status === 'SENT') {
+      try {
+        const financialSnapshots = await createSnapshotsForQuote(quoteWithSnapshot);
+        quoteWithSnapshot = { ...quoteWithSnapshot, ...financialSnapshots };
+      } catch (snapErr) {
+        console.warn('[Phase 38] Snapshot generation notice:', snapErr);
+      }
+    }
 
     const { calculatedQuote } = calculateQuote(quoteWithSnapshot);
     setQuote(calculatedQuote);
@@ -1584,16 +1603,30 @@ export default function App() {
     showToast('Đã xóa báo giá khỏi danh sách và đồng bộ Cloud!');
   };
 
-  // Update Status with Firestore
+  // Update Status with Firestore & Phase 38 Immutable Snapshot Attachment
   const handleUpdateStatus = async (id: string, status: QuoteStatus) => {
     updateQuoteStatus(id, status);
     const target = savedQuotes.find(q => q.id === id);
     if (target) {
-      const updatedQuote = { 
+      let updatedQuote: QuoteData = { 
         ...target, 
         status, 
         updatedDate: new Date().toISOString().slice(0, 10),
       };
+
+      // Phase 38: When quotation enters APPROVED or SENT, attach immutable financial & commercial snapshot
+      if (status === 'APPROVED' || status === 'SENT') {
+        try {
+          const financialSnapshots = await createSnapshotsForQuote(updatedQuote);
+          updatedQuote = { ...updatedQuote, ...financialSnapshots };
+          if (quote.id === id) {
+            setQuote(prev => ({ ...prev, ...financialSnapshots, status }));
+          }
+        } catch (snapErr) {
+          console.warn('[Phase 38] Error attaching snapshots during status transition:', snapErr);
+        }
+      }
+
       await saveQuotation(updatedQuote, {
         userId: company.salesRepName || 'User',
         userName: company.salesRepName || 'User',
@@ -1605,7 +1638,7 @@ export default function App() {
       setQuote(prev => ({ ...prev, status }));
     }
     setLastCloudSyncedAt(new Date());
-    showToast(`Đã cập nhật trạng thái báo giá thành ${status} & đồng bộ 100% Cloud!`);
+    showToast(`Đã cập nhật trạng thái báo giá thành ${status} & đồng bộ 100% Cloud (kèm Snapshot tài chính)!`);
   };
 
   // If viewing a public customer secure quote link, render the dedicated portal view

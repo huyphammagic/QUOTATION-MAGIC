@@ -181,6 +181,26 @@ service cloud.firestore {
       }
     }
 
+    // Phase 38: Multi-Company Financial & Commercial Collections
+    match /companyFinancialSettings/{docId} {
+      allow read, write: if true;
+    }
+    match /companyTaxConfigurations/{docId} {
+      allow read, write: if true;
+    }
+    match /companyPaymentTerms/{docId} {
+      allow read, write: if true;
+    }
+    match /companyBankAccounts/{docId} {
+      allow read, write: if true;
+    }
+    match /companyCommercialSettings/{docId} {
+      allow read, write: if true;
+    }
+    match /companyFinancialAudits/{auditId} {
+      allow read, write: if true;
+    }
+
     // Phase 37: Company Memberships
     match /companyMemberships/{membershipId} {
       allow read, write: if true;

@@ -103,6 +103,66 @@
         "bankAccountHolder": { "type": "string" },
         "status": { "type": "string" }
       }
+    },
+    "CompanyFinancialSettings": {
+      "collection": "companyFinancialSettings",
+      "fields": {
+        "companyId": { "type": "string" },
+        "baseCurrency": { "type": "string" },
+        "secondaryCurrency": { "type": "string" },
+        "exchangeRateMode": { "type": "string" },
+        "defaultExchangeRate": { "type": "number" },
+        "exchangeRateMarginBufferPercent": { "type": "number" },
+        "version": { "type": "number" }
+      }
+    },
+    "CompanyTaxConfiguration": {
+      "collection": "companyTaxConfigurations",
+      "fields": {
+        "companyId": { "type": "string" },
+        "taxCode": { "type": "string" },
+        "defaultPolicy": { "type": "string" },
+        "defaultVatRate": { "type": "number" },
+        "enableFctForeignTax": { "type": "boolean" },
+        "defaultFctRate": { "type": "number" }
+      }
+    },
+    "CompanyPaymentTerm": {
+      "collection": "companyPaymentTerms",
+      "fields": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "code": { "type": "string" },
+        "nameVi": { "type": "string" },
+        "dueDays": { "type": "number" },
+        "depositRequiredPercent": { "type": "number" },
+        "isDefault": { "type": "boolean" }
+      }
+    },
+    "CompanyBankAccount": {
+      "collection": "companyBankAccounts",
+      "fields": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "bankName": { "type": "string" },
+        "accountNumber": { "type": "string" },
+        "accountHolder": { "type": "string" },
+        "currency": { "type": "string" },
+        "swiftCode": { "type": "string" },
+        "isDefaultUsd": { "type": "boolean" },
+        "isDefaultVnd": { "type": "boolean" }
+      }
+    },
+    "CompanyCommercialSettings": {
+      "collection": "companyCommercialSettings",
+      "fields": {
+        "companyId": { "type": "string" },
+        "defaultValidityDays": { "type": "number" },
+        "defaultIncoterm": { "type": "string" },
+        "minimumFloorMarginPercent": { "type": "number" },
+        "targetProfitMarginPercent": { "type": "number" },
+        "maxSalesDiscountPercent": { "type": "number" }
+      }
     }
   }
 }

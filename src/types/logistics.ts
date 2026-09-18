@@ -1,3 +1,13 @@
+import type {
+  QuotationCurrencySnapshot,
+  QuotationTaxSnapshot,
+  QuotationPaymentTermSnapshot,
+  QuotationExchangeRateSnapshot,
+  QuotationCommercialTermsSnapshot,
+  QuotationBankSnapshot,
+  QuotationCompleteFinancialSnapshot
+} from './financialConfig';
+
 export type TransportMode = 
   | 'SEA_FCL' 
   | 'SEA_LCL' 
@@ -299,6 +309,16 @@ export interface QuoteData {
   version?: number;
   companyId?: string;
   companySnapshot?: any; // QuotationCompanySnapshot
+
+  // Phase 38: Multi-Company Financial & Commercial Snapshots (Immutable upon Approved/Sent)
+  currencySnapshot?: QuotationCurrencySnapshot;
+  taxSnapshot?: QuotationTaxSnapshot;
+  paymentTermSnapshot?: QuotationPaymentTermSnapshot;
+  exchangeRateSnapshot?: QuotationExchangeRateSnapshot;
+  commercialTermsSnapshot?: QuotationCommercialTermsSnapshot;
+  bankSnapshot?: QuotationBankSnapshot;
+  financialSnapshot?: QuotationCompleteFinancialSnapshot;
+
   _updatedAt?: any;
   _updatedBy?: string;
   _createdAt?: any;

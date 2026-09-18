@@ -118,16 +118,36 @@ export function buildQuotationDocumentModel(
   const currency: QuoteCurrency = targetCurrency || quote.quoteCurrency || 'USD';
   const isVnd = currency === 'VND';
 
-  // 1. Normalized Company (Phase 37: Prioritize Immutable Company Snapshot)
+  // 1. Normalized Company (Phase 37 & 38: Prioritize Immutable Company & Financial Snapshots)
   const snap = quote.companySnapshot;
+  const bankSnap = quote.bankSnapshot;
   const legacy = (quote.company || {}) as Partial<CompanyProfile>;
+
+  // Resolve best bank details considering active quote currency (USD vs VND)
+  let resolvedBankName = snap?.bankName || legacy.bankName || '';
+  let resolvedBankAccountNo = snap?.bankAccountNo || legacy.bankAccountNo || '';
+  let resolvedBankAccountHolder = snap?.bankAccountHolder || legacy.bankAccountHolder || '';
+  let resolvedBankBranch = snap?.bankBranch || (legacy as any).bankBranch || '';
+
+  if (bankSnap) {
+    const primaryBank = isVnd 
+      ? (bankSnap.vndAccount || bankSnap.usdAccount)
+      : (bankSnap.usdAccount || bankSnap.vndAccount);
+    if (primaryBank) {
+      resolvedBankName = primaryBank.bankName || resolvedBankName;
+      resolvedBankAccountNo = primaryBank.accountNumber || resolvedBankAccountNo;
+      resolvedBankAccountHolder = primaryBank.accountHolder || resolvedBankAccountHolder;
+      resolvedBankBranch = primaryBank.branch || resolvedBankBranch;
+    }
+  }
+
   const company = {
     companyId: snap?.companyId || quote.companyId || 'company_profile',
     companyCode: snap?.companyCode || '',
     name: normalizeUnicode(snap?.displayName || snap?.legalName || legacy.name || ''),
     englishName: normalizeUnicode(snap?.legalName || legacy.englishName || legacy.name || ''),
     address: normalizeUnicode(snap?.address || legacy.address || ''),
-    taxId: normalizeUnicode(snap?.taxCode || legacy.taxId || ''),
+    taxId: normalizeUnicode(quote.taxSnapshot?.taxCode || snap?.taxCode || legacy.taxId || ''),
     phone: normalizeUnicode(snap?.phone || legacy.phone || ''),
     email: normalizeUnicode(snap?.email || legacy.email || ''),
     website: normalizeUnicode(snap?.website || legacy.website || ''),
@@ -136,10 +156,10 @@ export function buildQuotationDocumentModel(
     salesRepTitle: normalizeUnicode(snap?.salesRepTitle || legacy.salesRepTitle || ''),
     salesRepPhone: normalizeUnicode(snap?.salesRepPhone || legacy.salesRepPhone || ''),
     salesRepEmail: normalizeUnicode(snap?.salesRepEmail || legacy.salesRepEmail || ''),
-    bankName: normalizeUnicode(snap?.bankName || legacy.bankName || ''),
-    bankAccountNo: normalizeUnicode(snap?.bankAccountNo || legacy.bankAccountNo || ''),
-    bankAccountHolder: normalizeUnicode(snap?.bankAccountHolder || legacy.bankAccountHolder || ''),
-    bankBranch: normalizeUnicode(snap?.bankBranch || (legacy as any).bankBranch || ''),
+    bankName: normalizeUnicode(resolvedBankName),
+    bankAccountNo: normalizeUnicode(resolvedBankAccountNo),
+    bankAccountHolder: normalizeUnicode(resolvedBankAccountHolder),
+    bankBranch: normalizeUnicode(resolvedBankBranch),
   };
 
   // 2. Normalized Customer
@@ -169,13 +189,44 @@ export function buildQuotationDocumentModel(
     freeTime: normalizeUnicode(shipmentData.freeTime || ''),
   };
 
-  // 4. Normalized Terms & Conditions
+  // 4. Normalized Terms & Conditions (Prioritize Phase 38 Snapshots)
   const termsData: any = quote.terms || {};
+  const paymentSnap = quote.paymentTermSnapshot;
+  const commSnap = quote.commercialTermsSnapshot;
+
+  let resolvedPaymentTerm = termsData.paymentTerm || '';
+  if (paymentSnap) {
+    resolvedPaymentTerm = language === 'en' 
+      ? (paymentSnap.fullTermsTextEn || paymentSnap.termNameEn || resolvedPaymentTerm)
+      : (paymentSnap.fullTermsTextVi || paymentSnap.termNameVi || resolvedPaymentTerm);
+  }
+
+  let resolvedExclusions = termsData.exclusionsNotes || '';
+  if (commSnap) {
+    resolvedExclusions = language === 'en'
+      ? (commSnap.exclusionsNotesEn || resolvedExclusions)
+      : (commSnap.exclusionsNotesVi || resolvedExclusions);
+  }
+
+  let resolvedBankInfo = termsData.bankAccountInfo || '';
+  if (bankSnap) {
+    const parts: string[] = [];
+    if (bankSnap.vndAccount) {
+      parts.push(`VND: ${bankSnap.vndAccount.accountNumber} - ${bankSnap.vndAccount.bankName} (${bankSnap.vndAccount.branch}) - Chủ TK: ${bankSnap.vndAccount.accountHolder}`);
+    }
+    if (bankSnap.usdAccount) {
+      parts.push(`USD: ${bankSnap.usdAccount.accountNumber} - SWIFT: ${bankSnap.usdAccount.swiftCode} - ${bankSnap.usdAccount.bankName} - Beneficiary: ${bankSnap.usdAccount.accountHolder}`);
+    }
+    if (parts.length > 0) {
+      resolvedBankInfo = parts.join(' | ');
+    }
+  }
+
   const terms = {
-    incoterm: normalizeUnicode(termsData.incoterm || 'FOB'),
-    paymentTerm: normalizeUnicode(termsData.paymentTerm || ''),
-    exclusionsNotes: normalizeUnicode(termsData.exclusionsNotes || ''),
-    bankAccountInfo: normalizeUnicode(termsData.bankAccountInfo || ''),
+    incoterm: normalizeUnicode(commSnap?.incoterm || termsData.incoterm || 'FOB'),
+    paymentTerm: normalizeUnicode(resolvedPaymentTerm),
+    exclusionsNotes: normalizeUnicode(resolvedExclusions),
+    bankAccountInfo: normalizeUnicode(resolvedBankInfo),
   };
 
   // 5. Document Title

@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw, ArrowLeft, ChevronDown, ChevronUp, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, RefreshCw, ArrowLeft, ChevronDown, ChevronUp, ShieldAlert, Sparkles, WifiOff } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
@@ -13,6 +13,7 @@ interface State {
   error: Error | null;
   errorInfo: ErrorInfo | null;
   showDetails: boolean;
+  isChunkLoadError: boolean;
 }
 
 export class RouteErrorBoundary extends React.Component<Props, State> {
@@ -23,11 +24,24 @@ export class RouteErrorBoundary extends React.Component<Props, State> {
       error: null,
       errorInfo: null,
       showDetails: false,
+      isChunkLoadError: false,
     };
   }
 
   public static getDerivedStateFromError(error: Error): Partial<State> {
-    return { hasError: true, error };
+    const isChunkLoadError = 
+      error?.message?.includes('Failed to fetch dynamically imported module') ||
+      error?.message?.includes('Importing a module script failed') ||
+      error?.message?.includes('error loading dynamically imported module') ||
+      error?.name === 'ChunkLoadError' ||
+      error?.message?.includes('Loading chunk') ||
+      error?.message?.includes('dynamically imported module');
+
+    return { 
+      hasError: true, 
+      error,
+      isChunkLoadError: Boolean(isChunkLoadError),
+    };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -36,10 +50,31 @@ export class RouteErrorBoundary extends React.Component<Props, State> {
   }
 
   private handleRetry = () => {
+    if (this.state.isChunkLoadError) {
+      // Chunk load error means the browser cached an outdated chunk hash from a previous deployment
+      // Force reload page to fetch the latest index.html and assets from server
+      window.location.reload();
+      return;
+    }
+
     this.setState({ hasError: false, error: null, errorInfo: null });
     if (this.props.onReset) {
       this.props.onReset();
     }
+  };
+
+  private handleHardReload = () => {
+    // Clear all chunk retry session tokens and hard reload
+    try {
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith('retry-chunk-reload-')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    } catch {
+      // Ignore sessionStorage access errors
+    }
+    window.location.reload();
   };
 
   private handleGoHome = () => {
@@ -54,6 +89,8 @@ export class RouteErrorBoundary extends React.Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       const { routeName } = this.props;
+      const { isChunkLoadError } = this.state;
+
       return (
         <div 
           id="route-error-boundary-container"
@@ -61,12 +98,12 @@ export class RouteErrorBoundary extends React.Component<Props, State> {
         >
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200 text-slate-800 text-left">
             <div className="flex items-center gap-3.5 mb-4">
-              <div className="p-3 bg-red-100 text-red-600 rounded-xl">
-                <AlertTriangle className="w-6 h-6" />
+              <div className={`p-3 rounded-xl ${isChunkLoadError ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'}`}>
+                {isChunkLoadError ? <WifiOff className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
               </div>
               <div>
                 <h3 className="text-lg font-bold text-slate-900">
-                  Gặp Sự Cố Khi Tải Module
+                  {isChunkLoadError ? 'Cần Tải Lại Phiên Bản Mới' : 'Gặp Sự Cố Khi Tải Module'}
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   {routeName ? `Module: ${routeName}` : 'Thành phần giao diện gặp lỗi runtime'}
@@ -74,9 +111,19 @@ export class RouteErrorBoundary extends React.Component<Props, State> {
               </div>
             </div>
 
-            <p className="text-sm text-slate-600 mb-4 leading-relaxed">
-              Hệ thống đã tự động cách ly lỗi để bảo toàn dữ liệu báo giá đang soạn thảo. Bạn có thể thử tải lại module hoặc quay về màn hình chính.
-            </p>
+            {isChunkLoadError ? (
+              <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-800 leading-relaxed">
+                <div className="flex items-center gap-1.5 font-semibold text-blue-900 mb-1">
+                  <Sparkles className="w-4 h-4 text-blue-600" />
+                  Hệ thống vừa cập nhật phiên bản mới
+                </div>
+                Máy chủ vừa triển khai bản cập nhật mới nên mã nguồn module tạm thời không khớp với bộ nhớ đệm trình duyệt của bạn. Dữ liệu báo giá đang soạn thảo đã được tự động lưu an toàn vào cơ sở dữ liệu.
+              </div>
+            ) : (
+              <p className="text-sm text-slate-600 mb-4 leading-relaxed">
+                Hệ thống đã tự động cách ly lỗi để bảo toàn dữ liệu báo giá đang soạn thảo. Bạn có thể thử tải lại module hoặc quay về màn hình chính.
+              </p>
+            )}
 
             {/* Collapsible Error Trace */}
             <div className="mb-5 border border-slate-200 rounded-xl overflow-hidden text-xs">
@@ -121,7 +168,7 @@ export class RouteErrorBoundary extends React.Component<Props, State> {
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-xs transition-colors cursor-pointer"
               >
                 <RefreshCw className="w-4 h-4" />
-                Thử Lại
+                {isChunkLoadError ? 'Tải Lại Ứng Dụng' : 'Thử Lại'}
               </button>
             </div>
           </div>

@@ -47,6 +47,8 @@ export type AppRouteId =
   // System
   | 'sys_profile'
   | 'sys_sales_bank'
+  | 'sys_financial'
+  | 'sys_financial_config'
   | 'sys_audit'
   | 'sys_backup'
   | 'sys_integrity'
