@@ -18,12 +18,15 @@ import {
   QuotationTermsTemplate, 
   QuotationDocumentType, 
   QuotationDocumentLanguage, 
-  QuotationAuditLog 
+  QuotationAuditLog,
+  DocumentVisibility,
+  DocumentEntityType
 } from '../../types/quotationDocument';
 import { DEFAULT_QUOTATION_TEMPLATES, DEFAULT_TERMS_TEMPLATES } from '../../data/defaultTemplates';
 import { createQuotationDocumentSnapshot, validateQuotationForDocumentGeneration } from './quotationSanitizer';
 import { generateQuotationPdf, GeneratedPdfResult } from './quotationPdfEngine';
 import { uploadQuotationPdfToStorage } from '../firebase/pdfStorageService';
+import { uploadFileToStorage } from '../firebase/fileStorageService';
 
 const STORAGE_KEYS = {
   DOCUMENTS: 'logiquote_quotation_documents_v1',
@@ -272,12 +275,43 @@ export async function generateAndSaveQuotationDocument(
 
   // 7. Create QuotationDocumentRecord
   const docId = `doc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+
+  // Supersede previous documents of the same type for this quote
+  const updatedPreviousDocs: QuotationDocumentRecord[] = [];
+  for (const prevDoc of existingDocs) {
+    if (prevDoc.documentType === documentType && prevDoc.isCurrent !== false) {
+      const updatedPrev: QuotationDocumentRecord = {
+        ...prevDoc,
+        isCurrent: false,
+        supersededBy: docId,
+        supersededAt: uploadResult.uploadedAt,
+        status: 'SUPERSEDED',
+      };
+      updatedPreviousDocs.push(updatedPrev);
+      if (db) {
+        try {
+          const prevRef = doc(db, COLLECTIONS.DOCUMENTS, prevDoc.id);
+          await setDoc(prevRef, {
+            isCurrent: false,
+            supersededBy: docId,
+            supersededAt: uploadResult.uploadedAt,
+            status: 'SUPERSEDED',
+          }, { merge: true });
+        } catch (prevErr) {
+          console.warn('Error superseding previous document in Firestore:', prevErr);
+        }
+      }
+    }
+  }
+
   const record: QuotationDocumentRecord = {
     id: docId,
+    documentId: docId,
     companyId,
     quotationId: quote.id,
     quotationNumber: quote.quoteNumber,
     revision,
+    documentVersion: revision,
     documentType,
     language,
     templateId: template.id,
@@ -293,11 +327,23 @@ export async function generateAndSaveQuotationDocument(
     generatedBy,
     generatedAt: uploadResult.uploadedAt,
     snapshot,
+    isCurrent: true,
+    entityType: 'QUOTATION',
+    entityId: quote.id,
+    customerName: quote.customer?.companyName || quote.customer?.customerName || 'Customer',
+    customerId: quote.customer?.id,
+    visibility: documentType === 'INTERNAL_QUOTATION' ? 'INTERNAL' : 'CUSTOMER_VISIBLE',
+    mimeType: 'application/pdf',
+    generationState: 'SAVED',
   };
 
   // 8. Save record locally
   const localDocs = getLocalDocuments();
-  saveLocalDocuments([record, ...localDocs]);
+  const filteredLocal = localDocs.map(d => {
+    const updated = updatedPreviousDocs.find(up => up.id === d.id);
+    return updated || d;
+  });
+  saveLocalDocuments([record, ...filteredLocal]);
 
   // 9. Save record to Firestore
   if (db) {
@@ -455,4 +501,291 @@ export async function getAllQuotationDocuments(): Promise<QuotationDocumentRecor
     }
   }
   return getLocalDocuments();
+}
+
+// ==========================================
+// 5. PHASE 40: CONTROL CENTER SUPPORTING DOCS & MANAGEMENT
+// ==========================================
+
+export interface UploadSupportingDocumentOptions {
+  companyId: string;
+  quotationId?: string;
+  quotationNumber?: string;
+  file: File;
+  documentType: QuotationDocumentType;
+  visibility?: DocumentVisibility;
+  uploadedBy: string;
+  notes?: string;
+  customerName?: string;
+  customerId?: string;
+  entityType?: DocumentEntityType;
+  entityId?: string;
+}
+
+/**
+ * Uploads an arbitrary supporting document (Commercial Invoice, Packing List, Contract, etc.)
+ * directly into Firebase Storage and registers it with full multi-company metadata.
+ */
+export async function uploadSupportingDocument(
+  options: UploadSupportingDocumentOptions
+): Promise<QuotationDocumentRecord> {
+  const {
+    companyId,
+    quotationId = 'GENERAL',
+    quotationNumber = 'GENERAL',
+    file,
+    documentType,
+    visibility = 'CUSTOMER_VISIBLE',
+    uploadedBy,
+    notes = '',
+    customerName,
+    customerId,
+    entityType = quotationId !== 'GENERAL' ? 'QUOTATION' : 'SUPPORTING',
+    entityId = quotationId,
+  } = options;
+
+  const docId = `doc-attach-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+  const sanitizedCompanyId = (companyId || 'default').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const sanitizedQuoteId = (quotationId || 'quote').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const folder = `companies/${sanitizedCompanyId}/quotations/${sanitizedQuoteId}/attachments/${docId}`;
+
+  // Upload file to cloud storage
+  const uploadRes = await uploadFileToStorage({
+    folder,
+    fileName: file.name,
+    file,
+    customMetadata: {
+      companyId: sanitizedCompanyId,
+      quotationId: sanitizedQuoteId,
+      documentType,
+      uploadedBy,
+      docId,
+    },
+  });
+
+  const now = new Date().toISOString();
+
+  // Create document record (minimal dummy snapshot for attachment integrity)
+  const dummySnapshot: any = {
+    quotationId,
+    quoteNumber: quotationNumber,
+    revision: 1,
+    createdDate: now.slice(0, 10),
+    documentType,
+    language: 'bilingual',
+    currency: 'USD',
+    exchangeRate: 25400,
+    customer: { customerName: customerName || 'N/A' },
+    shipment: { pol: '', pod: '' },
+    items: [],
+    terms: {},
+    company: { name: sanitizedCompanyId },
+    subtotalUsd: 0,
+    subtotalVnd: 0,
+    vatTotalUsd: 0,
+    vatTotalVnd: 0,
+    grandTotalUsd: 0,
+    grandTotalVnd: 0,
+  };
+
+  const record: QuotationDocumentRecord = {
+    id: docId,
+    documentId: docId,
+    companyId,
+    quotationId,
+    quotationNumber,
+    revision: 1,
+    documentVersion: 1,
+    documentType,
+    language: 'bilingual',
+    templateId: 'custom-attachment',
+    templateVersion: 1,
+    templateName: file.name,
+    currency: 'USD',
+    fileName: file.name,
+    storagePath: uploadRes.storagePath,
+    downloadUrl: uploadRes.downloadUrl,
+    fileSizeBytes: uploadRes.fileSizeBytes,
+    pageCount: 1,
+    status: 'AVAILABLE',
+    generatedBy: uploadedBy,
+    generatedAt: now,
+    snapshot: dummySnapshot,
+    notes,
+    entityType,
+    entityId,
+    mimeType: uploadRes.mimeType || file.type || 'application/octet-stream',
+    visibility,
+    isCurrent: true,
+    customerName,
+    customerId,
+    generationState: 'SAVED',
+    uploadedFile: true,
+  };
+
+  // Save to memory
+  const local = getLocalDocuments();
+  saveLocalDocuments([record, ...local]);
+
+  // Save to Firestore
+  if (db) {
+    try {
+      const docRef = doc(db, COLLECTIONS.DOCUMENTS, docId);
+      await setDoc(docRef, {
+        ...record,
+        _createdAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn('Firestore save supporting document notice:', err);
+    }
+  }
+
+  // Audit log
+  await recordAuditLog({
+    id: `audit-att-${Date.now()}`,
+    companyId,
+    quotationId,
+    entityType: 'QUOTATION_DOCUMENT',
+    entityId: docId,
+    action: 'ATTACHMENT_UPLOADED',
+    performedBy: uploadedBy,
+    timestamp: now,
+    details: {
+      fileName: file.name,
+      fileSize: uploadRes.fileSizeBytes,
+      documentType,
+      visibility,
+    },
+  });
+
+  return record;
+}
+
+/**
+ * Updates the visibility level of a document (e.g. Internal vs Customer Visible)
+ */
+export async function updateDocumentVisibility(
+  documentId: string,
+  visibility: DocumentVisibility,
+  updatedBy: string = 'User'
+): Promise<void> {
+  const local = getLocalDocuments();
+  const updated = local.map(d => d.id === documentId ? { ...d, visibility } : d);
+  saveLocalDocuments(updated);
+
+  if (db) {
+    try {
+      const docRef = doc(db, COLLECTIONS.DOCUMENTS, documentId);
+      await setDoc(docRef, { visibility, _updatedAt: serverTimestamp() }, { merge: true });
+    } catch (e) {
+      console.warn('Firestore update document visibility notice:', e);
+    }
+  }
+
+  await recordAuditLog({
+    id: `audit-vis-${Date.now()}`,
+    companyId: updated.find(d => d.id === documentId)?.companyId || 'default',
+    quotationId: updated.find(d => d.id === documentId)?.quotationId || 'GENERAL',
+    entityType: 'QUOTATION_DOCUMENT',
+    entityId: documentId,
+    action: 'VISIBILITY_CHANGED',
+    performedBy: updatedBy,
+    timestamp: new Date().toISOString(),
+    details: { newVisibility: visibility },
+  });
+}
+
+/**
+ * Toggles a document between active and archived states
+ */
+export async function toggleDocumentArchive(
+  documentId: string,
+  archive: boolean,
+  updatedBy: string = 'User'
+): Promise<void> {
+  const newStatus = archive ? 'ARCHIVED' : 'AVAILABLE';
+  const local = getLocalDocuments();
+  const updated = local.map(d => d.id === documentId ? { ...d, status: newStatus as any } : d);
+  saveLocalDocuments(updated);
+
+  if (db) {
+    try {
+      const docRef = doc(db, COLLECTIONS.DOCUMENTS, documentId);
+      await setDoc(docRef, { status: newStatus, _updatedAt: serverTimestamp() }, { merge: true });
+    } catch (e) {
+      console.warn('Firestore toggle archive notice:', e);
+    }
+  }
+
+  await recordAuditLog({
+    id: `audit-arch-${Date.now()}`,
+    companyId: updated.find(d => d.id === documentId)?.companyId || 'default',
+    quotationId: updated.find(d => d.id === documentId)?.quotationId || 'GENERAL',
+    entityType: 'QUOTATION_DOCUMENT',
+    entityId: documentId,
+    action: archive ? 'DOCUMENT_ARCHIVED' : 'DOCUMENT_RESTORED',
+    performedBy: updatedBy,
+    timestamp: new Date().toISOString(),
+    details: { status: newStatus },
+  });
+}
+
+/**
+ * Multi-company scoped fetch for all documents belonging to a company
+ */
+export async function getCompanyQuotationDocuments(
+  companyId: string,
+  quotationId?: string
+): Promise<QuotationDocumentRecord[]> {
+  const all = await getQuotationDocuments(quotationId);
+  if (!companyId || companyId === 'all') return all;
+  return all.filter(d => !d.companyId || d.companyId === 'default' || d.companyId === companyId);
+}
+
+/**
+ * System Health / Integrity check for Document Repository
+ */
+export async function checkDocumentsIntegrity(companyId?: string): Promise<{
+  totalCount: number;
+  healthyCount: number;
+  missingUrlCount: number;
+  supersededCount: number;
+  archivedCount: number;
+  totalSizeBytes: number;
+  issues: string[];
+}> {
+  const allDocs = await getAllQuotationDocuments();
+  const filtered = companyId && companyId !== 'all' 
+    ? allDocs.filter(d => !d.companyId || d.companyId === companyId) 
+    : allDocs;
+
+  let missingUrlCount = 0;
+  let supersededCount = 0;
+  let archivedCount = 0;
+  let totalSizeBytes = 0;
+  const issues: string[] = [];
+
+  filtered.forEach(doc => {
+    totalSizeBytes += (doc.fileSizeBytes || 0);
+    if (!doc.downloadUrl && !doc.storagePath) {
+      missingUrlCount++;
+      issues.push(`Document ${doc.id} (${doc.fileName}) is missing both downloadUrl and storagePath.`);
+    }
+    if (doc.status === 'SUPERSEDED' || doc.isCurrent === false) {
+      supersededCount++;
+    }
+    if (doc.status === 'ARCHIVED') {
+      archivedCount++;
+    }
+  });
+
+  return {
+    totalCount: filtered.length,
+    healthyCount: filtered.length - missingUrlCount,
+    missingUrlCount,
+    supersededCount,
+    archivedCount,
+    totalSizeBytes,
+    issues,
+  };
 }

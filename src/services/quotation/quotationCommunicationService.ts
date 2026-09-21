@@ -99,6 +99,7 @@ export function validateQuotationEligibleForSend(
 export interface SendQuotationParams {
   quote: QuoteData;
   document: QuotationDocumentRecord;
+  additionalAttachments?: QuotationDocumentRecord[];
   recipients: string[];
   cc?: string[];
   bcc?: string[];
@@ -110,6 +111,7 @@ export interface SendQuotationParams {
   sentBy: string;
   sentByName?: string;
   templateId?: string;
+  idempotencyKey?: string;
 }
 
 /**
@@ -120,7 +122,23 @@ export async function dispatchQuotationEmail(params: SendQuotationParams): Promi
   communication: QuotationCommunication;
   error?: string;
 }> {
-  const { quote, document, recipients, cc, bcc, subject, bodyHtml, secureLinkId, secureLinkUrl, language, sentBy, sentByName, templateId } = params;
+  const { 
+    quote, 
+    document, 
+    additionalAttachments = [], 
+    recipients, 
+    cc, 
+    bcc, 
+    subject, 
+    bodyHtml, 
+    secureLinkId, 
+    secureLinkUrl, 
+    language, 
+    sentBy, 
+    sentByName, 
+    templateId,
+    idempotencyKey: customIdempotencyKey
+  } = params;
 
   // 1. Double check eligibility
   const validation = validateQuotationEligibleForSend(quote, document);
@@ -132,7 +150,23 @@ export async function dispatchQuotationEmail(params: SendQuotationParams): Promi
     };
   }
 
-  // 2. Prepare attachment snapshot
+  // Idempotency Check: Prevent duplicate sends from rapid clicking or retries
+  const idempotencyKey = customIdempotencyKey || `${quote.id}_rev${document.revision}_${recipients.slice().sort().join('_')}_${Math.floor(Date.now() / 60000)}`;
+  const currentLocal = getLocalCommunications();
+  const existingComm = currentLocal.find(c => 
+    (c.idempotencyKey && c.idempotencyKey === idempotencyKey) ||
+    (c.quotationId === quote.id && c.documentId === document.id && c.status === 'SENT' && (Date.now() - new Date(c.createdAt).getTime() < 30000))
+  );
+
+  if (existingComm) {
+    console.warn('[Idempotency Guard] Duplicate email dispatch prevented for key:', idempotencyKey);
+    return {
+      success: true,
+      communication: existingComm,
+    };
+  }
+
+  // 2. Prepare attachment snapshot (primary doc + any additional attachments)
   const attachmentSnapshot: EmailAttachmentSnapshot[] = [
     {
       documentId: document.id,
@@ -140,18 +174,38 @@ export async function dispatchQuotationEmail(params: SendQuotationParams): Promi
       storagePath: document.storagePath,
       downloadUrl: document.downloadUrl,
       revision: document.revision,
-      documentType: document.documentType,
+      documentType: document.documentType as any,
       language: document.language,
       fileSizeBytes: document.fileSizeBytes,
     }
   ];
+
+  const attachmentIds: string[] = [document.id];
+
+  if (additionalAttachments && additionalAttachments.length > 0) {
+    additionalAttachments.forEach(att => {
+      if (!attachmentIds.includes(att.id)) {
+        attachmentIds.push(att.id);
+        attachmentSnapshot.push({
+          documentId: att.id,
+          fileName: att.fileName,
+          storagePath: att.storagePath,
+          downloadUrl: att.downloadUrl,
+          revision: att.revision || 1,
+          documentType: (att.documentType as any) || 'OTHER_ATTACHMENT',
+          language: att.language || 'bilingual',
+          fileSizeBytes: att.fileSizeBytes,
+        });
+      }
+    });
+  }
 
   const commId = `comm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const now = new Date().toISOString();
 
   const commRecord: QuotationCommunication = {
     id: commId,
-    companyId: document.companyId || 'default-company',
+    companyId: document.companyId || (quote as any).companyId || 'default-company',
     quotationId: quote.id,
     quotationNumber: quote.quoteNumber,
     documentId: document.id,
@@ -162,7 +216,7 @@ export async function dispatchQuotationEmail(params: SendQuotationParams): Promi
     bcc: bcc || [],
     subject,
     bodySnapshot: bodyHtml,
-    attachmentIds: [document.id],
+    attachmentIds,
     attachmentSnapshot,
     secureLinkId,
     secureLinkUrl,
@@ -171,11 +225,24 @@ export async function dispatchQuotationEmail(params: SendQuotationParams): Promi
     sentBy,
     sentByName: sentByName || 'Sales Executive',
     sentAt: now,
-    deliveredAt: now, // Simulating immediate transport delivery in cloud environment
+    deliveredAt: now,
     templateId,
     templateVersion: 1,
     createdAt: now,
     updatedAt: now,
+    idempotencyKey,
+    attemptCount: 1,
+    lastAttemptAt: now,
+    retryable: true,
+    customerId: quote.customer?.id,
+    customerName: quote.customer?.companyName || quote.customer?.customerName,
+    totalAmount: quote.quoteCurrency === 'VND' ? quote.grandTotalVnd : quote.grandTotalUsd,
+    currency: quote.quoteCurrency || 'USD',
+    channel: 'EMAIL',
+    deliveryDetails: {
+      provider: 'Cloud Native Mailer',
+      acceptedAt: now,
+    },
   };
 
   // Try calling server-side API if available
@@ -207,9 +274,9 @@ export async function dispatchQuotationEmail(params: SendQuotationParams): Promi
     console.log('Server-side email API dispatch noted (proceeding with Firestore persistence):', apiErr);
   }
 
-  // 3. Save to local storage
-  const currentLocal = getLocalCommunications();
-  saveLocalCommunications([commRecord, ...currentLocal]);
+  // 3. Save to memory cache
+  const latestLocal = getLocalCommunications();
+  saveLocalCommunications([commRecord, ...latestLocal]);
 
   // 4. Save to Firestore
   if (db) {
@@ -562,4 +629,161 @@ export async function getAllFollowUps(): Promise<QuotationFollowUp[]> {
     }
   }
   return getLocalFollowUps();
+}
+
+/**
+ * Phase 40: Retries a failed or queued quotation email dispatch
+ */
+export async function retryQuotationEmail(
+  communicationId: string,
+  retriedBy: string = 'Sales Representative'
+): Promise<{ success: boolean; error?: string }> {
+  const local = getLocalCommunications();
+  const comm = local.find(c => c.id === communicationId);
+  if (!comm) {
+    return { success: false, error: 'Bản ghi giao tiếp không tồn tại.' };
+  }
+
+  const currentAttempt = (comm.attemptCount || 1) + 1;
+  if (currentAttempt > 5) {
+    return { success: false, error: 'Đã vượt quá số lần thử lại tối đa (5 lần).' };
+  }
+
+  const now = new Date().toISOString();
+  let dispatchSuccess = true;
+  let errorMsg = '';
+
+  try {
+    const res = await fetch('/api/quotation/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        communicationId: comm.id,
+        quotationId: comm.quotationId,
+        quoteNumber: comm.quotationNumber,
+        recipients: comm.recipients,
+        cc: comm.cc,
+        bcc: comm.bcc,
+        subject: comm.subject,
+        bodyHtml: comm.bodySnapshot,
+        secureLinkUrl: comm.secureLinkUrl,
+        attachment: comm.attachmentSnapshot?.[0],
+        sentBy: retriedBy,
+      }),
+    });
+
+    if (!res.ok) {
+      dispatchSuccess = false;
+      errorMsg = `Server error: ${res.statusText}`;
+    }
+  } catch (err: any) {
+    dispatchSuccess = false;
+    errorMsg = err.message || 'Lỗi mạng khi kết nối server mailer.';
+  }
+
+  const updatedStatus = dispatchSuccess ? 'SENT' : 'FAILED';
+  const updatedComm: QuotationCommunication = {
+    ...comm,
+    status: updatedStatus,
+    attemptCount: currentAttempt,
+    lastAttemptAt: now,
+    sentAt: dispatchSuccess ? now : comm.sentAt,
+    deliveredAt: dispatchSuccess ? now : comm.deliveredAt,
+    failureReason: dispatchSuccess ? undefined : errorMsg,
+    errorHistory: [
+      ...(comm.errorHistory || []),
+      ...(dispatchSuccess ? [] : [{ timestamp: now, error: errorMsg }]),
+    ],
+    updatedAt: now,
+  };
+
+  const updatedList = local.map(c => c.id === communicationId ? updatedComm : c);
+  saveLocalCommunications(updatedList);
+
+  if (db) {
+    try {
+      const docRef = doc(db, COLLECTION_COMMUNICATIONS, communicationId);
+      await setDoc(docRef, {
+        status: updatedStatus,
+        attemptCount: currentAttempt,
+        lastAttemptAt: now,
+        sentAt: updatedComm.sentAt,
+        deliveredAt: updatedComm.deliveredAt,
+        failureReason: updatedComm.failureReason || null,
+        errorHistory: updatedComm.errorHistory || [],
+        updatedAt: now,
+      }, { merge: true });
+    } catch (e) {
+      console.warn('Firestore update retry notice:', e);
+    }
+  }
+
+  await recordAuditLog({
+    id: `audit-retry-${Date.now()}`,
+    companyId: comm.companyId,
+    quotationId: comm.quotationId,
+    entityType: 'QUOTATION_COMMUNICATION',
+    entityId: communicationId,
+    action: dispatchSuccess ? 'EMAIL_RETRY_SUCCESS' : 'EMAIL_RETRY_FAILED',
+    performedBy: retriedBy,
+    timestamp: now,
+    details: {
+      attempt: currentAttempt,
+      success: dispatchSuccess,
+      error: errorMsg,
+    },
+  });
+
+  return {
+    success: dispatchSuccess,
+    error: dispatchSuccess ? undefined : errorMsg,
+  };
+}
+
+/**
+ * Multi-company scoped retrieval of communications
+ */
+export async function getCompanyCommunications(
+  companyId: string,
+  quotationId?: string
+): Promise<QuotationCommunication[]> {
+  const all = await getAllCommunications();
+  let filtered = all;
+  if (companyId && companyId !== 'all') {
+    filtered = filtered.filter(c => !c.companyId || c.companyId === 'default' || c.companyId === companyId);
+  }
+  if (quotationId) {
+    filtered = filtered.filter(c => c.quotationId === quotationId);
+  }
+  return filtered;
+}
+
+/**
+ * System Health / Integrity check for Communications
+ */
+export async function checkCommunicationIntegrity(companyId?: string): Promise<{
+  totalSent: number;
+  totalFailed: number;
+  totalOpened: number;
+  activeLinksCount: number;
+  averageAttempts: number;
+}> {
+  const comms = await getAllCommunications();
+  const filtered = companyId && companyId !== 'all'
+    ? comms.filter(c => !c.companyId || c.companyId === companyId)
+    : comms;
+
+  const totalSent = filtered.filter(c => c.status === 'SENT' || c.status === 'DELIVERED').length;
+  const totalFailed = filtered.filter(c => c.status === 'FAILED').length;
+  const totalOpened = filtered.filter(c => c.status === 'OPENED').length;
+  const attemptsSum = filtered.reduce((acc, c) => acc + (c.attemptCount || 1), 0);
+  const averageAttempts = filtered.length > 0 ? parseFloat((attemptsSum / filtered.length).toFixed(2)) : 1;
+
+  return {
+    totalSent,
+    totalFailed,
+    totalOpened,
+    activeLinksCount: filtered.filter(c => !!c.secureLinkId).length,
+    averageAttempts,
+  };
 }

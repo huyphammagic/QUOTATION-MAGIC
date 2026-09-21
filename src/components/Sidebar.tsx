@@ -88,6 +88,7 @@ export interface SidebarProps {
   onOpenGeneratePdf?: () => void;
   onOpenSendModal?: () => void;
   onOpenCommunication?: () => void;
+  onOpenDocumentCenter?: () => void;
   onOpenSmartQuotationWorkspace?: () => void;
   onOpenEmailTemplates?: () => void;
   onOpenFollowUps?: () => void;
@@ -134,6 +135,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenGeneratePdf,
   onOpenSendModal,
   onOpenCommunication,
+  onOpenDocumentCenter,
   onOpenSmartQuotationWorkspace,
   onOpenEmailTemplates,
   onOpenFollowUps,
@@ -425,6 +427,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: ExternalLink,
       group: 'quotation',
       action: () => onOpenCommunication && onOpenCommunication(),
+    },
+    {
+      id: 'quotation_document_center',
+      label: activeLang === 'vi' ? 'Trung Tâm Tài Liệu & Giao Tiếp' : 'Document & Comm Control Center',
+      icon: Layers,
+      group: 'quotation',
+      action: () => onOpenDocumentCenter && onOpenDocumentCenter(),
+      badge: 'Phase 40',
+      badgeColor: 'bg-blue-600/80 text-white font-bold',
     },
     {
       id: 'quotation_email_templates',

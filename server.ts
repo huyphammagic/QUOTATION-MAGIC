@@ -52,7 +52,7 @@ Chỉ xuất ra đúng 5-8 phụ phí thực tế phổ biến nhất theo tuy�
 
     const ai = getGeminiClient();
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.8-flash",
       contents: prompt,
     });
 
@@ -84,7 +84,7 @@ Email cần thể hiện sự lịch sự, chuyên nghiệp, nêu rõ ưu điể
 
     const ai = getGeminiClient();
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.8-flash",
       contents: prompt,
     });
 
@@ -111,7 +111,7 @@ Hãy đưa ra đánh giá ngắn gọn dạng bullet points:
 
     const ai = getGeminiClient();
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.8-flash",
       contents: prompt,
     });
 

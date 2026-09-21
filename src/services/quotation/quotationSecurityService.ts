@@ -329,6 +329,8 @@ export async function getLinksForQuotation(quotationId: string): Promise<Quotati
   return local.filter(l => l.quotationId === quotationId);
 }
 
+export const getSecureLinksForQuotation = getLinksForQuotation;
+
 /**
  * Submits a Customer Response (ACCEPT, REJECT, or REVISION_REQUESTED)
  */

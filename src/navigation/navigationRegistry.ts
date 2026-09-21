@@ -125,6 +125,16 @@ export const APP_ROUTES: Record<AppRouteId, RouteDefinition> = {
     descriptionVi: 'Lịch sử tương tác, email và phản hồi trực tiếp từ khách hàng',
     descriptionEn: 'Interaction timeline, email logs and customer responses',
   },
+  quotation_document_center: {
+    id: 'quotation_document_center',
+    path: '/quotations/document-center',
+    hash: '#quotations/document-center',
+    titleVi: 'Trung Tâm Tài Liệu & Giao Tiếp',
+    titleEn: 'Document & Communication Control Center',
+    group: 'quotation',
+    descriptionVi: 'Quản lý tập trung tài liệu, PDF, phụ lục, email và lịch sử tương tác khách hàng (Phase 40)',
+    descriptionEn: 'Unified management for quotations, PDFs, attachments, emails, and customer delivery',
+  },
   quotation_email_templates: {
     id: 'quotation_email_templates',
     path: '/quotations/email-templates',
@@ -484,13 +494,21 @@ export function parseRouteFromUrl(pathname: string, hash: string): {
   const cleanPath = pathname.toLowerCase().replace(/\/$/, '') || '/';
   const cleanHash = hash.toLowerCase().replace(/\/$/, '');
 
-  // 1. Check for Customer Secure Quote Link (/q/:token or #/q/:token or #q/:token)
+  // 1. Check for Customer Secure Quote Link (/q/:token, #/q/:token, /portal/:token, #/portal/:token)
   if (cleanPath.startsWith('/q/')) {
     const token = pathname.replace(/^\/q\//i, '').split(/[?#]/)[0].trim();
     if (token) return { routeId: 'secure_quote_portal', param: token };
   }
   if (cleanHash.startsWith('#/q/') || cleanHash.startsWith('#q/')) {
     const token = hash.replace(/^#(?:|\/)q\//i, '').split(/[?#]/)[0].trim();
+    if (token) return { routeId: 'secure_quote_portal', param: token };
+  }
+  if (cleanPath.startsWith('/portal/')) {
+    const token = pathname.replace(/^\/portal\//i, '').split(/[?#]/)[0].trim();
+    if (token) return { routeId: 'secure_quote_portal', param: token };
+  }
+  if (cleanHash.startsWith('#/portal/') || cleanHash.startsWith('#portal/')) {
+    const token = hash.replace(/^#(?:|\/)portal\//i, '').split(/[?#]/)[0].trim();
     if (token) return { routeId: 'secure_quote_portal', param: token };
   }
 
@@ -528,12 +546,17 @@ export function parseRouteFromUrl(pathname: string, hash: string): {
     return { routeId: 'smart_quotation_workspace' };
   }
 
-  // 4. If root '/' and empty hash -> Main Quotation Workbench
-  if (cleanPath === '/' && (!cleanHash || cleanHash === '#' || cleanHash === '#/')) {
+  // 4. If root '/' or '/index.html' and empty hash -> Main Quotation Workbench
+  if ((cleanPath === '/' || cleanPath === '/index.html' || !cleanPath) && (!cleanHash || cleanHash === '#' || cleanHash === '#/')) {
     return { routeId: null };
   }
 
-  // 5. Unknown route requested directly
+  // 5. If no explicit hash is provided, default to main workbench instead of false-positive 404
+  if (!cleanHash || cleanHash === '#' || cleanHash === '#/') {
+    return { routeId: null };
+  }
+
+  // 6. Unknown hash or unknown deep route requested directly
   return { routeId: null, isNotFound: true };
 }
 

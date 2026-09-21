@@ -89,6 +89,23 @@ export interface QuotationCommunication {
   templateVersion?: number;
   createdAt: string;
   updatedAt: string;
+
+  // Phase 40 Delivery & Idempotency enhancements
+  idempotencyKey?: string;
+  attemptCount?: number;
+  lastAttemptAt?: string;
+  errorHistory?: { timestamp: string; error: string; code?: string }[];
+  retryable?: boolean;
+  customerId?: string;
+  customerName?: string;
+  totalAmount?: number;
+  currency?: QuoteCurrency | string;
+  channel?: 'EMAIL' | 'PORTAL' | 'MANUAL';
+  deliveryDetails?: {
+    provider?: string;
+    messageId?: string;
+    acceptedAt?: string;
+  };
 }
 
 export interface QuotationSecureLink {
@@ -116,6 +133,8 @@ export interface QuotationSecureLink {
   revokedBy?: string;
   revokeReason?: string;
 }
+
+export type QuotationSecureLinkRecord = QuotationSecureLink;
 
 export interface QuotationCustomerResponse {
   id: string;

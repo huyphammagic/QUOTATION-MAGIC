@@ -112,6 +112,7 @@ const ConflictResolutionModal = lazyWithRetry(() => import('./components/Conflic
 const MasterDataReferenceModal = lazyWithRetry(() => import('./components/MasterDataReferenceModal').then(m => ({ default: m.MasterDataReferenceModal })), 'MasterDataReferenceModal');
 const SmartQuotationWorkspace = lazyWithRetry(() => import('./components/smartQuotation/SmartQuotationWorkspace').then(m => ({ default: m.SmartQuotationWorkspace })), 'SmartQuotationWorkspace');
 const DataIntegrityDashboardModal = lazyWithRetry(() => import('./components/integrity/DataIntegrityDashboardModal').then(m => ({ default: m.DataIntegrityDashboardModal })), 'DataIntegrityDashboardModal');
+const DocumentControlCenter = lazyWithRetry(() => import('./components/communication/DocumentControlCenter').then(m => ({ default: m.DocumentControlCenter })), 'DocumentControlCenter');
 
 import { getDocumentRecordsForQuotation, getAllQuotationDocuments } from './services/quotation/quotationDocumentService';
 import { QuotationDocumentRecord } from './types/quotationDocument';
@@ -251,6 +252,9 @@ export default function App() {
   const [isCommunicationPanelOpen, setIsCommunicationPanelOpen] = useState(false);
   const [quotationDocuments, setQuotationDocuments] = useState<QuotationDocumentRecord[]>([]);
   const [viewingSecureToken, setViewingSecureToken] = useState<string | null>(null);
+  
+  // Phase 40: Document & Communication Control Center
+  const [isDocumentCenterOpen, setIsDocumentCenterOpen] = useState(false);
 
   // Phase 9: Advanced Business Intelligence & Sales Analytics Dashboard
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
@@ -323,6 +327,7 @@ export default function App() {
     setIsGeneratePdfOpen(false);
     setIsSendQuotationOpen(false);
     setIsCommunicationPanelOpen(false);
+    setIsDocumentCenterOpen(false);
     setIsEmailTemplatesOpen(false);
     setIsFollowUpOpen(false);
     setIsMasterDataRefOpen(false);
@@ -458,6 +463,10 @@ export default function App() {
       case 'quotation_communication':
         loadQuotationDocuments(quote.id);
         setIsCommunicationPanelOpen(true);
+        break;
+      case 'quotation_document_center':
+        loadQuotationDocuments(quote.id);
+        setIsDocumentCenterOpen(true);
         break;
       case 'quotation_email_templates':
         setIsEmailTemplatesOpen(true);
@@ -1685,6 +1694,7 @@ export default function App() {
           }}
           onOpenCompanyProfile={(tab) => {
             if (tab === 'sales') navigateToRoute('sys_sales_bank');
+            else if (tab === 'financial') navigateToRoute('sys_financial');
             else navigateToRoute('sys_profile');
           }}
           onOpenCustomers={() => navigateToRoute('master_customers')}
@@ -1704,6 +1714,7 @@ export default function App() {
           onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
           onOpenSendModal={() => navigateToRoute('quotation_send')}
           onOpenCommunication={() => navigateToRoute('quotation_communication')}
+          onOpenDocumentCenter={() => navigateToRoute('quotation_document_center')}
           onOpenSmartQuotationWorkspace={() => navigateToRoute('smart_quotation_workspace')}
           onOpenEmailTemplates={() => navigateToRoute('quotation_email_templates')}
           onOpenFollowUps={() => navigateToRoute('quotation_followup')}
@@ -1765,10 +1776,8 @@ export default function App() {
             rateCount={rates.length}
             onOpenIntegrityDashboard={() => setIsIntegrityDashboardOpen(true)}
             onOpenDashboard={handleOpenDashboard}
-            onOpenCompanyProfile={() => {
-              setCompanyModalTab('profile');
-              setIsCreateCompanyOpen(false);
-              setIsCompanyOpen(true);
+            onOpenCompanyProfile={(tab) => {
+              handleOpenCompanyProfile(tab || 'profile');
             }}
             onOpenCreateCompany={() => {
               setCompanyModalTab('profile');
@@ -2175,6 +2184,42 @@ export default function App() {
             }}
             onRefreshQuote={() => handleSelectQuote(quote)}
           />
+        </RouteErrorBoundary>
+      )}
+
+      {/* Phase 40: Document & Communication Control Center */}
+      {isDocumentCenterOpen && (
+        <RouteErrorBoundary routeName="Trung Tâm Quản Lý Tài Liệu & Giao Tiếp" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <DocumentControlCenter
+            isOpen={isDocumentCenterOpen}
+            onClose={handleModalClose}
+            quote={quote}
+            companyId={company.companyId}
+            onOpenGeneratePdf={() => {
+              setIsDocumentCenterOpen(false);
+              setIsGeneratePdfOpen(true);
+            }}
+            onOpenSendEmail={() => {
+              setIsDocumentCenterOpen(false);
+              navigateToRoute('quotation_send');
+            }}
+            onOpenPortalPreview={(token) => {
+              setIsDocumentCenterOpen(false);
+              navigateToRoute('secure_quote_portal', token);
+            }}
+          />
+        </RouteErrorBoundary>
+      )}
+
+      {/* Customer Online Secure Quote Portal */}
+      {viewingSecureToken && (
+        <RouteErrorBoundary routeName="Cổng Tra Cứu Báo Giá Trực Tuyến" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/90 backdrop-blur-xs">
+            <CustomerSecureQuotePage
+              token={viewingSecureToken}
+              onBackToApp={handleModalClose}
+            />
+          </div>
         </RouteErrorBoundary>
       )}
 

@@ -10,12 +10,29 @@ import {
 
 export type QuotationDocumentType = 
   | 'CUSTOMER_QUOTATION'      // Official quotation for customer (all internal costs stripped)
+  | 'OFFICIAL_QUOTATION'      // Alias for official quotation
   | 'INTERNAL_QUOTATION'      // Internal commercial costing sheet (includes cost, profit, margin)
-  | 'CONFIRMATION_NOTICE';    // Booking confirmation / Acceptance notice
+  | 'CONFIRMATION_NOTICE'     // Booking confirmation / Acceptance notice
+  | 'COMMERCIAL_INVOICE'      // Commercial Invoice attachment
+  | 'PACKING_LIST'            // Packing List attachment
+  | 'PROFORMA_INVOICE'        // Proforma Invoice
+  | 'BILL_OF_LADING'          // Bill of Lading (B/L)
+  | 'CONTRACT'                // Rate or Service Contract
+  | 'CUSTOMS_DECLARATION'     // Customs Declaration sheet
+  | 'OTHER_ATTACHMENT';       // Other supporting document / RFQ attachment
 
 export type QuotationDocumentLanguage = 'vi' | 'en' | 'bilingual';
 
-export type QuotationDocumentStatus = 'GENERATED' | 'ARCHIVED' | 'SUPERSEDED';
+export type QuotationDocumentStatus = 
+  | 'GENERATED' 
+  | 'AVAILABLE' 
+  | 'ARCHIVED' 
+  | 'SUPERSEDED' 
+  | 'GENERATING' 
+  | 'FAILED';
+
+export type DocumentVisibility = 'INTERNAL' | 'CUSTOMER_VISIBLE' | 'SUPPLIER_VISIBLE';
+export type DocumentEntityType = 'QUOTATION' | 'CUSTOMER' | 'CONTRACT' | 'RFQ' | 'SUPPORTING';
 
 export interface TemplateStyleConfig {
   primaryColor: string;       // E.g. '#164e63'
@@ -158,10 +175,12 @@ export interface QuotationDocumentSnapshot {
 
 export interface QuotationDocumentRecord {
   id: string;
+  documentId?: string; // Standard alias for id
   companyId: string;
   quotationId: string;
   quotationNumber: string;
   revision: number;
+  documentVersion?: number; // Alias for revision (e.g. 1, 2, 3)
   documentType: QuotationDocumentType;
   language: QuotationDocumentLanguage;
   templateId: string;
@@ -179,6 +198,21 @@ export interface QuotationDocumentRecord {
   snapshot: QuotationDocumentSnapshot;
   checksum?: string;
   notes?: string;
+
+  // Phase 40 Control Center extensions
+  entityType?: DocumentEntityType;
+  entityId?: string;
+  mimeType?: string;
+  visibility?: DocumentVisibility;
+  sourceSnapshotId?: string;
+  isCurrent?: boolean;
+  supersededBy?: string;
+  supersededAt?: string;
+  customerName?: string;
+  customerId?: string;
+  generationState?: 'PREPARING' | 'GENERATING' | 'UPLOADING' | 'SAVED' | 'FAILED';
+  errorMessage?: string;
+  uploadedFile?: boolean;
 }
 
 export interface QuotationTermsTemplate {
@@ -233,7 +267,13 @@ export interface QuotationAuditLog {
     | 'QUOTATION_REJECTED'
     | 'QUOTATION_REVISION_REQUESTED'
     | 'FOLLOW_UP_CREATED'
-    | 'FOLLOW_UP_COMPLETED';
+    | 'FOLLOW_UP_COMPLETED'
+    | 'ATTACHMENT_UPLOADED'
+    | 'VISIBILITY_CHANGED'
+    | 'DOCUMENT_ARCHIVED'
+    | 'DOCUMENT_RESTORED'
+    | 'EMAIL_RETRY_SUCCESS'
+    | 'EMAIL_RETRY_FAILED';
   performedBy: string;
   timestamp: string;
   details?: Record<string, any>;

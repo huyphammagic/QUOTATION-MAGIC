@@ -10,7 +10,7 @@
  * 5. Commercial Floor Margins & Snapshot Engine
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   DollarSign,
   Receipt,
@@ -100,6 +100,41 @@ export const CompanyFinancialEngineTab: React.FC = () => {
   const [requireMarginApproval, setRequireMarginApproval] = useState<boolean>(commercialSettings.requireApprovalBelowMargin ?? true);
   const [exclusionsVi, setExclusionsVi] = useState<string>(commercialSettings.defaultExclusionsNotesVi || '');
   const [exclusionsEn, setExclusionsEn] = useState<string>(commercialSettings.defaultExclusionsNotesEn || '');
+
+  // Synchronize local form states whenever Firestore data is loaded or company changes
+  useEffect(() => {
+    if (financialSettings) {
+      setFxRate(financialSettings.defaultExchangeRate || 25400);
+      setFxBuffer(financialSettings.exchangeRateMarginBufferPercent || 0.5);
+      setFxMode(financialSettings.exchangeRateMode || 'MANUAL');
+      setUsdDecimals(financialSettings.roundingRules?.usdDecimals ?? 2);
+      setVndDecimals(financialSettings.roundingRules?.vndDecimals ?? 0);
+      setRoundingMethod(financialSettings.roundingRules?.method || 'HALF_UP');
+      setNearestHundredVnd(!!financialSettings.roundingRules?.enableNearestHundredVnd);
+    }
+  }, [financialSettings]);
+
+  useEffect(() => {
+    if (taxConfig) {
+      setVatPolicy(taxConfig.defaultPolicy || 'EXCLUSIVE');
+      setDefaultVatRate(taxConfig.defaultVatRate || 8);
+      setEnableFct(!!taxConfig.enableFctForeignTax);
+      setFctRate(taxConfig.defaultFctRate || 2);
+      setTaxCodeInput(taxConfig.taxCode || activeCompanyRecord?.taxCode || '');
+    }
+  }, [taxConfig, activeCompanyRecord?.taxCode]);
+
+  useEffect(() => {
+    if (commercialSettings) {
+      setValidityDays(commercialSettings.defaultValidityDays || 15);
+      setFloorMargin(commercialSettings.minimumFloorMarginPercent || 8);
+      setTargetMargin(commercialSettings.targetProfitMarginPercent || 18);
+      setMaxDiscount(commercialSettings.maxSalesDiscountPercent || 5);
+      setRequireMarginApproval(commercialSettings.requireApprovalBelowMargin ?? true);
+      setExclusionsVi(commercialSettings.defaultExclusionsNotesVi || '');
+      setExclusionsEn(commercialSettings.defaultExclusionsNotesEn || '');
+    }
+  }, [commercialSettings]);
 
   // Effective FX Rate calculation preview
   const effectiveFxRate = Math.round(fxRate * (1 + fxBuffer / 100));

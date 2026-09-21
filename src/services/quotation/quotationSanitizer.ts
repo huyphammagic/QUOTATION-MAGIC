@@ -70,7 +70,7 @@ export function createQuotationDocumentSnapshot(
     shipment: { ...quote.shipment },
     items: sanitizedItems,
     terms: { ...quote.terms },
-    company: { ...quote.company },
+    company: (quote as any).companySnapshot ? { ...(quote as any).companySnapshot } : { ...quote.company },
     subtotalUsd: quote.subtotalUsd,
     subtotalVnd: quote.subtotalVnd,
     vatTotalUsd: quote.vatTotalUsd,

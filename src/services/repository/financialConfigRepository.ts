@@ -1036,20 +1036,24 @@ export async function createQuotationFinancialSnapshots(
   const defaultVnd = bankAccounts.find(b => b.isDefaultVnd && b.isActive) || bankAccounts.find(b => b.currency === 'VND') || bankAccounts[0];
 
   const bankSnapshot: QuotationBankSnapshot = {
-    usdAccount: defaultUsd ? {
-      bankName: defaultUsd.bankName,
-      accountNumber: defaultUsd.accountNumber,
-      accountHolder: defaultUsd.accountHolder,
-      swiftCode: defaultUsd.swiftCode,
-      branch: defaultUsd.bankBranch,
-    } : undefined,
-    vndAccount: defaultVnd ? {
-      bankName: defaultVnd.bankName,
-      accountNumber: defaultVnd.accountNumber,
-      accountHolder: defaultVnd.accountHolder,
-      swiftCode: defaultVnd.swiftCode,
-      branch: defaultVnd.bankBranch,
-    } : undefined,
+    ...(defaultUsd ? {
+      usdAccount: {
+        bankName: defaultUsd.bankName,
+        accountNumber: defaultUsd.accountNumber,
+        accountHolder: defaultUsd.accountHolder,
+        swiftCode: defaultUsd.swiftCode || '',
+        branch: defaultUsd.bankBranch || '',
+      }
+    } : {}),
+    ...(defaultVnd ? {
+      vndAccount: {
+        bankName: defaultVnd.bankName,
+        accountNumber: defaultVnd.accountNumber,
+        accountHolder: defaultVnd.accountHolder,
+        swiftCode: defaultVnd.swiftCode || '',
+        branch: defaultVnd.bankBranch || '',
+      }
+    } : {}),
     instructionsVi: defaultVnd?.paymentInstructionsVi || quote.terms?.bankAccountInfo || '',
     instructionsEn: defaultUsd?.paymentInstructionsEn || '',
     snapshotAt: timestamp,

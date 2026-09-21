@@ -224,6 +224,7 @@ export interface TermsAndConditions {
 }
 
 export interface CompanyProfile {
+  companyId?: string;
   name: string;
   englishName: string;
   shortName?: string;

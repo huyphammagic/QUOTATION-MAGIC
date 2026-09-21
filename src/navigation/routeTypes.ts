@@ -15,6 +15,7 @@ export type AppRouteId =
   | 'quotation_templates'
   | 'quotation_send'
   | 'quotation_communication'
+  | 'quotation_document_center'
   | 'quotation_email_templates'
   | 'quotation_followup'
   // Pricing

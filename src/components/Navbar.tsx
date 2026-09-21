@@ -20,7 +20,7 @@ interface NavbarProps {
   customerCount?: number;
   rateCount?: number;
   onOpenIntegrityDashboard?: () => void;
-  onOpenCompanyProfile?: () => void;
+  onOpenCompanyProfile?: (tab?: 'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview' | 'financial') => void;
   onOpenCreateCompany?: () => void;
 }
 

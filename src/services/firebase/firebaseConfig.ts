@@ -32,6 +32,7 @@ try {
     app, 
     {
       experimentalForceLongPolling: true,
+      ignoreUndefinedProperties: true,
       localCache: persistentLocalCache({
         tabManager: persistentMultipleTabManager(),
       }),
@@ -45,6 +46,7 @@ try {
       app,
       {
         experimentalForceLongPolling: true,
+        ignoreUndefinedProperties: true,
       },
       databaseId
     );
