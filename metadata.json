@@ -1,6 +1,6 @@
 {
   "name": "Báo Giá Logistics - Quotation Manager",
-  "description": "Hệ thống tạo, quản lý và xuất báo giá Logistics chuyên nghiệp tích hợp Smart Quotation Workspace, Intelligent Pricing Assistant, Rate Matching ưu tiên Hợp đồng & Master Rate, Quản lý biên lợi nhuận và Snapshot bất biến",
+  "description": "Hệ thống quản lý Logistics & Báo giá Freight Forwarding đa phương thức tích hợp Logistics Control Tower, Exception Surveillance, Event & Milestone Intelligence, Smart Logistics Deadline & Action Center, và Customer Relationship, Rate Review & Sales Follow-Up Intelligence Engine",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

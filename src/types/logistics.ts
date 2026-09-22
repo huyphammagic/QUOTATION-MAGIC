@@ -190,6 +190,7 @@ export interface CustomerInfo {
   email: string;
   phone: string;
   contactPerson: string;
+  salesPerson?: string;
 }
 
 export interface ShipmentDetails {

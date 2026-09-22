@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { CustomerRecord } from '../types/logistics';
+import { CustomerRecord, QuoteData } from '../types/logistics';
+import { ShipmentRecord } from '../types/shipment';
+import { ContractRecord } from '../types/contract';
 import { 
   Users, Plus, Search, Edit2, Trash2, Building2, Phone, Mail, 
   MapPin, Check, X, FileText, UserCheck, ShieldCheck, ChevronLeft, ChevronRight,
-  RefreshCw, Cloud, AlertCircle
+  RefreshCw, Cloud, AlertCircle, Activity, Calendar, TrendingUp
 } from 'lucide-react';
+import { Customer360Modal } from './crm/Customer360Modal';
+import { SalesFollowUpWorkspace } from './crm/SalesFollowUpWorkspace';
+import { RateReviewWorkspace } from './crm/RateReviewWorkspace';
 
 interface CustomerManagerModalProps {
   isOpen: boolean;
@@ -15,6 +20,12 @@ interface CustomerManagerModalProps {
   onSelectCustomerForQuote?: (customer: CustomerRecord) => void;
   onForceRefresh?: () => Promise<void>;
   isSyncing?: boolean;
+  quotes?: QuoteData[];
+  shipments?: ShipmentRecord[];
+  contracts?: ContractRecord[];
+  user?: { email?: string; name?: string };
+  companyId?: string;
+  initialTab?: 'CUSTOMERS' | 'FOLLOW_UPS' | 'RATE_REVIEWS';
 }
 
 export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
@@ -26,7 +37,15 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
   onSelectCustomerForQuote,
   onForceRefresh,
   isSyncing = false,
+  quotes = [],
+  shipments = [],
+  contracts = [],
+  user,
+  companyId = 'default-company',
+  initialTab = 'CUSTOMERS'
 }) => {
+  const [activeCrmTab, setActiveCrmTab] = useState<'CUSTOMERS' | 'FOLLOW_UPS' | 'RATE_REVIEWS'>(initialTab);
+  const [selectedCustomerFor360, setSelectedCustomerFor360] = useState<CustomerRecord | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -149,10 +168,10 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
             </div>
             <div>
               <h2 className="text-sm font-bold uppercase tracking-widest text-white">
-                QUẢN LÝ DỮ LIỆU KHÁCH HÀNG (CUSTOMER CRM)
+                QUẢN LÝ QUAN HỆ KHÁCH HÀNG & GIÁ CƯỚC (CRM & RATE REVIEWS)
               </h2>
               <p className="text-xs text-slate-400">
-                Danh bạ doanh nghiệp, mã số thuế & liên hệ phục vụ lập báo giá
+                Hồ sơ 360, lịch chăm sóc khách hàng, rà soát cước định kỳ & pipeline cơ hội
               </p>
             </div>
           </div>
@@ -165,6 +184,77 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
           </button>
         </div>
 
+        {/* CRM Module Navigation Tabs */}
+        <div className="bg-slate-800 px-6 flex items-center gap-2 border-b border-slate-700">
+          <button
+            onClick={() => setActiveCrmTab('CUSTOMERS')}
+            className={`py-2.5 px-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition ${
+              activeCrmTab === 'CUSTOMERS'
+                ? 'border-blue-400 text-white'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>Danh Bạ Khách Hàng ({customers.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveCrmTab('FOLLOW_UPS')}
+            className={`py-2.5 px-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition ${
+              activeCrmTab === 'FOLLOW_UPS'
+                ? 'border-blue-400 text-white'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5 text-blue-400" />
+            <span>Kế Hoạch Chăm Sóc (Follow-Up Center)</span>
+          </button>
+
+          <button
+            onClick={() => setActiveCrmTab('RATE_REVIEWS')}
+            className={`py-2.5 px-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition ${
+              activeCrmTab === 'RATE_REVIEWS'
+                ? 'border-blue-400 text-white'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <TrendingUp className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Rà Soát Giá Cước (Rate Review Engine)</span>
+          </button>
+        </div>
+
+        {activeCrmTab === 'FOLLOW_UPS' && (
+          <div className="p-6 overflow-y-auto flex-1 bg-slate-50/50">
+            <SalesFollowUpWorkspace
+              companyId={companyId}
+              user={user}
+              customers={customers}
+              quotes={quotes}
+              shipments={shipments}
+              contracts={contracts}
+              onOpenCustomer360={(customerId) => {
+                const found = customers.find(c => c.id === customerId);
+                if (found) setSelectedCustomerFor360(found);
+              }}
+            />
+          </div>
+        )}
+
+        {activeCrmTab === 'RATE_REVIEWS' && (
+          <div className="p-6 overflow-y-auto flex-1 bg-slate-50/50">
+            <RateReviewWorkspace
+              companyId={companyId}
+              user={user}
+              onOpenCustomer360={(customerId) => {
+                const found = customers.find(c => c.id === customerId);
+                if (found) setSelectedCustomerFor360(found);
+              }}
+            />
+          </div>
+        )}
+
+        {activeCrmTab === 'CUSTOMERS' && (
+          <>
         {/* Action Toolbar */}
         <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row gap-3 items-center justify-between">
           
@@ -461,6 +551,13 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
                           </button>
                         )}
                         <button
+                          onClick={() => setSelectedCustomerFor360(cust)}
+                          className="p-1 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                          title="Hồ Sơ Khách Hàng 360 (Activities, Follow-ups, Opportunities, Rates)"
+                        >
+                          <Activity className="w-4 h-4 text-indigo-600" />
+                        </button>
+                        <button
                           onClick={() => handleEdit(cust)}
                           className="p-1 text-slate-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
                           title="Sửa thông tin"
@@ -545,8 +642,22 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
             Đóng
           </button>
         </div>
+        </>
+        )}
 
       </div>
+
+      {/* Customer 360 Modal */}
+      {selectedCustomerFor360 && (
+        <Customer360Modal
+          isOpen={!!selectedCustomerFor360}
+          onClose={() => setSelectedCustomerFor360(null)}
+          customer={selectedCustomerFor360}
+          companyId={companyId}
+          user={user}
+        />
+      )}
+
     </div>
   );
 };

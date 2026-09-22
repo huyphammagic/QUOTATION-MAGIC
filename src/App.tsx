@@ -113,6 +113,14 @@ const MasterDataReferenceModal = lazyWithRetry(() => import('./components/Master
 const SmartQuotationWorkspace = lazyWithRetry(() => import('./components/smartQuotation/SmartQuotationWorkspace').then(m => ({ default: m.SmartQuotationWorkspace })), 'SmartQuotationWorkspace');
 const DataIntegrityDashboardModal = lazyWithRetry(() => import('./components/integrity/DataIntegrityDashboardModal').then(m => ({ default: m.DataIntegrityDashboardModal })), 'DataIntegrityDashboardModal');
 const DocumentControlCenter = lazyWithRetry(() => import('./components/communication/DocumentControlCenter').then(m => ({ default: m.DocumentControlCenter })), 'DocumentControlCenter');
+const ShipmentOperationalWorkspace = lazyWithRetry(() => import('./components/shipment/ShipmentOperationalWorkspace').then(m => ({ default: m.ShipmentOperationalWorkspace })), 'ShipmentOperationalWorkspace');
+const CreateShipmentModal = lazyWithRetry(() => import('./components/shipment/CreateShipmentModal').then(m => ({ default: m.CreateShipmentModal })), 'CreateShipmentModal');
+const ControlTowerWorkspace = lazyWithRetry(() => import('./components/controlTower/ControlTowerWorkspace').then(m => ({ default: m.ControlTowerWorkspace })), 'ControlTowerWorkspace');
+const SmartDeadlineWorkspace = lazyWithRetry(() => import('./components/deadline/SmartDeadlineWorkspace').then(m => ({ default: m.SmartDeadlineWorkspace })), 'SmartDeadlineWorkspace');
+
+import { getShipments } from './services/shipment/shipmentService';
+import { getExceptions } from './services/exception/exceptionService';
+import { getDeadlineMetrics } from './services/deadline/deadlineService';
 
 import { getDocumentRecordsForQuotation, getAllQuotationDocuments } from './services/quotation/quotationDocumentService';
 import { QuotationDocumentRecord } from './types/quotationDocument';
@@ -268,6 +276,20 @@ export default function App() {
   const [isContractsOpen, setIsContractsOpen] = useState(false);
   const [contractsCount, setContractsCount] = useState(0);
 
+  // Phase 41: Smart Shipment & Logistics Operational Workspace
+  const [isShipmentWorkspaceOpen, setIsShipmentWorkspaceOpen] = useState(false);
+  const [isCreateShipmentModalOpen, setIsCreateShipmentModalOpen] = useState(false);
+  const [createShipmentFromQuote, setCreateShipmentFromQuote] = useState<QuoteData | null>(null);
+  const [shipmentsCount, setShipmentsCount] = useState(0);
+
+  // Phase 42: Logistics Control Tower & Exception Management Engine
+  const [isControlTowerOpen, setIsControlTowerOpen] = useState(false);
+  const [exceptionsCount, setExceptionsCount] = useState(0);
+
+  // Phase 44: Smart Logistics Deadline & Action Intelligence Engine
+  const [isActionCenterOpen, setIsActionCenterOpen] = useState(false);
+  const [deadlinesCount, setDeadlinesCount] = useState(0);
+
   // Phase 24: Global Data Integrity & Sync Health Dashboard
   const [isIntegrityDashboardOpen, setIsIntegrityDashboardOpen] = useState(false);
 
@@ -335,6 +357,11 @@ export default function App() {
     setIsProfitIntelligenceOpen(false);
     setIsPricingPolicyMgmtOpen(false);
     setIsIntegrityDashboardOpen(false);
+    setIsControlTowerOpen(false);
+    setIsActionCenterOpen(false);
+    setIsShipmentWorkspaceOpen(false);
+    setIsCreateShipmentModalOpen(false);
+    setCreateShipmentFromQuote(null);
     setViewingSecureToken(null);
     setNotFoundPath(null);
   };
@@ -370,6 +397,26 @@ export default function App() {
   useEffect(() => {
     loadContractsCount();
   }, [isContractsOpen]);
+
+  const loadOperationsCounts = async () => {
+    try {
+      const compId = activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'default_company';
+      const [{ shipments }, { exceptions }, metrics] = await Promise.all([
+        getShipments(compId, { pageLimit: 100 }),
+        getExceptions(compId, { status: 'ACTIVE', pageLimit: 100 }),
+        getDeadlineMetrics(compId).catch(() => ({ overdue: 0, dueToday: 0 } as any)),
+      ]);
+      setShipmentsCount(shipments ? shipments.length : 0);
+      setExceptionsCount(exceptions ? exceptions.length : 0);
+      setDeadlinesCount(metrics ? (metrics.overdue + metrics.dueToday) : 0);
+    } catch (e) {
+      console.warn('Error loading operations counts:', e);
+    }
+  };
+
+  useEffect(() => {
+    loadOperationsCounts();
+  }, [activeCompanyId, activeCompanyRecord?.companyId, isControlTowerOpen, isActionCenterOpen, isShipmentWorkspaceOpen]);
 
   // Unified Route Navigation Function (Phase 30)
   const navigateToRoute = (routeId: AppRouteId | 'workbench', param?: string, options?: { skipHistory?: boolean }) => {
@@ -529,6 +576,16 @@ export default function App() {
         break;
       case 'ops_customs':
         handleSelectTransportMode('CUSTOMS_CLEARANCE');
+        break;
+      case 'ops_control_tower':
+        setIsControlTowerOpen(true);
+        break;
+      case 'ops_action_center':
+        setIsActionCenterOpen(true);
+        break;
+      case 'ops_shipments':
+      case 'ops_shipment_detail':
+        setIsShipmentWorkspaceOpen(true);
         break;
       case 'sys_profile':
         handleOpenCompanyProfile('profile');
@@ -1741,6 +1798,12 @@ export default function App() {
             else if (mode === 'INLAND_TRUCKING') navigateToRoute('ops_trucking');
             else if (mode === 'CUSTOMS_CLEARANCE') navigateToRoute('ops_customs');
           }}
+          onOpenControlTower={() => navigateToRoute('ops_control_tower')}
+          onOpenActionCenter={() => navigateToRoute('ops_action_center')}
+          onOpenShipmentWorkspace={() => navigateToRoute('ops_shipments')}
+          shipmentsCount={shipmentsCount}
+          exceptionsCount={exceptionsCount}
+          deadlinesCount={deadlinesCount}
           currentUserRole={appUserRole}
           onRoleChange={setAppUserRole}
           language={appLanguage}
@@ -1958,6 +2021,11 @@ export default function App() {
               isOpen={isPreviewOpen}
               onClose={handleModalClose}
               onCurrencyChange={handleQuoteCurrencyChange}
+              onConvertToShipment={(q) => {
+                setIsPreviewOpen(false);
+                setCreateShipmentFromQuote(q);
+                setIsCreateShipmentModalOpen(true);
+              }}
             />
           </RouteErrorBoundary>
         )}
@@ -1977,6 +2045,12 @@ export default function App() {
               showToast(`Đã đồng bộ ${fresh.length} khách hàng từ Firebase Cloud!`);
             }}
             isSyncing={isCloudSyncing}
+            quotes={savedQuotes}
+            companyId={activeCompanyId || 'default-company'}
+            user={{
+              name: company.salesRepName || 'Sales Logistics',
+              email: company.salesRepEmail || 'sales@logistics.vn'
+            }}
           />
         </RouteErrorBoundary>
       )}
@@ -2385,6 +2459,145 @@ export default function App() {
             lang={appLanguage}
           />
         </RouteErrorBoundary>
+      )}
+
+      {/* Phase 41: Smart Shipment & Logistics Operational Workspace */}
+      {isShipmentWorkspaceOpen && (
+        <RouteErrorBoundary routeName="Không Gian Điều Hành Lô Hàng (Shipments)" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <div className="fixed inset-0 z-40 bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur-xs overflow-y-auto pt-16 pb-12 px-2 sm:px-6">
+            <div className="max-w-7xl mx-auto">
+              <div className="flex justify-end mb-2">
+                <button
+                  type="button"
+                  onClick={handleModalClose}
+                  className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-2xs transition-colors"
+                >
+                  ✕ {appLanguage === 'vi' ? 'Đóng Điều Hành' : 'Close Workspace'}
+                </button>
+              </div>
+              <ShipmentOperationalWorkspace
+                companyId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'default_company'}
+                customers={customers}
+                allQuotes={savedQuotes}
+                onOpenQuotation={(quoteId) => {
+                  const target = savedQuotes.find(q => q.id === quoteId);
+                  if (target) {
+                    handleSelectQuote(target);
+                    navigateToRoute('quotation_preview');
+                  }
+                }}
+                currentUser={{
+                  uid: 'user_operator',
+                  displayName: company.salesRepName || 'Logistics Operator',
+                  email: company.salesRepEmail || 'ops@logistics.vn',
+                }}
+                activeLanguage={appLanguage}
+              />
+            </div>
+          </div>
+        </RouteErrorBoundary>
+      )}
+
+      {/* Phase 42: Logistics Control Tower & Exception Surveillance */}
+      {isControlTowerOpen && (
+        <RouteErrorBoundary routeName="Tháp Điều Hành Logistics (Control Tower)" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <div className="fixed inset-0 z-40 bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur-xs overflow-y-auto pt-16 pb-12 px-2 sm:px-6">
+            <div className="max-w-7xl mx-auto">
+              <div className="flex justify-end mb-2">
+                <button
+                  type="button"
+                  onClick={handleModalClose}
+                  className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-2xs transition-colors"
+                >
+                  ✕ {appLanguage === 'vi' ? 'Đóng Tháp Điều Hành' : 'Close Control Tower'}
+                </button>
+              </div>
+              <ControlTowerWorkspace
+                companyId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'default_company'}
+                onOpenShipmentDetail={(shipmentId) => {
+                  setIsControlTowerOpen(false);
+                  setIsShipmentWorkspaceOpen(true);
+                }}
+                currentUser={{
+                  uid: 'user_operator',
+                  displayName: company.salesRepName || 'Logistics Operator',
+                  email: company.salesRepEmail || 'ops@logistics.vn',
+                }}
+                onOpenActionCenter={() => {
+                  setIsControlTowerOpen(false);
+                  setIsActionCenterOpen(true);
+                }}
+                language={appLanguage === 'vi' ? 'vi' : 'en'}
+              />
+            </div>
+          </div>
+        </RouteErrorBoundary>
+      )}
+
+      {/* Phase 44: Smart Logistics Deadline & Action Intelligence Engine */}
+      {isActionCenterOpen && (
+        <RouteErrorBoundary routeName="Trung Tâm Hạn Chót & Hành Động (Action Center)" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <div className="fixed inset-0 z-40 bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur-xs overflow-y-auto pt-16 pb-12 px-2 sm:px-6">
+            <div className="max-w-7xl mx-auto">
+              <div className="flex justify-end mb-2">
+                <button
+                  type="button"
+                  onClick={handleModalClose}
+                  className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-2xs transition-colors"
+                >
+                  ✕ {appLanguage === 'vi' ? 'Đóng Action Center' : 'Close Action Center'}
+                </button>
+              </div>
+              <SmartDeadlineWorkspace
+                companyId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'default_company'}
+                companyName={company.name || 'Logistics Company'}
+                user={{
+                  uid: 'user_operator',
+                  displayName: company.salesRepName || 'Logistics Operator',
+                  email: company.salesRepEmail || 'ops@logistics.vn',
+                }}
+                isVi={appLanguage === 'vi'}
+                onOpenShipment={(shipmentId) => {
+                  setIsActionCenterOpen(false);
+                  setIsShipmentWorkspaceOpen(true);
+                }}
+                onOpenQuotation={(quoteId) => {
+                  const target = savedQuotes.find(q => q.id === quoteId);
+                  if (target) {
+                    handleSelectQuote(target);
+                    navigateToRoute('quotation_preview');
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </RouteErrorBoundary>
+      )}
+
+      {/* Phase 41: Create Shipment Modal */}
+      {isCreateShipmentModalOpen && (
+        <CreateShipmentModal
+          isOpen={isCreateShipmentModalOpen}
+          onClose={() => {
+            setIsCreateShipmentModalOpen(false);
+            setCreateShipmentFromQuote(null);
+          }}
+          onCreated={(shp) => {
+            showToast(appLanguage === 'vi' ? `Đã tạo lô hàng ${shp.shipmentNumber} thành công!` : `Shipment ${shp.shipmentNumber} created!`);
+            setIsCreateShipmentModalOpen(false);
+            setCreateShipmentFromQuote(null);
+            navigateToRoute('ops_shipments');
+          }}
+          companyId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'default_company'}
+          fromQuote={createShipmentFromQuote}
+          customers={customers}
+          currentUser={{
+            uid: 'user_operator',
+            displayName: company.salesRepName || 'Logistics Operator',
+            email: company.salesRepEmail || 'ops@logistics.vn',
+          }}
+          activeLanguage={appLanguage}
+        />
       )}
 
       {/* Access Denied Modal (RBAC Guard) */}

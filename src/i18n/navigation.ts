@@ -61,6 +61,8 @@ export interface NavigationTranslations {
   referenceData: string;
 
   // Operations Module
+  controlTower: string;
+  shipmentsWorkspace: string;
   oceanFreight: string;
   oceanFclLcl: string;
   airFreight: string;
@@ -146,6 +148,8 @@ export const NAVIGATION_I18N: Record<NavigationLanguage, NavigationTranslations>
     paymentTerms: 'Điều Khoản Thanh Toán',
     referenceData: 'Bảng Dữ Liệu Danh Mục',
 
+    controlTower: 'Tháp Điều Hành (Control Tower)',
+    shipmentsWorkspace: 'Quản Lý Lô Hàng (Shipments)',
     oceanFreight: 'Vận Tải Đường Biển (Sea)',
     oceanFclLcl: 'Đường Biển (FCL / LCL)',
     airFreight: 'Cước Hàng Không (Air)',
@@ -226,6 +230,8 @@ export const NAVIGATION_I18N: Record<NavigationLanguage, NavigationTranslations>
     paymentTerms: 'Payment Terms',
     referenceData: 'Master Reference Data',
 
+    controlTower: 'Operations Control Tower',
+    shipmentsWorkspace: 'Shipment Operations',
     oceanFreight: 'Ocean Freight (Sea)',
     oceanFclLcl: 'Ocean Freight (FCL / LCL)',
     airFreight: 'Air Freight',

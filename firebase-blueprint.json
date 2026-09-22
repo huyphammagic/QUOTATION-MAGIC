@@ -163,6 +163,112 @@
         "targetProfitMarginPercent": { "type": "number" },
         "maxSalesDiscountPercent": { "type": "number" }
       }
+    },
+    "Shipment": {
+      "collection": "shipments",
+      "fields": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "shipmentNumber": { "type": "string" },
+        "status": { "type": "string" },
+        "serviceMode": { "type": "string" },
+        "customerId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "origin": { "type": "string" },
+        "destination": { "type": "string" },
+        "etd": { "type": "string" },
+        "eta": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
+    },
+    "ShipmentEvent": {
+      "collection": "shipmentEvents",
+      "fields": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "shipmentId": { "type": "string" },
+        "eventType": { "type": "string" },
+        "eventCategory": { "type": "string" },
+        "title": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "source": { "type": "string" }
+      }
+    },
+    "Deadline": {
+      "collection": "deadlines",
+      "fields": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "deadlineType": { "type": "string" },
+        "entityType": { "type": "string" },
+        "entityId": { "type": "string" },
+        "title": { "type": "string" },
+        "dueAt": { "type": "string" },
+        "status": { "type": "string" },
+        "assignedTo": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
+    },
+    "CustomerActivity": {
+      "collection": "customerActivities",
+      "fields": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "activityType": { "type": "string" },
+        "occurredAt": { "type": "string" },
+        "summary": { "type": "string" },
+        "createdBy": { "type": "string" }
+      }
+    },
+    "CustomerFollowUp": {
+      "collection": "customerFollowUps",
+      "fields": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "followUpType": { "type": "string" },
+        "priority": { "type": "string" },
+        "dueDate": { "type": "string" },
+        "status": { "type": "string" },
+        "ownerId": { "type": "string" }
+      }
+    },
+    "RateReviewSchedule": {
+      "collection": "rateReviewSchedules",
+      "fields": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "lane": { "type": "string" },
+        "frequency": { "type": "string" },
+        "nextReviewDate": { "type": "string" },
+        "ownerId": { "type": "string" }
+      }
+    },
+    "RateReviewTask": {
+      "collection": "rateReviewTasks",
+      "fields": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "lane": { "type": "string" },
+        "status": { "type": "string" },
+        "dueAt": { "type": "string" }
+      }
+    },
+    "CustomerOpportunity": {
+      "collection": "customerOpportunities",
+      "fields": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "title": { "type": "string" },
+        "stage": { "type": "string" },
+        "ownerId": { "type": "string" }
+      }
     }
   }
 }

@@ -304,6 +304,46 @@ export const APP_ROUTES: Record<AppRouteId, RouteDefinition> = {
   },
 
   // Operations
+  ops_control_tower: {
+    id: 'ops_control_tower',
+    path: '/operations/control-tower',
+    hash: '#operations/control-tower',
+    titleVi: 'Tháp Điều Hành Logistics (Control Tower)',
+    titleEn: 'Logistics Control Tower & Exceptions',
+    group: 'operations',
+    descriptionVi: 'Trung tâm giám sát toàn diện vận hành, cảnh báo tiến độ, hạn chót và xử lý sự cố thời gian thực',
+    descriptionEn: 'Centralized operational visibility, deadline surveillance, and incident resolution',
+  },
+  ops_action_center: {
+    id: 'ops_action_center',
+    path: '/operations/action-center',
+    hash: '#operations/action-center',
+    titleVi: 'Trung Tâm Hạn Chót & Hành Động (Action Center)',
+    titleEn: 'Smart Deadline & Action Center',
+    group: 'operations',
+    descriptionVi: 'Theo dõi SI/CY/VGM cut-off, Cargo ready, hiệu lực báo giá và điều phối hành động vận hành khẩn',
+    descriptionEn: 'Surveillance of operational cutoffs, cargo readiness, quote validity, and critical actions',
+  },
+  ops_shipments: {
+    id: 'ops_shipments',
+    path: '/operations/shipments',
+    hash: '#operations/shipments',
+    titleVi: 'Quản Lý Lô Hàng (Shipments & Jobs)',
+    titleEn: 'Shipment Operations Workspace',
+    group: 'operations',
+    descriptionVi: 'Không gian điều hành lô hàng, theo dõi tiến độ container, mốc vận hành và chứng từ',
+    descriptionEn: 'Operational shipment workspace, container tracking, milestones and document flows',
+  },
+  ops_shipment_detail: {
+    id: 'ops_shipment_detail',
+    path: '/operations/shipments/:id',
+    hash: '#operations/shipments/:id',
+    titleVi: 'Chi Tiết Lô Hàng',
+    titleEn: 'Shipment Details',
+    group: 'operations',
+    descriptionVi: 'Hồ sơ chi tiết lô hàng, container, mốc dịch vụ và chứng từ thực thi',
+    descriptionEn: 'Detailed shipment record, containers, milestones and execution documents',
+  },
   ops_ocean: {
     id: 'ops_ocean',
     path: '/operations/ocean',
@@ -512,6 +552,16 @@ export function parseRouteFromUrl(pathname: string, hash: string): {
     if (token) return { routeId: 'secure_quote_portal', param: token };
   }
 
+  // Check for Shipment Detail deep links (/operations/shipments/:id or #operations/shipments/:id)
+  if (cleanPath.startsWith('/operations/shipments/')) {
+    const shipId = pathname.replace(/^\/operations\/shipments\//i, '').split(/[?#]/)[0].trim();
+    if (shipId) return { routeId: 'ops_shipment_detail', param: shipId };
+  }
+  if (cleanHash.startsWith('#/operations/shipments/') || cleanHash.startsWith('#operations/shipments/')) {
+    const shipId = hash.replace(/^#(?:|\/)operations\/shipments\//i, '').split(/[?#]/)[0].trim();
+    if (shipId) return { routeId: 'ops_shipment_detail', param: shipId };
+  }
+
   // 2. Exact match on path or hash
   const routes = Object.values(APP_ROUTES);
   for (const route of routes) {
@@ -544,6 +594,9 @@ export function parseRouteFromUrl(pathname: string, hash: string): {
   }
   if (cleanHash === '#smart-workspace' || cleanPath === '/smart-workspace') {
     return { routeId: 'smart_quotation_workspace' };
+  }
+  if (cleanHash === '#shipments' || cleanPath === '/shipments' || cleanHash === '#operations/shipments') {
+    return { routeId: 'ops_shipments' };
   }
 
   // 4. If root '/' or '/index.html' and empty hash -> Main Quotation Workbench

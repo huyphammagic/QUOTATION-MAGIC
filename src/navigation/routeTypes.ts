@@ -35,6 +35,10 @@ export type AppRouteId =
   | 'master_incoterms'
   | 'master_payment_terms'
   // Operations
+  | 'ops_control_tower'
+  | 'ops_action_center'
+  | 'ops_shipments'
+  | 'ops_shipment_detail'
   | 'ops_ocean'
   | 'ops_air'
   | 'ops_trucking'

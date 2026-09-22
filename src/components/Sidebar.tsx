@@ -57,7 +57,9 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
-  ChevronLeft
+  ChevronLeft,
+  Package,
+  Radar
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -68,6 +70,7 @@ export interface SidebarProps {
   rateMastersCount?: number;
   chargeMastersCount?: number;
   contractsCount?: number;
+  shipmentsCount?: number;
   exchangeRate: number;
   lastAutoSaveTime: string | null;
   isAutoSaving?: boolean;
@@ -98,6 +101,11 @@ export interface SidebarProps {
   onOpenPricingPolicies?: () => void;
   onOpenMasterDataReference?: (type: 'PORT' | 'CONTAINER_TYPE' | 'INCOTERM' | 'PAYMENT_TERM') => void;
   onSelectTransportMode?: (mode: 'SEA_FCL' | 'SEA_LCL' | 'AIR_FREIGHT' | 'INLAND_TRUCKING' | 'CUSTOMS_CLEARANCE') => void;
+  onOpenShipmentWorkspace?: () => void;
+  onOpenControlTower?: () => void;
+  onOpenActionCenter?: () => void;
+  exceptionsCount?: number;
+  deadlinesCount?: number;
   currentUserRole?: UserRole;
   onRoleChange?: (role: UserRole) => void;
   language?: NavigationLanguage;
@@ -145,6 +153,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenPricingPolicies,
   onOpenMasterDataReference,
   onSelectTransportMode,
+  onOpenShipmentWorkspace,
+  onOpenControlTower,
+  onOpenActionCenter,
+  shipmentsCount,
+  exceptionsCount,
+  deadlinesCount,
   currentUserRole = 'ADMIN',
   onRoleChange,
   language = 'vi',
@@ -571,6 +585,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
 
     // --- OPERATIONS ---
+    {
+      id: 'ops_control_tower',
+      label: t.controlTower,
+      icon: Radar,
+      group: 'operations',
+      action: () => onOpenControlTower && onOpenControlTower(),
+      badge: exceptionsCount && exceptionsCount > 0 ? exceptionsCount : undefined,
+    },
+    {
+      id: 'ops_action_center',
+      label: activeLang === 'vi' ? 'Hạn Chót & Hành Động' : 'Action Center',
+      icon: Clock,
+      group: 'operations',
+      action: () => onOpenActionCenter && onOpenActionCenter(),
+      badge: deadlinesCount && deadlinesCount > 0 ? deadlinesCount : undefined,
+    },
+    {
+      id: 'ops_shipments',
+      label: t.shipmentsWorkspace,
+      icon: Package,
+      group: 'operations',
+      action: () => onOpenShipmentWorkspace && onOpenShipmentWorkspace(),
+      badge: shipmentsCount && shipmentsCount > 0 ? shipmentsCount : 'Live',
+    },
     {
       id: 'ops_ocean',
       label: t.oceanFclLcl,

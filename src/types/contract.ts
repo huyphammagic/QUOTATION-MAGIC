@@ -77,6 +77,8 @@ export interface ContractItem {
   reviewRemarks?: string;
 }
 
+export type ContractRecord = ContractItem;
+
 export interface ContractVersionItem {
   id: string;
   contractId: string;

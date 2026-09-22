@@ -3,13 +3,14 @@ import { QuoteData, QuoteCurrency } from '../types/logistics';
 import { formatUSD, formatVND, formatNumber, formatExchangeRate } from '../utils/formatters';
 import { exportQuoteToPdf } from '../utils/exportPdf';
 import { exportQuoteToExcel } from '../utils/exportExcel';
-import { X, Printer, FileDown, FileSpreadsheet, Ship, Building2, Coins, Loader2 } from 'lucide-react';
+import { X, Printer, FileDown, FileSpreadsheet, Ship, Building2, Coins, Loader2, Package } from 'lucide-react';
 
 interface QuotePreviewModalProps {
   quote: QuoteData;
   isOpen: boolean;
   onClose: () => void;
   onCurrencyChange?: (currency: QuoteCurrency) => void;
+  onConvertToShipment?: (quote: QuoteData) => void;
 }
 
 export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({
@@ -17,6 +18,7 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({
   isOpen,
   onClose,
   onCurrencyChange,
+  onConvertToShipment,
 }) => {
   const [selectedCurrency, setSelectedCurrency] = useState<QuoteCurrency>(quote.quoteCurrency || 'USD');
   const [isExportingPdf, setIsExportingPdf] = useState(false);
@@ -149,6 +151,18 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({
               <FileSpreadsheet className="w-3.5 h-3.5" />
               <span>Excel ({selectedCurrency})</span>
             </button>
+
+            {onConvertToShipment && (
+              <button
+                type="button"
+                onClick={() => onConvertToShipment(quote)}
+                className="flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all shadow-xs"
+                title="Khởi tạo Lô Hàng (Shipment / Job) từ báo giá này"
+              >
+                <Package className="w-3.5 h-3.5" />
+                <span>Tạo Lô Hàng</span>
+              </button>
+            )}
 
             <button
               onClick={onClose}

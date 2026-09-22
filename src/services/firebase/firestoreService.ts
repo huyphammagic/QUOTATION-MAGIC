@@ -43,6 +43,7 @@ import {
   getSavedRateHistories,
   addRateHistoryItem
 } from '../../utils/storage';
+import { syncQuotationDeadlines } from '../deadline/deadlineService';
 import { syncHealthService } from '../integrity/syncHealthService';
 import { 
   saveCustomer as repoSaveCustomer, 
@@ -94,6 +95,11 @@ export async function saveQuoteToFirestore(quote: QuoteData): Promise<void> {
       ...quote,
       _updatedAt: serverTimestamp(),
     }, { merge: true });
+
+    // Phase 44: Sync quotation validity deadline
+    syncQuotationDeadlines(quote, { uid: (quote as any).creatorId || (quote as any).userId || 'operator' }).catch(err => {
+      console.warn('[deadlineSync] Quotation sync warning:', err);
+    });
   } catch (error) {
     console.warn('Firestore quote save sync notice (saved locally):', error);
   }

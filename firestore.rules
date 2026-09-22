@@ -215,5 +215,60 @@ service cloud.firestore {
     match /systemHealthAudits/{auditId} {
       allow read, write: if true;
     }
+
+    // Phase 41: Smart Shipment & Logistics Operational Workspace
+    match /shipments/{shipmentId} {
+      allow read, write: if true;
+    }
+    match /shipmentAuditLogs/{logId} {
+      allow read, write: if true;
+    }
+    match /shipmentTasks/{taskId} {
+      allow read, write: if true;
+    }
+
+    // Phase 42: Logistics Control Tower & Exception Management Engine
+    match /shipmentExceptions/{exceptionId} {
+      allow read, write: if true;
+    }
+    match /controlTowerSummaries/{summaryId} {
+      allow read, write: if true;
+    }
+
+    // Phase 43: Logistics Event & Milestone Intelligence Engine
+    match /shipmentEvents/{eventId} {
+      allow read, write: if true;
+    }
+
+    // Phase 44: Smart Logistics Deadline & Action Intelligence Engine
+    match /deadlines/{deadlineId} {
+      allow read, write: if true;
+    }
+    match /deadlineAuditLogs/{logId} {
+      allow read, write: if true;
+    }
+
+    // Phase 45: Customer Relationship, Rate Review & Sales Follow-Up Intelligence Engine
+    match /customerActivities/{activityId} {
+      allow read, write: if true;
+    }
+    match /customerFollowUps/{followUpId} {
+      allow read, write: if true;
+    }
+    match /customerContacts/{contactId} {
+      allow read, write: if true;
+    }
+    match /rateReviewSchedules/{scheduleId} {
+      allow read, write: if true;
+    }
+    match /rateReviewTasks/{taskId} {
+      allow read, write: if true;
+    }
+    match /customerOpportunities/{oppId} {
+      allow read, write: if true;
+    }
+    match /crmAuditLogs/{logId} {
+      allow read, write: if true;
+    }
   }
 }
