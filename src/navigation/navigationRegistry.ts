@@ -155,6 +155,26 @@ export const APP_ROUTES: Record<AppRouteId, RouteDefinition> = {
     descriptionVi: 'Quản lý lịch hẹn và tác vụ theo dõi báo giá',
     descriptionEn: 'Schedule and manage customer follow-up actions',
   },
+  opportunity_radar: {
+    id: 'opportunity_radar',
+    path: '/radar/opportunities',
+    hash: '#radar/opportunities',
+    titleVi: 'Radar Cơ Hội Kinh Doanh',
+    titleEn: 'Business Opportunity Radar',
+    group: 'quotation',
+    descriptionVi: 'Hệ thống radar nhận diện và khai phóng cơ hội tăng trưởng, bán chéo, tái chào giá và giữ chân khách hàng (Phase 46)',
+    descriptionEn: 'Intelligence engine for detecting customer growth, cross-service, re-quotation and retention opportunities',
+  },
+  decision_workspace: {
+    id: 'decision_workspace',
+    path: '/decision/workspace',
+    hash: '#decision/workspace',
+    titleVi: 'Phòng Quyết Định & Kịch Bản Cước',
+    titleEn: 'Decision & Scenario Workspace',
+    group: 'quotation',
+    descriptionVi: 'Không gian ra quyết định thương mại, mô phỏng kịch bản what-if, kiểm soát rủi ro và đánh giá biên lãi trước khi báo giá (Phase 47)',
+    descriptionEn: 'Logistics commercial decision orchestration, what-if scenario simulator, risk detection, and readiness checklist',
+  },
 
   // Pricing
   pricing_rates: {

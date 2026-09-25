@@ -23,7 +23,13 @@ import {
   DeadlineStatus, 
   TimeRemainingInfo,
   DeadlineAuditLog,
-  DeadlineAuditAction
+  DeadlineAuditAction,
+  DeadlineType,
+  DeadlineEntityType,
+  DeadlinePriority,
+  DeadlineSource,
+  ActionWaitingReason,
+  ActionSubtask
 } from '../../types/deadline';
 import { ShipmentRecord } from '../../types/shipment';
 import { QuoteData } from '../../types/logistics';
@@ -141,11 +147,19 @@ export function resolveDeadlineStatus(deadline: DeadlineEntity): DeadlineStatus 
     return 'SNOOZED';
   }
 
+  if (!deadline.dueAt) {
+    return deadline.status || 'OPEN';
+  }
+
   const targetDate = new Date(deadline.dueAt);
   const diffMs = targetDate.getTime() - now.getTime();
 
   if (diffMs < 0) {
     return 'OVERDUE';
+  }
+
+  if (deadline.status === 'WAITING' || deadline.status === 'BLOCKED' || deadline.status === 'IN_PROGRESS') {
+    return deadline.status;
   }
 
   const isToday = 
@@ -162,7 +176,7 @@ export function resolveDeadlineStatus(deadline: DeadlineEntity): DeadlineStatus 
     return 'DUE_SOON';
   }
 
-  return 'UPCOMING';
+  return deadline.status === 'OPEN' ? 'OPEN' : 'UPCOMING';
 }
 
 /**
@@ -290,10 +304,14 @@ export async function getDeadlines(
       OVERDUE: 1,
       DUE_TODAY: 2,
       DUE_SOON: 3,
-      SNOOZED: 4,
-      UPCOMING: 5,
-      COMPLETED: 6,
-      CANCELLED: 7,
+      OPEN: 4,
+      IN_PROGRESS: 5,
+      WAITING: 6,
+      BLOCKED: 7,
+      SNOOZED: 8,
+      UPCOMING: 9,
+      COMPLETED: 10,
+      CANCELLED: 11,
     };
 
     list.sort((a, b) => {
@@ -909,3 +927,343 @@ export async function syncQuotationDeadlines(
 
   return true;
 }
+
+// ============================================================================
+// PHASE 48: SMART BUSINESS ACTION & EXECUTION ORCHESTRATION ENGINE
+// ============================================================================
+
+export interface CreateBusinessActionParams {
+  companyId: string;
+  actionType: DeadlineType;
+  sourceEntityType: DeadlineEntityType;
+  sourceEntityId: string;
+  sourceEntityVersion?: number;
+  title: string;
+  description?: string;
+  actionRequired?: string;
+  priority?: DeadlinePriority;
+  urgency?: 'LOW' | 'NORMAL' | 'HIGH' | 'IMMEDIATE';
+  status?: DeadlineStatus;
+  ownerId?: string;
+  assignedTo?: string;
+  assignedToName?: string;
+  teamId?: string;
+  dueAt: string;
+  timezone?: string;
+  waitingReason?: ActionWaitingReason;
+  waitingReasonNote?: string;
+  subtasks?: ActionSubtask[];
+  relatedCustomerId?: string;
+  relatedCustomerName?: string;
+  relatedQuotationId?: string;
+  relatedQuotationNumber?: string;
+  relatedShipmentId?: string;
+  relatedShipmentNumber?: string;
+  relatedRateId?: string;
+  relatedContractId?: string;
+  relatedOpportunityId?: string;
+  relatedRFQId?: string;
+  relatedDecisionId?: string;
+  relatedScenarioId?: string;
+  relatedTaskId?: string;
+  idempotencyKey?: string;
+  source?: DeadlineSource;
+  metadata?: Record<string, any>;
+}
+
+/**
+ * Idempotent creation of a Business Action linked across relational business entities.
+ * Guarantees zero duplication by checking companyId + idempotencyKey.
+ */
+export async function createBusinessAction(
+  params: CreateBusinessActionParams,
+  user: { uid: string; displayName?: string; email?: string }
+): Promise<DeadlineEntity> {
+  const effectiveCompanyId = params.companyId || 'default-company';
+  const rawIdempotencyKey = params.idempotencyKey || 
+    `ACT_${effectiveCompanyId}_${params.actionType}_${params.sourceEntityType}_${params.sourceEntityId}_${params.dueAt.substring(0, 10)}`;
+
+  const nowIso = new Date().toISOString();
+
+  // Check if active action with this idempotencyKey already exists
+  if (db) {
+    try {
+      const q = query(
+        collection(db, DEADLINES_COLLECTION),
+        where('companyId', '==', effectiveCompanyId),
+        where('idempotencyKey', '==', rawIdempotencyKey),
+        limit(1)
+      );
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const existingDoc = snap.docs[0];
+        const existingData = { id: existingDoc.id, ...existingDoc.data() } as DeadlineEntity;
+        // If not completed or cancelled, return existing to avoid duplicate spam
+        if (existingData.status !== 'COMPLETED' && existingData.status !== 'CANCELLED') {
+          return existingData;
+        }
+      }
+    } catch (e) {
+      console.warn('[deadlineService] Idempotency check warning:', e);
+    }
+  }
+
+  const actionId = `act_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+  const initialStatus = params.status || 'OPEN';
+
+  const newAction: DeadlineEntity = {
+    id: actionId,
+    companyId: effectiveCompanyId,
+    entityType: params.sourceEntityType,
+    entityId: params.sourceEntityId,
+    entityNumber: params.relatedQuotationNumber || params.relatedShipmentNumber || params.sourceEntityId,
+    customerName: params.relatedCustomerName,
+    deadlineType: params.actionType,
+    title: params.title,
+    description: params.description || '',
+    actionRequired: params.actionRequired || '',
+    dueAt: params.dueAt,
+    timezone: params.timezone || 'Asia/Ho_Chi_Minh',
+    status: initialStatus,
+    priority: params.priority || 'MEDIUM',
+    assignedTo: params.assignedTo,
+    assignedToName: params.assignedToName,
+    source: params.source || 'ACTION_CENTER',
+    idempotencyKey: rawIdempotencyKey,
+    version: 1,
+    createdAt: nowIso,
+    createdBy: user.uid,
+    updatedAt: nowIso,
+    updatedBy: user.uid,
+
+    // Phase 48 Extensions
+    actionType: params.actionType,
+    sourceEntityType: params.sourceEntityType,
+    sourceEntityId: params.sourceEntityId,
+    sourceEntityVersion: params.sourceEntityVersion || 1,
+    urgency: params.urgency || 'NORMAL',
+    teamId: params.teamId,
+    waitingReason: params.waitingReason || 'NONE',
+    waitingReasonNote: params.waitingReasonNote,
+    subtasks: params.subtasks || [],
+    relatedCustomerId: params.relatedCustomerId,
+    relatedQuotationId: params.relatedQuotationId,
+    relatedShipmentId: params.relatedShipmentId,
+    relatedRateId: params.relatedRateId,
+    relatedContractId: params.relatedContractId,
+    relatedOpportunityId: params.relatedOpportunityId,
+    relatedRFQId: params.relatedRFQId,
+    relatedDecisionId: params.relatedDecisionId,
+    relatedScenarioId: params.relatedScenarioId,
+    relatedTaskId: params.relatedTaskId,
+    relatedData: params.metadata || {},
+  };
+
+  // Cache update
+  deadlineMemoryCache.set(actionId, newAction);
+
+  // Firestore Persist
+  if (db) {
+    await setDoc(doc(db, DEADLINES_COLLECTION, actionId), newAction);
+  }
+
+  // Audit
+  await recordDeadlineAudit(
+    actionId,
+    effectiveCompanyId,
+    'CREATED',
+    user,
+    null,
+    newAction,
+    `Tạo hành động nghiệp vụ: ${params.title} (Nguồn: ${params.sourceEntityType} - ${params.sourceEntityId})`
+  );
+
+  return newAction;
+}
+
+/**
+ * Update Business Action Status with Waiting reason, Blocked state or Completion notes
+ */
+export async function updateBusinessActionStatus(
+  actionId: string,
+  companyId: string,
+  newStatus: DeadlineStatus,
+  user: { uid: string; displayName?: string; email?: string },
+  options?: {
+    waitingReason?: ActionWaitingReason;
+    waitingReasonNote?: string;
+    completionNote?: string;
+    reason?: string;
+  }
+): Promise<boolean> {
+  const effectiveCompanyId = companyId || 'default-company';
+  const nowIso = new Date().toISOString();
+
+  let prevAction: DeadlineEntity | null = deadlineMemoryCache.get(actionId) || null;
+
+  if (!prevAction && db) {
+    const dSnap = await getDoc(doc(db, DEADLINES_COLLECTION, actionId));
+    if (dSnap.exists()) {
+      prevAction = { id: dSnap.id, ...dSnap.data() } as DeadlineEntity;
+    }
+  }
+
+  const updates: Partial<DeadlineEntity> = {
+    status: newStatus,
+    updatedAt: nowIso,
+    updatedBy: user.uid,
+  };
+
+  if (newStatus === 'COMPLETED') {
+    updates.completedAt = nowIso;
+    updates.completedBy = user.displayName || user.email || user.uid;
+    if (options?.completionNote) {
+      updates.completionEvidence = options.completionNote;
+    }
+  }
+
+  if (newStatus === 'WAITING' && options?.waitingReason) {
+    updates.waitingReason = options.waitingReason;
+    if (options.waitingReasonNote !== undefined) {
+      updates.waitingReasonNote = options.waitingReasonNote;
+    }
+  }
+
+  // Persist to memory cache
+  if (prevAction) {
+    const merged = { ...prevAction, ...updates };
+    deadlineMemoryCache.set(actionId, merged);
+  }
+
+  // Persist to Firestore
+  if (db) {
+    await updateDoc(doc(db, DEADLINES_COLLECTION, actionId), updates as any);
+  }
+
+  // Audit
+  await recordDeadlineAudit(
+    actionId,
+    effectiveCompanyId,
+    newStatus === 'COMPLETED' ? 'COMPLETED' : 'UPDATED',
+    user,
+    { status: prevAction?.status, waitingReason: prevAction?.waitingReason },
+    { status: newStatus, waitingReason: options?.waitingReason, note: options?.completionNote || options?.reason },
+    options?.reason || `Chuyển trạng thái hành động sang ${newStatus}`
+  );
+
+  return true;
+}
+
+/**
+ * Update subtasks on a business action
+ */
+export async function updateBusinessActionSubtasks(
+  actionId: string,
+  companyId: string,
+  subtasks: ActionSubtask[],
+  user: { uid: string; displayName?: string; email?: string }
+): Promise<boolean> {
+  const effectiveCompanyId = companyId || 'default-company';
+  const nowIso = new Date().toISOString();
+
+  const updates: Partial<DeadlineEntity> = {
+    subtasks,
+    updatedAt: nowIso,
+    updatedBy: user.uid,
+  };
+
+  const prev = deadlineMemoryCache.get(actionId);
+  if (prev) {
+    deadlineMemoryCache.set(actionId, { ...prev, ...updates });
+  }
+
+  if (db) {
+    await updateDoc(doc(db, DEADLINES_COLLECTION, actionId), updates as any);
+  }
+
+  await recordDeadlineAudit(
+    actionId,
+    effectiveCompanyId,
+    'UPDATED',
+    user,
+    null,
+    { subtasksCount: subtasks.length, completedCount: subtasks.filter(s => s.isCompleted).length },
+    'Cập nhật danh sách công việc phụ (Subtasks)'
+  );
+
+  return true;
+}
+
+/**
+ * Reassign an action to another user or team
+ */
+export async function reassignBusinessAction(
+  actionId: string,
+  companyId: string,
+  assignedTo: string,
+  assignedToName: string,
+  teamId: string | undefined,
+  user: { uid: string; displayName?: string; email?: string },
+  note?: string
+): Promise<boolean> {
+  const effectiveCompanyId = companyId || 'default-company';
+  const nowIso = new Date().toISOString();
+
+  const updates: Partial<DeadlineEntity> = {
+    assignedTo,
+    assignedToName,
+    teamId,
+    updatedAt: nowIso,
+    updatedBy: user.uid,
+  };
+
+  const prev = deadlineMemoryCache.get(actionId);
+  if (prev) {
+    deadlineMemoryCache.set(actionId, { ...prev, ...updates });
+  }
+
+  if (db) {
+    await updateDoc(doc(db, DEADLINES_COLLECTION, actionId), updates as any);
+  }
+
+  await recordDeadlineAudit(
+    actionId,
+    effectiveCompanyId,
+    'REASSIGNED',
+    user,
+    { assignedTo: prev?.assignedTo, assignedToName: prev?.assignedToName },
+    { assignedTo, assignedToName, teamId },
+    note || `Phân công lại hành động cho ${assignedToName}`
+  );
+
+  return true;
+}
+
+/**
+ * Fetch historical audit logs for a specific business action
+ */
+export async function getBusinessActionAuditTrail(
+  actionId: string,
+  companyId: string
+): Promise<DeadlineAuditLog[]> {
+  const effectiveCompanyId = companyId || 'default-company';
+  if (!db) return [];
+
+  try {
+    const q = query(
+      collection(db, AUDIT_LOGS_COLLECTION),
+      where('companyId', '==', effectiveCompanyId),
+      where('deadlineId', '==', actionId),
+      limit(50)
+    );
+    const snap = await getDocs(q);
+    const list: DeadlineAuditLog[] = [];
+    snap.forEach((d) => list.push({ id: d.id, ...d.data() } as DeadlineAuditLog));
+    list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    return list;
+  } catch (err) {
+    console.warn('[deadlineService] Error fetching audit trail:', err);
+    return [];
+  }
+}
+

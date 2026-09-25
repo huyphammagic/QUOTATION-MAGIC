@@ -59,7 +59,8 @@ import {
   ExternalLink,
   ChevronLeft,
   Package,
-  Radar
+  Radar,
+  SlidersHorizontal
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -95,6 +96,8 @@ export interface SidebarProps {
   onOpenSmartQuotationWorkspace?: () => void;
   onOpenEmailTemplates?: () => void;
   onOpenFollowUps?: () => void;
+  onOpenOpportunityRadar?: () => void;
+  onOpenDecisionWorkspace?: () => void;
   onOpenDashboard?: (tab?: string) => void;
   onOpenContracts?: () => void;
   onOpenProfitIntelligence?: () => void;
@@ -147,6 +150,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenSmartQuotationWorkspace,
   onOpenEmailTemplates,
   onOpenFollowUps,
+  onOpenOpportunityRadar,
+  onOpenDecisionWorkspace,
   onOpenDashboard,
   onOpenContracts,
   onOpenProfitIntelligence,
@@ -464,6 +469,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Calendar,
       group: 'quotation',
       action: () => onOpenFollowUps && onOpenFollowUps(),
+    },
+    {
+      id: 'opportunity_radar',
+      label: language === 'vi' ? 'Radar Cơ Hội Kinh Doanh' : 'Opportunity Radar',
+      icon: Radar,
+      group: 'quotation',
+      action: () => onOpenOpportunityRadar && onOpenOpportunityRadar(),
+      badge: 'Phase 46',
+      badgeColor: 'bg-indigo-600/90 text-white font-bold',
+    },
+    {
+      id: 'decision_workspace',
+      label: language === 'vi' ? 'Phòng Quyết Định & Kịch Bản' : 'Decision Workspace',
+      icon: SlidersHorizontal,
+      group: 'quotation',
+      action: () => onOpenDecisionWorkspace && onOpenDecisionWorkspace(),
+      badge: 'Phase 47',
+      badgeColor: 'bg-gradient-to-r from-indigo-500 to-blue-600 text-white font-bold',
     },
 
     // --- PRICING ---

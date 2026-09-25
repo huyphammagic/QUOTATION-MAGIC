@@ -29,18 +29,30 @@ export function detectSmartCRMRecommendations(
   const now = new Date();
   const nowMs = now.getTime();
 
+  // Helper to format date safely
+  const formatSafeDateTime = (val?: string) => {
+    if (!val) return '—';
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    try {
+      return d.toLocaleString('vi-VN');
+    } catch {
+      return val;
+    }
+  };
+
   // 1. Overdue Follow-ups
   followUps.forEach(fu => {
     if ((fu.status === 'OPEN' || fu.status === 'IN_PROGRESS') && fu.dueDate) {
       const dueMs = new Date(fu.dueDate).getTime();
-      if (dueMs < nowMs) {
+      if (!isNaN(dueMs) && dueMs < nowMs) {
         const daysOver = Math.floor((nowMs - dueMs) / (1000 * 60 * 60 * 24));
         recommendations.push({
           id: `rec_fu_${fu.id}`,
           type: 'FOLLOWUP_OVERDUE',
           title: `Chăm sóc khách hàng quá hạn (${daysOver > 0 ? `${daysOver} ngày` : 'hôm nay'})`,
-          reason: `Lịch theo dõi "${fu.notes.slice(0, 50)}" đã quá hạn cam kết.`,
-          evidenceData: `Hạn chót: ${new Date(fu.dueDate).toLocaleString('vi-VN')} | Người phụ trách: ${fu.ownerName}`,
+          reason: `Lịch theo dõi "${(fu.notes || '').slice(0, 50)}" đã quá hạn cam kết.`,
+          evidenceData: `Hạn chót: ${formatSafeDateTime(fu.dueDate)} | Người phụ trách: ${fu.ownerName || 'Chưa gán'}`,
           suggestedAction: 'Liên hệ ngay với khách hàng để cập nhật thông tin và hoàn tất follow-up.',
           priority: 'URGENT',
           customerId: fu.customerId,
@@ -96,7 +108,7 @@ export function detectSmartCRMRecommendations(
             type: 'QUOTATION_NO_RESPONSE',
             title: `Báo giá ${q.quoteNumber} chưa có phản hồi (${Math.floor(hoursSinceSent / 24)} ngày)`,
             reason: 'Báo giá đã gửi hơn 48 giờ nhưng chưa nhận được phản hồi chấp nhận hoặc từ chối.',
-            evidenceData: `Gửi lúc: ${new Date(createdDate).toLocaleString('vi-VN')} | Tuyến: ${q.shipment?.origin || q.shipment?.pol || 'POL'} ➔ ${q.shipment?.destination || q.shipment?.pod || 'POD'}`,
+            evidenceData: `Gửi lúc: ${formatSafeDateTime(createdDate)} | Tuyến: ${q.shipment?.origin || q.shipment?.pol || 'POL'} ➔ ${q.shipment?.destination || q.shipment?.pod || 'POD'}`,
             suggestedAction: 'Chủ động liên hệ hỗ trợ giải đáp thắc mắc về phụ phí (local charges) hoặc lịch trình tàu.',
             priority: 'MEDIUM',
             customerId: q.customer?.id || '',

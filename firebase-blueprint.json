@@ -269,6 +269,80 @@
         "stage": { "type": "string" },
         "ownerId": { "type": "string" }
       }
+    },
+    "BusinessOpportunity": {
+      "collection": "businessOpportunities",
+      "fields": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "title": { "type": "string" },
+        "opportunityType": { "type": "string" },
+        "sourceEntityType": { "type": "string" },
+        "sourceEntityId": { "type": "string" },
+        "detectedAt": { "type": "string" },
+        "reason": { "type": "string" },
+        "supportingData": { "type": "string" },
+        "suggestedAction": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "ownerName": { "type": "string" },
+        "priority": { "type": "string" },
+        "status": { "type": "string" },
+        "confidenceLevel": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
+    },
+    "OpportunityAuditLog": {
+      "collection": "opportunityAuditLogs",
+      "fields": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "opportunityId": { "type": "string" },
+        "action": { "type": "string" },
+        "performedBy": { "type": "string" },
+        "timestamp": { "type": "string" }
+      }
+    },
+    "DecisionSnapshot": {
+      "collection": "decisionSnapshots",
+      "fields": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "sourceEntity": { "type": "string" },
+        "sourceEntityId": { "type": "string" },
+        "baseVersion": { "type": "number" },
+        "selectedScenarioId": { "type": "string" },
+        "decisionStatus": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
+    },
+    "DecisionScenario": {
+      "collection": "decisionScenarios",
+      "fields": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "scenarioName": { "type": "string" },
+        "sourceEntityType": { "type": "string" },
+        "sourceEntityId": { "type": "string" },
+        "sourceVersion": { "type": "number" },
+        "scenarioStatus": { "type": "string" },
+        "carrier": { "type": "string" },
+        "mode": { "type": "string" },
+        "buyCost": { "type": "number" },
+        "sellingPrice": { "type": "number" },
+        "marginPercent": { "type": "number" },
+        "grossProfit": { "type": "number" },
+        "currency": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
     }
   }
 }

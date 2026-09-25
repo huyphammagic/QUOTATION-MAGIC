@@ -270,5 +270,21 @@ service cloud.firestore {
     match /crmAuditLogs/{logId} {
       allow read, write: if true;
     }
+
+    // Phase 46: Business Opportunity Radar & Customer Growth Intelligence Engine
+    match /businessOpportunities/{oppId} {
+      allow read, write: if true;
+    }
+    match /opportunityAuditLogs/{logId} {
+      allow read, write: if true;
+    }
+
+    // Phase 47: Logistics Business Decision & Scenario Workspace
+    match /decisionSnapshots/{snapshotId} {
+      allow read, write: if true;
+    }
+    match /decisionScenarios/{scenarioId} {
+      allow read, write: if true;
+    }
   }
 }

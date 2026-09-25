@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, User, Phone, Mail, MapPin, Building2, Calendar, Clock, 
   TrendingUp, Activity, CheckCircle, AlertCircle, Plus, FileText,
-  DollarSign, RefreshCw, Star, ShieldAlert, Award, ChevronRight, Check
+  DollarSign, RefreshCw, Star, ShieldAlert, Award, ChevronRight, Check,
+  Radar, SlidersHorizontal
 } from 'lucide-react';
 import { CustomerRecord, QuoteData } from '../../types/logistics';
 import { ShipmentRecord } from '../../types/shipment';
@@ -16,8 +17,11 @@ import {
   CustomerHealthScore,
   CustomerContactPerson 
 } from '../../types/crm';
+import { BusinessOpportunity } from '../../types/opportunity';
 import { fetchCustomer360Data } from '../../services/crm/customer360Service';
 import { completeCustomerFollowUp } from '../../services/crm/customerFollowUpService';
+import { getBusinessOpportunities } from '../../services/opportunity/businessOpportunityService';
+import { OpportunityCard } from '../opportunity/OpportunityCard';
 import { LogActivityModal } from './LogActivityModal';
 import { CreateFollowUpModal } from './CreateFollowUpModal';
 import { CreateOpportunityModal } from './CreateOpportunityModal';
@@ -33,6 +37,7 @@ interface Customer360ModalProps {
   shipments?: ShipmentRecord[];
   contracts?: ContractRecord[];
   onSelectCustomerForQuote?: (customer: CustomerRecord) => void;
+  onOpenDecisionWorkspace?: (prefill: any) => void;
 }
 
 export const Customer360Modal: React.FC<Customer360ModalProps> = ({
@@ -45,6 +50,7 @@ export const Customer360Modal: React.FC<Customer360ModalProps> = ({
   shipments = [],
   contracts = [],
   onSelectCustomerForQuote,
+  onOpenDecisionWorkspace,
 }) => {
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TIMELINE' | 'FOLLOW_UPS' | 'RATE_REVIEWS' | 'OPPORTUNITIES' | 'CONTACTS'>('OVERVIEW');
   const [loading, setLoading] = useState(true);
@@ -55,6 +61,7 @@ export const Customer360Modal: React.FC<Customer360ModalProps> = ({
   const [rateSchedules, setRateSchedules] = useState<RateReviewSchedule[]>([]);
   const [rateTasks, setRateTasks] = useState<RateReviewTask[]>([]);
   const [opportunities, setOpportunities] = useState<CustomerOpportunity[]>([]);
+  const [radarOpportunities, setRadarOpportunities] = useState<BusinessOpportunity[]>([]);
   const [healthScore, setHealthScore] = useState<CustomerHealthScore | null>(null);
 
   // Modal open states
@@ -74,6 +81,14 @@ export const Customer360Modal: React.FC<Customer360ModalProps> = ({
       setRateTasks(data.rateReviewTasks);
       setOpportunities(data.opportunities);
       setHealthScore(data.healthScore);
+
+      // Load Business Opportunity Radar items
+      try {
+        const radarList = await getBusinessOpportunities(companyId || 'default-company', { customerId: customer.id });
+        setRadarOpportunities(radarList);
+      } catch (rErr) {
+        console.warn('Could not load radar opportunities:', rErr);
+      }
     } catch (err) {
       console.error('Failed to load 360 data:', err);
     } finally {
@@ -105,8 +120,24 @@ export const Customer360Modal: React.FC<Customer360ModalProps> = ({
     c.partyName?.toLowerCase().includes((customer.companyName || '').toLowerCase())
   );
 
+  const formatSafeDate = (val?: string) => {
+    if (!val) return '—';
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? val : d.toLocaleDateString('vi-VN');
+  };
+
+  const formatSafeDateTime = (val?: string) => {
+    if (!val) return '—';
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? val : d.toLocaleString('vi-VN');
+  };
+
   const openFollowUpsCount = followUps.filter(f => f.status === 'OPEN').length;
-  const overdueFollowUpsCount = followUps.filter(f => f.status === 'OPEN' && new Date(f.dueDate) < new Date()).length;
+  const overdueFollowUpsCount = followUps.filter(f => {
+    if (f.status !== 'OPEN' || !f.dueDate) return false;
+    const t = new Date(f.dueDate).getTime();
+    return !isNaN(t) && t < Date.now();
+  }).length;
 
   const getHealthBadge = (health: CustomerHealthScore | null) => {
     if (!health) {
@@ -201,6 +232,23 @@ export const Customer360Modal: React.FC<Customer360ModalProps> = ({
               <Calendar className="w-3.5 h-3.5" />
               <span>Lên Lịch Chăm Sóc</span>
             </button>
+            {onOpenDecisionWorkspace && (
+              <button
+                onClick={() => {
+                  onOpenDecisionWorkspace({
+                    customerId: customer.id,
+                    customerName: customer.customerName || customer.companyName,
+                    customerCode: customer.code
+                  });
+                  onClose();
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg shadow-xs transition"
+                title="Mở Decision & Scenario Workspace cho khách hàng này"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>Decision Hub</span>
+              </button>
+            )}
             <button
               onClick={onClose}
               className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition"
@@ -297,10 +345,8 @@ export const Customer360Modal: React.FC<Customer360ModalProps> = ({
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <span>Cơ Hội Kinh Doanh (Pipelines)</span>
-            <span className="px-1.5 py-0.2 bg-emerald-50 text-emerald-700 text-[10px] rounded-full">
-              {opportunities.length}
-            </span>
+            <Radar className="w-3.5 h-3.5 text-indigo-500" />
+            <span>Cơ Hội & Radar ({radarOpportunities.length + opportunities.length})</span>
           </button>
         </div>
 
@@ -444,7 +490,7 @@ export const Customer360Modal: React.FC<Customer360ModalProps> = ({
                               )}
                             </div>
                             <span className="text-[10px] text-slate-400 shrink-0 ml-3">
-                              {new Date(act.occurredAt).toLocaleDateString('vi-VN')}
+                              {formatSafeDate(act.occurredAt)}
                             </span>
                           </div>
                         ))}
@@ -489,7 +535,7 @@ export const Customer360Modal: React.FC<Customer360ModalProps> = ({
                                 </span>
                               </div>
                               <p className="text-slate-400 text-[11px] mt-0.5">
-                                Bởi {act.createdByName || act.createdBy} • {new Date(act.occurredAt).toLocaleString('vi-VN')}
+                                Bởi {act.createdByName || act.createdBy} • {formatSafeDateTime(act.occurredAt)}
                               </p>
                             </div>
                             {act.relatedEntityNumber && (
@@ -511,7 +557,7 @@ export const Customer360Modal: React.FC<Customer360ModalProps> = ({
                               <span>{act.nextAction}</span>
                               {act.nextActionDue && (
                                 <span className="text-[11px] text-slate-400">
-                                  (Hạn: {new Date(act.nextActionDue).toLocaleDateString('vi-VN')})
+                                  (Hạn: {formatSafeDate(act.nextActionDue)})
                                 </span>
                               )}
                             </div>
@@ -597,7 +643,7 @@ export const Customer360Modal: React.FC<Customer360ModalProps> = ({
                                   <p className="text-slate-400 text-[11px] mt-1">
                                     Người phụ trách: {fu.ownerName || fu.ownerId} • Hạn chót:{' '}
                                     <span className={isOverdue ? 'text-rose-600 font-bold' : 'text-slate-700 font-semibold'}>
-                                      {new Date(fu.dueDate).toLocaleString('vi-VN')}
+                                      {formatSafeDateTime(fu.dueDate)}
                                     </span>
                                   </p>
                                   {fu.nextAction && (
@@ -667,52 +713,83 @@ export const Customer360Modal: React.FC<Customer360ModalProps> = ({
 
               {/* TAB: OPPORTUNITIES */}
               {activeTab === 'OPPORTUNITIES' && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-800">Cơ Hội Kinh Doanh & Phễu Bán Hàng (Pipelines)</h4>
-                      <p className="text-xs text-slate-500">Các tuyến hàng đang khảo sát, chào giá hoặc thương lượng</p>
-                    </div>
-                    <button
-                      onClick={() => setIsOpportunityOpen(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-xs transition"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Thêm Cơ Hội Mới</span>
-                    </button>
-                  </div>
-
-                  {opportunities.length === 0 ? (
-                    <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-400 text-xs">
-                      Chưa ghi nhận cơ hội kinh doanh nào.
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {opportunities.map(opp => (
-                        <div key={opp.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs text-xs">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-slate-800 text-sm">{opp.title}</span>
-                                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 font-bold text-[10px] rounded border border-emerald-200">
-                                  {opp.stage} ({opp.probability}%)
-                                </span>
-                              </div>
-                              <p className="text-slate-500 text-[11px] mt-0.5">
-                                Tuyến: {opp.lane} • Sản lượng: {opp.estimatedVolume || '—'} • Giá trị: ${opp.estimatedValue?.toLocaleString() || 0}
-                              </p>
-                            </div>
-                            {opp.nextAction && (
-                              <div className="text-right">
-                                <span className="text-[10px] text-slate-400 block">Hành động tiếp</span>
-                                <span className="text-blue-700 font-semibold">{opp.nextAction}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                <div className="space-y-6">
+                  {/* Radar Detected Opportunities */}
+                  {radarOpportunities.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Radar className="w-4 h-4 text-indigo-600 animate-pulse" />
+                        <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                          Cơ Hội Phát Hiện Tự Động (Radar Intelligence - {radarOpportunities.length})
+                        </h4>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {radarOpportunities.map(opp => (
+                          <OpportunityCard
+                            key={opp.id}
+                            opportunity={opp}
+                            compact={true}
+                            onSelectForQuote={() => {
+                              if (onSelectCustomerForQuote) {
+                                onSelectCustomerForQuote(customer);
+                              }
+                            }}
+                            onOpenFollowUp={() => setIsFollowUpOpen(true)}
+                            onOpenRateReview={() => setIsRateReviewOpen(true)}
+                          />
+                        ))}
+                      </div>
                     </div>
                   )}
+
+                  {/* Manual Sales Pipeline Opportunities */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-800">Cơ Hội Kinh Doanh Thủ Công (Pipelines)</h4>
+                        <p className="text-xs text-slate-500">Các tuyến hàng do Sales ghi nhận và theo dõi thủ công</p>
+                      </div>
+                      <button
+                        onClick={() => setIsOpportunityOpen(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-xs transition"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Thêm Cơ Hội Mới</span>
+                      </button>
+                    </div>
+
+                    {opportunities.length === 0 ? (
+                      <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-400 text-xs">
+                        Chưa ghi nhận cơ hội thủ công nào.
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {opportunities.map(opp => (
+                          <div key={opp.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs text-xs">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-slate-800 text-sm">{opp.title}</span>
+                                  <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 font-bold text-[10px] rounded border border-emerald-200">
+                                    {opp.stage} ({opp.probability}%)
+                                  </span>
+                                </div>
+                                <p className="text-slate-500 text-[11px] mt-0.5">
+                                  Tuyến: {opp.lane} • Sản lượng: {opp.estimatedVolume || '—'} • Giá trị: ${opp.estimatedValue?.toLocaleString() || 0}
+                                </p>
+                              </div>
+                              {opp.nextAction && (
+                                <div className="text-right">
+                                  <span className="text-[10px] text-slate-400 block">Hành động tiếp</span>
+                                  <span className="text-blue-700 font-semibold">{opp.nextAction}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </>

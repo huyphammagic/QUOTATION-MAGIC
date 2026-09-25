@@ -117,8 +117,11 @@ const ShipmentOperationalWorkspace = lazyWithRetry(() => import('./components/sh
 const CreateShipmentModal = lazyWithRetry(() => import('./components/shipment/CreateShipmentModal').then(m => ({ default: m.CreateShipmentModal })), 'CreateShipmentModal');
 const ControlTowerWorkspace = lazyWithRetry(() => import('./components/controlTower/ControlTowerWorkspace').then(m => ({ default: m.ControlTowerWorkspace })), 'ControlTowerWorkspace');
 const SmartDeadlineWorkspace = lazyWithRetry(() => import('./components/deadline/SmartDeadlineWorkspace').then(m => ({ default: m.SmartDeadlineWorkspace })), 'SmartDeadlineWorkspace');
+const BusinessOpportunityRadarWorkspace = lazyWithRetry(() => import('./components/opportunity/BusinessOpportunityRadarWorkspace').then(m => ({ default: m.BusinessOpportunityRadarWorkspace })), 'BusinessOpportunityRadarWorkspace');
+const DecisionWorkspaceModal = lazyWithRetry(() => import('./components/decision/DecisionWorkspaceModal').then(m => ({ default: m.DecisionWorkspaceModal })), 'DecisionWorkspaceModal');
 
 import { getShipments } from './services/shipment/shipmentService';
+import { ShipmentRecord } from './types/shipment';
 import { getExceptions } from './services/exception/exceptionService';
 import { getDeadlineMetrics } from './services/deadline/deadlineService';
 
@@ -134,6 +137,9 @@ import {
 } from './types/quotationCommunication';
 import { resolveQuotationPricing } from './services/contract/contractRateResolver';
 import { fetchContracts } from './services/contract/contractRepository';
+import { ContractRecord } from './types/contract';
+import { getBusinessOpportunities } from './services/opportunity/businessOpportunityService';
+import { BusinessOpportunity } from './types/opportunity';
 
 // Phase 15: Profit & Margin Intelligence
 import { 
@@ -164,7 +170,7 @@ import { useFinancialConfig } from './context/FinancialConfigContext';
 import { MultiCompanyManagementModal } from './components/company/MultiCompanyManagementModal';
 import { createQuotationCompanySnapshot } from './types/multiCompany';
 
-import { Check, Ship, ShieldCheck, Sparkles } from 'lucide-react';
+import { Check, Ship, ShieldCheck, Sparkles, SlidersHorizontal } from 'lucide-react';
 
 export default function App() {
   // Phase 37: Multi-Company Active Context
@@ -290,6 +296,64 @@ export default function App() {
   const [isActionCenterOpen, setIsActionCenterOpen] = useState(false);
   const [deadlinesCount, setDeadlinesCount] = useState(0);
 
+  // Phase 46: Business Opportunity Radar & Customer Growth Intelligence Engine
+  const [isOpportunityRadarOpen, setIsOpportunityRadarOpen] = useState(false);
+
+  // Phase 47: Logistics Business Decision & Scenario Workspace
+  const [isDecisionWorkspaceOpen, setIsDecisionWorkspaceOpen] = useState(false);
+  const [decisionWorkspacePrefill, setDecisionWorkspacePrefill] = useState<any>(null);
+  const [decisionShipments, setDecisionShipments] = useState<ShipmentRecord[]>([]);
+  const [decisionContracts, setDecisionContracts] = useState<ContractRecord[]>([]);
+  const [decisionOpportunities, setDecisionOpportunities] = useState<BusinessOpportunity[]>([]);
+
+  // Phase 47: Lazy Fetch Real Related Logistics Entities for Decision Workspace
+  useEffect(() => {
+    if (!isDecisionWorkspaceOpen) return;
+    const compId = activeCompanyId || 'default-company';
+    let isCancelled = false;
+    Promise.all([
+      getShipments(compId, { pageLimit: 50 }).catch(() => ({ shipments: [] })),
+      fetchContracts({ limitCount: 50 }).catch(() => ({ contracts: [] })),
+      getBusinessOpportunities(compId).catch(() => [])
+    ]).then(([shipRes, contRes, opps]) => {
+      if (isCancelled) return;
+      if (shipRes?.shipments) setDecisionShipments(shipRes.shipments);
+      if (contRes?.contracts) setDecisionContracts(contRes.contracts);
+      if (Array.isArray(opps)) setDecisionOpportunities(opps);
+    });
+    return () => { isCancelled = true; };
+  }, [isDecisionWorkspaceOpen, activeCompanyId]);
+
+  const handleOpenDecisionWorkspaceForQuote = (targetQuote: QuoteData) => {
+    setDecisionWorkspacePrefill({
+      customerId: targetQuote.customer?.id,
+      customerName: targetQuote.customer?.customerName || targetQuote.customer?.companyName || 'Khách hàng',
+      customerCode: (targetQuote.customer as any)?.code,
+      origin: targetQuote.shipment?.pol || targetQuote.shipment?.origin || 'VNSGN',
+      destination: targetQuote.shipment?.pod || targetQuote.shipment?.destination || 'USLAX',
+      originPort: targetQuote.shipment?.pol,
+      destinationPort: targetQuote.shipment?.pod,
+      mode: (targetQuote.shipment?.mode as any) || 'SEA_FCL',
+      serviceType: (targetQuote.shipment?.mode as any) || 'SEA_FCL',
+      incoterm: (targetQuote as any).incoterm || (targetQuote.shipment as any)?.incoterm || 'FOB',
+      commodity: targetQuote.shipment?.commodity || 'Hàng hóa thông thường',
+      containerType: (targetQuote.shipment?.containerType as any) || "40'GP",
+      quantity: targetQuote.shipment?.quantity || 1,
+      grossWeightKg: (targetQuote.shipment as any)?.grossWeightKg || (targetQuote.shipment as any)?.weight || 10000,
+      volumeCbm: (targetQuote.shipment as any)?.volumeCbm || (targetQuote.shipment as any)?.volume || 30,
+      targetRate: targetQuote.subtotalUsd || targetQuote.subtotalVnd,
+      targetCurrency: targetQuote.quoteCurrency as any,
+      sourceEntity: 'QUOTATION',
+      sourceEntityId: targetQuote.id,
+      sourceVersion: targetQuote.version || 1
+    });
+    setIsDecisionWorkspaceOpen(true);
+  };
+
+  const handleOpenDecisionWorkspaceForCurrentQuote = () => {
+    handleOpenDecisionWorkspaceForQuote(quote);
+  };
+
   // Phase 24: Global Data Integrity & Sync Health Dashboard
   const [isIntegrityDashboardOpen, setIsIntegrityDashboardOpen] = useState(false);
 
@@ -359,6 +423,8 @@ export default function App() {
     setIsIntegrityDashboardOpen(false);
     setIsControlTowerOpen(false);
     setIsActionCenterOpen(false);
+    setIsOpportunityRadarOpen(false);
+    setIsDecisionWorkspaceOpen(false);
     setIsShipmentWorkspaceOpen(false);
     setIsCreateShipmentModalOpen(false);
     setCreateShipmentFromQuote(null);
@@ -520,6 +586,12 @@ export default function App() {
         break;
       case 'quotation_followup':
         setIsFollowUpOpen(true);
+        break;
+      case 'opportunity_radar':
+        setIsOpportunityRadarOpen(true);
+        break;
+      case 'decision_workspace':
+        setIsDecisionWorkspaceOpen(true);
         break;
       case 'pricing_rates':
         handleOpenMasterRateHub('RATES');
@@ -1775,6 +1847,8 @@ export default function App() {
           onOpenSmartQuotationWorkspace={() => navigateToRoute('smart_quotation_workspace')}
           onOpenEmailTemplates={() => navigateToRoute('quotation_email_templates')}
           onOpenFollowUps={() => navigateToRoute('quotation_followup')}
+          onOpenOpportunityRadar={() => navigateToRoute('opportunity_radar')}
+          onOpenDecisionWorkspace={() => navigateToRoute('decision_workspace')}
           onOpenDashboard={(tab) => {
             if (tab === 'FUNNEL') navigateToRoute('analytics_funnel');
             else if (tab === 'SALES') navigateToRoute('analytics_sales');
@@ -1905,6 +1979,15 @@ export default function App() {
               </div>
 
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleOpenDecisionWorkspaceForCurrentQuote}
+                  className="px-3.5 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
+                  id="btn-open-decision-workspace-current-quote"
+                  title="Mở Decision Hub & Phân tích kịch bản What-If cho báo giá này"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-400" /> Decision Hub
+                </button>
                 <button
                   type="button"
                   onClick={() => setIsSmartQuotationWorkspaceOpen(true)}
@@ -2051,6 +2134,11 @@ export default function App() {
               name: company.salesRepName || 'Sales Logistics',
               email: company.salesRepEmail || 'sales@logistics.vn'
             }}
+            onOpenDecisionWorkspace={(prefill) => {
+              handleModalClose();
+              setDecisionWorkspacePrefill(prefill);
+              setIsDecisionWorkspaceOpen(true);
+            }}
           />
         </RouteErrorBoundary>
       )}
@@ -2147,6 +2235,7 @@ export default function App() {
             onCloneQuote={handleCloneQuote}
             onDeleteQuote={handleDeleteQuote}
             onUpdateStatus={handleUpdateStatus}
+            onOpenDecisionWorkspace={handleOpenDecisionWorkspaceForQuote}
           />
         </RouteErrorBoundary>
       )}
@@ -2314,6 +2403,117 @@ export default function App() {
             quote={quote}
             onSuccess={() => {
               showToast('Đã lưu nhiệm vụ chăm sóc khách hàng thành công!');
+            }}
+          />
+        </RouteErrorBoundary>
+      )}
+
+      {/* Phase 46: Business Opportunity Radar & Customer Growth Intelligence */}
+      {isOpportunityRadarOpen && (
+        <RouteErrorBoundary routeName="Business Opportunity Radar" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-900/80 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="w-full max-w-7xl max-h-[96vh] overflow-hidden rounded-3xl shadow-2xl">
+              <BusinessOpportunityRadarWorkspace
+                companyId={activeCompanyId || 'default-company'}
+                customers={customers}
+                quotes={savedQuotes}
+                user={{
+                  name: company.salesRepName || 'Sales Logistics',
+                  email: company.salesRepEmail || 'sales@logistics.vn'
+                }}
+                isModal={true}
+                onClose={handleModalClose}
+                onSelectCustomerForQuote={(selectedCustomer, prefill) => {
+                  handleModalClose();
+                  handleSelectCustomerForQuote(selectedCustomer);
+                  if (prefill?.shipment) {
+                    setQuote(prev => ({
+                      ...prev,
+                      shipment: {
+                        ...prev.shipment,
+                        ...prefill.shipment
+                      }
+                    }));
+                  }
+                }}
+                onOpenCustomer360={() => {
+                  handleModalClose();
+                  setIsCustomersOpen(true);
+                }}
+                onOpenRateReview={() => {
+                  handleModalClose();
+                  handleOpenMasterRateHub('RATES');
+                }}
+                onOpenFollowUp={() => {
+                  handleModalClose();
+                  setIsFollowUpOpen(true);
+                }}
+                onOpenDecisionWorkspace={(prefill) => {
+                  handleModalClose();
+                  setDecisionWorkspacePrefill(prefill);
+                  setIsDecisionWorkspaceOpen(true);
+                }}
+              />
+            </div>
+          </div>
+        </RouteErrorBoundary>
+      )}
+
+      {/* Phase 47: Logistics Business Decision & Scenario Workspace */}
+      {isDecisionWorkspaceOpen && (
+        <RouteErrorBoundary routeName="Decision Workspace" onReset={handleModalClose} onNavigateHome={handleModalClose}>
+          <DecisionWorkspaceModal
+            isOpen={isDecisionWorkspaceOpen}
+            onClose={() => {
+              setIsDecisionWorkspaceOpen(false);
+              setDecisionWorkspacePrefill(null);
+            }}
+            companyId={activeCompanyId || 'default-company'}
+            customers={customers}
+            allQuotes={savedQuotes}
+            shipments={decisionShipments}
+            contracts={decisionContracts}
+            opportunities={decisionOpportunities}
+            masterRates={rates}
+            initialRfq={decisionWorkspacePrefill}
+            sourceEntity={decisionWorkspacePrefill?.sourceEntity || 'RFQ'}
+            sourceEntityId={decisionWorkspacePrefill?.sourceEntityId}
+            sourceVersion={decisionWorkspacePrefill?.sourceVersion || 1}
+            userRole={appUserRole}
+            user={{
+              name: company.salesRepName || 'Sales Logistics',
+              email: company.salesRepEmail || 'sales@logistics.vn'
+            }}
+            companyProfile={company}
+            onSelectQuoteForDraft={(draftQuote) => {
+              setIsDecisionWorkspaceOpen(false);
+              setDecisionWorkspacePrefill(null);
+              if (draftQuote.customer) {
+                handleSelectCustomerForQuote(draftQuote.customer as any);
+              }
+              setQuote(prev => ({
+                ...prev,
+                ...draftQuote,
+                id: prev.id,
+                quoteNumber: prev.quoteNumber
+              }));
+              showToast('Đã nạp kịch bản vào biểu mẫu Báo Giá!');
+            }}
+            onOpenOpportunity={(customerId) => {
+              setIsDecisionWorkspaceOpen(false);
+              setIsOpportunityRadarOpen(true);
+            }}
+            onOpenFollowUp={() => {
+              setIsDecisionWorkspaceOpen(false);
+              setIsFollowUpOpen(true);
+            }}
+            onOpenRateHub={() => {
+              setIsDecisionWorkspaceOpen(false);
+              handleOpenMasterRateHub('RATES');
+            }}
+            onOpenActionCenter={() => {
+              setIsDecisionWorkspaceOpen(false);
+              setIsActionCenterOpen(true);
             }}
           />
         </RouteErrorBoundary>
@@ -2567,6 +2767,22 @@ export default function App() {
                     handleSelectQuote(target);
                     navigateToRoute('quotation_preview');
                   }
+                }}
+                onOpenCustomer={(customerId) => {
+                  setIsActionCenterOpen(false);
+                  setIsCustomersOpen(true);
+                }}
+                onOpenRateHub={() => {
+                  setIsActionCenterOpen(false);
+                  handleOpenMasterRateHub('RATES');
+                }}
+                onOpenOpportunity={(oppId) => {
+                  setIsActionCenterOpen(false);
+                  setIsOpportunityRadarOpen(true);
+                }}
+                onOpenDecisionWorkspace={(decisionId) => {
+                  setIsActionCenterOpen(false);
+                  setIsDecisionWorkspaceOpen(true);
                 }}
               />
             </div>

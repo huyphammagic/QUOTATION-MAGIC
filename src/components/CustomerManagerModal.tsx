@@ -5,11 +5,12 @@ import { ContractRecord } from '../types/contract';
 import { 
   Users, Plus, Search, Edit2, Trash2, Building2, Phone, Mail, 
   MapPin, Check, X, FileText, UserCheck, ShieldCheck, ChevronLeft, ChevronRight,
-  RefreshCw, Cloud, AlertCircle, Activity, Calendar, TrendingUp
+  RefreshCw, Cloud, AlertCircle, Activity, Calendar, TrendingUp, Radar
 } from 'lucide-react';
 import { Customer360Modal } from './crm/Customer360Modal';
 import { SalesFollowUpWorkspace } from './crm/SalesFollowUpWorkspace';
 import { RateReviewWorkspace } from './crm/RateReviewWorkspace';
+import { BusinessOpportunityRadarWorkspace } from './opportunity/BusinessOpportunityRadarWorkspace';
 
 interface CustomerManagerModalProps {
   isOpen: boolean;
@@ -25,7 +26,8 @@ interface CustomerManagerModalProps {
   contracts?: ContractRecord[];
   user?: { email?: string; name?: string };
   companyId?: string;
-  initialTab?: 'CUSTOMERS' | 'FOLLOW_UPS' | 'RATE_REVIEWS';
+  initialTab?: 'CUSTOMERS' | 'FOLLOW_UPS' | 'RATE_REVIEWS' | 'OPPORTUNITY_RADAR';
+  onOpenDecisionWorkspace?: (prefill: any) => void;
 }
 
 export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
@@ -42,9 +44,10 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
   contracts = [],
   user,
   companyId = 'default-company',
-  initialTab = 'CUSTOMERS'
+  initialTab = 'CUSTOMERS',
+  onOpenDecisionWorkspace
 }) => {
-  const [activeCrmTab, setActiveCrmTab] = useState<'CUSTOMERS' | 'FOLLOW_UPS' | 'RATE_REVIEWS'>(initialTab);
+  const [activeCrmTab, setActiveCrmTab] = useState<'CUSTOMERS' | 'FOLLOW_UPS' | 'RATE_REVIEWS' | 'OPPORTUNITY_RADAR'>(initialTab);
   const [selectedCustomerFor360, setSelectedCustomerFor360] = useState<CustomerRecord | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -221,7 +224,57 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
             <TrendingUp className="w-3.5 h-3.5 text-indigo-400" />
             <span>Rà Soát Giá Cước (Rate Review Engine)</span>
           </button>
+
+          <button
+            onClick={() => setActiveCrmTab('OPPORTUNITY_RADAR')}
+            className={`py-2.5 px-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition ${
+              activeCrmTab === 'OPPORTUNITY_RADAR'
+                ? 'border-indigo-400 text-white bg-indigo-900/30'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Radar className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+            <span>Radar Cơ Hội Kinh Doanh (Opportunity Radar)</span>
+          </button>
         </div>
+
+        {activeCrmTab === 'OPPORTUNITY_RADAR' && (
+          <div className="p-4 overflow-y-auto flex-1 bg-slate-100/80">
+            <BusinessOpportunityRadarWorkspace
+              companyId={companyId}
+              customers={customers}
+              quotes={quotes}
+              shipments={shipments}
+              contracts={contracts}
+              user={user}
+              onSelectCustomerForQuote={(cust) => {
+                onClose();
+                if (onSelectCustomerForQuote) {
+                  onSelectCustomerForQuote(cust);
+                }
+              }}
+              onOpenCustomer360={(customerId, customerName) => {
+                const found = customers.find(c => c.id === customerId) || ({
+                  id: customerId,
+                  code: customerId,
+                  companyName: customerName || 'Khách hàng',
+                  customerName: customerName || 'Khách hàng',
+                  taxCode: '',
+                  taxId: '',
+                  contactEmail: '',
+                  email: '',
+                  contactPhone: '',
+                  phone: '',
+                  address: '',
+                  createdAt: new Date().toISOString(),
+                } as unknown as CustomerRecord);
+                setSelectedCustomerFor360(found);
+              }}
+              onOpenRateReview={() => setActiveCrmTab('RATE_REVIEWS')}
+              onOpenFollowUp={() => setActiveCrmTab('FOLLOW_UPS')}
+            />
+          </div>
+        )}
 
         {activeCrmTab === 'FOLLOW_UPS' && (
           <div className="p-6 overflow-y-auto flex-1 bg-slate-50/50">
@@ -233,8 +286,21 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
               shipments={shipments}
               contracts={contracts}
               onOpenCustomer360={(customerId) => {
-                const found = customers.find(c => c.id === customerId);
-                if (found) setSelectedCustomerFor360(found);
+                const found = customers.find(c => c.id === customerId) || ({
+                  id: customerId,
+                  code: customerId,
+                  companyName: 'Khách hàng',
+                  customerName: 'Khách hàng',
+                  taxCode: '',
+                  taxId: '',
+                  contactEmail: '',
+                  email: '',
+                  contactPhone: '',
+                  phone: '',
+                  address: '',
+                  createdAt: new Date().toISOString(),
+                } as unknown as CustomerRecord);
+                setSelectedCustomerFor360(found);
               }}
             />
           </div>
@@ -246,8 +312,21 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
               companyId={companyId}
               user={user}
               onOpenCustomer360={(customerId) => {
-                const found = customers.find(c => c.id === customerId);
-                if (found) setSelectedCustomerFor360(found);
+                const found = customers.find(c => c.id === customerId) || ({
+                  id: customerId,
+                  code: customerId,
+                  companyName: 'Khách hàng',
+                  customerName: 'Khách hàng',
+                  taxCode: '',
+                  taxId: '',
+                  contactEmail: '',
+                  email: '',
+                  contactPhone: '',
+                  phone: '',
+                  address: '',
+                  createdAt: new Date().toISOString(),
+                } as unknown as CustomerRecord);
+                setSelectedCustomerFor360(found);
               }}
             />
           </div>
@@ -655,6 +734,13 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
           customer={selectedCustomerFor360}
           companyId={companyId}
           user={user}
+          onOpenDecisionWorkspace={(prefill) => {
+            setSelectedCustomerFor360(null);
+            onClose();
+            if (onOpenDecisionWorkspace) {
+              onOpenDecisionWorkspace(prefill);
+            }
+          }}
         />
       )}
 

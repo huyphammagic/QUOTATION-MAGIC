@@ -18,6 +18,8 @@ export type AppRouteId =
   | 'quotation_document_center'
   | 'quotation_email_templates'
   | 'quotation_followup'
+  | 'opportunity_radar'
+  | 'decision_workspace'
   // Pricing
   | 'pricing_rates'
   | 'pricing_contracts'

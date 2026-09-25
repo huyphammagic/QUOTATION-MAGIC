@@ -3,7 +3,7 @@ import { QuoteData, QuoteStatus } from '../types/logistics';
 import { formatUSD, formatVND } from '../utils/formatters';
 import { exportQuoteToPdf } from '../utils/exportPdf';
 import { exportQuoteToExcel } from '../utils/exportExcel';
-import { X, Search, FileText, Copy, Trash2, Edit3, FileDown, FileSpreadsheet, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { X, Search, FileText, Copy, Trash2, Edit3, FileDown, FileSpreadsheet, ChevronLeft, ChevronRight, Loader2, SlidersHorizontal } from 'lucide-react';
 
 interface SavedQuotesModalProps {
   quotes: QuoteData[];
@@ -14,6 +14,7 @@ interface SavedQuotesModalProps {
   onDeleteQuote: (id: string) => void;
   onUpdateStatus: (id: string, status: QuoteStatus) => void;
   initialStatusFilter?: string;
+  onOpenDecisionWorkspace?: (quote: QuoteData) => void;
 }
 
 export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
@@ -25,6 +26,7 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
   onDeleteQuote,
   onUpdateStatus,
   initialStatusFilter = 'ALL',
+  onOpenDecisionWorkspace,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -256,6 +258,17 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                       >
                         <Copy className="w-4 h-4" />
                       </button>
+
+                      {/* Phase 47: Decision & Scenario Workspace */}
+                      {onOpenDecisionWorkspace && (
+                        <button
+                          onClick={() => { onOpenDecisionWorkspace(quote); onClose(); }}
+                          className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          title="Mở Decision Hub (Phân tích What-If)"
+                        >
+                          <SlidersHorizontal className="w-4 h-4" />
+                        </button>
+                      )}
 
                       {/* Export PDF */}
                       <button

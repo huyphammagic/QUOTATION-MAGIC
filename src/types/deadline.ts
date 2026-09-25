@@ -12,8 +12,13 @@ export type DeadlineEntityType =
   | 'DOCUMENT' 
   | 'MILESTONE' 
   | 'CUSTOMER'
+  | 'RATE'
   | 'RATE_REVIEW'
   | 'OPPORTUNITY'
+  | 'CONTRACT'
+  | 'RFQ'
+  | 'DECISION'
+  | 'SCENARIO'
   | 'CUSTOM';
 
 export type DeadlineType = 
@@ -21,6 +26,27 @@ export type DeadlineType =
   | 'QUOTATION_VALID_UNTIL'
   | 'QUOTATION_EXPIRY'
   | 'QUOTATION_FOLLOWUP_DUE'
+  // Phase 48: Business Actions
+  | 'QUOTATION_FOLLOW_UP'
+  | 'QUOTATION_REVIEW'
+  | 'QUOTATION_EXPIRY_REVIEW'
+  | 'PRICING_REVIEW'
+  | 'MARGIN_REVIEW'
+  | 'RATE_REVIEW'
+  | 'RATE_EXPIRY_REVIEW'
+  | 'RFQ_FOLLOW_UP'
+  | 'CUSTOMER_FOLLOW_UP'
+  | 'CUSTOMER_REACTIVATION'
+  | 'OPPORTUNITY_FOLLOW_UP'
+  | 'CONTRACT_REVIEW'
+  | 'SHIPMENT_ACTION'
+  | 'DOCUMENT_ACTION'
+  | 'CUSTOMER_RESPONSE_REQUIRED'
+  | 'SUPPLIER_RESPONSE_REQUIRED'
+  | 'INTERNAL_APPROVAL'
+  | 'DECISION_ACTION'
+  | 'SCENARIO_EXECUTION'
+  | 'CUSTOM_ACTION'
   // Shipment Ocean / General
   | 'CARGO_READY'
   | 'SI_CUTOFF'
@@ -54,6 +80,10 @@ export type DeadlineType =
   | 'CUSTOM_DEADLINE';
 
 export type DeadlineStatus = 
+  | 'OPEN'         // Newly created action waiting for dispatch
+  | 'IN_PROGRESS'  // Actively being executed
+  | 'WAITING'      // Waiting on customer, supplier, rate, internal approval
+  | 'BLOCKED'      // Blocked by external impediment
   | 'UPCOMING'     // In future (> 24h)
   | 'DUE_SOON'     // Within next 24 hours
   | 'DUE_TODAY'    // Same calendar day
@@ -61,6 +91,26 @@ export type DeadlineStatus =
   | 'COMPLETED'    // Action executed or actual event occurred
   | 'CANCELLED'    // Voided / irrelevant
   | 'SNOOZED';     // Temporarily snoozed until a later timestamp
+
+export type ActionWaitingReason = 
+  | 'CUSTOMER'
+  | 'SUPPLIER'
+  | 'INTERNAL_APPROVAL'
+  | 'RATE'
+  | 'DOCUMENTS'
+  | 'FOLLOW_UP'
+  | 'DECISION'
+  | 'SCHEDULE'
+  | 'OTHER'
+  | 'NONE';
+
+export interface ActionSubtask {
+  id: string;
+  title: string;
+  isCompleted: boolean;
+  completedAt?: string;
+  completedBy?: string;
+}
 
 export type DeadlinePriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
@@ -71,6 +121,9 @@ export type DeadlineSource =
   | 'AUTO_MILESTONE' 
   | 'AUTO_CRM'
   | 'AUTO_RATE_REVIEW'
+  | 'DECISION_WORKSPACE'
+  | 'SCENARIO_ENGINE'
+  | 'ACTION_CENTER'
   | 'MANUAL_USER';
 
 export interface DeadlineEntity {
@@ -116,8 +169,36 @@ export interface DeadlineEntity {
   updatedAt: string;
   updatedBy: string;
   
+  // Phase 48: Smart Business Action Extensions
+  actionType?: DeadlineType;
+  sourceEntityType?: DeadlineEntityType;
+  sourceEntityId?: string;
+  sourceEntityVersion?: number;
+  urgency?: 'LOW' | 'NORMAL' | 'HIGH' | 'IMMEDIATE';
+  teamId?: string;
+  waitingReason?: ActionWaitingReason;
+  waitingReasonNote?: string;
+  subtasks?: ActionSubtask[];
+  
+  // Relational Entities Cross-Links
+  relatedCustomerId?: string;
+  relatedQuotationId?: string;
+  relatedShipmentId?: string;
+  relatedRateId?: string;
+  relatedContractId?: string;
+  relatedOpportunityId?: string;
+  relatedRFQId?: string;
+  relatedDecisionId?: string;
+  relatedScenarioId?: string;
+  relatedTaskId?: string;
+
   relatedData?: Record<string, any>;
 }
+
+export type BusinessActionEntity = DeadlineEntity;
+export type BusinessActionType = DeadlineType;
+export type BusinessActionStatus = DeadlineStatus;
+export type BusinessActionPriority = DeadlinePriority;
 
 export type DeadlineAuditAction = 
   | 'CREATED'

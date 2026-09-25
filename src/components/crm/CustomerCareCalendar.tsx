@@ -51,80 +51,95 @@ export const CustomerCareCalendar: React.FC<CustomerCareCalendarProps> = ({
   const [viewMode, setViewMode] = useState<'MONTH' | 'WEEK'>('MONTH');
   const [filterType, setFilterType] = useState<string>('ALL');
 
+  // Helper to safely parse dates avoiding RangeError/NaN
+  const parseSafeDate = (val?: string): { d: Date; ymd: string; timeStr: string } | null => {
+    if (!val) return null;
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return null;
+    const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    let timeStr = '';
+    try {
+      timeStr = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      timeStr = '';
+    }
+    return { d, ymd, timeStr };
+  };
+
   // Convert all items to unified calendar events
   const events: CalendarEventItem[] = useMemo(() => {
     const list: CalendarEventItem[] = [];
 
     // Follow-ups
-    followUps.forEach(fu => {
-      if (fu.dueDate) {
-        const d = new Date(fu.dueDate);
-        const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    (followUps || []).forEach(fu => {
+      const parsed = parseSafeDate(fu?.dueDate);
+      if (parsed) {
         list.push({
           id: `fu_${fu.id}`,
           type: 'FOLLOW_UP',
-          title: `[Chăm sóc] ${fu.followUpType}: ${fu.notes.slice(0, 30)}`,
-          customerName: fu.customerName,
-          dateStr: ymd,
-          timeStr: d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-          priority: fu.priority,
-          status: fu.status,
+          title: `[Chăm sóc] ${fu.followUpType || 'Liên hệ'}: ${(fu.notes || '').slice(0, 30)}`,
+          customerName: fu.customerName || 'Khách hàng',
+          dateStr: parsed.ymd,
+          timeStr: parsed.timeStr,
+          priority: fu.priority || 'MEDIUM',
+          status: fu.status || 'OPEN',
           originalEntity: fu,
         });
       }
     });
 
     // Rate Reviews
-    rateReviewTasks.forEach(rr => {
-      if (rr.dueAt) {
-        const d = new Date(rr.dueAt);
-        const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    (rateReviewTasks || []).forEach(rr => {
+      const parsed = parseSafeDate(rr?.dueAt);
+      if (parsed) {
         list.push({
           id: `rr_${rr.id}`,
           type: 'RATE_REVIEW',
-          title: `[Review giá] Tuyến ${rr.lane}`,
-          customerName: rr.customerName,
-          dateStr: ymd,
-          timeStr: d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          title: `[Review giá] Tuyến ${rr.lane || '—'}`,
+          customerName: rr.customerName || 'Khách hàng',
+          dateStr: parsed.ymd,
+          timeStr: parsed.timeStr,
           priority: 'HIGH',
-          status: rr.status,
+          status: rr.status || 'REVIEW_REQUIRED',
           originalEntity: rr,
         });
       }
     });
 
     // Quotation Expiries
-    quotes.forEach(q => {
-      const validityDate = q.terms?.validityDate || (q as any).validUntil;
+    (quotes || []).forEach(q => {
+      const validityDate = q?.terms?.validityDate || (q as any)?.validUntil;
       if (validityDate && (q.status === 'SENT' || q.status === 'DRAFT')) {
-        const d = new Date(validityDate);
-        const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        list.push({
-          id: `qe_${q.id}`,
-          type: 'QUOTE_EXPIRY',
-          title: `[Hết hạn BG] ${q.quoteNumber}`,
-          customerName: q.customer?.companyName || q.customer?.customerName || '',
-          dateStr: ymd,
-          status: 'EXPIRING',
-          originalEntity: q,
-        });
+        const parsed = parseSafeDate(validityDate);
+        if (parsed) {
+          list.push({
+            id: `qe_${q.id}`,
+            type: 'QUOTE_EXPIRY',
+            title: `[Hết hạn BG] ${q.quoteNumber || ''}`,
+            customerName: q.customer?.companyName || q.customer?.customerName || '',
+            dateStr: parsed.ymd,
+            status: 'EXPIRING',
+            originalEntity: q,
+          });
+        }
       }
     });
 
     // Contract Expiries
-    contracts.forEach(c => {
-      if (c.expiryDate && c.status === 'ACTIVE') {
-        const d = new Date(c.expiryDate);
-        const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        list.push({
-          id: `ce_${c.id}`,
-          type: 'CONTRACT_EXPIRY',
-          title: `[Hết hạn HĐ] ${c.contractNumber}`,
-          customerName: c.partyName,
-          dateStr: ymd,
-          status: 'EXPIRING',
-          originalEntity: c,
-        });
+    (contracts || []).forEach(c => {
+      if (c?.expiryDate && c.status === 'ACTIVE') {
+        const parsed = parseSafeDate(c.expiryDate);
+        if (parsed) {
+          list.push({
+            id: `ce_${c.id}`,
+            type: 'CONTRACT_EXPIRY',
+            title: `[Hết hạn HĐ] ${c.contractNumber || ''}`,
+            customerName: c.partyName || '',
+            dateStr: parsed.ymd,
+            status: 'EXPIRING',
+            originalEntity: c,
+          });
+        }
       }
     });
 

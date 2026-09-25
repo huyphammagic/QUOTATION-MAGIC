@@ -78,11 +78,18 @@ export const SalesFollowUpWorkspace: React.FC<SalesFollowUpWorkspaceProps> = ({
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const todayEnd = todayStart + 86400000;
 
-  const overdueCount = followUps.filter(f => f.status === 'OPEN' && new Date(f.dueDate).getTime() < todayStart).length;
-  const todayCount = followUps.filter(f => {
+  const overdueCount = followUps.filter(f => {
+    if (f.status !== 'OPEN' || !f.dueDate) return false;
     const t = new Date(f.dueDate).getTime();
-    return f.status === 'OPEN' && t >= todayStart && t < todayEnd;
+    return !isNaN(t) && t < todayStart;
   }).length;
+
+  const todayCount = followUps.filter(f => {
+    if (f.status !== 'OPEN' || !f.dueDate) return false;
+    const t = new Date(f.dueDate).getTime();
+    return !isNaN(t) && t >= todayStart && t < todayEnd;
+  }).length;
+
   const completedCount = followUps.filter(f => f.status === 'COMPLETED').length;
 
   const filteredFollowUps = followUps.filter(f => {
@@ -323,7 +330,8 @@ export const SalesFollowUpWorkspace: React.FC<SalesFollowUpWorkspaceProps> = ({
             </div>
           ) : (
             filteredFollowUps.map(fu => {
-              const isOverdue = fu.status === 'OPEN' && new Date(fu.dueDate).getTime() < todayStart;
+              const dueTime = fu.dueDate ? new Date(fu.dueDate).getTime() : NaN;
+              const isOverdue = fu.status === 'OPEN' && !isNaN(dueTime) && dueTime < todayStart;
               const isDone = fu.status === 'COMPLETED';
 
               return (
@@ -374,7 +382,9 @@ export const SalesFollowUpWorkspace: React.FC<SalesFollowUpWorkspaceProps> = ({
                           <span>
                             Hạn chót:{' '}
                             <strong className={isOverdue ? 'text-rose-600' : 'text-slate-800'}>
-                              {new Date(fu.dueDate).toLocaleString('vi-VN')}
+                              {fu.dueDate && !isNaN(new Date(fu.dueDate).getTime())
+                                ? new Date(fu.dueDate).toLocaleString('vi-VN')
+                                : (fu.dueDate || '—')}
                             </strong>
                           </span>
                         </div>

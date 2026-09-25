@@ -218,7 +218,11 @@ export const RateReviewWorkspace: React.FC<RateReviewWorkspaceProps> = ({
                     <div className="flex items-center gap-4 text-xs text-slate-500 mt-1">
                       <span>Khách hàng: <strong className="text-slate-800">{task.customerName}</strong></span>
                       {task.carrier && <span>Hãng tàu: <strong className="text-slate-700">{task.carrier}</strong></span>}
-                      <span>Hạn rà soát: <strong className="text-slate-700">{new Date(task.dueAt).toLocaleDateString('vi-VN')}</strong></span>
+                      <span>Hạn rà soát: <strong className="text-slate-700">
+                        {task.dueAt && !isNaN(new Date(task.dueAt).getTime())
+                          ? new Date(task.dueAt).toLocaleDateString('vi-VN')
+                          : (task.dueAt || '—')}
+                      </strong></span>
                     </div>
                   </div>
 
