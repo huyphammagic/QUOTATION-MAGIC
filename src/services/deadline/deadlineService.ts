@@ -29,13 +29,18 @@ import {
   DeadlinePriority,
   DeadlineSource,
   ActionWaitingReason,
-  ActionSubtask
+  ActionSubtask,
+  FollowUpChannel,
+  CustomerSentiment,
+  FollowUpTouchpointRecord
 } from '../../types/deadline';
 import { ShipmentRecord } from '../../types/shipment';
 import { QuoteData } from '../../types/logistics';
+import { logCustomerActivity } from '../crm/customerActivityService';
 
 const DEADLINES_COLLECTION = 'deadlines';
 const AUDIT_LOGS_COLLECTION = 'deadlineAuditLogs';
+const FOLLOW_UP_TOUCHPOINTS_COLLECTION = 'followUpTouchpoints';
 
 // In-memory cache for ultra-responsive UI navigation and optimistic updates
 const deadlineMemoryCache = new Map<string, DeadlineEntity>();
@@ -1266,4 +1271,370 @@ export async function getBusinessActionAuditTrail(
     return [];
   }
 }
+
+// ============================================================================
+// PHASE 49: BUSINESS ACTION EXECUTION + FOLLOW-UP CONTROL CENTER SERVICES
+// ============================================================================
+
+export interface LogTouchpointParams {
+  actionId: string;
+  companyId: string;
+  channel: FollowUpChannel;
+  sentiment: CustomerSentiment;
+  discussionSummary: string;
+  contactPerson?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  nextStepAction?: string;
+  nextFollowUpDue?: string; // ISO 8601
+  user: { uid: string; displayName?: string; email?: string };
+  syncToCrm?: boolean;
+  updateActionStatus?: boolean;
+}
+
+/**
+ * Log an interactive follow-up touchpoint for an action, update its cadence,
+ * and synchronize to CRM Customer 360 Activity Log & Deadline Engine.
+ */
+export async function logBusinessActionTouchpoint(
+  params: LogTouchpointParams
+): Promise<FollowUpTouchpointRecord> {
+  const {
+    actionId,
+    companyId,
+    channel,
+    sentiment,
+    discussionSummary,
+    contactPerson,
+    contactPhone,
+    contactEmail,
+    nextStepAction,
+    nextFollowUpDue,
+    user,
+    syncToCrm = true,
+  } = params;
+
+  const effectiveCompanyId = companyId || 'default-company';
+  const nowIso = new Date().toISOString();
+  const touchpointId = `tp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+  // 1. Retrieve the existing action
+  let action: DeadlineEntity | null = deadlineMemoryCache.get(actionId) || null;
+  if (!action && db) {
+    const snap = await getDoc(doc(db, DEADLINES_COLLECTION, actionId));
+    if (snap.exists()) {
+      action = { id: snap.id, ...snap.data() } as DeadlineEntity;
+    }
+  }
+
+  const record: FollowUpTouchpointRecord = {
+    id: touchpointId,
+    actionId,
+    companyId: effectiveCompanyId,
+    channel,
+    sentiment,
+    contactPerson: contactPerson || action?.customerName,
+    contactPhone,
+    contactEmail,
+    discussionSummary,
+    nextStepAction,
+    nextFollowUpDue,
+    createdByName: user.displayName || user.email || 'Logistics Operator',
+    createdByUid: user.uid,
+    createdAt: nowIso,
+    relatedEntityId: action?.entityId,
+    relatedEntityType: action?.entityType,
+    relatedEntityNumber: action?.entityNumber,
+    customerName: action?.customerName,
+    quotationAmount: action?.relatedData?.totalAmount || action?.relatedData?.grandTotal,
+    quotationCurrency: action?.relatedData?.currency || 'USD',
+  };
+
+  // 2. Persist touchpoint to Firestore
+  if (db) {
+    try {
+      const tpRef = doc(db, FOLLOW_UP_TOUCHPOINTS_COLLECTION, touchpointId);
+      const cleanData: Record<string, any> = { ...record };
+      Object.keys(cleanData).forEach(k => cleanData[k] === undefined && delete cleanData[k]);
+      await setDoc(tpRef, cleanData);
+    } catch (e) {
+      console.warn('[deadlineService] Error saving touchpoint record:', e);
+    }
+  }
+
+  // 3. Update the parent action's state, next cadence, and waiting reasons
+  const newTouchpointCount = (action?.touchpointsCount || 0) + 1;
+  const updates: Partial<DeadlineEntity> = {
+    touchpointsCount: newTouchpointCount,
+    lastTouchpointAt: nowIso,
+    lastTouchpointChannel: channel,
+    customerSentiment: sentiment,
+    updatedAt: nowIso,
+    updatedBy: user.uid,
+  };
+
+  if (nextFollowUpDue) {
+    updates.nextFollowUpDue = nextFollowUpDue;
+    updates.dueAt = nextFollowUpDue;
+  }
+
+  // Sentiment-driven smart status & waiting reason routing
+  if (sentiment === 'READY_TO_BOOK') {
+    updates.status = 'IN_PROGRESS';
+    updates.waitingReason = 'NONE';
+    updates.waitingReasonNote = 'Khách đồng ý chốt, đang xúc tiến booking/hợp đồng';
+  } else if (sentiment === 'PRICE_SENSITIVE') {
+    updates.status = 'WAITING';
+    updates.waitingReason = 'RATE';
+    updates.waitingReasonNote = `Khách chê giá cao: ${discussionSummary.slice(0, 80)}`;
+  } else if (sentiment === 'NEED_REVISION') {
+    updates.status = 'WAITING';
+    updates.waitingReason = 'INTERNAL_APPROVAL';
+    updates.waitingReasonNote = `Cần sửa báo giá: ${discussionSummary.slice(0, 80)}`;
+  } else if (sentiment === 'WAITING_MANAGEMENT') {
+    updates.status = 'WAITING';
+    updates.waitingReason = 'CUSTOMER';
+    updates.waitingReasonNote = 'Chờ sếp/ban giám đốc khách hàng phê duyệt';
+  } else if (sentiment === 'LOST') {
+    updates.status = 'CANCELLED';
+    updates.waitingReason = 'OTHER';
+    updates.waitingReasonNote = `Mất deal: ${discussionSummary.slice(0, 80)}`;
+  } else if (action && action.status === 'OPEN') {
+    updates.status = 'IN_PROGRESS';
+  }
+
+  if (action) {
+    const merged = { ...action, ...updates };
+    deadlineMemoryCache.set(actionId, merged);
+  }
+
+  if (db) {
+    try {
+      await updateDoc(doc(db, DEADLINES_COLLECTION, actionId), updates as any);
+    } catch (e) {
+      console.warn('[deadlineService] Error updating deadline action after touchpoint:', e);
+    }
+  }
+
+  // 4. Audit Log
+  await recordDeadlineAudit(
+    actionId,
+    effectiveCompanyId,
+    'UPDATED',
+    user,
+    { sentiment: action?.customerSentiment, touchpointsCount: action?.touchpointsCount },
+    { sentiment, channel, nextFollowUpDue, touchpointsCount: newTouchpointCount },
+    `Ghi nhận Follow-up [${channel}]: ${discussionSummary.slice(0, 60)}`
+  );
+
+  // 5. CRM Customer 360 Activity Sync
+  if (syncToCrm && action?.customerName) {
+    try {
+      const crmActivityType = 
+        channel === 'CALL' ? 'CALL' :
+        channel === 'EMAIL' ? 'EMAIL' :
+        channel === 'MEETING' ? 'MEETING' : 'NOTE_ADDED';
+
+      await logCustomerActivity({
+        companyId: effectiveCompanyId,
+        customerId: action.relatedCustomerId || action.entityId || 'crm-client',
+        customerName: action.customerName,
+        activityType: crmActivityType,
+        occurredAt: nowIso,
+        createdBy: user.email || user.uid,
+        createdByName: user.displayName || user.email || 'Operator',
+        relatedEntityType: action.entityType as any,
+        relatedEntityId: action.entityId,
+        relatedEntityNumber: action.entityNumber,
+        summary: `Follow-up [${channel}]: ${discussionSummary.slice(0, 100)}`,
+        details: discussionSummary,
+        nextAction: nextStepAction,
+        nextActionDue: nextFollowUpDue,
+        visibility: 'INTERNAL',
+      });
+    } catch (err) {
+      console.warn('[deadlineService] Failed to sync touchpoint to CRM activity:', err);
+    }
+  }
+
+  return record;
+}
+
+/**
+ * Retrieve touchpoint history for a specific business action
+ */
+export async function getBusinessActionTouchpoints(
+  actionId: string,
+  companyId: string
+): Promise<FollowUpTouchpointRecord[]> {
+  const effectiveCompanyId = companyId || 'default-company';
+  if (!db) return [];
+
+  try {
+    const q = query(
+      collection(db, FOLLOW_UP_TOUCHPOINTS_COLLECTION),
+      where('companyId', '==', effectiveCompanyId),
+      where('actionId', '==', actionId),
+      limit(50)
+    );
+    const snap = await getDocs(q);
+    const list: FollowUpTouchpointRecord[] = [];
+    snap.forEach((d) => list.push({ id: d.id, ...d.data() } as FollowUpTouchpointRecord));
+    list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return list;
+  } catch (err) {
+    console.warn('[deadlineService] Error fetching action touchpoints:', err);
+    return [];
+  }
+}
+
+/**
+ * Retrieve all recent follow-up touchpoints across the entire company
+ */
+export async function getCompanyTouchpoints(
+  companyId: string,
+  maxLimit: number = 100
+): Promise<FollowUpTouchpointRecord[]> {
+  const effectiveCompanyId = companyId || 'default-company';
+  if (!db) return [];
+
+  try {
+    const q = query(
+      collection(db, FOLLOW_UP_TOUCHPOINTS_COLLECTION),
+      where('companyId', '==', effectiveCompanyId),
+      limit(maxLimit)
+    );
+    const snap = await getDocs(q);
+    const list: FollowUpTouchpointRecord[] = [];
+    snap.forEach((d) => list.push({ id: d.id, ...d.data() } as FollowUpTouchpointRecord));
+    list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return list;
+  } catch (err) {
+    console.warn('[deadlineService] Error fetching company touchpoints:', err);
+    return [];
+  }
+}
+
+/**
+ * Rapid Cadence Advancement: Shift dueAt by specified hours (+24h, +48h, +72h, +168h)
+ */
+export async function quickCadenceAdvance(
+  actionId: string,
+  companyId: string,
+  hours: number,
+  user: { uid: string; displayName?: string; email?: string },
+  note: string = 'Lên lịch lại theo chu kỳ Follow-Up'
+): Promise<boolean> {
+  const effectiveCompanyId = companyId || 'default-company';
+  const now = new Date();
+  const nextDueDate = new Date(now.getTime() + hours * 60 * 60 * 1000).toISOString();
+  const nowIso = now.toISOString();
+
+  const updates: Partial<DeadlineEntity> = {
+    dueAt: nextDueDate,
+    nextFollowUpDue: nextDueDate,
+    updatedAt: nowIso,
+    updatedBy: user.uid,
+  };
+
+  const prev = deadlineMemoryCache.get(actionId);
+  if (prev) {
+    deadlineMemoryCache.set(actionId, { ...prev, ...updates });
+  }
+
+  if (db) {
+    await updateDoc(doc(db, DEADLINES_COLLECTION, actionId), updates as any);
+  }
+
+  await recordDeadlineAudit(
+    actionId,
+    effectiveCompanyId,
+    'UPDATED',
+    user,
+    { dueAt: prev?.dueAt },
+    { dueAt: nextDueDate, hoursAdvanced: hours },
+    `${note} (+${hours >= 24 ? `${Math.round(hours / 24)} ngày` : `${hours}h`})`
+  );
+
+  return true;
+}
+
+/**
+ * Phase 49 KPI Metrics for Follow-Up Control Center
+ */
+export interface FollowUpControlMetrics {
+  totalActive: number;
+  overdue: number;
+  dueToday: number;
+  upcoming7Days: number;
+  priceObjections: number;
+  warmLeads: number;
+  completedWon: number;
+  lostCount: number;
+}
+
+export async function calculateFollowUpControlMetrics(
+  actions: DeadlineEntity[]
+): Promise<FollowUpControlMetrics> {
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const endOfToday = startOfToday + 86400000;
+  const in7Days = endOfToday + 6 * 86400000;
+
+  let overdue = 0;
+  let dueToday = 0;
+  let upcoming7Days = 0;
+  let priceObjections = 0;
+  let warmLeads = 0;
+  let completedWon = 0;
+  let lostCount = 0;
+  let totalActive = 0;
+
+  actions.forEach((a) => {
+    const isCompleted = a.status === 'COMPLETED';
+    const isCancelled = a.status === 'CANCELLED';
+
+    if (isCompleted) {
+      completedWon++;
+      return;
+    }
+    if (isCancelled || a.customerSentiment === 'LOST') {
+      lostCount++;
+      return;
+    }
+
+    totalActive++;
+
+    if (a.customerSentiment === 'PRICE_SENSITIVE' || a.waitingReason === 'RATE') {
+      priceObjections++;
+    }
+
+    if (a.customerSentiment === 'VERY_INTERESTED' || a.customerSentiment === 'READY_TO_BOOK') {
+      warmLeads++;
+    }
+
+    const dueTime = new Date(a.dueAt).getTime();
+    if (!isNaN(dueTime)) {
+      if (dueTime < startOfToday) {
+        overdue++;
+      } else if (dueTime >= startOfToday && dueTime < endOfToday) {
+        dueToday++;
+      } else if (dueTime >= endOfToday && dueTime <= in7Days) {
+        upcoming7Days++;
+      }
+    }
+  });
+
+  return {
+    totalActive,
+    overdue,
+    dueToday,
+    upcoming7Days,
+    priceObjections,
+    warmLeads,
+    completedWon,
+    lostCount,
+  };
+}
+
 

@@ -343,6 +343,28 @@
         "createdAt": { "type": "string" },
         "updatedAt": { "type": "string" }
       }
+    },
+    "FollowUpTouchpoint": {
+      "collection": "followUpTouchpoints",
+      "fields": {
+        "id": { "type": "string" },
+        "actionId": { "type": "string" },
+        "companyId": { "type": "string" },
+        "channel": { "type": "string" },
+        "sentiment": { "type": "string" },
+        "contactPerson": { "type": "string" },
+        "contactPhone": { "type": "string" },
+        "contactEmail": { "type": "string" },
+        "discussionSummary": { "type": "string" },
+        "nextStepAction": { "type": "string" },
+        "nextFollowUpDue": { "type": "string" },
+        "createdByName": { "type": "string" },
+        "createdByUid": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "customerName": { "type": "string" },
+        "quotationAmount": { "type": "number" },
+        "quotationCurrency": { "type": "string" }
+      }
     }
   }
 }

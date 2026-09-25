@@ -240,11 +240,15 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // Phase 44: Smart Logistics Deadline & Action Intelligence Engine
+    // Phase 44 & 48: Smart Logistics Deadline & Action Intelligence Engine
     match /deadlines/{deadlineId} {
       allow read, write: if true;
     }
     match /deadlineAuditLogs/{logId} {
+      allow read, write: if true;
+    }
+    // Phase 49: Follow-Up Touchpoints & Cadence Control
+    match /followUpTouchpoints/{touchpointId} {
       allow read, write: if true;
     }
 

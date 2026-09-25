@@ -22,7 +22,9 @@ import {
   PauseCircle,
   FileText,
   Ship,
-  TrendingUp
+  TrendingUp,
+  Phone,
+  MessageSquare
 } from 'lucide-react';
 import { 
   DeadlineEntity, 
@@ -42,6 +44,8 @@ import { CreateBusinessActionModal } from './CreateBusinessActionModal';
 import { ActionExecutionModal } from './ActionExecutionModal';
 import { SnoozeDeadlineModal } from './SnoozeDeadlineModal';
 import { DeadlineCalendarView } from './DeadlineCalendarView';
+import { FollowUpControlCenter } from './FollowUpControlCenter';
+import { LogFollowUpModal } from './LogFollowUpModal';
 import { ACTION_CENTER_I18N } from '../../i18n/actionCenter';
 
 interface SmartDeadlineWorkspaceProps {
@@ -59,6 +63,7 @@ interface SmartDeadlineWorkspaceProps {
 
 export type DeadlineTab = 
   | 'TODAY_OPS' 
+  | 'FOLLOW_UP_CONTROL'
   | 'MY_ACTIONS' 
   | 'TEAM_ACTIONS' 
   | 'WAITING_QUEUES'
@@ -105,6 +110,7 @@ export const SmartDeadlineWorkspace: React.FC<SmartDeadlineWorkspaceProps> = ({
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedActionForExecution, setSelectedActionForExecution] = useState<DeadlineEntity | null>(null);
   const [snoozeModalTarget, setSnoozeModalTarget] = useState<DeadlineEntity | null>(null);
+  const [followUpModalTarget, setFollowUpModalTarget] = useState<DeadlineEntity | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -352,6 +358,23 @@ export const SmartDeadlineWorkspace: React.FC<SmartDeadlineWorkspaceProps> = ({
           </button>
 
           <button
+            onClick={() => setActiveTab('FOLLOW_UP_CONTROL')}
+            className={`px-4 py-3 text-xs font-bold rounded-t-xl transition-all flex items-center gap-2 border-b-2 ${
+              activeTab === 'FOLLOW_UP_CONTROL'
+                ? 'border-indigo-600 text-indigo-700 bg-white shadow-2xs font-black'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100/60'
+            }`}
+          >
+            <Phone className="w-4 h-4 text-blue-600" />
+            <span>{isVi ? 'Trung Tâm Follow-Up' : 'Follow-Up Hub'}</span>
+            {(metrics.overdue + metrics.dueToday) > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-blue-100 text-blue-800">
+                {metrics.overdue + metrics.dueToday}
+              </span>
+            )}
+          </button>
+
+          <button
             onClick={() => setActiveTab('MY_ACTIONS')}
             className={`px-4 py-3 text-xs font-bold rounded-t-xl transition-all flex items-center gap-2 border-b-2 ${
               activeTab === 'MY_ACTIONS'
@@ -574,7 +597,22 @@ export const SmartDeadlineWorkspace: React.FC<SmartDeadlineWorkspaceProps> = ({
       )}
 
       {/* 6. Main Content Area */}
-      {activeTab === 'CALENDAR' ? (
+      {activeTab === 'FOLLOW_UP_CONTROL' ? (
+        <FollowUpControlCenter
+          actions={deadlines}
+          companyId={companyId}
+          companyName={companyName}
+          user={user}
+          onRefresh={loadData}
+          onOpenQuotation={onOpenQuotation}
+          onOpenShipment={onOpenShipment}
+          onOpenCustomer={onOpenCustomer}
+          onOpenRateHub={onOpenRateHub}
+          onOpenOpportunity={onOpenOpportunity}
+          onOpenDecisionWorkspace={onOpenDecisionWorkspace}
+          isVi={isVi}
+        />
+      ) : activeTab === 'CALENDAR' ? (
         <DeadlineCalendarView
           deadlines={deadlines}
           onOpenShipment={onOpenShipment}
@@ -745,6 +783,17 @@ export const SmartDeadlineWorkspace: React.FC<SmartDeadlineWorkspaceProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2">
+                      {!isDone && (
+                        <button
+                          onClick={() => setFollowUpModalTarget(item)}
+                          className="px-2.5 py-1.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-1"
+                          title="Ghi nhận cuộc gọi, email, trao đổi với khách hàng"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                          <span>{isVi ? 'Follow-up' : 'Touchpoint'}</span>
+                        </button>
+                      )}
+
                       {/* Deep Execution CTA */}
                       <button
                         onClick={() => setSelectedActionForExecution(item)}
@@ -836,6 +885,17 @@ export const SmartDeadlineWorkspace: React.FC<SmartDeadlineWorkspaceProps> = ({
         onSnoozed={() => loadData()}
         deadline={snoozeModalTarget}
         user={user}
+      />
+
+      {/* 4. Log Follow-Up Touchpoint Modal */}
+      <LogFollowUpModal
+        isOpen={Boolean(followUpModalTarget)}
+        onClose={() => setFollowUpModalTarget(null)}
+        action={followUpModalTarget}
+        companyId={companyId}
+        user={user}
+        onSuccess={() => loadData()}
+        isVi={isVi}
       />
 
     </div>

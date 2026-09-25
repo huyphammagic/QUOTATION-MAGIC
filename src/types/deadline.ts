@@ -180,6 +180,14 @@ export interface DeadlineEntity {
   waitingReasonNote?: string;
   subtasks?: ActionSubtask[];
   
+  // Phase 49: Follow-up Execution & Cadence Control
+  touchpointsCount?: number;
+  lastTouchpointAt?: string;
+  lastTouchpointChannel?: FollowUpChannel;
+  customerSentiment?: CustomerSentiment;
+  nextFollowUpDue?: string;
+  followUpCadenceStep?: number;
+  
   // Relational Entities Cross-Links
   relatedCustomerId?: string;
   relatedQuotationId?: string;
@@ -193,6 +201,52 @@ export interface DeadlineEntity {
   relatedTaskId?: string;
 
   relatedData?: Record<string, any>;
+}
+
+// Phase 49: Follow-Up & Touchpoint Channels
+export type FollowUpChannel = 
+  | 'CALL' 
+  | 'EMAIL' 
+  | 'MEETING' 
+  | 'CHAT_ZALO' 
+  | 'WHATSAPP' 
+  | 'SYSTEM_NOTE' 
+  | 'SMS';
+
+// Phase 49: Customer Sentiment & Business Feedback
+export type CustomerSentiment = 
+  | 'VERY_INTERESTED'       // Khách hàng quan tâm cao, chuẩn bị chốt
+  | 'INTERESTED'            // Quan tâm, đang xem xét báo giá
+  | 'PRICE_SENSITIVE'       // Phản hồi giá cao / cần chiết khấu thêm
+  | 'COMPARING_COMPETITORS' // Đang so sánh bên thứ ba
+  | 'NEED_REVISION'         // Cần điều chỉnh dịch vụ / đổi tuyến / đổi phụ phí
+  | 'WAITING_MANAGEMENT'    // Đang chờ sếp duyệt ngân sách
+  | 'READY_TO_BOOK'         // Đồng ý chốt deal, yêu cầu gửi booking / hợp đồng
+  | 'POSTPONED'             // Tạm hoãn kế hoạch xuất nhập khẩu
+  | 'LOST'                  // Đã chọn đối thủ hoặc hủy lô hàng
+  | 'UNRESPONSIVE';         // Chưa liên hệ được / không nghe máy
+
+export interface FollowUpTouchpointRecord {
+  id: string;
+  actionId: string;
+  companyId: string;
+  channel: FollowUpChannel;
+  sentiment: CustomerSentiment;
+  contactPerson?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  discussionSummary: string;
+  nextStepAction?: string;
+  nextFollowUpDue?: string;
+  createdByName: string;
+  createdByUid: string;
+  createdAt: string;
+  relatedEntityId?: string;
+  relatedEntityType?: DeadlineEntityType;
+  relatedEntityNumber?: string;
+  customerName?: string;
+  quotationAmount?: number;
+  quotationCurrency?: string;
 }
 
 export type BusinessActionEntity = DeadlineEntity;
