@@ -13,54 +13,48 @@ import {
 } from '../utils/userPreferences';
 import { subscribeToUserPreferences } from '../services/firebase/firestoreService';
 import { 
-  Folder, 
-  FolderOpen, 
   ChevronDown, 
   ChevronRight, 
   Building2, 
   ShieldCheck, 
   UserCheck, 
   CreditCard, 
-  Eye, 
   Settings, 
   FileText, 
   Plus, 
   Printer, 
   Users, 
   Receipt, 
-  Coins, 
   Database, 
   Ship, 
   Sparkles,
   Layers,
   History,
-  FileDown,
   Layout,
-  Archive,
   Mail,
   Send,
   Calendar, 
   LayoutDashboard,
-  TrendingUp,
-  Sliders,
-  Search,
-  Star,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Plane,
-  Truck,
-  FileCheck2,
-  Anchor,
-  Box,
-  Lock,
-  Compass,
-  CheckCircle2,
-  Clock,
-  ExternalLink,
-  ChevronLeft,
-  Package,
-  Radar,
-  SlidersHorizontal
+  TrendingUp, 
+  Sliders, 
+  Search, 
+  Star, 
+  PanelLeftClose, 
+  PanelLeftOpen, 
+  FileCheck2, 
+  Anchor, 
+  Box, 
+  Lock, 
+  Compass, 
+  CheckCircle2, 
+  Clock, 
+  ChevronLeft, 
+  Package, 
+  Radar, 
+  SlidersHorizontal,
+  X,
+  FileCheck,
+  Check
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -119,6 +113,29 @@ export interface SidebarProps {
   onOpenAuthModal?: () => void;
 }
 
+export type SidebarGroupKey = 
+  | 'quotation' 
+  | 'operations' 
+  | 'pricing' 
+  | 'documents' 
+  | 'masterData' 
+  | 'analytics' 
+  | 'system';
+
+export interface NavItem {
+  id: string;
+  label: string;
+  icon: React.FC<{ className?: string }>;
+  group: SidebarGroupKey;
+  action: () => void;
+  badge?: string | number | null;
+  badgeTone?: 'default' | 'amber' | 'emerald' | 'rose' | 'sky';
+  isCta?: boolean;
+  shortcut?: string;
+  restricted?: boolean;
+  requiredRoleDesc?: string;
+}
+
 export const Sidebar: React.FC<SidebarProps> = ({
   company,
   savedQuotes,
@@ -144,9 +161,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenPreview,
   onOpenDocumentHistory,
   onOpenTemplateBuilder,
-  onOpenGeneratePdf,
-  onOpenSendModal,
-  onOpenCommunication,
   onOpenDocumentCenter,
   onOpenSmartQuotationWorkspace,
   onOpenEmailTemplates,
@@ -158,13 +172,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenProfitIntelligence,
   onOpenPricingPolicies,
   onOpenMasterDataReference,
-  onSelectTransportMode,
   onOpenShipmentWorkspace,
   onOpenControlTower,
   onOpenActionCenter,
-  shipmentsCount,
-  exceptionsCount,
-  deadlinesCount,
+  shipmentsCount = 0,
+  exceptionsCount = 0,
+  deadlinesCount = 0,
   currentUserRole = 'ADMIN',
   onRoleChange,
   language = 'vi',
@@ -174,7 +187,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onAccessDenied,
   onOpenAuthModal,
 }) => {
-  // Collapsed state (icon-only mode)
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => loadSavedSidebarCollapsed());
   const [searchQuery, setSearchQuery] = useState('');
   const [activeRole, setActiveRole] = useState<UserRole>(currentUserRole);
@@ -182,7 +194,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [showRoleSelector, setShowRoleSelector] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Synchronize incoming role or language props
   useEffect(() => {
     setActiveRole(currentUserRole);
   }, [currentUserRole]);
@@ -193,30 +204,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const t = NAVIGATION_I18N[activeLang];
 
-  // Pinned favorite items IDs - 100% persisted across page reloads & cloud sync
+  // Pinned favorites
   const [pinnedIds, setPinnedIds] = useState<string[]>(() => loadSavedPinnedFavorites());
 
-  // Collapsible Group states - persisted
-  const [expandedGroups, setExpandedGroups] = useState<{ [key: string]: boolean }>(() => loadSavedExpandedGroups());
+  // Default expanded groups: clean logical breakdown
+  const [expandedGroups, setExpandedGroups] = useState<{ [key: string]: boolean }>(() => {
+    const saved = loadSavedExpandedGroups();
+    return Object.keys(saved).length > 0 
+      ? saved 
+      : { 
+          quotation: true, 
+          operations: true, 
+          pricing: true, 
+          documents: false, 
+          masterData: false, 
+          analytics: false, 
+          system: false 
+        };
+  });
 
-  // Auto-expand group containing active route if activeRouteId is set
-  useEffect(() => {
-    if (activeRouteId) {
-      const activeItem = allNavItems.find(i => i.id === activeRouteId);
-      if (activeItem && activeItem.group) {
-        setExpandedGroups(prev => {
-          if (!prev[activeItem.group]) {
-            const next = { ...prev, [activeItem.group]: true };
-            persistExpandedGroups(next);
-            return next;
-          }
-          return prev;
-        });
-      }
-    }
-  }, [activeRouteId]);
-
-  // Listen for favorite updates across tabs and from real-time cloud Firestore
+  // Listen for favorite updates across tabs and cloud sync
   useEffect(() => {
     const handleFavoritesChanged = (e: any) => {
       if (Array.isArray(e.detail)) {
@@ -238,7 +245,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     window.addEventListener('logistics_pinned_favorites_changed', handleFavoritesChanged);
     window.addEventListener('storage', handleStorageChange);
 
-    // Live cloud listener for user preferences across all devices
     const unsubCloud = subscribeToUserPreferences((prefs) => {
       if (prefs && Array.isArray(prefs.pinnedNavIds)) {
         setPinnedIds(current => {
@@ -297,7 +303,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     });
   };
 
-  // Keyboard shortcut Ctrl+K to search navigation & Escape to close mobile
+  // Keyboard shortcut Ctrl+K to search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -314,7 +320,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpenMobile, onCloseMobile, isCollapsed, searchQuery]);
 
-  // Real-time counter calculations from loaded memory (Zero fake badges!)
+  // Real-time status counters
   const pendingApprovalCount = useMemo(() => {
     return savedQuotes.filter(q => q.status === 'PENDING_APPROVAL').length;
   }, [savedQuotes]);
@@ -327,463 +333,389 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return savedQuotes.filter(q => q.status === 'SENT' || q.status === 'ISSUED').length;
   }, [savedQuotes]);
 
-  // Permissions validation based on current role
   const permissions = ROLE_PERMISSIONS[activeRole] || [];
   const canViewProfitability = permissions.includes('profitability.view');
   const isAdminOrManager = activeRole === 'ADMIN' || activeRole === 'SALES_MANAGER';
 
-  // Navigation Items Definition
-  interface NavItem {
-    id: string;
-    label: string;
-    icon: React.FC<{ className?: string }>;
-    group: 'main' | 'quotation' | 'pricing' | 'masterData' | 'operations' | 'analytics' | 'system';
-    action: () => void;
-    badge?: string | number | null;
-    badgeColor?: string;
-    isCta?: boolean;
-    shortcut?: string;
-    restricted?: boolean;
-    requiredRoleDesc?: string;
-  }
-
+  // Navigation Items - Structured for Enterprise Logistics
   const allNavItems: NavItem[] = [
-    // --- MAIN ---
-    {
-      id: 'main_dashboard',
-      label: t.analyticsDashboard,
-      icon: LayoutDashboard,
-      group: 'main',
-      action: () => onOpenDashboard && onOpenDashboard('OVERVIEW'),
-      badge: 'KPIs',
-      badgeColor: 'bg-blue-600/80 text-blue-100',
-    },
-
-    // --- QUOTATION ---
+    // === 1. BÁO GIÁ & THƯƠNG MẠI (QUOTATION & COMMERCIAL) ===
     {
       id: 'smart_quotation_workspace',
-      label: language === 'vi' ? 'Workspace Báo Giá Thông Minh' : 'Smart Quotation Workspace',
+      label: activeLang === 'vi' ? 'Bàn Làm Việc Báo Giá' : 'Quotation Workbench',
       icon: Sparkles,
       group: 'quotation',
       action: () => onOpenSmartQuotationWorkspace && onOpenSmartQuotationWorkspace(),
-      badge: 'Phase 20',
-      badgeColor: 'bg-indigo-600 text-white font-bold',
-    },
-    {
-      id: 'quotation_new',
-      label: t.createQuotation,
-      icon: Plus,
-      group: 'quotation',
-      action: onNewQuote,
-      isCta: true,
-      shortcut: 'Ctrl+N',
     },
     {
       id: 'quotations_all',
-      label: t.allQuotations,
+      label: activeLang === 'vi' ? 'Tất Cả Báo Giá' : 'All Quotations',
       icon: FileText,
       group: 'quotation',
       action: () => onOpenSavedQuotes('ALL'),
       badge: savedQuotes.length > 0 ? savedQuotes.length : null,
-      badgeColor: 'bg-slate-800 text-slate-200 border border-slate-700',
+      badgeTone: 'default',
     },
     {
       id: 'quotations_draft',
-      label: t.drafts,
+      label: activeLang === 'vi' ? 'Bản Nháp' : 'Draft Quotes',
       icon: Clock,
       group: 'quotation',
       action: () => onOpenSavedQuotes('DRAFT'),
       badge: draftsCount > 0 ? draftsCount : null,
-      badgeColor: 'bg-amber-500/20 text-amber-300 border border-amber-500/40',
+      badgeTone: 'default',
     },
     {
       id: 'quotations_pending',
-      label: t.pendingApproval,
+      label: activeLang === 'vi' ? 'Chờ Phê Duyệt' : 'Pending Approval',
       icon: CheckCircle2,
       group: 'quotation',
       action: () => onOpenSavedQuotes('PENDING_APPROVAL'),
       badge: pendingApprovalCount > 0 ? pendingApprovalCount : null,
-      badgeColor: 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40',
+      badgeTone: pendingApprovalCount > 0 ? 'amber' : 'default',
     },
     {
       id: 'quotations_sent',
-      label: t.sentQuotations,
+      label: activeLang === 'vi' ? 'Đã Gửi Khách Hàng' : 'Sent Quotations',
       icon: Send,
       group: 'quotation',
       action: () => onOpenSavedQuotes('SENT'),
       badge: sentCount > 0 ? sentCount : null,
-      badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40',
+      badgeTone: 'emerald',
     },
     {
-      id: 'quotation_preview',
-      label: activeLang === 'vi' ? 'Xem Trước Bản In (A4)' : 'Print Preview (A4)',
-      icon: Printer,
+      id: 'opportunity_radar',
+      label: activeLang === 'vi' ? 'Radar Cơ Hội Kinh Doanh' : 'Opportunity Radar',
+      icon: Radar,
       group: 'quotation',
-      action: () => onOpenPreview && onOpenPreview(),
+      action: () => onOpenOpportunityRadar && onOpenOpportunityRadar(),
     },
     {
-      id: 'quotation_snapshots',
-      label: t.quoteSnapshots,
-      icon: Archive,
+      id: 'decision_workspace',
+      label: activeLang === 'vi' ? 'Phòng Quyết Định & Kịch Bản' : 'Decision Workspace',
+      icon: SlidersHorizontal,
       group: 'quotation',
-      action: () => onOpenDocumentHistory && onOpenDocumentHistory(),
-    },
-    {
-      id: 'quotation_templates',
-      label: t.quoteTemplates,
-      icon: Layout,
-      group: 'quotation',
-      action: () => onOpenTemplateBuilder && onOpenTemplateBuilder(),
-    },
-    {
-      id: 'quotation_send',
-      label: activeLang === 'vi' ? 'Gửi Email Báo Giá' : 'Send Quote Email',
-      icon: Mail,
-      group: 'quotation',
-      action: () => onOpenSendModal && onOpenSendModal(),
-    },
-    {
-      id: 'quotation_communication',
-      label: t.communicationCenter,
-      icon: ExternalLink,
-      group: 'quotation',
-      action: () => onOpenCommunication && onOpenCommunication(),
-    },
-    {
-      id: 'quotation_document_center',
-      label: activeLang === 'vi' ? 'Trung Tâm Tài Liệu & Giao Tiếp' : 'Document & Comm Control Center',
-      icon: Layers,
-      group: 'quotation',
-      action: () => onOpenDocumentCenter && onOpenDocumentCenter(),
-      badge: 'Phase 40',
-      badgeColor: 'bg-blue-600/80 text-white font-bold',
-    },
-    {
-      id: 'quotation_email_templates',
-      label: t.emailTemplates,
-      icon: FileText,
-      group: 'quotation',
-      action: () => onOpenEmailTemplates && onOpenEmailTemplates(),
+      action: () => onOpenDecisionWorkspace && onOpenDecisionWorkspace(),
     },
     {
       id: 'quotation_followup',
-      label: t.followUpSchedule,
+      label: activeLang === 'vi' ? 'Lịch Chăm Sóc Khách' : 'Follow-up Schedule',
       icon: Calendar,
       group: 'quotation',
       action: () => onOpenFollowUps && onOpenFollowUps(),
     },
+
+    // === 2. ĐIỀU HÀNH & LÔ HÀNG (OPERATIONS & CONTROL TOWER) ===
     {
-      id: 'opportunity_radar',
-      label: language === 'vi' ? 'Radar Cơ Hội Kinh Doanh' : 'Opportunity Radar',
+      id: 'ops_control_tower',
+      label: activeLang === 'vi' ? 'Tháp Điều Hành Logistics' : 'Control Tower',
       icon: Radar,
-      group: 'quotation',
-      action: () => onOpenOpportunityRadar && onOpenOpportunityRadar(),
-      badge: 'Phase 46',
-      badgeColor: 'bg-indigo-600/90 text-white font-bold',
+      group: 'operations',
+      action: () => onOpenControlTower && onOpenControlTower(),
+      badge: exceptionsCount > 0 ? `${exceptionsCount} cảnh báo` : undefined,
+      badgeTone: exceptionsCount > 0 ? 'rose' : 'default',
     },
     {
-      id: 'decision_workspace',
-      label: language === 'vi' ? 'Phòng Quyết Định & Kịch Bản' : 'Decision Workspace',
-      icon: SlidersHorizontal,
-      group: 'quotation',
-      action: () => onOpenDecisionWorkspace && onOpenDecisionWorkspace(),
-      badge: 'Phase 47',
-      badgeColor: 'bg-gradient-to-r from-indigo-500 to-blue-600 text-white font-bold',
+      id: 'ops_shipments',
+      label: activeLang === 'vi' ? 'Điều Hành Lô Hàng' : 'Shipment Operations',
+      icon: Package,
+      group: 'operations',
+      action: () => onOpenShipmentWorkspace && onOpenShipmentWorkspace(),
+      badge: shipmentsCount > 0 ? shipmentsCount : undefined,
+      badgeTone: 'sky',
+    },
+    {
+      id: 'ops_action_center',
+      label: activeLang === 'vi' ? 'Hạn Chót & Hành Động' : 'Deadline & Action Center',
+      icon: Clock,
+      group: 'operations',
+      action: () => onOpenActionCenter && onOpenActionCenter(),
+      badge: deadlinesCount > 0 ? `${deadlinesCount} việc` : undefined,
+      badgeTone: deadlinesCount > 0 ? 'amber' : 'default',
     },
 
-    // --- PRICING ---
+    // === 3. BIỂU CƯỚC & ĐỊNH GIÁ (RATES & PRICING) ===
     {
       id: 'pricing_rates',
-      label: t.rateManagement,
+      label: activeLang === 'vi' ? 'Biểu Cước Master Rates' : 'Master Rates Hub',
       icon: Database,
       group: 'pricing',
       action: () => onOpenMasterRateHub && onOpenMasterRateHub('RATES'),
       badge: rateMastersCount > 0 ? rateMastersCount : null,
-      badgeColor: 'bg-blue-900/60 text-blue-300 border border-blue-700/50',
     },
     {
       id: 'pricing_contracts',
-      label: t.contractsHub,
+      label: activeLang === 'vi' ? 'Quản Lý Hợp Đồng' : 'Contracts Hub',
       icon: FileText,
       group: 'pricing',
       action: () => onOpenContracts && onOpenContracts(),
       badge: contractsCount > 0 ? contractsCount : null,
-      badgeColor: 'bg-purple-900/80 text-purple-200 border border-purple-700/50',
-    },
-    {
-      id: 'pricing_policies',
-      label: t.pricingPolicies,
-      icon: Sliders,
-      group: 'pricing',
-      action: () => onOpenPricingPolicies && onOpenPricingPolicies(),
-      restricted: !isAdminOrManager,
-      requiredRoleDesc: 'Admin / Manager',
-    },
-    {
-      id: 'pricing_profit',
-      label: t.profitIntelligence,
-      icon: TrendingUp,
-      group: 'pricing',
-      action: () => onOpenProfitIntelligence && onOpenProfitIntelligence(),
-      restricted: !canViewProfitability,
-      requiredRoleDesc: 'RBAC Protected',
-    },
-    {
-      id: 'pricing_smart',
-      label: t.smartAssistant,
-      icon: Sparkles,
-      group: 'pricing',
-      action: () => onOpenSmartAssistant && onOpenSmartAssistant(),
-      badge: 'AI',
-      badgeColor: 'bg-amber-600/80 text-white font-bold',
     },
     {
       id: 'pricing_search',
-      label: t.rateSearch,
+      label: activeLang === 'vi' ? 'Tra Cứu Cước Nhanh' : 'Rate Search',
       icon: Search,
       group: 'pricing',
       action: () => onOpenRateSearch && onOpenRateSearch(),
     },
+    {
+      id: 'pricing_smart',
+      label: activeLang === 'vi' ? 'Trợ Lý Ghép Giá AI' : 'Smart Rate Assistant',
+      icon: Sparkles,
+      group: 'pricing',
+      action: () => onOpenSmartAssistant && onOpenSmartAssistant(),
+      badge: 'AI',
+      badgeTone: 'emerald',
+    },
+    {
+      id: 'pricing_profit',
+      label: activeLang === 'vi' ? 'Phân Tích Lợi Nhuận' : 'Profit Intelligence',
+      icon: TrendingUp,
+      group: 'pricing',
+      action: () => onOpenProfitIntelligence && onOpenProfitIntelligence(),
+      restricted: !canViewProfitability,
+      requiredRoleDesc: 'RBAC',
+    },
+    {
+      id: 'pricing_policies',
+      label: activeLang === 'vi' ? 'Chính Sách Định Giá' : 'Pricing Policies',
+      icon: Sliders,
+      group: 'pricing',
+      action: () => onOpenPricingPolicies && onOpenPricingPolicies(),
+      restricted: !isAdminOrManager,
+      requiredRoleDesc: 'Manager',
+    },
 
-    // --- MASTER DATA ---
+    // === 4. TÀI LIỆU & ẤN BẢN (DOCUMENTS & OUTPUT) ===
+    {
+      id: 'quotation_preview',
+      label: activeLang === 'vi' ? 'Xem Trước Bản In (A4)' : 'Print Preview (A4)',
+      icon: Printer,
+      group: 'documents',
+      action: () => onOpenPreview && onOpenPreview(),
+    },
+    {
+      id: 'quotation_document_center',
+      label: activeLang === 'vi' ? 'Trung Tâm Tài Liệu & Gửi' : 'Document & Comm Hub',
+      icon: Layers,
+      group: 'documents',
+      action: () => onOpenDocumentCenter && onOpenDocumentCenter(),
+    },
+    {
+      id: 'quotation_snapshots',
+      label: activeLang === 'vi' ? 'Lịch Sử Ấn Bản Snapshots' : 'Document Snapshots',
+      icon: History,
+      group: 'documents',
+      action: () => onOpenDocumentHistory && onOpenDocumentHistory(),
+    },
+    {
+      id: 'quotation_templates',
+      label: activeLang === 'vi' ? 'Mẫu Thiết Kế Báo Giá' : 'Quotation Templates',
+      icon: Layout,
+      group: 'documents',
+      action: () => onOpenTemplateBuilder && onOpenTemplateBuilder(),
+    },
+    {
+      id: 'quotation_email_templates',
+      label: activeLang === 'vi' ? 'Mẫu Email Gửi Khách' : 'Email Templates',
+      icon: Mail,
+      group: 'documents',
+      action: () => onOpenEmailTemplates && onOpenEmailTemplates(),
+    },
+
+    // === 5. DANH MỤC & ĐỐI TÁC (MASTER DATA & CRM) ===
     {
       id: 'master_customers',
-      label: t.customersCrm,
+      label: activeLang === 'vi' ? 'Danh Bạ Khách Hàng (CRM)' : 'Customer Directory',
       icon: Users,
       group: 'masterData',
       action: onOpenCustomers,
       badge: customersCount > 0 ? customersCount : null,
-      badgeColor: 'bg-cyan-900/60 text-cyan-300 border border-cyan-700/50',
     },
     {
       id: 'master_suppliers',
-      label: t.suppliersCarriers,
+      label: activeLang === 'vi' ? 'Hãng Tàu & Nhà Xe' : 'Carriers & Suppliers',
       icon: Ship,
       group: 'masterData',
       action: () => onOpenMasterRateHub && onOpenMasterRateHub('SUPPLIERS'),
     },
     {
       id: 'master_charges',
-      label: t.chargeCodes,
+      label: activeLang === 'vi' ? 'Mã Cước & Khoản Phí' : 'Charge Master',
       icon: Layers,
       group: 'masterData',
       action: () => onOpenMasterRateHub && onOpenMasterRateHub('CHARGES'),
       badge: chargeMastersCount > 0 ? chargeMastersCount : null,
-      badgeColor: 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50',
     },
     {
       id: 'master_surcharges',
-      label: t.surchargesCatalog,
+      label: activeLang === 'vi' ? 'Danh Mục Phụ Phí' : 'Surcharges Catalog',
       icon: Receipt,
       group: 'masterData',
       action: onOpenSurchargeCatalog,
       badge: surchargesCount > 0 ? surchargesCount : null,
-      badgeColor: 'bg-amber-900/60 text-amber-300 border border-amber-700/50',
     },
     {
       id: 'master_ports',
-      label: t.portsLocations,
+      label: activeLang === 'vi' ? 'Cảng Biển & Sân Bay' : 'Ports & Locations',
       icon: Anchor,
       group: 'masterData',
       action: () => onOpenMasterDataReference && onOpenMasterDataReference('PORT'),
     },
     {
       id: 'master_containers',
-      label: t.containerTypes,
+      label: activeLang === 'vi' ? 'Quy Cách Container & Xe' : 'Containers & Trucks',
       icon: Box,
       group: 'masterData',
       action: () => onOpenMasterDataReference && onOpenMasterDataReference('CONTAINER_TYPE'),
     },
     {
       id: 'master_incoterms',
-      label: t.incotermsTerms,
+      label: activeLang === 'vi' ? 'Điều Khoản Incoterms 2020' : 'Incoterms Rules',
       icon: FileCheck2,
       group: 'masterData',
       action: () => onOpenMasterDataReference && onOpenMasterDataReference('INCOTERM'),
     },
     {
       id: 'master_payment_terms',
-      label: t.paymentTerms,
+      label: activeLang === 'vi' ? 'Điều Khoản Thanh Toán' : 'Payment Terms',
       icon: CreditCard,
       group: 'masterData',
       action: () => onOpenMasterDataReference && onOpenMasterDataReference('PAYMENT_TERM'),
     },
 
-    // --- OPERATIONS ---
-    {
-      id: 'ops_control_tower',
-      label: t.controlTower,
-      icon: Radar,
-      group: 'operations',
-      action: () => onOpenControlTower && onOpenControlTower(),
-      badge: exceptionsCount && exceptionsCount > 0 ? exceptionsCount : undefined,
-    },
-    {
-      id: 'ops_action_center',
-      label: activeLang === 'vi' ? 'Hạn Chót & Hành Động' : 'Action Center',
-      icon: Clock,
-      group: 'operations',
-      action: () => onOpenActionCenter && onOpenActionCenter(),
-      badge: deadlinesCount && deadlinesCount > 0 ? deadlinesCount : undefined,
-    },
-    {
-      id: 'ops_shipments',
-      label: t.shipmentsWorkspace,
-      icon: Package,
-      group: 'operations',
-      action: () => onOpenShipmentWorkspace && onOpenShipmentWorkspace(),
-      badge: shipmentsCount && shipmentsCount > 0 ? shipmentsCount : 'Live',
-    },
-    {
-      id: 'ops_ocean',
-      label: t.oceanFclLcl,
-      icon: Ship,
-      group: 'operations',
-      action: () => {
-        if (onSelectTransportMode) onSelectTransportMode('SEA_FCL');
-        else if (onOpenMasterRateHub) onOpenMasterRateHub('RATES');
-      },
-    },
-    {
-      id: 'ops_air',
-      label: t.airFreight,
-      icon: Plane,
-      group: 'operations',
-      action: () => {
-        if (onSelectTransportMode) onSelectTransportMode('AIR_FREIGHT');
-        else if (onOpenMasterRateHub) onOpenMasterRateHub('RATES');
-      },
-    },
-    {
-      id: 'ops_trucking',
-      label: t.truckingInland,
-      icon: Truck,
-      group: 'operations',
-      action: () => {
-        if (onSelectTransportMode) onSelectTransportMode('INLAND_TRUCKING');
-        else if (onOpenMasterRateHub) onOpenMasterRateHub('RATES');
-      },
-    },
-    {
-      id: 'ops_customs',
-      label: t.customsClearance,
-      icon: FileCheck2,
-      group: 'operations',
-      action: () => {
-        if (onSelectTransportMode) onSelectTransportMode('CUSTOMS_CLEARANCE');
-        else if (onOpenMasterRateHub) onOpenMasterRateHub('CHARGES');
-      },
-    },
-
-    // --- ANALYTICS ---
+    // === 6. BÁO CÁO & PHÂN TÍCH (ANALYTICS & BI) ===
     {
       id: 'analytics_overview',
-      label: t.analyticsDashboard,
+      label: activeLang === 'vi' ? 'Báo Cáo Tổng Quan & KPIs' : 'Analytics & KPIs',
       icon: LayoutDashboard,
       group: 'analytics',
       action: () => onOpenDashboard && onOpenDashboard('OVERVIEW'),
-      badge: 'KPIs',
-      badgeColor: 'bg-blue-600/80 text-blue-100',
     },
     {
       id: 'analytics_funnel',
-      label: t.quotationFunnel,
+      label: activeLang === 'vi' ? 'Phễu Chuyển Đổi Báo Giá' : 'Conversion Funnel',
       icon: TrendingUp,
       group: 'analytics',
       action: () => onOpenDashboard && onOpenDashboard('FUNNEL'),
     },
     {
       id: 'analytics_sales',
-      label: t.salesPerformance,
+      label: activeLang === 'vi' ? 'Hiệu Suất Nhân Viên Sales' : 'Sales Performance',
       icon: Users,
       group: 'analytics',
       action: () => onOpenDashboard && onOpenDashboard('SALES'),
     },
     {
-      id: 'analytics_profit',
-      label: t.profitabilityRbac,
-      icon: Coins,
-      group: 'analytics',
-      action: () => onOpenDashboard && onOpenDashboard('PROFITABILITY'),
-      restricted: !canViewProfitability,
-      requiredRoleDesc: 'RBAC Restricted',
-    },
-    {
       id: 'analytics_lanes',
-      label: t.laneServiceAnalytics,
+      label: activeLang === 'vi' ? 'Phân Tích Tuyến Vận Chuyển' : 'Trade Lanes Analytics',
       icon: Compass,
       group: 'analytics',
       action: () => onOpenDashboard && onOpenDashboard('LANES_SERVICES'),
     },
 
-    // --- SYSTEM ---
+    // === 7. HỆ THỐNG & CẤU HÌNH (SYSTEM & SETTINGS) ===
     {
       id: 'sys_profile',
-      label: t.companyProfile,
+      label: activeLang === 'vi' ? 'Hồ Sơ Doanh Nghiệp' : 'Company Profile',
       icon: Building2,
       group: 'system',
       action: () => onOpenCompanyProfile('profile'),
     },
     {
       id: 'sys_financial',
-      label: activeLang === 'vi' ? 'Tài Chính & Thuế (P38)' : 'Financial & Tax Engine (P38)',
+      label: activeLang === 'vi' ? 'Cấu Hình Tài Chính & Thuế' : 'Financial & Tax Engine',
       icon: Receipt,
       group: 'system',
       action: () => onOpenCompanyProfile('financial'),
-      badge: 'P38',
-      badgeColor: 'bg-emerald-900/80 text-emerald-200 border border-emerald-700/50',
     },
     {
       id: 'sys_sales_bank',
-      label: t.salesRepBank,
+      label: activeLang === 'vi' ? 'Tài Khoản Ngân Hàng' : 'Bank Accounts',
       icon: UserCheck,
       group: 'system',
       action: () => onOpenCompanyProfile('sales'),
     },
     {
+      id: 'sys_integrity',
+      label: activeLang === 'vi' ? 'Toàn Vẹn Dữ Liệu & Sức Khỏe' : 'Data Integrity Health',
+      icon: ShieldCheck,
+      group: 'system',
+      action: () => onOpenIntegrityDashboard && onOpenIntegrityDashboard(),
+    },
+    {
       id: 'sys_audit',
-      label: t.auditLogs,
+      label: activeLang === 'vi' ? 'Nhật Ký Kiểm Toán' : 'Audit Logs',
       icon: History,
       group: 'system',
       action: () => onOpenMasterRateHub && onOpenMasterRateHub('AUDIT'),
     },
     {
       id: 'sys_backup',
-      label: t.dataBackup,
+      label: activeLang === 'vi' ? 'Sao Lưu & Khôi Phục' : 'Data Backup & Restore',
       icon: Database,
       group: 'system',
       action: onOpenDataBackup,
     },
-    {
-      id: 'sys_integrity',
-      label: 'Sức Khỏe & Toàn Vẹn Dữ Liệu',
-      icon: ShieldCheck,
-      group: 'system',
-      action: () => onOpenIntegrityDashboard && onOpenIntegrityDashboard(),
-    },
   ];
 
-  // Filter items if searching
+  // Search filter
   const filteredNavItems = useMemo(() => {
     if (!searchQuery.trim()) return allNavItems;
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
     return allNavItems.filter(item => 
       item.label.toLowerCase().includes(q) || item.id.toLowerCase().includes(q)
     );
   }, [allNavItems, searchQuery]);
 
-  // Group definitions
-  const groups: { key: string; title: string; icon: React.FC<{ className?: string }> }[] = [
-    { key: 'main', title: t.groupMain, icon: LayoutDashboard },
-    { key: 'quotation', title: t.groupQuotation, icon: FileText },
-    { key: 'pricing', title: t.groupPricing, icon: Sliders },
-    { key: 'masterData', title: t.groupMasterData, icon: Database },
-    { key: 'operations', title: t.groupOperations, icon: Ship },
-    { key: 'analytics', title: t.groupAnalytics, icon: TrendingUp },
-    { key: 'system', title: t.groupSystem, icon: Settings },
+  // Clean, professional group taxonomy with calm titles
+  const groups: { 
+    key: SidebarGroupKey; 
+    title: string; 
+    icon: React.FC<{ className?: string }>;
+    quickCount?: string | number;
+  }[] = [
+    { 
+      key: 'quotation', 
+      title: activeLang === 'vi' ? 'Báo giá & Thương mại' : 'Quotation & Sales', 
+      icon: FileText,
+      quickCount: savedQuotes.length > 0 ? savedQuotes.length : undefined
+    },
+    { 
+      key: 'operations', 
+      title: activeLang === 'vi' ? 'Điều hành & Lô hàng' : 'Operations & Logistics', 
+      icon: Ship,
+      quickCount: (exceptionsCount + deadlinesCount > 0) ? `${exceptionsCount + deadlinesCount} lưu ý` : undefined
+    },
+    { 
+      key: 'pricing', 
+      title: activeLang === 'vi' ? 'Biểu cước & Định giá' : 'Rates & Pricing', 
+      icon: Sliders,
+      quickCount: rateMastersCount > 0 ? rateMastersCount : undefined
+    },
+    { 
+      key: 'documents', 
+      title: activeLang === 'vi' ? 'Tài liệu & Ấn bản' : 'Documents & Output', 
+      icon: Layers 
+    },
+    { 
+      key: 'masterData', 
+      title: activeLang === 'vi' ? 'Danh mục & CRM' : 'Master Data & CRM', 
+      icon: Database,
+      quickCount: customersCount > 0 ? customersCount : undefined
+    },
+    { 
+      key: 'analytics', 
+      title: activeLang === 'vi' ? 'Báo cáo & Phân tích' : 'Analytics & BI', 
+      icon: TrendingUp 
+    },
+    { 
+      key: 'system', 
+      title: activeLang === 'vi' ? 'Hệ thống & Cài đặt' : 'System Settings', 
+      icon: Settings 
+    },
   ];
 
-  // Pinned items for quick access tray
   const pinnedItems = useMemo(() => {
     return allNavItems.filter(item => pinnedIds.includes(item.id));
   }, [allNavItems, pinnedIds]);
@@ -806,39 +738,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {isOpenMobile && (
         <div 
           onClick={onCloseMobile}
-          className="fixed inset-0 bg-slate-950/75 z-40 lg:hidden backdrop-blur-xs transition-opacity"
+          className="fixed inset-0 bg-slate-950/70 z-40 lg:hidden backdrop-blur-xs transition-opacity"
           aria-hidden="true"
         />
       )}
 
-      {/* Main Sidebar Container */}
+      {/* Main Sidebar Column */}
       <aside 
-        className={`fixed top-0 bottom-0 left-0 z-40 bg-slate-900 text-slate-100 flex flex-col border-r border-slate-800 transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto shrink-0 select-none shadow-xl ${
-          isCollapsed ? 'w-18' : 'w-72 lg:w-74'
+        className={`fixed top-0 bottom-0 left-0 z-40 bg-[#0b1120] text-slate-300 flex flex-col border-r border-slate-800/80 transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto shrink-0 select-none shadow-xl ${
+          isCollapsed ? 'w-16' : 'w-72'
         } ${isOpenMobile ? 'translate-x-0' : '-translate-x-full'}`}
         role="navigation"
         aria-label="Sidebar Navigation"
       >
-        {/* Top App Header & Branding */}
-        <div className="p-3 border-b border-slate-800 flex items-center justify-between bg-slate-950/60 min-h-[60px]">
+        {/* Top Header & Branding */}
+        <div className="h-14 px-3.5 border-b border-slate-800/80 flex items-center justify-between shrink-0 bg-[#0d1527]">
           <div className="flex items-center space-x-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-700 flex items-center justify-center text-white shadow-md shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
               <Ship className="w-4 h-4" />
             </div>
             
             {!isCollapsed && (
               <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <h1 className="font-extrabold text-xs text-white uppercase tracking-wider truncate">
-                    {t.appName}
-                  </h1>
-                  <span className="text-[9px] px-1 py-0.2 rounded font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                    TMS
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-400 font-medium truncate max-w-[170px]">
-                  {company.shortName || company.name || t.appSubtitle}
-                </p>
+                <span className="font-semibold text-xs text-white tracking-tight block truncate">
+                  LogiQuote Studio
+                </span>
+                <span className="text-[11px] text-slate-400 font-normal truncate block">
+                  {company.shortName || company.name || 'TMS Logistics'}
+                </span>
               </div>
             )}
           </div>
@@ -847,12 +774,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={() => toggleSidebarCollapse()}
-            className="hidden lg:flex p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors cursor-pointer"
-            title={isCollapsed ? t.expandSidebar : t.collapseSidebar}
-            aria-label={isCollapsed ? t.expandSidebar : t.collapseSidebar}
+            className="hidden lg:flex p-1.5 text-slate-400 hover:text-white hover:bg-slate-800/80 rounded-md transition-colors cursor-pointer"
+            title={isCollapsed ? 'Mở rộng sidebar' : 'Thu gọn sidebar'}
+            aria-label={isCollapsed ? 'Mở rộng' : 'Thu gọn'}
           >
             {isCollapsed ? (
-              <PanelLeftOpen className="w-4 h-4 text-blue-400" />
+              <PanelLeftOpen className="w-4 h-4 text-slate-300" />
             ) : (
               <PanelLeftClose className="w-4 h-4" />
             )}
@@ -869,103 +796,129 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        {/* Quick Search & Command Bar (When Expanded) */}
+        {/* Primary Action Button: Tạo Báo Giá Mới (Ergonomic Hero CTA) */}
+        <div className="p-2.5 pb-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => handleAction(onNewQuote)}
+            className={`w-full flex items-center ${
+              isCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2'
+            } rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium shadow-sm transition-all duration-150 cursor-pointer group active:scale-[0.99]`}
+            title={isCollapsed ? (activeLang === 'vi' ? 'Tạo Báo Giá Mới (Ctrl+N)' : 'Create Quotation (Ctrl+N)') : undefined}
+          >
+            <div className="flex items-center space-x-2 min-w-0">
+              <Plus className="w-4 h-4 text-white shrink-0 group-hover:rotate-90 transition-transform duration-200" />
+              {!isCollapsed && (
+                <span className="text-xs font-semibold tracking-tight truncate">
+                  {activeLang === 'vi' ? 'Tạo Báo Giá Mới' : 'Create Quotation'}
+                </span>
+              )}
+            </div>
+            {!isCollapsed && (
+              <span className="text-[10px] text-emerald-100/90 font-mono px-1.5 py-0.5 rounded bg-emerald-700/60 text-xs">
+                Ctrl+N
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Quick Search & Command Filter */}
         {!isCollapsed && (
-          <div className="px-3 pt-2 pb-1">
+          <div className="px-2.5 pb-2 shrink-0">
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 ref={searchInputRef}
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t.searchPlaceholder}
-                className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-950/70 border border-slate-800 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                placeholder={activeLang === 'vi' ? 'Tìm chức năng (Ctrl+K)...' : 'Search features (Ctrl+K)...'}
+                className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-900/80 border border-slate-800 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-slate-600 focus:bg-slate-900 transition-colors"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs font-bold cursor-pointer"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-0.5 cursor-pointer"
                 >
-                  &times;
+                  <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
           </div>
         )}
 
-        {/* Quick Pinned Favorites Tray (When Expanded and not searching) */}
-        {!isCollapsed && !searchQuery && (
-          <div className="px-3 py-1.5 border-b border-slate-800/60 bg-slate-950/30">
+        {/* Pinned Favorites Quick Strip (When Expanded & not searching) */}
+        {!isCollapsed && !searchQuery && pinnedItems.length > 0 && (
+          <div className="px-2.5 py-1.5 border-b border-slate-800/60 shrink-0 bg-slate-900/30">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+              <span className="text-[10px] font-medium text-slate-400 flex items-center gap-1.5">
                 <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                <span>{t.favorites}</span>
-                {pinnedItems.length > 0 && (
-                  <span className="text-[10px] font-mono text-slate-500 font-semibold">({pinnedItems.length})</span>
-                )}
+                <span>{activeLang === 'vi' ? 'Yêu thích' : 'Favorites'} ({pinnedItems.length})</span>
               </span>
-              {pinnedItems.length === 0 && (
-                <span className="text-[10px] text-slate-500 italic">
-                  {t.noFavorites}
-                </span>
-              )}
             </div>
-            {pinnedItems.length > 0 ? (
-              <div className="flex flex-wrap gap-1">
-                {pinnedItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div
-                      key={`pinned-${item.id}`}
-                      className="inline-flex items-center rounded bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 hover:text-white text-[11px] border border-slate-700/60 transition-colors group"
+            <div className="flex flex-wrap gap-1">
+              {pinnedItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeRouteId === item.id;
+                return (
+                  <div
+                    key={`pinned-${item.id}`}
+                    className={`inline-flex items-center rounded-md text-[11px] border transition-colors ${
+                      isActive 
+                        ? 'bg-slate-800 text-white border-slate-700' 
+                        : 'bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-800'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleAction(item.action)}
+                      className="flex items-center gap-1.5 px-2 py-0.5 cursor-pointer"
+                      title={item.label}
                     >
-                      <button
-                        type="button"
-                        onClick={() => handleAction(item.action)}
-                        className="flex items-center gap-1.5 px-2 py-1 cursor-pointer"
-                        title={item.label}
-                      >
-                        <Icon className="w-3 h-3 text-blue-400 group-hover:text-blue-300 shrink-0" />
-                        <span className="truncate max-w-[110px]">{item.label}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => togglePin(e, item.id)}
-                        className="pr-1.5 pl-0.5 py-1 text-slate-500 hover:text-amber-400 transition-colors cursor-pointer"
-                        title={`${t.unpinFromFavorites}: ${item.label}`}
-                      >
-                        <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : null}
+                      <Icon className="w-3 h-3 text-slate-400 shrink-0" />
+                      <span className="truncate max-w-[110px]">{item.label}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => togglePin(e, item.id)}
+                      className="pr-1.5 pl-0.5 py-0.5 text-slate-500 hover:text-amber-400 cursor-pointer"
+                      title="Bỏ ghim"
+                    >
+                      <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
         {/* Navigation Items Area */}
         <div className="flex-1 overflow-y-auto px-2 py-2 space-y-2 text-xs custom-scrollbar">
           
-          {/* SEARCH RESULTS VIEW (if search input has query) */}
+          {/* SEARCH RESULTS VIEW */}
           {searchQuery ? (
             <div className="space-y-1">
-              <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase">
-                {filteredNavItems.length} {activeLang === 'vi' ? 'kết quả tìm kiếm' : 'search results'}
+              <div className="px-2 py-1 text-[11px] font-medium text-slate-400">
+                {filteredNavItems.length} {activeLang === 'vi' ? 'kết quả phù hợp' : 'results found'}
               </div>
               {filteredNavItems.length === 0 ? (
-                <div className="p-4 text-center text-slate-400 text-xs">
-                  {activeLang === 'vi' ? 'Không tìm thấy chức năng phù hợp' : 'No matching menu item'}
+                <div className="p-4 text-center text-slate-500 text-xs">
+                  {activeLang === 'vi' ? 'Không tìm thấy chức năng' : 'No feature matches found'}
                 </div>
               ) : (
                 filteredNavItems.map((item) => {
                   const isItemPinned = pinnedIds.includes(item.id);
+                  const isActive = activeRouteId === item.id;
                   return (
                     <div
                       key={item.id}
-                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors text-left group border border-slate-800"
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors border group ${
+                        isActive 
+                          ? 'bg-slate-800 text-white border-slate-700 font-medium' 
+                          : 'bg-slate-900/60 hover:bg-slate-900 text-slate-300 hover:text-white border-slate-800/80'
+                      }`}
                     >
                       <button
                         type="button"
@@ -975,27 +928,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         }}
                         className="flex items-center space-x-2.5 min-w-0 flex-1 text-left cursor-pointer"
                       >
-                        <item.icon className="w-4 h-4 text-blue-400 group-hover:text-blue-300 shrink-0" />
+                        <item.icon className="w-3.5 h-3.5 text-slate-400 group-hover:text-white shrink-0" />
                         <span className="text-xs truncate">{item.label}</span>
                       </button>
                       <div className="flex items-center space-x-1.5 shrink-0 ml-2">
                         {item.badge && (
-                          <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-bold ${item.badgeColor || 'bg-slate-700 text-white'}`}>
+                          <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-slate-800 text-slate-300">
                             {item.badge}
                           </span>
                         )}
                         <button
                           type="button"
                           onClick={(e) => togglePin(e, item.id)}
-                          className={`p-1 rounded transition-all cursor-pointer ${
-                            isItemPinned
-                              ? 'text-amber-400 opacity-100 hover:text-amber-300 hover:scale-110'
-                              : 'text-slate-500 opacity-0 group-hover:opacity-100 hover:text-amber-400 hover:scale-110'
-                          }`}
-                          title={isItemPinned ? t.unpinFromFavorites : t.pinToFavorites}
-                          aria-label={isItemPinned ? t.unpinFromFavorites : t.pinToFavorites}
+                          className="p-1 rounded text-slate-500 hover:text-amber-400 cursor-pointer"
+                          title={isItemPinned ? 'Bỏ ghim' : 'Ghim'}
                         >
-                          <Star className={`w-3 h-3 ${isItemPinned ? 'fill-amber-400' : ''}`} />
+                          <Star className={`w-3 h-3 ${isItemPinned ? 'fill-amber-400 text-amber-400' : ''}`} />
                         </button>
                       </div>
                     </div>
@@ -1004,219 +952,164 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </div>
           ) : (
-            /* REGULAR STRUCTURED GROUPS */
+            /* CLEAN LOGICAL WORKFLOW GROUPS */
             groups.map((group) => {
               const groupItems = allNavItems.filter(item => item.group === group.key);
               if (groupItems.length === 0) return null;
 
-              const isExpanded = expandedGroups[group.key];
+              const isExpanded = expandedGroups[group.key] ?? false;
               const GroupIcon = group.icon;
-
-              // Check if any child item is active
               const hasActiveChild = groupItems.some(i => i.id === activeRouteId);
 
               return (
-                <div 
-                  key={group.key}
-                  className={`rounded-xl border transition-colors overflow-hidden ${
-                    hasActiveChild 
-                      ? 'border-blue-500/40 bg-slate-900/60' 
-                      : 'border-slate-800/60 bg-slate-950/20'
-                  }`}
-                >
-                  {/* Group Header */}
+                <div key={group.key} className="space-y-0.5">
+                  
+                  {/* Category Header */}
                   {!isCollapsed ? (
                     <button
                       type="button"
                       onClick={() => toggleGroup(group.key)}
-                      className={`w-full flex items-center justify-between p-2 hover:bg-slate-800/50 text-slate-300 hover:text-white transition-colors text-left ${
-                        hasActiveChild ? 'text-blue-300 font-bold' : ''
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-colors text-left cursor-pointer ${
+                        hasActiveChild 
+                          ? 'text-white' 
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
                       }`}
                       aria-expanded={isExpanded}
                     >
                       <div className="flex items-center space-x-2 min-w-0">
-                        <GroupIcon className={`w-3.5 h-3.5 shrink-0 ${hasActiveChild ? 'text-blue-400' : 'text-slate-400'}`} />
-                        <span className="font-bold text-[11px] uppercase tracking-wider truncate">
-                          {group.title}
-                        </span>
+                        <GroupIcon className={`w-3.5 h-3.5 shrink-0 ${hasActiveChild ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        <span className="truncate">{group.title}</span>
                       </div>
-                      <div className="flex items-center space-x-1">
-                        {isExpanded ? (
-                          <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
-                        ) : (
-                          <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+
+                      <div className="flex items-center space-x-1.5 shrink-0 ml-2">
+                        {group.quickCount && !isExpanded && (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded font-mono text-slate-400 bg-slate-900/80 border border-slate-800">
+                            {group.quickCount}
+                          </span>
                         )}
+                        <span className="text-slate-500">
+                          {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                        </span>
                       </div>
                     </button>
                   ) : (
-                    /* Collapsed Group Divider / Toggle Button */
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (group.key === 'main' && onOpenDashboard) {
-                          onOpenDashboard('OVERVIEW');
-                        }
-                        toggleGroup(group.key);
-                      }}
-                      className={`w-full py-2 flex items-center justify-center border-b border-slate-800/60 hover:bg-slate-800/60 transition-colors cursor-pointer ${
-                        hasActiveChild ? 'bg-blue-900/30' : ''
-                      }`}
-                      title={`${group.title} (Nhấn để mở & ${isExpanded ? 'thu gọn' : 'mở rộng'})`}
-                      aria-label={group.title}
-                    >
-                      <GroupIcon className={`w-4 h-4 mx-auto ${hasActiveChild ? 'text-blue-400' : 'text-slate-400 hover:text-slate-200'}`} />
-                    </button>
+                    /* Collapsed icon divider */
+                    <div className="w-full py-1.5 flex items-center justify-center border-t border-slate-800/80">
+                      <GroupIcon className={`w-3.5 h-3.5 ${hasActiveChild ? 'text-emerald-400' : 'text-slate-500'}`} />
+                    </div>
                   )}
 
-                  {/* Group Menu Items - Only shown when category is expanded */}
+                  {/* Group Items */}
                   {isExpanded && (
-                    <div className={`${isCollapsed ? 'py-1 space-y-1' : 'px-1.5 pb-1.5 space-y-0.5'}`}>
+                    <div className="space-y-0.5 pl-1">
                       {groupItems.map((item) => {
                         const Icon = item.icon;
                         const isPinned = pinnedIds.includes(item.id);
                         const isActive = activeRouteId === item.id;
 
-                        // Prominent CTA style for 'Create Quotation'
-                        if (item.isCta) {
+                        // Collapsed Mode Item
+                        if (isCollapsed) {
                           return (
-                            <button
-                              key={item.id}
-                              type="button"
-                              onClick={() => handleAction(item.action)}
-                              className={`w-full flex items-center ${
-                                isCollapsed ? 'justify-center p-2' : 'justify-between px-2.5 py-2'
-                              } rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold shadow-md hover:shadow-blue-500/20 transition-all group my-1`}
-                              title={isCollapsed ? item.label : undefined}
-                              aria-label={item.label}
-                            >
-                              <div className="flex items-center space-x-2 min-w-0">
-                                <Plus className="w-4 h-4 text-white shrink-0 group-hover:rotate-90 transition-transform duration-200" />
-                                {!isCollapsed && (
-                                  <span className="text-xs font-bold tracking-wide truncate">
-                                    {item.label}
-                                  </span>
-                                )}
-                              </div>
-                              {!isCollapsed && item.shortcut && (
-                                <span className="text-[10px] bg-white/20 text-white px-1.5 py-0.2 rounded font-mono font-medium">
-                                  {item.shortcut}
-                                </span>
-                              )}
-                            </button>
-                          );
-                        }
-
-                        // Regular Item
-                        return (
-                          <div
-                            key={item.id}
-                            className="relative group/tooltip"
-                          >
-                            {isCollapsed ? (
+                            <div key={item.id} className="relative group/tooltip">
                               <button
                                 type="button"
                                 onClick={() => {
                                   if (item.restricted) {
-                                    if (onAccessDenied) {
-                                      onAccessDenied(item.label, item.requiredRoleDesc || activeRole);
-                                    }
+                                    if (onAccessDenied) onAccessDenied(item.label, item.requiredRoleDesc || activeRole);
                                     return;
                                   }
                                   handleAction(item.action);
                                 }}
-                                className={`w-full flex items-center justify-center p-2.5 rounded-lg transition-all text-left cursor-pointer ${
+                                className={`w-full flex items-center justify-center p-2 rounded-lg transition-colors cursor-pointer ${
                                   isActive 
-                                    ? 'bg-blue-600/20 text-white border border-blue-500/50 shadow-2xs' 
-                                    : 'hover:bg-slate-800/80 text-slate-300 hover:text-white'
-                                } ${item.restricted ? 'opacity-60' : ''}`}
+                                    ? 'bg-slate-800 text-white font-medium border-l-2 border-emerald-400' 
+                                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                                } ${item.restricted ? 'opacity-50' : ''}`}
                                 aria-label={item.label}
                               >
-                                <Icon className={`w-3.5 h-3.5 shrink-0 ${
-                                  isActive ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
-                                }`} />
+                                <Icon className="w-4 h-4 shrink-0" />
                               </button>
-                            ) : (
-                              <div
-                                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-all text-left group ${
-                                  isActive 
-                                    ? 'bg-blue-600/20 text-white border border-blue-500/50 shadow-2xs font-semibold' 
-                                    : 'hover:bg-slate-800/80 text-slate-300 hover:text-white'
-                                } ${item.restricted ? 'opacity-70' : ''}`}
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (item.restricted) {
-                                      if (onAccessDenied) {
-                                        onAccessDenied(item.label, item.requiredRoleDesc || activeRole);
-                                      }
-                                      return;
-                                    }
-                                    handleAction(item.action);
-                                  }}
-                                  className="flex-1 flex items-center space-x-2 min-w-0 text-left bg-transparent border-0 p-0 text-inherit cursor-pointer"
-                                  aria-label={item.label}
-                                >
-                                  <Icon className={`w-3.5 h-3.5 shrink-0 ${
-                                    isActive ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
-                                  }`} />
-                                  <span className="text-xs truncate">{item.label}</span>
-                                </button>
 
-                                <div className="flex items-center space-x-1.5 ml-2 shrink-0">
-                                  {item.restricted && (
-                                    <span title={item.requiredRoleDesc} className="inline-flex items-center">
-                                      <Lock className="w-3 h-3 text-rose-400 shrink-0" />
-                                    </span>
-                                  )}
-
-                                  {item.badge && (
-                                    <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-bold ${
-                                      item.badgeColor || 'bg-slate-800 text-slate-300'
-                                    }`}>
-                                      {item.badge}
-                                    </span>
-                                  )}
-
-                                  {/* Pin toggle button */}
-                                  <button
-                                    type="button"
-                                    onClick={(e) => togglePin(e, item.id)}
-                                    className={`p-1 rounded transition-all cursor-pointer ${
-                                      isPinned 
-                                        ? 'text-amber-400 opacity-100 hover:text-amber-300 hover:scale-110' 
-                                        : 'text-slate-500 opacity-0 group-hover:opacity-100 hover:text-amber-400 hover:scale-110'
-                                    }`}
-                                    title={isPinned ? t.unpinFromFavorites : t.pinToFavorites}
-                                    aria-label={isPinned ? t.unpinFromFavorites : t.pinToFavorites}
-                                  >
-                                    <Star className={`w-3 h-3 ${isPinned ? 'fill-amber-400' : ''}`} />
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Floating Tooltip in Collapsed Mode */}
-                            {isCollapsed && (
-                              <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover/tooltip:flex items-center gap-2 px-2.5 py-1.5 bg-slate-950 text-white text-xs font-medium rounded-md shadow-xl border border-slate-800 whitespace-nowrap z-50 pointer-events-none">
+                              {/* Floating Tooltip in Collapsed Mode */}
+                              <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover/tooltip:flex items-center gap-2 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg shadow-xl border border-slate-800 whitespace-nowrap z-50 pointer-events-none">
                                 <span>{item.label}</span>
                                 {item.badge && (
-                                  <span className="text-[10px] px-1 py-0.2 rounded font-mono bg-blue-600 text-white">
+                                  <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-slate-800 text-slate-300">
                                     {item.badge}
                                   </span>
                                 )}
-                                {item.restricted && (
-                                  <span className="text-[9px] px-1 py-0.2 rounded bg-rose-900 text-rose-200">
-                                    {item.requiredRoleDesc}
-                                  </span>
-                                )}
                               </div>
-                            )}
+                            </div>
+                          );
+                        }
+
+                        // Expanded Mode Item
+                        return (
+                          <div
+                            key={item.id}
+                            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors group ${
+                              isActive 
+                                ? 'bg-slate-800 text-white font-medium border-l-2 border-emerald-400 pl-2' 
+                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
+                            } ${item.restricted ? 'opacity-60' : ''}`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (item.restricted) {
+                                  if (onAccessDenied) onAccessDenied(item.label, item.requiredRoleDesc || activeRole);
+                                  return;
+                                }
+                                handleAction(item.action);
+                              }}
+                              className="flex-1 flex items-center space-x-2.5 min-w-0 text-left cursor-pointer"
+                            >
+                              <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-emerald-400' : 'text-slate-400 group-hover:text-slate-300'}`} />
+                              <span className="text-xs truncate">{item.label}</span>
+                            </button>
+
+                            <div className="flex items-center space-x-1.5 ml-2 shrink-0">
+                              {item.restricted && (
+                                <span title={item.requiredRoleDesc} className="inline-flex items-center">
+                                  <Lock className="w-3 h-3 text-rose-400 shrink-0" />
+                                </span>
+                              )}
+
+                              {item.badge && (
+                                <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-medium border ${
+                                  item.badgeTone === 'amber'
+                                    ? 'bg-amber-950/40 border-amber-800/60 text-amber-300'
+                                    : item.badgeTone === 'emerald'
+                                    ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-300'
+                                    : item.badgeTone === 'rose'
+                                    ? 'bg-rose-950/40 border-rose-800/60 text-rose-300'
+                                    : item.badgeTone === 'sky'
+                                    ? 'bg-sky-950/40 border-sky-800/60 text-sky-300'
+                                    : 'bg-slate-900 border-slate-800 text-slate-400'
+                                }`}>
+                                  {item.badge}
+                                </span>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={(e) => togglePin(e, item.id)}
+                                className={`p-0.5 rounded transition-opacity cursor-pointer ${
+                                  isPinned 
+                                    ? 'text-amber-400 opacity-100' 
+                                    : 'text-slate-600 opacity-0 group-hover:opacity-100 hover:text-amber-400'
+                                }`}
+                                title={isPinned ? 'Bỏ ghim' : 'Ghim'}
+                              >
+                                <Star className={`w-3 h-3 ${isPinned ? 'fill-amber-400' : ''}`} />
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
                     </div>
                   )}
+
                 </div>
               );
             })
@@ -1224,24 +1117,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         </div>
 
-        {/* Sidebar Footer: Profile, Role Switcher, Language & System Status */}
-        <div className="p-2.5 bg-slate-950 border-t border-slate-800 text-slate-400 flex flex-col gap-2">
+        {/* Sidebar Bottom Footer: User, Role & Sync status */}
+        <div className="p-2.5 bg-[#0d1527] border-t border-slate-800/80 text-slate-400 flex flex-col gap-2 shrink-0">
           
-          {/* User Profile Card & Role Indicator */}
           {!isCollapsed ? (
             <div className="relative">
-              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-900/80 border border-slate-800/80">
+              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/90 border border-slate-800/80">
                 <div 
-                  className="flex items-center space-x-2 min-w-0 cursor-pointer"
+                  className="flex items-center space-x-2.5 min-w-0 cursor-pointer"
                   onClick={() => onOpenAuthModal && onOpenAuthModal()}
-                  title="Nhấn để quản lý tài khoản & xác thực Firebase"
+                  title="Quản lý tài khoản"
                 >
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                  <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white flex items-center justify-center text-xs font-semibold shrink-0">
                     {company.salesRepName ? company.salesRepName.charAt(0).toUpperCase() : 'U'}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xs font-semibold text-white truncate hover:text-blue-300">
-                      {company.salesRepName || 'Logistics Specialist'}
+                    <div className="text-xs font-medium text-white truncate hover:text-slate-300">
+                      {company.salesRepName || 'Chuyên viên Logistics'}
                     </div>
                     {Boolean((import.meta as any).env?.DEV) ? (
                       <button
@@ -1250,15 +1142,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           e.stopPropagation();
                           setShowRoleSelector(!showRoleSelector);
                         }}
-                        className="text-[10px] text-amber-400 hover:text-amber-300 font-mono flex items-center gap-1"
-                        title="Chế độ phát triển (DEV): Giả lập vai trò thử nghiệm"
+                        className="text-[10px] text-amber-400 hover:text-amber-300 font-mono flex items-center gap-1 cursor-pointer"
+                        title="Chế độ DEV: Đổi vai trò kiểm thử"
                       >
                         <span>{activeRole}</span>
-                        <span className="text-[8px] bg-amber-500/20 text-amber-300 px-1 py-0.2 rounded font-sans">DEV</span>
                         <ChevronDown className="w-2.5 h-2.5" />
                       </button>
                     ) : (
-                      <div className="text-[10px] text-emerald-400 font-mono flex items-center gap-1" title="Vai trò thực tế từ Firebase Auth & Thành viên công ty">
+                      <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
                         <span>{activeRole}</span>
                         <ShieldCheck className="w-2.5 h-2.5 text-emerald-400" />
                       </div>
@@ -1266,35 +1157,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                 </div>
 
-                {/* Language Switcher VI | EN */}
+                {/* Language Switcher */}
                 <button
                   type="button"
                   onClick={handleLanguageToggle}
-                  className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded text-[10px] font-bold border border-slate-700 transition-colors flex items-center gap-1"
+                  className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded text-[10px] font-semibold border border-slate-700 transition-colors cursor-pointer"
                   title="Chuyển ngôn ngữ / Switch language"
                 >
-                  <span className={activeLang === 'vi' ? 'text-blue-400' : 'text-slate-400'}>VI</span>
-                  <span>|</span>
-                  <span className={activeLang === 'en' ? 'text-blue-400' : 'text-slate-400'}>EN</span>
+                  <span className={activeLang === 'vi' ? 'text-white' : 'text-slate-500'}>VI</span>
+                  <span className="mx-0.5 text-slate-600">/</span>
+                  <span className={activeLang === 'en' ? 'text-white' : 'text-slate-500'}>EN</span>
                 </button>
               </div>
 
               {/* RBAC Role Selector Dropdown (DEV MODE ONLY) */}
               {showRoleSelector && Boolean((import.meta as any).env?.DEV) && (
                 <div className="absolute bottom-full left-0 right-0 mb-1.5 p-1.5 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 space-y-1">
-                  <div className="px-2 py-1 text-[10px] font-bold uppercase text-amber-400 tracking-wider flex items-center justify-between">
-                    <span>{t.switchRole} (DEV SIM)</span>
-                    <span className="text-[9px] lowercase text-slate-400">test only</span>
+                  <div className="px-2 py-1 text-[10px] font-semibold uppercase text-amber-400 tracking-wider">
+                    Chuyển vai trò (DEV TEST)
                   </div>
                   {(['ADMIN', 'SALES_MANAGER', 'SALES_REP', 'PRICING_SPECIALIST', 'VIEWER'] as UserRole[]).map((r) => (
                     <button
                       key={r}
                       type="button"
                       onClick={() => handleRoleSwitch(r)}
-                      className={`w-full text-left px-2 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
+                      className={`w-full text-left px-2 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${
                         activeRole === r 
-                          ? 'bg-blue-600 text-white font-bold' 
-                          : 'text-slate-300 hover:bg-slate-800'
+                          ? 'bg-slate-800 text-white font-semibold' 
+                          : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
                       }`}
                     >
                       <span>
@@ -1304,7 +1194,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         {r === 'PRICING_SPECIALIST' && t.rolePricingSpecialist}
                         {r === 'VIEWER' && t.roleViewer}
                       </span>
-                      {activeRole === r && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                      {activeRole === r && <Check className="w-3.5 h-3.5 text-emerald-400" />}
                     </button>
                   ))}
                 </div>
@@ -1316,13 +1206,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 type="button"
                 onClick={handleLanguageToggle}
-                className="w-8 h-8 rounded bg-slate-800 text-[10px] font-bold text-blue-400 flex items-center justify-center hover:bg-slate-700"
+                className="w-8 h-8 rounded bg-slate-900 border border-slate-800 text-[10px] font-semibold text-slate-300 flex items-center justify-center hover:bg-slate-800 cursor-pointer"
                 title="VI / EN"
               >
                 {activeLang.toUpperCase()}
               </button>
               <div 
-                className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold"
+                className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white flex items-center justify-center text-xs font-semibold cursor-pointer"
+                onClick={() => onOpenAuthModal && onOpenAuthModal()}
                 title={`${company.salesRepName || 'User'} (${activeRole})`}
               >
                 {company.salesRepName ? company.salesRepName.charAt(0).toUpperCase() : 'U'}
@@ -1330,19 +1221,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
 
-          {/* System Status: Auto-save & USD Rate (When expanded) */}
+          {/* Real-time Cloud Auto-Save & Rate status */}
           {!isCollapsed && (
-            <div className="pt-1.5 border-t border-slate-900/90 flex items-center justify-between text-[10px]">
-              <span className="flex items-center gap-1.5 text-slate-400">
+            <div className="pt-1.5 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400">
+              <span className="flex items-center gap-1.5">
                 <span className={`w-1.5 h-1.5 rounded-full ${isAutoSaving ? 'bg-amber-400 animate-ping' : 'bg-emerald-400'}`} />
-                <span>{isAutoSaving ? t.autoSaving : t.autoSaved}:</span>
-                <span className="font-mono text-emerald-400 font-medium truncate max-w-[80px]">
-                  {lastAutoSaveTime || 'Ready'}
+                <span>{isAutoSaving ? 'Đang lưu Cloud...' : 'Đã đồng bộ'}:</span>
+                <span className="font-mono text-slate-300">
+                  {lastAutoSaveTime || 'Sẵn sàng'}
                 </span>
               </span>
 
-              <span className="font-mono text-slate-400" title="Tỷ giá USD">
-                ${exchangeRate.toLocaleString()}
+              <span className="font-mono text-slate-400">
+                1 USD = {exchangeRate.toLocaleString()}₫
               </span>
             </div>
           )}

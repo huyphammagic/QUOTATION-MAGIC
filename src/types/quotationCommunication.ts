@@ -136,6 +136,28 @@ export interface QuotationSecureLink {
 
 export type QuotationSecureLinkRecord = QuotationSecureLink;
 
+export interface QuotationLineItemFeedback {
+  itemId: string;
+  itemCode: string;
+  itemDescription?: string;
+  note: string;
+  proposedRate?: number;
+  currency?: string;
+}
+
+export interface QuotationBookingDispatchInfo {
+  cargoReadyDate?: string;
+  shipperName?: string;
+  shipperAddress?: string;
+  consigneeName?: string;
+  consigneeAddress?: string;
+  notifyParty?: string;
+  cargoType?: string;
+  specialInstructions?: string;
+  estimatedVolume?: number;
+  estimatedGrossWeight?: number;
+}
+
 export interface QuotationCustomerResponse {
   id: string;
   companyId: string;
@@ -147,12 +169,26 @@ export interface QuotationCustomerResponse {
   responseType: 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED';
   customerName: string;
   customerEmail: string;
+  customerPhone?: string;
   respondedAt: string;
   rejectionReason?: string;
   revisionMessage?: string;
   notes?: string;
   userAgent?: string;
   ipAddress?: string;
+
+  // Phase 53: E-Signature & Acceptance Certificate enhancements
+  signatureDataUrl?: string; // Base64 data PNG of signature
+  signatureType?: 'DRAW' | 'TYPE';
+  signerTitle?: string; // Chức danh: GĐ / Trưởng phòng XNK...
+  signerCompany?: string; // Tên công ty người ký
+  signerTaxId?: string; // MST công ty
+  certificateId?: string; // Mã chứng thư xác nhận điện tử (vd: CERT-2026-LQ-XXXX)
+  certificateHash?: string; // Mã băm toàn vẹn SHA-256
+  selectedOptionId?: string; // Option A / Option B
+  bookingInfo?: QuotationBookingDispatchInfo;
+  lineItemFeedbacks?: QuotationLineItemFeedback[];
+  createdShipmentId?: string; // ID lô hàng tự động khởi tạo trong Control Tower
 }
 
 export interface QuotationFollowUp {
