@@ -20,12 +20,16 @@ export const TermsForm: React.FC<TermsFormProps> = ({
   const currentCurrency = quoteCurrency || terms.currency || 'USD';
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-2xs space-y-4">
+    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
       
       {/* Title */}
-      <div className="p-4 border-b border-slate-100 flex items-center space-x-2">
-        <FileText className="w-4 h-4 text-blue-700" />
-        <span className="font-bold text-xs text-slate-500 uppercase tracking-widest">ĐIỀU KHOẢN THƯƠNG MẠI & PHÂN CHIA CHI PHÍ MUA / BÁN (TERMS & INCOTERMS)</span>
+      <div className="p-3.5 sm:p-4 border-b border-slate-100 flex items-center gap-2">
+        <div className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-slate-700">
+          <FileText className="w-3.5 h-3.5" />
+        </div>
+        <h3 className="text-xs font-semibold text-slate-900 tracking-tight">
+          Điều khoản thương mại & Phân chia chi phí (Incoterms 2020)
+        </h3>
       </div>
 
       <div className="p-5 pt-0 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">

@@ -190,18 +190,20 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
   const sumLocationProfitUsd = (list: LineItem[]) => list.reduce((acc, i) => acc + (i.profitUsd || 0), 0);
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-2xs space-y-4">
+    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
       
       {/* Header & Control Actions */}
-      <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div className="flex items-center space-x-2">
-          <ListChecks className="w-5 h-5 text-blue-700" />
+      <div className="p-3.5 sm:p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
+            <ListChecks className="w-3.5 h-3.5" />
+          </div>
           <div>
-            <span className="font-bold text-xs text-slate-800 uppercase tracking-widest block">
-              BẢNG TÍNH GIÁ VẬN TẢI & PHỤ PHÍ (PRICING ENGINE)
-            </span>
+            <h3 className="text-xs font-semibold text-slate-900 tracking-tight">
+              Bảng tính giá vận tải & Phụ phí dịch vụ
+            </h3>
             <span className="text-[11px] text-slate-500 font-medium">
-              Tự động tính toán theo Basis, Giá Vốn (Cost), Giá Bán (Sell), Tỷ Suất Lợi Nhuận (Margin) & Thuế VAT
+              Tự động tính Basis, Giá vốn (Cost), Giá bán (Sell), Biên lợi nhuận (Margin) & VAT
             </span>
           </div>
         </div>
@@ -211,27 +213,27 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
           <button
             type="button"
             onClick={() => setShowCostAndProfit(!showCostAndProfit)}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+            className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
               showCostAndProfit
-                ? 'bg-blue-50 text-blue-900 border-blue-300 shadow-2xs'
-                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                ? 'bg-slate-100 text-slate-900 border-slate-300'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
             }`}
             title="Bật/Tắt hiển thị cột Giá Vốn & Lợi Nhuận Margin"
           >
-            {showCostAndProfit ? <Eye className="w-3.5 h-3.5 text-blue-600" /> : <EyeOff className="w-3.5 h-3.5 text-slate-400" />}
-            <span>{showCostAndProfit ? 'Ẩn Giá Vốn/Margin' : 'Hiện Giá Vốn/Margin'}</span>
+            {showCostAndProfit ? <Eye className="w-3.5 h-3.5 text-slate-700" /> : <EyeOff className="w-3.5 h-3.5 text-slate-400" />}
+            <span>{showCostAndProfit ? 'Ẩn Giá Vốn' : 'Hiện Giá Vốn'}</span>
           </button>
 
           {onOpenSmartAssistant && (
             <button
               type="button"
               onClick={onOpenSmartAssistant}
-              className="flex items-center space-x-1.5 bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition-all shadow-sm active:scale-95"
-              title="Trợ lý tự động tìm & ghép giá thông minh theo tuyến đường và loại cont"
+              className="flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer shadow-2xs"
+              title="Trợ lý tự động tìm & ghép giá thông minh theo tuyến đường"
               id="btn-open-smart-assistant"
             >
-              <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
-              <span>Smart Rate Assistant</span>
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Smart Rates</span>
             </button>
           )}
 
@@ -239,18 +241,18 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             <button
               type="button"
               onClick={onCheckRateUpdates}
-              className={`flex items-center space-x-1.5 border text-xs px-3 py-1.5 rounded-lg transition-colors font-bold ${
+              className={`flex items-center space-x-1.5 border text-xs px-2.5 py-1.5 rounded-lg transition-colors font-medium cursor-pointer ${
                 outdatedRatesCount > 0
-                  ? 'bg-amber-100 text-amber-900 border-amber-300 animate-bounce shadow-xs'
-                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                  ? 'bg-amber-50 text-amber-900 border-amber-300'
+                  : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
               }`}
-              title="Kiểm tra bảng giá có thay đổi so với Master Rate mới nhất hay không"
+              title="Kiểm tra bảng giá có thay đổi so với Master Rate hay không"
               id="btn-check-rate-updates"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${outdatedRatesCount > 0 ? 'text-amber-700' : 'text-slate-500'}`} />
-              <span>Kiểm Tra Giá Mới</span>
+              <span>Cập Nhật Giá</span>
               {outdatedRatesCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-amber-600 text-white text-[10px] font-extrabold">
+                <span className="px-1.5 py-0.2 rounded-md bg-amber-600 text-white text-[10px] font-bold">
                   {outdatedRatesCount}
                 </span>
               )}
@@ -261,12 +263,12 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             <button
               type="button"
               onClick={onOpenRateSearch}
-              className="flex items-center space-x-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 font-bold text-xs px-3 py-1.5 rounded-lg transition-colors shadow-2xs"
-              title="Tra cứu & Áp dụng từ Hệ thống Bảng Giá Master"
+              className="flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium text-xs px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+              title="Tra cứu từ Biểu Cước Master"
               id="btn-open-rate-search-table"
             >
-              <Layers className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Bảng Giá Master</span>
+              <Layers className="w-3.5 h-3.5 text-slate-500" />
+              <span>Biểu Cước Master</span>
             </button>
           )}
 
@@ -274,39 +276,40 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             <button
               type="button"
               onClick={onOpenSurchargeCatalog}
-              className="flex items-center space-x-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 font-bold text-xs px-3 py-1.5 rounded-lg transition-colors"
-              title="Quản lý & Chọn từ Danh Mục Phụ Phí Master"
+              className="flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium text-xs px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+              title="Mở Danh Mục Phụ Phí"
             >
-              <Receipt className="w-3.5 h-3.5 text-amber-600" />
-              <span>Danh Mục Phụ Phí</span>
+              <Receipt className="w-3.5 h-3.5 text-slate-500" />
+              <span>Phụ Phí</span>
             </button>
           )}
 
           <button
+            type="button"
             onClick={() => handleAddItem('LOCAL_CHARGE', 'POL')}
-            className="flex items-center space-x-1.5 bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg shadow-2xs transition-colors"
+            className="flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
-            <span>Thêm Dòng Phí</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>+ Thêm Dòng Cước</span>
           </button>
         </div>
       </div>
 
       {/* Leg Breakdown Summary Bar */}
-      <div className="mx-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+      <div className="mx-3.5 sm:mx-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
         {/* POL */}
-        <div className="bg-emerald-50/70 border border-emerald-200 rounded-lg p-3 flex items-center justify-between">
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 bg-emerald-100 rounded-lg text-emerald-800">
-              <Anchor className="w-4 h-4" />
+        <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="p-1.5 bg-white rounded-lg text-slate-700 border border-slate-200">
+              <Anchor className="w-3.5 h-3.5" />
             </div>
             <div>
-              <div className="text-[10px] font-bold text-emerald-900 uppercase">1. Đầu Xuất (POL)</div>
-              <div className="text-[11px] text-emerald-700 font-medium">{polItems.length} hạng mục</div>
+              <div className="text-[11px] font-semibold text-slate-800">1. Đầu Xuất (POL)</div>
+              <div className="text-[10px] text-slate-500 font-mono">{polItems.length} mục</div>
             </div>
           </div>
           <div className="text-right">
-            <div className="font-mono font-bold text-emerald-950 text-xs sm:text-sm">{formatUSD(sumLocationUsd(polItems))}</div>
+            <div className="font-mono font-semibold text-slate-900 text-xs sm:text-sm">{formatUSD(sumLocationUsd(polItems))}</div>
             {showCostAndProfit && (
               <div className="font-mono text-[10px] text-emerald-700">Lãi: +{formatUSD(sumLocationProfitUsd(polItems))}</div>
             )}

@@ -28,124 +28,87 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({ shipment, onChangeSh
     onChangeShipment(updated);
   };
 
+  const transportModes: { mode: TransportMode; label: string; icon: React.ReactNode }[] = [
+    { mode: 'SEA_FCL', label: 'Biển (FCL)', icon: <Anchor className="w-3.5 h-3.5" /> },
+    { mode: 'SEA_LCL', label: 'Hàng Lẻ (LCL)', icon: <Box className="w-3.5 h-3.5" /> },
+    { mode: 'AIR_FREIGHT', label: 'Air Freight', icon: <Plane className="w-3.5 h-3.5" /> },
+    { mode: 'INLAND_TRUCKING', label: 'Trucking', icon: <Truck className="w-3.5 h-3.5" /> },
+    { mode: 'CUSTOMS_CLEARANCE', label: 'Hải Quan', icon: <ShieldCheck className="w-3.5 h-3.5" /> },
+    { mode: 'MULTIMODAL', label: 'Đa Phương Thức', icon: <Navigation className="w-3.5 h-3.5" /> },
+  ];
+
   return (
-    <div id="shipment-form-section" className="bg-white rounded-xl border border-slate-200 shadow-2xs space-y-4">
+    <div id="shipment-form-section" className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
       
       {/* Title Header */}
-      <div className="p-4 border-b border-slate-100 flex items-center space-x-2">
-        <Navigation className="w-4 h-4 text-blue-700" />
-        <span className="font-bold text-xs text-slate-500 uppercase tracking-widest">TUYẾN ĐƯỜNG & QUY CÁCH LÔ HÀNG</span>
+      <div className="p-3.5 sm:p-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-slate-700">
+            <Navigation className="w-3.5 h-3.5" />
+          </div>
+          <h2 className="text-xs font-semibold text-slate-900 tracking-tight">
+            Tuyến đường & Quy cách lô hàng
+          </h2>
+        </div>
+        <span className="text-[11px] text-slate-500 font-mono">
+          {shipment.containerType} · {shipment.quantity} {shipment.mode === 'SEA_FCL' ? 'cont' : 'kiện'}
+        </span>
       </div>
 
-      {/* Mode Selection Pills */}
-      <div className="px-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-        
-        <button
-          type="button"
-          onClick={() => handleModeChange('SEA_FCL')}
-          className={`p-2.5 rounded border text-xs font-semibold flex flex-col items-center space-y-1 transition-colors ${
-            shipment.mode === 'SEA_FCL'
-              ? 'bg-blue-50/80 border-blue-600 text-blue-900 shadow-2xs'
-              : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          <Anchor className="w-4 h-4 text-blue-700" />
-          <span className="text-[11px] font-bold uppercase tracking-wider">Biển (FCL)</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleModeChange('SEA_LCL')}
-          className={`p-2.5 rounded border text-xs font-semibold flex flex-col items-center space-y-1 transition-colors ${
-            shipment.mode === 'SEA_LCL'
-              ? 'bg-blue-50/80 border-blue-600 text-blue-900 shadow-2xs'
-              : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          <Box className="w-4 h-4 text-blue-700" />
-          <span className="text-[11px] font-bold uppercase tracking-wider">Hàng Lẻ (LCL)</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleModeChange('AIR_FREIGHT')}
-          className={`p-2.5 rounded border text-xs font-semibold flex flex-col items-center space-y-1 transition-colors ${
-            shipment.mode === 'AIR_FREIGHT'
-              ? 'bg-purple-50/80 border-purple-600 text-purple-900 shadow-2xs'
-              : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          <Plane className="w-4 h-4 text-purple-700" />
-          <span className="text-[11px] font-bold uppercase tracking-wider">Air Freight</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleModeChange('INLAND_TRUCKING')}
-          className={`p-2.5 rounded border text-xs font-semibold flex flex-col items-center space-y-1 transition-colors ${
-            shipment.mode === 'INLAND_TRUCKING'
-              ? 'bg-amber-50/80 border-amber-600 text-amber-900 shadow-2xs'
-              : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          <Truck className="w-4 h-4 text-amber-700" />
-          <span className="text-[11px] font-bold uppercase tracking-wider">Trucking</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleModeChange('CUSTOMS_CLEARANCE')}
-          className={`p-2.5 rounded border text-xs font-semibold flex flex-col items-center space-y-1 transition-colors ${
-            shipment.mode === 'CUSTOMS_CLEARANCE'
-              ? 'bg-emerald-50/80 border-emerald-600 text-emerald-900 shadow-2xs'
-              : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          <ShieldCheck className="w-4 h-4 text-emerald-700" />
-          <span className="text-[11px] font-bold uppercase tracking-wider">Hải Quan</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleModeChange('MULTIMODAL')}
-          className={`p-2.5 rounded border text-xs font-semibold flex flex-col items-center space-y-1 transition-colors ${
-            shipment.mode === 'MULTIMODAL'
-              ? 'bg-indigo-50/80 border-indigo-600 text-indigo-900 shadow-2xs'
-              : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          <Navigation className="w-4 h-4 text-indigo-700" />
-          <span className="text-[11px] font-bold uppercase tracking-wider">Đa Phương Thức</span>
-        </button>
-
+      {/* Mode Selection Segmented Control */}
+      <div className="px-4">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 p-1 bg-slate-100/80 rounded-xl">
+          {transportModes.map(({ mode, label, icon }) => {
+            const isActive = shipment.mode === mode;
+            return (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => handleModeChange(mode)}
+                className={`py-1.5 px-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {icon}
+                <span className="truncate">{label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Grid Inputs */}
-      <div className="p-5 pt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+      <div className="p-4 pt-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs">
         
         {/* POL (Port of Loading) */}
         <div>
-          <label className="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Từ (POL / Origin) *</label>
+          <label className="block text-[11px] font-medium text-slate-600 mb-1">
+            Cảng đi / Nơi gửi (POL) *
+          </label>
           <input
             type="text"
             list="ports-list"
             value={shipment.pol}
             onChange={(e) => onChangeShipment({ pol: e.target.value })}
-            className="w-full px-3 py-2 rounded border border-slate-200 font-semibold text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            placeholder="Cat Lai (VNVN)..."
+            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 font-medium text-slate-900 bg-slate-50/60 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs"
+            placeholder="Cát Lái, Hải Phòng, Tân Sơn Nhất..."
           />
         </div>
 
         {/* POD (Port of Discharge) */}
         <div>
-          <label className="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Đến (POD / Destination) *</label>
+          <label className="block text-[11px] font-medium text-slate-600 mb-1">
+            Cảng đến / Nơi nhận (POD) *
+          </label>
           <input
             type="text"
             list="ports-list"
             value={shipment.pod}
             onChange={(e) => onChangeShipment({ pod: e.target.value })}
-            className="w-full px-3 py-2 rounded border border-slate-200 font-semibold text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            placeholder="Hamburg (DEHAM)..."
+            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 font-medium text-slate-900 bg-slate-50/60 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs"
+            placeholder="Los Angeles, Hamburg, Singapore..."
           />
         </div>
 
@@ -158,23 +121,27 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({ shipment, onChangeSh
 
         {/* Commodity */}
         <div>
-          <label className="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Hàng Hóa (Commodity) *</label>
+          <label className="block text-[11px] font-medium text-slate-600 mb-1">
+            Tên hàng hoá (Commodity) *
+          </label>
           <input
             type="text"
             value={shipment.commodity}
             onChange={(e) => onChangeShipment({ commodity: e.target.value })}
-            className="w-full px-3 py-2 rounded border border-slate-200 text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            placeholder="Gỗ nội thất, Hàng may mặc..."
+            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/60 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs"
+            placeholder="May mặc, thuỷ sản, đồ gỗ, máy móc..."
           />
         </div>
 
         {/* Container / Spec Type */}
         <div>
-          <label className="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Loại Container / Quy Cách *</label>
+          <label className="block text-[11px] font-medium text-slate-600 mb-1">
+            Loại thiết bị / Quy cách *
+          </label>
           <select
             value={shipment.containerType}
             onChange={(e) => onChangeShipment({ containerType: e.target.value as ContainerType })}
-            className="w-full px-3 py-2 rounded border border-slate-200 text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/60 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs cursor-pointer"
           >
             <option value="20'GP">Container 20'GP (Tiêu chuẩn)</option>
             <option value="40'GP">Container 40'GP (Tiêu chuẩn)</option>
@@ -185,94 +152,97 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({ shipment, onChangeSh
             <option value="20'OT">Container 20' Open Top</option>
             <option value="40'OT">Container 40' Open Top</option>
             <option value="LCL (CBM/KGS)">LCL - Hàng lẻ gom cont</option>
-            <option value="AIR (KGS/CW)">AIR - Hàng không tính KGS</option>
+            <option value="AIR (KGS/CW)">AIR - Hàng không (CW/KGS)</option>
             <option value="Xe Tải 1.25 Tấn">Xe Tải 1.25 Tấn</option>
             <option value="Xe Tải 2.5 Tấn">Xe Tải 2.5 Tấn</option>
             <option value="Xe Tải 5 Tấn">Xe Tải 5 Tấn</option>
             <option value="Xe Tải 8 Tấn">Xe Tải 8 Tấn</option>
             <option value="Xe Tải 15 Tấn">Xe Tải 15 Tấn</option>
-            <option value="Xe Đầu Kéo / Moóc">Xe Đầu Kéo / Moóc Container</option>
+            <option value="Xe Đầu Kéo / Moóc">Xe Đầu Kéo / Moóc</option>
           </select>
         </div>
 
-        {/* Quantity (Number of Conts/Trips) */}
+        {/* Quantity */}
         <div>
-          <label className="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Số Lượng (Quantity) *</label>
+          <label className="block text-[11px] font-medium text-slate-600 mb-1">
+            Số lượng (Quantity) *
+          </label>
           <input
             type="number"
             min="1"
             value={shipment.quantity}
             onChange={(e) => onChangeShipment({ quantity: Math.max(1, Number(e.target.value) || 1) })}
-            className="w-full px-3 py-2 rounded border border-slate-200 text-slate-900 font-bold bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"
+            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 font-medium bg-slate-50/60 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs font-mono"
           />
         </div>
 
-        {/* Gross Weight (KG) */}
+        {/* Gross Weight */}
         <div>
-          <label className="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Gross Weight (KGS)</label>
+          <label className="block text-[11px] font-medium text-slate-600 mb-1">
+            Trọng lượng Gross (KGS)
+          </label>
           <input
             type="number"
             value={shipment.grossWeightKg}
             onChange={(e) => handleWeightOrCbmChange('grossWeightKg', Number(e.target.value) || 0)}
-            className="w-full px-3 py-2 rounded border border-slate-200 text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"
+            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/60 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs font-mono"
             placeholder="24500"
           />
         </div>
 
-        {/* Volume (CBM) */}
+        {/* Volume */}
         <div>
-          <label className="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Volume (CBM)</label>
+          <label className="block text-[11px] font-medium text-slate-600 mb-1">
+            Thể tích (CBM)
+          </label>
           <input
             type="number"
             step="0.01"
             value={shipment.volumeCbm}
             onChange={(e) => handleWeightOrCbmChange('volumeCbm', Number(e.target.value) || 0)}
-            className="w-full px-3 py-2 rounded border border-slate-200 text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"
+            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/60 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs font-mono"
             placeholder="68.5"
           />
         </div>
 
-        {/* Chargeable Weight Indicator */}
+        {/* Chargeable Weight */}
         <div>
-          <label className="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider flex items-center space-x-1">
-            <Calculator className="w-3.5 h-3.5 text-blue-600" />
-            <span>Trọng Lượng Tính Cước (CW)</span>
+          <label className="block text-[11px] font-medium text-slate-600 mb-1">
+            Trọng lượng tính cước (CW)
           </label>
-          <div className="w-full px-3 py-2 rounded border border-blue-200 bg-blue-50/50 font-bold text-blue-900 font-mono text-sm flex justify-between items-center">
+          <div className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50/60 font-medium text-slate-900 font-mono text-xs flex justify-between items-center">
             <span>{formatNumber(shipment.chargeableWeight)}</span>
-            <span className="text-[10px] text-blue-700 font-semibold uppercase tracking-wider">
-              {shipment.mode === 'AIR_FREIGHT' ? 'KGS (1 CBM=167KG)' : shipment.mode === 'SEA_LCL' ? 'RT / CBM' : 'Unit'}
+            <span className="text-[10px] text-slate-500 font-sans">
+              {shipment.mode === 'AIR_FREIGHT' ? 'CW KGS (1:6000)' : shipment.mode === 'SEA_LCL' ? 'RT / CBM' : 'Unit'}
             </span>
           </div>
         </div>
 
         {/* Transit Time */}
         <div>
-          <label className="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider flex items-center space-x-1">
-            <Clock className="w-3.5 h-3.5 text-slate-400" />
-            <span>Thời Gian Vận Chuyển (T/T)</span>
+          <label className="block text-[11px] font-medium text-slate-600 mb-1">
+            Thời gian hành trình (T/T)
           </label>
           <input
             type="text"
             value={shipment.transitTime || ''}
             onChange={(e) => onChangeShipment({ transitTime: e.target.value })}
-            className="w-full px-3 py-2 rounded border border-slate-200 text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            placeholder="14 - 16 ngày (Direct)"
+            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/60 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs"
+            placeholder="18 - 22 ngày"
           />
         </div>
 
-        {/* Free Time Demurrage / Detention */}
-        <div>
-          <label className="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider flex items-center space-x-1">
-            <Clock className="w-3.5 h-3.5 text-slate-400" />
-            <span>Free Time (Dem/Det)</span>
+        {/* Free Time */}
+        <div className="md:col-span-2 lg:col-span-3">
+          <label className="block text-[11px] font-medium text-slate-600 mb-1">
+            Thời gian miễn phí lưu cont / bãi (Free Time Dem/Det)
           </label>
           <input
             type="text"
             value={shipment.freeTime || ''}
             onChange={(e) => onChangeShipment({ freeTime: e.target.value })}
-            className="w-full px-3 py-2 rounded border border-slate-200 text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            placeholder="14 days Combined Dem/Det"
+            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/60 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs"
+            placeholder="14 ngày Demurrage & Detention kết hợp tại POD"
           />
         </div>
 
@@ -281,4 +251,3 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({ shipment, onChangeSh
     </div>
   );
 };
-

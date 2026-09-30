@@ -81,6 +81,7 @@ import { ShipmentForm } from './components/ShipmentForm';
 import { LineItemsTable } from './components/LineItemsTable';
 import { TermsForm } from './components/TermsForm';
 import { SummaryCard } from './components/SummaryCard';
+import { QuotationWorkspaceHeader, WorkspaceTab } from './components/QuotationWorkspaceHeader';
 
 import { QuotationCommunicationPanel } from './components/communication/QuotationCommunicationPanel';
 import type { MasterDataType } from './components/MasterDataReferenceModal';
@@ -276,6 +277,7 @@ export default function App() {
   const [isComparisonModalOpen, setIsComparisonModalOpen] = useState(false);
   const [isDataBackupOpen, setIsDataBackupOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<WorkspaceTab>('DETAILS');
   
   // Phase 7: Professional PDF Quotation Engine & Template Builder Modals
   const [isGeneratePdfOpen, setIsGeneratePdfOpen] = useState(false);
@@ -2004,6 +2006,12 @@ export default function App() {
             rateCount={rates.length}
             onOpenIntegrityDashboard={() => setIsIntegrityDashboardOpen(true)}
             onOpenDashboard={handleOpenDashboard}
+            onOpenSavedQuotes={() => {
+              setSavedQuotesInitialFilter('ALL');
+              setIsSavedOpen(true);
+            }}
+            onOpenShipments={() => setIsShipmentWorkspaceOpen(true)}
+            onOpenControlTower={() => setIsControlTowerOpen(true)}
             onOpenCompanyProfile={(tab) => {
               handleOpenCompanyProfile(tab || 'profile');
             }}
@@ -2016,15 +2024,30 @@ export default function App() {
           />
 
           {/* Main Content Area */}
-          <main className="flex-1 w-full max-w-[1800px] mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+          <main className="flex-1 w-full max-w-[1720px] mx-auto p-3 sm:p-5 lg:p-6 space-y-4">
             
             {/* Toast Alert */}
             {toastMessage && (
-              <div className="fixed bottom-12 right-6 z-50 bg-slate-900 text-white font-bold text-xs px-4 py-3 rounded-xl shadow-2xl border border-blue-500/80 flex items-center space-x-2 animate-bounce">
+              <div className="fixed bottom-12 right-6 z-50 bg-slate-900 text-white font-medium text-xs px-4 py-2.5 rounded-xl shadow-xl border border-slate-700 flex items-center space-x-2 animate-bounce">
                 <Check className="w-4 h-4 text-emerald-400" />
                 <span>{toastMessage}</span>
               </div>
             )}
+
+            {/* Quotation Workspace Header & Ergonomic Action Bar */}
+            <QuotationWorkspaceHeader
+              quote={quote}
+              activeTab={activeWorkspaceTab}
+              onTabChange={setActiveWorkspaceTab}
+              onSaveQuote={handleSaveQuoteAction}
+              onOpenPreview={() => setIsPreviewOpen(true)}
+              onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
+              onOpenSendModal={() => setIsSendQuotationOpen(true)}
+              onOpenDecisionWorkspace={handleOpenDecisionWorkspaceForCurrentQuote}
+              onOpenSmartAssistant={() => setIsSmartAssistantOpen(true)}
+              isSaving={isAutoSaving}
+              lastSavedAt={lastAutoSaveTime}
+            />
 
             {/* Dashboard Stats Bar */}
             <DashboardStats 
@@ -2032,147 +2055,180 @@ export default function App() {
               onOpenAnalytics={() => setIsDashboardOpen(true)}
             />
 
-            {/* Top Section: Customer Info & Shipment Route Forms Side-by-Side */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <CustomerForm
-                customer={quote.customer}
-                quoteNumber={quote.quoteNumber}
-                createdDate={quote.createdDate}
-                validityDate={quote.terms.validityDate}
-                status={quote.status}
-                salesRepName={company.salesRepName}
-                customers={customers}
-                onChangeCustomer={handleChangeCustomer}
-                onChangeQuoteMeta={handleChangeQuoteMeta}
-                onOpenCustomerManager={() => setIsCustomersOpen(true)}
-                onSaveToCrm={handleSaveCurrentCustomerToCrm}
-                onSelectCustomer={handleSelectCustomerForQuote}
-                isSavingToCrm={isSavingCustomerToCrm}
-              />
+            {/* Tab 1: Chi Tiết & Bảng Cước (or ALL) */}
+            {(activeWorkspaceTab === 'DETAILS' || activeWorkspaceTab === 'ALL') && (
+              <>
+                {/* Top Section: Customer Info & Shipment Route Forms Side-by-Side */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  <CustomerForm
+                    customer={quote.customer}
+                    quoteNumber={quote.quoteNumber}
+                    createdDate={quote.createdDate}
+                    validityDate={quote.terms.validityDate}
+                    status={quote.status}
+                    salesRepName={company.salesRepName}
+                    customers={customers}
+                    onChangeCustomer={handleChangeCustomer}
+                    onChangeQuoteMeta={handleChangeQuoteMeta}
+                    onOpenCustomerManager={() => setIsCustomersOpen(true)}
+                    onSaveToCrm={handleSaveCurrentCustomerToCrm}
+                    onSelectCustomer={handleSelectCustomerForQuote}
+                    isSavingToCrm={isSavingCustomerToCrm}
+                  />
 
-              <ShipmentForm
-                shipment={quote.shipment}
-                onChangeShipment={handleChangeShipment}
-              />
-            </div>
-
-            {/* Phase 14 Contract Quick Resolver Action Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 border border-indigo-200/80 rounded-xl shadow-2xs">
-              <div className="flex items-center gap-2 text-xs">
-                <span className="p-1.5 bg-purple-600 text-white rounded-lg shadow-2xs">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                </span>
-                <div>
-                  <span className="font-bold text-slate-800">Contract Rate Engine:</span>
-                  <span className="text-slate-600 ml-1.5">
-                    {quote.customer.companyName ? `Khách: ${quote.customer.companyName}` : 'Chưa chọn khách hàng'} &bull; {quote.shipment.origin || 'POL'} &rarr; {quote.shipment.destination || 'POD'}
-                  </span>
+                  <ShipmentForm
+                    shipment={quote.shipment}
+                    onChangeShipment={handleChangeShipment}
+                  />
                 </div>
+
+                {/* Contract & Smart Rates Toolbar */}
+                <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 bg-white border border-slate-200/90 rounded-2xl shadow-2xs">
+                  <div className="flex items-center gap-2 text-xs">
+                    <div className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-slate-700">
+                      <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-slate-800">Cước hợp đồng & Định giá:</span>
+                      <span className="text-slate-500">
+                        {quote.customer.companyName ? quote.customer.companyName : 'Chưa chọn khách hàng'}
+                      </span>
+                      <span className="text-slate-300">·</span>
+                      <span className="font-mono text-slate-600">
+                        {quote.shipment.pol || 'POL'} &rarr; {quote.shipment.pod || 'POD'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={handleResolveContractPricing}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-2xs transition-colors cursor-pointer"
+                      id="btn-resolve-contract-pricing"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5" /> Khớp Giá Hợp Đồng
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsContractsOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+                    >
+                      Danh Sách HĐ ({contractsCount})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsSmartQuotationWorkspaceOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+                      id="btn-open-smart-quotation-workspace"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Bàn Tính Giá Nâng Cao
+                    </button>
+                  </div>
+                </div>
+
+                {/* Line Items Table */}
+                <div className="w-full">
+                  <LineItemsTable
+                    items={quote.items}
+                    exchangeRate={quote.exchangeRate}
+                    onUpdateItems={handleUpdateItems}
+                    pricingWarnings={quote.pricingWarnings}
+                    onOpenSurchargeCatalog={() => setIsSurchargesOpen(true)}
+                    onOpenRateSearch={() => setIsRateSearchOpen(true)}
+                    onOpenSmartAssistant={() => setIsSmartAssistantOpen(true)}
+                    onCheckRateUpdates={() => setIsComparisonModalOpen(true)}
+                    outdatedRatesCount={outdatedRatesDiffs.length}
+                  />
+                </div>
+
+                {/* Summary Card */}
+                <SummaryCard
+                  quote={quote}
+                  onExchangeRateChange={handleExchangeRateChange}
+                  onCurrencyChange={handleQuoteCurrencyChange}
+                  onSaveQuote={handleSaveQuoteAction}
+                  onExportPdf={(curr) => exportQuoteToPdf(quote, curr)}
+                  onExportExcel={(curr) => exportQuoteToExcel(quote, curr)}
+                  onOpenPreview={() => setIsPreviewOpen(true)}
+                  onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
+                  onOpenSendModal={() => setIsSendQuotationOpen(true)}
+                  onOpenProfitIntelligence={() => setIsProfitIntelligenceOpen(true)}
+                />
+              </>
+            )}
+
+            {/* Tab 2: Điều Khoản & Ngân Hàng (or ALL) */}
+            {(activeWorkspaceTab === 'TERMS' || activeWorkspaceTab === 'ALL') && (
+              <div className="space-y-4">
+                <TermsForm
+                  terms={quote.terms}
+                  quoteCurrency={quote.quoteCurrency}
+                  onChangeTerms={handleChangeTerms}
+                  onChangeCurrency={handleQuoteCurrencyChange}
+                />
+
+                {activeWorkspaceTab === 'TERMS' && (
+                  <SummaryCard
+                    quote={quote}
+                    onExchangeRateChange={handleExchangeRateChange}
+                    onCurrencyChange={handleQuoteCurrencyChange}
+                    onSaveQuote={handleSaveQuoteAction}
+                    onExportPdf={(curr) => exportQuoteToPdf(quote, curr)}
+                    onExportExcel={(curr) => exportQuoteToExcel(quote, curr)}
+                    onOpenPreview={() => setIsPreviewOpen(true)}
+                    onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
+                    onOpenSendModal={() => setIsSendQuotationOpen(true)}
+                    onOpenProfitIntelligence={() => setIsProfitIntelligenceOpen(true)}
+                  />
+                )}
               </div>
+            )}
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleOpenDecisionWorkspaceForCurrentQuote}
-                  className="px-3.5 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
-                  id="btn-open-decision-workspace-current-quote"
-                  title="Mở Decision Hub & Phân tích kịch bản What-If cho báo giá này"
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-400" /> Decision Hub
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsSmartQuotationWorkspaceOpen(true)}
-                  className="px-3.5 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
-                  id="btn-open-smart-quotation-workspace"
-                >
-                  <Sparkles className="w-3.5 h-3.5 animate-pulse" /> Smart Workspace (Phase 20)
-                </button>
-                <button
-                  type="button"
-                  onClick={handleResolveContractPricing}
-                  className="px-3 py-1.5 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-2xs flex items-center gap-1.5 transition-colors"
-                  id="btn-resolve-contract-pricing"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5" /> Khớp Giá Hợp Đồng
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsContractsOpen(true)}
-                  className="px-3 py-1.5 text-xs font-semibold text-purple-900 bg-white hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors"
-                >
-                  Quản Lý HĐ ({contractsCount})
-                </button>
+            {/* Tab 3: Giao Tiếp & Lịch Sử (or ALL) */}
+            {(activeWorkspaceTab === 'COMMUNICATION' || activeWorkspaceTab === 'ALL') && (
+              <div className="space-y-4">
+                <div id="quotation-communication-section" className="w-full">
+                  <QuotationCommunicationPanel
+                    quote={quote}
+                    documents={quotationDocuments}
+                    onOpenSendModal={() => setIsSendQuotationOpen(true)}
+                    onOpenFollowUpModal={() => setIsFollowUpOpen(true)}
+                    onOpenSecureLinkPreview={(token) => setViewingSecureToken(token)}
+                    onRefreshQuote={() => handleSelectQuote(quote)}
+                  />
+                </div>
+
+                {activeWorkspaceTab === 'COMMUNICATION' && (
+                  <SummaryCard
+                    quote={quote}
+                    onExchangeRateChange={handleExchangeRateChange}
+                    onCurrencyChange={handleQuoteCurrencyChange}
+                    onSaveQuote={handleSaveQuoteAction}
+                    onExportPdf={(curr) => exportQuoteToPdf(quote, curr)}
+                    onExportExcel={(curr) => exportQuoteToExcel(quote, curr)}
+                    onOpenPreview={() => setIsPreviewOpen(true)}
+                    onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
+                    onOpenSendModal={() => setIsSendQuotationOpen(true)}
+                    onOpenProfitIntelligence={() => setIsProfitIntelligenceOpen(true)}
+                  />
+                )}
               </div>
-            </div>
-
-            {/* Full-Width Section: Line Items Table (Pricing Engine Integration) */}
-            <div className="w-full">
-              <LineItemsTable
-                items={quote.items}
-                exchangeRate={quote.exchangeRate}
-                onUpdateItems={handleUpdateItems}
-                pricingWarnings={quote.pricingWarnings}
-                onOpenSurchargeCatalog={() => setIsSurchargesOpen(true)}
-                onOpenRateSearch={() => setIsRateSearchOpen(true)}
-                onOpenSmartAssistant={() => setIsSmartAssistantOpen(true)}
-                onCheckRateUpdates={() => setIsComparisonModalOpen(true)}
-                outdatedRatesCount={outdatedRatesDiffs.length}
-              />
-            </div>
-
-            {/* Summary Card - Positioned directly below Line Items Table */}
-            <SummaryCard
-              quote={quote}
-              onExchangeRateChange={handleExchangeRateChange}
-              onCurrencyChange={handleQuoteCurrencyChange}
-              onSaveQuote={handleSaveQuoteAction}
-              onExportPdf={(curr) => exportQuoteToPdf(quote, curr)}
-              onExportExcel={(curr) => exportQuoteToExcel(quote, curr)}
-              onOpenPreview={() => setIsPreviewOpen(true)}
-              onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
-              onOpenSendModal={() => setIsSendQuotationOpen(true)}
-              onOpenProfitIntelligence={() => setIsProfitIntelligenceOpen(true)}
-            />
-
-            {/* Phase 8: Quotation Communication, Dispatch History & Timeline Panel */}
-            <div id="quotation-communication-section" className="w-full">
-              <QuotationCommunicationPanel
-                quote={quote}
-                documents={quotationDocuments}
-                onOpenSendModal={() => setIsSendQuotationOpen(true)}
-                onOpenFollowUpModal={() => setIsFollowUpOpen(true)}
-                onOpenSecureLinkPreview={(token) => setViewingSecureToken(token)}
-                onRefreshQuote={() => handleSelectQuote(quote)}
-              />
-            </div>
-
-            {/* Terms & Conditions */}
-            <TermsForm
-              terms={quote.terms}
-              quoteCurrency={quote.quoteCurrency}
-              onChangeTerms={handleChangeTerms}
-              onChangeCurrency={handleQuoteCurrencyChange}
-            />
+            )}
 
           </main>
 
-          {/* Technical Status Bar Footer */}
-          <footer className="h-10 bg-slate-900 text-slate-400 px-6 flex items-center justify-between text-[11px] uppercase tracking-wider font-mono border-t border-slate-800 shrink-0">
-            <div className="flex items-center space-x-4">
-              <span>Ex.Rate: 1 USD = {quote.exchangeRate.toLocaleString()} VND</span>
-              <span className="hidden md:inline text-slate-700">|</span>
-              <span className="text-amber-300 font-semibold">Đồng tiền file: {quote.quoteCurrency || 'USD'}</span>
-              <span className="hidden md:inline text-slate-700">|</span>
-              <span className="hidden md:inline text-cyan-400">Pricing Engine Active</span>
+          {/* Minimalist Professional Footer */}
+          <footer className="py-4 px-6 border-t border-slate-200/80 bg-white text-slate-500 flex flex-col sm:flex-row items-center justify-between text-xs gap-2 shrink-0">
+            <div className="flex items-center space-x-3 text-slate-600 font-mono">
+              <span>1 USD = {quote.exchangeRate.toLocaleString()} VND</span>
+              <span className="text-slate-300">·</span>
+              <span>Đơn vị báo giá: <strong className="text-slate-900">{quote.quoteCurrency || 'USD'}</strong></span>
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="flex items-center gap-1.5 font-bold text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                Firestore Synced
-              </span>
-              <span className="hidden sm:inline text-slate-700">|</span>
-              <span className="hidden sm:inline">Logistics Freight Management</span>
+            <div className="flex items-center space-x-3 text-slate-400 text-[11px]">
+              <span>LogiQuote · Hệ Thống Quản Lý Báo Giá Logistics</span>
+              <span>·</span>
+              <span>Đồng bộ Cloud đa thiết bị</span>
             </div>
           </footer>
 
