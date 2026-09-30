@@ -46,9 +46,10 @@ export function invalidateRateCaches(): void {
  * RATE MASTERS CRUD (PAGINATED / INDEXED)
  * ============================================================================
  */
-export async function fetchRateMasters(forceRefresh = false): Promise<RateMasterItem[]> {
+export async function fetchRateMasters(forceRefresh = false, companyId?: string): Promise<RateMasterItem[]> {
+  const targetCompany = companyId || localStorage.getItem('logistics_active_company_id') || undefined;
   const now = Date.now();
-  if (!forceRefresh && memoryRatesCache && (now - memoryRatesCache.cachedAt < CACHE_TTL_MS)) {
+  if (!forceRefresh && !targetCompany && memoryRatesCache && (now - memoryRatesCache.cachedAt < CACHE_TTL_MS)) {
     return memoryRatesCache.data;
   }
 
@@ -56,16 +57,27 @@ export async function fetchRateMasters(forceRefresh = false): Promise<RateMaster
 
   try {
     let snap: any = null;
-    try {
-      const q = query(
-        collection(db, COLLECTIONS.RATE_MASTERS),
-        orderBy('updatedAt', 'desc')
-      );
-      snap = await getDocs(q);
-    } catch {
-      // Fallback without orderBy if some documents lack the field or index is missing
-      const fallbackQ = query(collection(db, COLLECTIONS.RATE_MASTERS));
-      snap = await getDocs(fallbackQ);
+    const collRef = collection(db, COLLECTIONS.RATE_MASTERS);
+    
+    if (targetCompany) {
+      try {
+        const q = query(
+          collRef,
+          where('companyId', '==', targetCompany),
+          orderBy('updatedAt', 'desc')
+        );
+        snap = await getDocs(q);
+      } catch {
+        const fallbackQ = query(collRef, where('companyId', '==', targetCompany));
+        snap = await getDocs(fallbackQ);
+      }
+    } else {
+      try {
+        const q = query(collRef, orderBy('updatedAt', 'desc'));
+        snap = await getDocs(q);
+      } catch {
+        snap = await getDocs(collRef);
+      }
     }
 
     const items: RateMasterItem[] = [];
@@ -80,8 +92,7 @@ export async function fetchRateMasters(forceRefresh = false): Promise<RateMaster
 
     memoryRatesCache = { data: items, cachedAt: now };
     return items;
-  } catch (err) {
-    console.error('[rateRepository] Error fetching rate masters from Firestore:', err);
+  } catch (err: any) {
     return memoryRatesCache ? memoryRatesCache.data : [];
   }
 }

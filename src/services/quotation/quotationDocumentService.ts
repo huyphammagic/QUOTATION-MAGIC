@@ -337,26 +337,24 @@ export async function generateAndSaveQuotationDocument(
     generationState: 'SAVED',
   };
 
-  // 8. Save record locally
+  // 8. Save record to Firestore (Confirmation required)
+  if (!db) {
+    throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
+  }
+
+  const docRef = doc(db, COLLECTIONS.DOCUMENTS, docId);
+  await setDoc(docRef, {
+    ...record,
+    _createdAt: serverTimestamp(),
+  });
+
+  // 9. Save record to local memory cache after confirmed Firestore write
   const localDocs = getLocalDocuments();
   const filteredLocal = localDocs.map(d => {
     const updated = updatedPreviousDocs.find(up => up.id === d.id);
     return updated || d;
   });
   saveLocalDocuments([record, ...filteredLocal]);
-
-  // 9. Save record to Firestore
-  if (db) {
-    try {
-      const docRef = doc(db, COLLECTIONS.DOCUMENTS, docId);
-      await setDoc(docRef, {
-        ...record,
-        _createdAt: serverTimestamp(),
-      });
-    } catch (error) {
-      console.warn('Firestore document record save notice:', error);
-    }
-  }
 
   // 10. Audit Log
   await recordAuditLog({
@@ -623,22 +621,20 @@ export async function uploadSupportingDocument(
     uploadedFile: true,
   };
 
-  // Save to memory
+  // Save to Firestore (Confirmation required)
+  if (!db) {
+    throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
+  }
+
+  const docRef = doc(db, COLLECTIONS.DOCUMENTS, docId);
+  await setDoc(docRef, {
+    ...record,
+    _createdAt: serverTimestamp(),
+  });
+
+  // Save to local cache after confirmed Firestore write
   const local = getLocalDocuments();
   saveLocalDocuments([record, ...local]);
-
-  // Save to Firestore
-  if (db) {
-    try {
-      const docRef = doc(db, COLLECTIONS.DOCUMENTS, docId);
-      await setDoc(docRef, {
-        ...record,
-        _createdAt: serverTimestamp(),
-      });
-    } catch (err) {
-      console.warn('Firestore save supporting document notice:', err);
-    }
-  }
 
   // Audit log
   await recordAuditLog({

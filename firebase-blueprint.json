@@ -365,6 +365,21 @@
         "quotationAmount": { "type": "number" },
         "quotationCurrency": { "type": "string" }
       }
+    },
+    "CompanyMembership": {
+      "collection": "companyMemberships",
+      "fields": {
+        "membershipId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "userName": { "type": "string" },
+        "companyId": { "type": "string" },
+        "role": { "type": "string" },
+        "permissions": { "type": "object" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
     }
   }
 }

@@ -19,7 +19,7 @@ export const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({
   onClose,
   customerId,
   customerName,
-  companyId = 'default-company',
+  companyId = 'company_profile',
   user,
   onSuccess,
 }) => {

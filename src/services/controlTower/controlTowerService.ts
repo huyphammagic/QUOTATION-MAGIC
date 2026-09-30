@@ -15,7 +15,7 @@ import { ShipmentException } from '../../types/exception';
  * STRICT RULE: Only real data from Firebase/Cache. Never synthetic or mock data.
  */
 export async function getControlTowerKPIs(companyId: string): Promise<ControlTowerKPIs> {
-  const effectiveCompanyId = companyId || 'default-company';
+  const effectiveCompanyId = companyId || 'company_profile';
 
   // Fetch recent active shipments and exceptions without full-database scan
   const [{ shipments }, { exceptions }] = await Promise.all([
@@ -112,7 +112,7 @@ export async function getUpcomingDeadlines(
   companyId: string,
   limitCount = 15
 ): Promise<UpcomingDeadline[]> {
-  const effectiveCompanyId = companyId || 'default-company';
+  const effectiveCompanyId = companyId || 'company_profile';
   const { shipments } = await getShipments(effectiveCompanyId, { pageLimit: 50 });
   const active = shipments.filter(s => s.status !== 'COMPLETED' && s.status !== 'CANCELLED');
 
@@ -202,7 +202,7 @@ export async function getOperationalRisks(
   companyId: string,
   limitCount = 15
 ): Promise<OperationalRiskItem[]> {
-  const effectiveCompanyId = companyId || 'default-company';
+  const effectiveCompanyId = companyId || 'company_profile';
   const [{ shipments }, { exceptions }] = await Promise.all([
     getShipments(effectiveCompanyId, { pageLimit: 50 }),
     getExceptions(effectiveCompanyId, { status: 'ACTIVE', pageLimit: 100 }),
@@ -288,7 +288,7 @@ export async function runCompanyExceptionDetection(
   companyId: string,
   user: { uid: string; displayName?: string; email?: string }
 ): Promise<{ totalScanned: number; newExceptionsCount: number }> {
-  const effectiveCompanyId = companyId || 'default-company';
+  const effectiveCompanyId = companyId || 'company_profile';
   const { shipments } = await getShipments(effectiveCompanyId, { pageLimit: 50 });
   const active = shipments.filter(s => s.status !== 'COMPLETED' && s.status !== 'CANCELLED');
 

@@ -44,7 +44,7 @@ export const Customer360Modal: React.FC<Customer360ModalProps> = ({
   isOpen,
   onClose,
   customer,
-  companyId = 'default-company',
+  companyId = 'company_profile',
   user,
   quotes = [],
   shipments = [],
@@ -84,7 +84,7 @@ export const Customer360Modal: React.FC<Customer360ModalProps> = ({
 
       // Load Business Opportunity Radar items
       try {
-        const radarList = await getBusinessOpportunities(companyId || 'default-company', { customerId: customer.id });
+        const radarList = await getBusinessOpportunities(companyId || 'company_profile', { customerId: customer.id });
         setRadarOpportunities(radarList);
       } catch (rErr) {
         console.warn('Could not load radar opportunities:', rErr);

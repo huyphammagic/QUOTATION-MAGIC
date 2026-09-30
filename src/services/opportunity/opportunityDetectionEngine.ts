@@ -35,9 +35,12 @@ export function detectRealBusinessOpportunities(
   } = context;
 
   const opportunities: BusinessOpportunity[] = [];
+  if (!companyId) {
+    return opportunities;
+  }
   const now = new Date();
   const nowMs = now.getTime();
-  const defaultOwnerId = user?.email || 'sales@logistics.vn';
+  const defaultOwnerId = user?.email || '';
   const defaultOwnerName = user?.name || 'Sales Representative';
 
   // Helper to safely format dates
@@ -70,7 +73,7 @@ export function detectRealBusinessOpportunities(
 
     return {
       id,
-      companyId: companyId || 'default-company',
+      companyId,
       customerId,
       customerName: customerName || 'Khách hàng',
       title,

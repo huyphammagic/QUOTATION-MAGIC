@@ -15,7 +15,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { QuoteData } from '../../types/logistics';
-import { syncHealthService } from '../integrity/syncHealthService';
+import { syncHealthService, classifyErrorToSaveState } from '../integrity/syncHealthService';
 import { recordHealthAudit } from '../audit/systemHealthAuditService';
 
 import { validateQuotationIntegrity, isQuotationLocked } from '../integrity/quotationIntegrityEngine';
@@ -58,16 +58,16 @@ export interface SaveQuotationResult {
  * Does NOT scan entire database blindly; uses limits and sorting.
  */
 export async function fetchQuotations(options: FetchQuotationsOptions = {}): Promise<QuoteData[]> {
-  const { companyId, status, customerId, limitCount = 50, forceRefresh = false } = options;
+  const targetCompany = options.companyId || localStorage.getItem('logistics_active_company_id') || undefined;
+  const { status, customerId, limitCount = 50, forceRefresh = false } = options;
 
   // 1. Check in-memory cache if no specific filters
   const now = Date.now();
-  if (!forceRefresh && !companyId && !status && !customerId && memoryQuotesCache && (now - memoryQuotesCache.cachedAt < CACHE_TTL_MS)) {
+  if (!forceRefresh && !targetCompany && !status && !customerId && memoryQuotesCache && (now - memoryQuotesCache.cachedAt < CACHE_TTL_MS)) {
     return memoryQuotesCache.data;
   }
 
   if (!db) {
-    console.warn('[quotationRepository] Firestore is not initialized.');
     return memoryQuotesCache ? memoryQuotesCache.data : [];
   }
 
@@ -75,8 +75,8 @@ export async function fetchQuotations(options: FetchQuotationsOptions = {}): Pro
     const collRef = collection(db, COLLECTION_NAME);
     const constraints: any[] = [];
 
-    if (companyId) {
-      constraints.push(where('companyId', '==', companyId));
+    if (targetCompany) {
+      constraints.push(where('companyId', '==', targetCompany));
     }
     if (status && status !== 'ALL') {
       constraints.push(where('status', '==', status));
@@ -94,11 +94,15 @@ export async function fetchQuotations(options: FetchQuotationsOptions = {}): Pro
       const q = query(collRef, ...constraints);
       snap = await getDocs(q);
     } catch (queryErr: any) {
-      console.warn('[quotationRepository] Query with constraints notice, falling back to plain collection:', queryErr?.message || queryErr);
-      try {
-        snap = await getDocs(collRef);
-      } catch (collErr: any) {
-        console.warn('[quotationRepository] Notice fetching quotations:', collErr?.message || collErr);
+      if (targetCompany) {
+        try {
+          const fallbackQ = query(collRef, where('companyId', '==', targetCompany), limit(limitCount));
+          snap = await getDocs(fallbackQ);
+        } catch {
+          if (memoryQuotesCache) return memoryQuotesCache.data;
+          return [];
+        }
+      } else {
         if (memoryQuotesCache) return memoryQuotesCache.data;
         return [];
       }
@@ -128,8 +132,6 @@ export async function fetchQuotations(options: FetchQuotationsOptions = {}): Pro
 
     return items.length > 0 ? items : (memoryQuotesCache ? memoryQuotesCache.data : []);
   } catch (error: any) {
-    console.warn('[quotationRepository] Notice fetching quotations from Firestore:', error?.message || error);
-    // Return cached data if available on error
     if (memoryQuotesCache) return memoryQuotesCache.data;
     return [];
   }
@@ -185,15 +187,18 @@ export async function saveQuotation(
     forceOverwrite?: boolean;
     userId?: string;
     userName?: string;
+    companyId?: string;
   }
 ): Promise<SaveQuotationResult> {
   const quoteId = quote.id || `quote-${Date.now()}`;
   let newVersion = quote.version || 1;
+  const effectiveCompanyId = quote.companyId || (quote.company as any)?.companyId || options?.companyId || 'company_profile';
 
   if (!db) {
     const fallbackPayload: QuoteData = {
       ...quote,
       id: quoteId,
+      companyId: effectiveCompanyId,
       version: newVersion,
       updatedDate: new Date().toISOString().slice(0, 10),
     };
@@ -291,84 +296,88 @@ export async function saveQuotation(
     const payload: QuoteData = {
       ...quote,
       id: quoteId,
+      companyId: effectiveCompanyId,
       version: newVersion,
       updatedDate: new Date().toISOString().slice(0, 10),
       _updatedAt: serverTimestamp(),
       _updatedBy: options?.userId || quote._updatedBy || 'Sales User',
     };
 
-    // 2. Perform write to Firestore (with offline queue resilience)
-    let savedToCloud = true;
-    try {
-      await setDoc(docRef, payload, { merge: true });
-    } catch (writeErr: any) {
-      console.warn('[quotationRepository] Notice saving to Firestore (cached offline):', writeErr?.message || writeErr);
-      savedToCloud = false;
+    // 2. Offline check prior to write
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      syncHealthService.setSaveState('OFFLINE', 'Không thể lưu lên Cloud khi mất kết nối mạng.');
+      syncHealthService.endOperation(opKey, false, new Error('Offline'));
+      return {
+        success: false,
+        conflict: false,
+        message: 'Thiết bị đang ngoại tuyến. Dữ liệu chưa thể lưu lên Cloud.',
+      };
     }
 
-    // Always update local in-memory caches so user never loses their changes
+    // 3. Perform write to Firestore (Strict confirmation before reporting success)
+    await setDoc(docRef, payload, { merge: true });
+
+    // Confirm write was acknowledged and client is online
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      syncHealthService.setSaveState('OFFLINE', 'Đã ghi nhận ngoại tuyến, chưa được xác nhận bởi Cloud.');
+      syncHealthService.endOperation(opKey, false, new Error('Offline'));
+      return {
+        success: false,
+        conflict: false,
+        message: 'Đang ở chế độ ngoại tuyến. Dữ liệu chưa được xác nhận bởi Cloud.',
+      };
+    }
+
+    // Update in-memory caches only after confirmed Firebase Cloud write
     invalidateQuotationCache();
     memorySingleQuoteCache.set(quoteId, {
       data: payload,
       cachedAt: Date.now(),
     });
 
-    if (savedToCloud) {
-      syncHealthService.setSaveState('SAVED', `Đã lưu thành công lên Cloud (v${newVersion})`);
-      syncHealthService.endOperation(opKey, true);
-    } else {
-      syncHealthService.setSaveState('SAVE_FAILED', 'Đã lưu ngoại tuyến, chờ kết nối Cloud');
-      syncHealthService.endOperation(opKey, false, new Error('Chế độ ngoại tuyến'));
-    }
+    syncHealthService.setSaveState('SAVED_TO_CLOUD', `Đã lưu thành công lên Cloud (v${newVersion})`);
+    syncHealthService.endOperation(opKey, true);
 
     return {
       success: true,
       conflict: false,
       savedQuote: payload,
-      message: savedToCloud 
-        ? `Đã lưu thành công lên Cloud (Phiên bản v${newVersion}).`
-        : `Đã lưu dữ liệu ngoại tuyến (sẽ tự động đồng bộ lên Cloud khi kết nối).`,
+      message: `Đã lưu thành công lên Cloud (Phiên bản v${newVersion}).`,
     };
   } catch (error: any) {
-    console.warn('[quotationRepository] Handled notice saving quotation:', error?.message || error);
-    syncHealthService.setSaveState('SAVE_FAILED', error?.message || 'Lỗi khi lưu');
+    console.error('[quotationRepository] Error saving quotation to Firebase:', error?.message || error);
+    const classified = classifyErrorToSaveState(error);
+    syncHealthService.setSaveState(classified.state, classified.messageVi);
     syncHealthService.endOperation(opKey, false, error);
-    const fallbackPayload: QuoteData = {
-      ...quote,
-      id: quoteId,
-      version: newVersion,
-      updatedDate: new Date().toISOString().slice(0, 10),
-    };
-    invalidateQuotationCache();
-    memorySingleQuoteCache.set(quoteId, {
-      data: fallbackPayload,
-      cachedAt: Date.now(),
-    });
     return {
-      success: true,
-      savedQuote: fallbackPayload,
-      message: 'Đã lưu bản ghi vào bộ nhớ ngoại tuyến.',
+      success: false,
+      conflict: false,
+      message: classified.messageVi || error?.message || 'Lỗi khi lưu báo giá lên Firebase.',
     };
   }
 }
 
 /**
- * Delete quotation from Firestore
+ * Delete quotation from Firestore with strict confirmation
  */
 export async function deleteQuotation(id: string): Promise<boolean> {
   if (!id) return false;
-  invalidateQuotationCache();
-  memorySingleQuoteCache.delete(id);
-
-  if (!db) return true;
+  if (!db) {
+    syncHealthService.setSaveState('OFFLINE', 'Không thể xóa báo giá khi mất kết nối Cloud');
+    return false;
+  }
 
   try {
     const docRef = doc(db, COLLECTION_NAME, id);
     await deleteDoc(docRef);
+    invalidateQuotationCache();
+    memorySingleQuoteCache.delete(id);
     return true;
-  } catch (error) {
-    console.warn(`[quotationRepository] Notice deleting quotation ${id}:`, error);
-    return true;
+  } catch (error: any) {
+    console.error(`[quotationRepository] Notice deleting quotation ${id}:`, error);
+    const classified = classifyErrorToSaveState(error);
+    syncHealthService.setSaveState(classified.state, classified.messageVi);
+    return false;
   }
 }
 

@@ -24,7 +24,16 @@ export type RoundingMethod =
 
 export type ExchangeRateMode = 'MANUAL' | 'SYSTEM_FIXED' | 'EXTERNAL_API';
 
-export type SaveOperationStatus = 'UNSAVED' | 'SAVING' | 'SAVED' | 'SAVE_FAILED' | 'CONFLICT';
+export type SaveOperationStatus = 
+  | 'UNSAVED' 
+  | 'SAVING' 
+  | 'SAVED' 
+  | 'SAVED_TO_CLOUD' 
+  | 'SAVE_FAILED' 
+  | 'CONFLICT'
+  | 'UNAUTHORIZED'
+  | 'FORBIDDEN'
+  | 'OFFLINE';
 
 export interface CompanyRoundingRules {
   usdDecimals: number;             // Mặc định: 2

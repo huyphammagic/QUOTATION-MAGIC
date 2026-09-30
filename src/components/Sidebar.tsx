@@ -116,6 +116,7 @@ export interface SidebarProps {
   activeRouteId?: string;
   onOpenIntegrityDashboard?: () => void;
   onAccessDenied?: (moduleName: string, requiredRoleDesc: string) => void;
+  onOpenAuthModal?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -171,6 +172,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeRouteId = 'quotation_workbench',
   onOpenIntegrityDashboard,
   onAccessDenied,
+  onOpenAuthModal,
 }) => {
   // Collapsed state (icon-only mode)
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => loadSavedSidebarCollapsed());
@@ -1229,22 +1231,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!isCollapsed ? (
             <div className="relative">
               <div className="flex items-center justify-between p-2 rounded-lg bg-slate-900/80 border border-slate-800/80">
-                <div className="flex items-center space-x-2 min-w-0">
+                <div 
+                  className="flex items-center space-x-2 min-w-0 cursor-pointer"
+                  onClick={() => onOpenAuthModal && onOpenAuthModal()}
+                  title="Nhấn để quản lý tài khoản & xác thực Firebase"
+                >
                   <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
                     {company.salesRepName ? company.salesRepName.charAt(0).toUpperCase() : 'U'}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xs font-semibold text-white truncate">
+                    <div className="text-xs font-semibold text-white truncate hover:text-blue-300">
                       {company.salesRepName || 'Logistics Specialist'}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowRoleSelector(!showRoleSelector)}
-                      className="text-[10px] text-blue-400 hover:text-blue-300 font-mono flex items-center gap-1"
-                    >
-                      <span>{activeRole}</span>
-                      <ChevronDown className="w-2.5 h-2.5" />
-                    </button>
+                    {Boolean((import.meta as any).env?.DEV) ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowRoleSelector(!showRoleSelector);
+                        }}
+                        className="text-[10px] text-amber-400 hover:text-amber-300 font-mono flex items-center gap-1"
+                        title="Chế độ phát triển (DEV): Giả lập vai trò thử nghiệm"
+                      >
+                        <span>{activeRole}</span>
+                        <span className="text-[8px] bg-amber-500/20 text-amber-300 px-1 py-0.2 rounded font-sans">DEV</span>
+                        <ChevronDown className="w-2.5 h-2.5" />
+                      </button>
+                    ) : (
+                      <div className="text-[10px] text-emerald-400 font-mono flex items-center gap-1" title="Vai trò thực tế từ Firebase Auth & Thành viên công ty">
+                        <span>{activeRole}</span>
+                        <ShieldCheck className="w-2.5 h-2.5 text-emerald-400" />
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1261,11 +1279,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               </div>
 
-              {/* RBAC Role Selector Dropdown */}
-              {showRoleSelector && (
+              {/* RBAC Role Selector Dropdown (DEV MODE ONLY) */}
+              {showRoleSelector && Boolean((import.meta as any).env?.DEV) && (
                 <div className="absolute bottom-full left-0 right-0 mb-1.5 p-1.5 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 space-y-1">
-                  <div className="px-2 py-1 text-[10px] font-bold uppercase text-slate-400 tracking-wider">
-                    {t.switchRole} (RBAC)
+                  <div className="px-2 py-1 text-[10px] font-bold uppercase text-amber-400 tracking-wider flex items-center justify-between">
+                    <span>{t.switchRole} (DEV SIM)</span>
+                    <span className="text-[9px] lowercase text-slate-400">test only</span>
                   </div>
                   {(['ADMIN', 'SALES_MANAGER', 'SALES_REP', 'PRICING_SPECIALIST', 'VIEWER'] as UserRole[]).map((r) => (
                     <button

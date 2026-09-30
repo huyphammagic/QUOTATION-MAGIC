@@ -345,7 +345,7 @@ export async function getCustomerContacts(companyId: string, customerId: string)
     const collRef = collection(db, CONTACTS_COLLECTION);
     const q = query(
       collRef,
-      where('companyId', '==', companyId || 'default-company'),
+      where('companyId', '==', companyId || 'company_profile'),
       where('customerId', '==', customerId),
       limit(50)
     );
@@ -368,7 +368,7 @@ export async function saveCustomerContact(
 
   const fullContact: CustomerContact = {
     id,
-    companyId: contact.companyId || 'default-company',
+    companyId: contact.companyId || 'company_profile',
     customerId: contact.customerId,
     name: contact.name.trim(),
     title: contact.title?.trim() || '',
@@ -413,7 +413,7 @@ export async function deleteCustomerContact(contactId: string, customerId: strin
     await deleteDoc(docRef);
 
     await logCRMAudit({
-      companyId: companyId || 'default-company',
+      companyId: companyId || 'company_profile',
       customerId,
       entityType: 'CONTACT',
       entityId: contactId,
@@ -440,7 +440,7 @@ export interface Customer360DataResult {
  */
 export async function fetchCustomer360Data(
   customerId: string,
-  companyId: string = 'default-company',
+  companyId: string = 'company_profile',
   customer?: CustomerRecord,
   quotes: QuoteData[] = [],
   shipments: ShipmentRecord[] = [],

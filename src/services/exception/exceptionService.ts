@@ -17,7 +17,7 @@ import {
   serverTimestamp,
   DocumentSnapshot
 } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
+import { db, auth } from '../firebase/firebaseConfig';
 import { 
   ShipmentException, 
   ExceptionStatus, 
@@ -43,10 +43,10 @@ export async function getExceptions(
   companyId: string,
   options: ExceptionFilterOptions = {}
 ): Promise<{ exceptions: ShipmentException[]; lastDoc?: DocumentSnapshot }> {
-  const effectiveCompanyId = companyId || 'default-company';
+  const effectiveCompanyId = companyId || 'company_profile';
   const pageLimit = options.pageLimit || 50;
 
-  if (!db) {
+  if (!db || !auth?.currentUser) {
     let list = Array.from(exceptionMemoryCache.values())
       .filter(e => e.companyId === effectiveCompanyId);
 
@@ -140,8 +140,8 @@ export async function getExceptions(
 
     const lastDoc = snap.docs[snap.docs.length - 1];
     return { exceptions: filtered, lastDoc };
-  } catch (err) {
-    console.error('[exceptionService] Error fetching exceptions:', err);
+  } catch (err: any) {
+    console.warn('[exceptionService] Notice fetching exceptions:', err?.message || err);
     let list = Array.from(exceptionMemoryCache.values())
       .filter(e => e.companyId === effectiveCompanyId);
     return { exceptions: list.slice(0, pageLimit) };
@@ -213,7 +213,7 @@ export async function createException(
   },
   user: { uid: string; displayName?: string; email?: string }
 ): Promise<ShipmentException> {
-  const effectiveCompanyId = payload.companyId || 'default-company';
+  const effectiveCompanyId = payload.companyId || 'company_profile';
   const now = new Date().toISOString();
   const userName = user.displayName || user.email || 'Operator';
   const exceptionId = `exc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;

@@ -66,7 +66,7 @@ export async function createRateReviewSchedule(
   const newSchedule: RateReviewSchedule = {
     ...schedule,
     id,
-    companyId: schedule.companyId || 'default-company',
+    companyId: schedule.companyId || 'company_profile',
     active: schedule.active !== undefined ? schedule.active : true,
     createdAt: now,
     updatedAt: now,
@@ -125,9 +125,9 @@ export async function getRateReviewSchedules(companyId: string, customerId?: str
   if (!db) return [];
   try {
     const collRef = collection(db, SCHEDULES_COLLECTION);
-    let q = query(collRef, where('companyId', '==', companyId || 'default-company'), limit(100));
+    let q = query(collRef, where('companyId', '==', companyId || 'company_profile'), limit(100));
     if (customerId) {
-      q = query(collRef, where('companyId', '==', companyId || 'default-company'), where('customerId', '==', customerId), limit(50));
+      q = query(collRef, where('companyId', '==', companyId || 'company_profile'), where('customerId', '==', customerId), limit(50));
     }
     const snap = await getDocs(q);
     const list: RateReviewSchedule[] = [];
@@ -165,7 +165,7 @@ export async function createRateReviewTask(
   const newTask: RateReviewTask = {
     ...task,
     id,
-    companyId: task.companyId || 'default-company',
+    companyId: task.companyId || 'company_profile',
     difference: diff,
     differencePercent: diffPercent,
     currentMargin: margin,
@@ -267,9 +267,9 @@ export async function getRateReviewTasks(
   if (!db) return [];
   try {
     const collRef = collection(db, TASKS_COLLECTION);
-    let q = query(collRef, where('companyId', '==', companyId || 'default-company'), limit(200));
+    let q = query(collRef, where('companyId', '==', companyId || 'company_profile'), limit(200));
     if (filters?.customerId) {
-      q = query(collRef, where('companyId', '==', companyId || 'default-company'), where('customerId', '==', filters.customerId), limit(100));
+      q = query(collRef, where('companyId', '==', companyId || 'company_profile'), where('customerId', '==', filters.customerId), limit(100));
     }
     const snap = await getDocs(q);
     const list: RateReviewTask[] = [];

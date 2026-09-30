@@ -28,7 +28,7 @@ export async function logCRMAudit(entry: Omit<CRMAuditLog, 'id' | 'timestamp'>):
     // Clean undefined values
     const cleanEntry: Record<string, any> = {
       id: logId,
-      companyId: entry.companyId || 'default-company',
+      companyId: entry.companyId || 'company_profile',
       entityType: entry.entityType,
       entityId: entry.entityId,
       action: entry.action,

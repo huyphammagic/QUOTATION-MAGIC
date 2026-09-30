@@ -42,7 +42,7 @@ export async function createCustomerFollowUp(
   const newFollowUp: CustomerFollowUp = {
     ...followUp,
     id,
-    companyId: followUp.companyId || 'default-company',
+    companyId: followUp.companyId || 'company_profile',
     status: followUp.status || 'OPEN',
     createdAt: now,
     updatedAt: now,
@@ -160,14 +160,14 @@ export async function getCustomerFollowUps(
     const collRef = collection(db, COLLECTION_NAME);
     let q = query(
       collRef,
-      where('companyId', '==', companyId || 'default-company'),
+      where('companyId', '==', companyId || 'company_profile'),
       limit(200)
     );
 
     if (filters.customerId) {
       q = query(
         collRef,
-        where('companyId', '==', companyId || 'default-company'),
+        where('companyId', '==', companyId || 'company_profile'),
         where('customerId', '==', filters.customerId),
         limit(100)
       );

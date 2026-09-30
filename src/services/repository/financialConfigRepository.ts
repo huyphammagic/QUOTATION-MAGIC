@@ -265,7 +265,7 @@ export function createDefaultBankAccounts(company: Partial<CompanyRecord>): Comp
       bankName: company.bankName || 'Ngân hàng TMCP Ngoại Thương Việt Nam (Vietcombank)',
       bankBranch: company.bankBranch || 'Chi nhánh Sở Giao Dịch',
       accountNumber: company.bankAccountNo,
-      accountHolder: company.bankAccountHolder || (company.legalName || 'LOGISTICS SOLUTIONS').toUpperCase(),
+      accountHolder: company.bankAccountHolder || (company.legalName ? company.legalName.toUpperCase() : ''),
       currency: 'VND',
       swiftCode: company.bankSwiftCode || 'BFTVVNVX',
       isDefaultUsd: false,
@@ -282,8 +282,8 @@ export function createDefaultBankAccounts(company: Partial<CompanyRecord>): Comp
     companyId,
     bankName: company.bankName || 'Ngân hàng TMCP Ngoại Thương Việt Nam (Vietcombank)',
     bankBranch: company.bankBranch || 'Chi nhánh Sở Giao Dịch (Foreign Exchange Dept)',
-    accountNumber: company.bankAccountNo ? `${company.bankAccountNo}-USD` : '0071009988776',
-    accountHolder: company.bankAccountHolder || (company.legalName || 'LOGISTICS SOLUTIONS').toUpperCase(),
+    accountNumber: company.bankAccountNo ? `${company.bankAccountNo}-USD` : '',
+    accountHolder: company.bankAccountHolder || (company.legalName ? company.legalName.toUpperCase() : ''),
     currency: 'USD',
     swiftCode: company.bankSwiftCode || 'BFTVVNVX',
     isDefaultUsd: true,
@@ -401,8 +401,7 @@ export async function saveCompanyFinancialSettings(
   };
 
   if (!db) {
-    financialSettingsCache.set(companyId, { data: payload, cachedAt: Date.now() });
-    return { success: true, data: payload, status: 'SAVED' };
+    return { success: false, status: 'OFFLINE', message: 'Cơ sở dữ liệu đám mây chưa sẵn sàng (OFFLINE).' };
   }
 
   const opKey = `save_financial_settings_${companyId}_${Date.now()}`;
@@ -423,7 +422,7 @@ export async function saveCompanyFinancialSettings(
 
     financialSettingsCache.set(companyId, { data: payload, cachedAt: Date.now() });
     syncHealthService.endOperation(opKey, true);
-    return { success: true, data: payload, status: 'SAVED' };
+    return { success: true, data: payload, status: 'SAVED_TO_CLOUD' };
   } catch (error: any) {
     console.error(`[financialConfigRepository] Error saving financial settings:`, error);
     syncHealthService.endOperation(opKey, false, error);
@@ -503,8 +502,7 @@ export async function saveCompanyTaxConfiguration(
   };
 
   if (!db) {
-    taxConfigCache.set(companyId, { data: payload, cachedAt: Date.now() });
-    return { success: true, data: payload, status: 'SAVED' };
+    return { success: false, status: 'OFFLINE', message: 'Cơ sở dữ liệu đám mây chưa sẵn sàng (OFFLINE).' };
   }
 
   try {
@@ -517,7 +515,7 @@ export async function saveCompanyTaxConfiguration(
     ]);
 
     taxConfigCache.set(companyId, { data: payload, cachedAt: Date.now() });
-    return { success: true, data: payload, status: 'SAVED' };
+    return { success: true, data: payload, status: 'SAVED_TO_CLOUD' };
   } catch (err: any) {
     return { success: false, status: 'SAVE_FAILED', message: err?.message || 'Lỗi khi lưu cấu hình thuế.' };
   }
@@ -640,7 +638,7 @@ export async function saveCompanyPaymentTerm(
     ]);
 
     await getCompanyPaymentTerms(companyId, true);
-    return { success: true, term: fullTerm, status: 'SAVED' };
+    return { success: true, term: fullTerm, status: 'SAVED_TO_CLOUD' };
   } catch (err: any) {
     return { success: false, status: 'SAVE_FAILED', message: err?.message || 'Lỗi khi lưu điều khoản thanh toán.' };
   }
@@ -648,9 +646,7 @@ export async function saveCompanyPaymentTerm(
 
 export async function deleteCompanyPaymentTerm(companyId: string, termId: string): Promise<boolean> {
   if (!db) {
-    const list = (paymentTermsCache.get(companyId)?.data || []).filter(t => t.id !== termId);
-    paymentTermsCache.set(companyId, { data: list, cachedAt: Date.now() });
-    return true;
+    return false;
   }
 
   try {
@@ -794,7 +790,7 @@ export async function saveCompanyBankAccount(
     ]);
 
     await getCompanyBankAccounts(companyId, true);
-    return { success: true, bank: fullBank, status: 'SAVED' };
+    return { success: true, bank: fullBank, status: 'SAVED_TO_CLOUD' };
   } catch (err: any) {
     return { success: false, status: 'SAVE_FAILED', message: err?.message || 'Lỗi khi lưu tài khoản ngân hàng.' };
   }
@@ -802,9 +798,7 @@ export async function saveCompanyBankAccount(
 
 export async function deleteCompanyBankAccount(companyId: string, bankId: string): Promise<boolean> {
   if (!db) {
-    const list = (bankAccountsCache.get(companyId)?.data || []).filter(b => b.id !== bankId);
-    bankAccountsCache.set(companyId, { data: list, cachedAt: Date.now() });
-    return true;
+    return false;
   }
 
   try {
@@ -889,8 +883,7 @@ export async function saveCompanyCommercialSettings(
   };
 
   if (!db) {
-    commercialSettingsCache.set(companyId, { data: payload, cachedAt: Date.now() });
-    return { success: true, data: payload, status: 'SAVED' };
+    return { success: false, status: 'OFFLINE', message: 'Cơ sở dữ liệu đám mây chưa sẵn sàng (OFFLINE).' };
   }
 
   try {
@@ -903,7 +896,7 @@ export async function saveCompanyCommercialSettings(
     ]);
 
     commercialSettingsCache.set(companyId, { data: payload, cachedAt: Date.now() });
-    return { success: true, data: payload, status: 'SAVED' };
+    return { success: true, data: payload, status: 'SAVED_TO_CLOUD' };
   } catch (err: any) {
     return { success: false, status: 'SAVE_FAILED', message: err?.message || 'Lỗi khi lưu cấu hình thương mại.' };
   }

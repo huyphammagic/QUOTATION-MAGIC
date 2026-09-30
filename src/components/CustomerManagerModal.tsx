@@ -43,7 +43,7 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
   shipments = [],
   contracts = [],
   user,
-  companyId = 'default-company',
+  companyId = 'company_profile',
   initialTab = 'CUSTOMERS',
   onOpenDecisionWorkspace
 }) => {

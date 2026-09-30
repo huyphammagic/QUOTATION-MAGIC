@@ -79,7 +79,7 @@ export const DocumentControlCenter: React.FC<DocumentControlCenterProps> = ({
   onOpenGeneratePdf,
   onOpenSendEmail,
   onOpenPortalPreview,
-  companyId = 'default-company',
+  companyId = 'company_profile',
   isStandalonePage = false,
 }) => {
   // Tabs: 'DOCUMENTS' | 'COMMUNICATIONS' | 'PORTAL' | 'INTEGRITY'
@@ -125,7 +125,7 @@ export const DocumentControlCenter: React.FC<DocumentControlCenterProps> = ({
   // Copy tracking
   const [copiedLinkToken, setCopiedLinkToken] = useState<string | null>(null);
 
-  const effectiveCompanyId = quote?.company?.companyId || companyId || 'default-company';
+  const effectiveCompanyId = quote?.company?.companyId || companyId || 'company_profile';
   const effectiveQuoteId = scope === 'CURRENT_QUOTE' && quote ? quote.id : undefined;
 
   const showNotification = (msg: string, isError = false) => {

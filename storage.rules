@@ -1,0 +1,81 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isSystemAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email == 'huypham.magic@gmail.com'
+      );
+    }
+
+    // Resolves membership in target company across both named database and default
+    function isCompanyMember(companyId) {
+      return isAuthenticated() && (
+        isSystemAdmin() ||
+        (firestore.exists(/databases/ai-studio-bogilogisticsquo-43821317-d51a-44b0-a02f-710a4f25fd7a/documents/companyMemberships/$(request.auth.uid + '_' + companyId)) &&
+         firestore.get(/databases/ai-studio-bogilogisticsquo-43821317-d51a-44b0-a02f-710a4f25fd7a/documents/companyMemberships/$(request.auth.uid + '_' + companyId)).data.status == 'ACTIVE') ||
+        (firestore.exists(/databases/(default)/documents/companyMemberships/$(request.auth.uid + '_' + companyId)) &&
+         firestore.get(/databases/(default)/documents/companyMemberships/$(request.auth.uid + '_' + companyId)).data.status == 'ACTIVE')
+      );
+    }
+
+    function isCompanyAdmin(companyId) {
+      return isAuthenticated() && (
+        isSystemAdmin() ||
+        (isCompanyMember(companyId) && (
+          (firestore.exists(/databases/ai-studio-bogilogisticsquo-43821317-d51a-44b0-a02f-710a4f25fd7a/documents/companyMemberships/$(request.auth.uid + '_' + companyId)) &&
+           firestore.get(/databases/ai-studio-bogilogisticsquo-43821317-d51a-44b0-a02f-710a4f25fd7a/documents/companyMemberships/$(request.auth.uid + '_' + companyId)).data.role == 'COMPANY_ADMIN') ||
+          (firestore.exists(/databases/(default)/documents/companyMemberships/$(request.auth.uid + '_' + companyId)) &&
+           firestore.get(/databases/(default)/documents/companyMemberships/$(request.auth.uid + '_' + companyId)).data.role == 'COMPANY_ADMIN')
+        ))
+      );
+    }
+
+    // Company branding / logos: private company files, strictly company members only
+    match /companies/{companyId}/logo/{allPaths=**} {
+      allow read: if isCompanyMember(companyId);
+      allow write: if isCompanyMember(companyId) && 
+                      request.resource.size < 5 * 1024 * 1024 &&
+                      request.resource.contentType.matches('image/.*');
+    }
+
+    // Quotation PDF exports: private company files, strictly company members only
+    match /companies/{companyId}/quotations/{quoteId}/{allPaths=**} {
+      allow read: if isCompanyMember(companyId);
+      allow write: if isCompanyMember(companyId) && 
+                      request.resource.size < 20 * 1024 * 1024 &&
+                      request.resource.contentType == 'application/pdf';
+    }
+
+    // Private company contracts, addenda, and rate documentation (strictly company members only)
+    match /companies/{companyId}/contracts/{contractId}/{allPaths=**} {
+      allow read: if isCompanyMember(companyId);
+      allow write: if isCompanyMember(companyId) && 
+                      request.resource.size < 30 * 1024 * 1024;
+    }
+
+    // General private company documents and attachments (strictly company members only)
+    match /companies/{companyId}/documents/{allPaths=**} {
+      allow read: if isCompanyMember(companyId);
+      allow write: if isCompanyMember(companyId) && 
+                      request.resource.size < 30 * 1024 * 1024;
+    }
+
+    // Narrowly isolated public quotation access path: strictly intended PDFs only
+    match /publicQuotations/{quoteId}/{fileName} {
+      allow read: if fileName.matches('.*\\.pdf$');
+      allow write: if isAuthenticated() && 
+                      request.resource.size < 15 * 1024 * 1024 &&
+                      request.resource.contentType == 'application/pdf';
+    }
+
+    // Default deny for all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

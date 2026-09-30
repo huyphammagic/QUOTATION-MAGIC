@@ -19,7 +19,7 @@ interface RateReviewWorkspaceProps {
 }
 
 export const RateReviewWorkspace: React.FC<RateReviewWorkspaceProps> = ({
-  companyId = 'default-company',
+  companyId = 'company_profile',
   user,
   onOpenCustomer360
 }) => {

@@ -25,39 +25,33 @@ export async function uploadQuotationPdfToStorage(
   const fileSizeBytes = pdfBlob.size;
   const uploadedAt = new Date().toISOString();
 
-  if (storage) {
-    try {
-      const storageRef = ref(storage, storagePath);
-      const snapshot = await uploadBytes(storageRef, pdfBlob, {
-        contentType: 'application/pdf',
-        customMetadata: {
-          companyId: sanitizedCompanyId,
-          quotationId: sanitizedQuoteId,
-          revision: revision.toString(),
-          generatedAt: uploadedAt,
-        },
-      });
-
-      const downloadUrl = await getDownloadURL(snapshot.ref);
-      return {
-        storagePath,
-        downloadUrl,
-        fileSizeBytes,
-        uploadedAt,
-      };
-    } catch (error) {
-      console.warn('Firebase Storage upload notice, falling back to local object storage:', error);
-    }
+  if (!storage) {
+    throw new Error('Firebase Storage chưa sẵn sàng (OFFLINE).');
   }
 
-  // Fallback to local Blob URL
-  const downloadUrl = URL.createObjectURL(pdfBlob);
-  return {
-    storagePath,
-    downloadUrl,
-    fileSizeBytes,
-    uploadedAt,
-  };
+  try {
+    const storageRef = ref(storage, storagePath);
+    const snapshot = await uploadBytes(storageRef, pdfBlob, {
+      contentType: 'application/pdf',
+      customMetadata: {
+        companyId: sanitizedCompanyId,
+        quotationId: sanitizedQuoteId,
+        revision: revision.toString(),
+        generatedAt: uploadedAt,
+      },
+    });
+
+    const downloadUrl = await getDownloadURL(snapshot.ref);
+    return {
+      storagePath,
+      downloadUrl,
+      fileSizeBytes,
+      uploadedAt,
+    };
+  } catch (error) {
+    console.error('Firebase Storage upload error:', error);
+    throw error;
+  }
 }
 
 /**

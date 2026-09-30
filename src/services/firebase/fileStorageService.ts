@@ -34,63 +34,36 @@ export async function uploadFileToStorage(options: UploadFileOptions): Promise<F
   const fileSizeBytes = file.size;
   const mimeType = file.type || 'application/octet-stream';
 
-  if (storage) {
-    try {
-      const storageRef = ref(storage, storagePath);
-      const snapshot = await uploadBytes(storageRef, file, {
-        contentType: mimeType,
-        customMetadata: {
-          originalName: fileName,
-          uploadedAt,
-          ...(customMetadata || {}),
-        },
-      });
-
-      const downloadUrl = await getDownloadURL(snapshot.ref);
-
-      return {
-        storagePath,
-        downloadUrl,
-        fileName,
-        fileSizeBytes,
-        mimeType,
-        uploadedAt,
-        isCloudStorage: true,
-      };
-    } catch (error: any) {
-      console.warn('[fileStorageService] Firebase Storage upload notice, falling back to durable URL:', error?.message || error);
-    }
+  if (!storage) {
+    throw new Error('Firebase Storage chưa sẵn sàng (OFFLINE).');
   }
 
-  // Fallback if Firebase Storage bucket is unreachable or in offline mode:
-  // Convert images or files < 3MB to Data URL so it can be saved in Firestore and viewed on any machine!
-  if (fileSizeBytes < 3 * 1024 * 1024) {
-    try {
-      const dataUrl = await blobToDataUrl(file);
-      return {
-        storagePath,
-        downloadUrl: dataUrl,
-        fileName,
-        fileSizeBytes,
-        mimeType,
+  try {
+    const storageRef = ref(storage, storagePath);
+    const snapshot = await uploadBytes(storageRef, file, {
+      contentType: mimeType,
+      customMetadata: {
+        originalName: fileName,
         uploadedAt,
-        isCloudStorage: false,
-      };
-    } catch {
-      // Ignore conversion failure and use object URL
-    }
-  }
+        ...(customMetadata || {}),
+      },
+    });
 
-  const fallbackUrl = URL.createObjectURL(file);
-  return {
-    storagePath,
-    downloadUrl: fallbackUrl,
-    fileName,
-    fileSizeBytes,
-    mimeType,
-    uploadedAt,
-    isCloudStorage: false,
-  };
+    const downloadUrl = await getDownloadURL(snapshot.ref);
+
+    return {
+      storagePath,
+      downloadUrl,
+      fileName,
+      fileSizeBytes,
+      mimeType,
+      uploadedAt,
+      isCloudStorage: true,
+    };
+  } catch (error: any) {
+    console.error('[fileStorageService] Firebase Storage upload error:', error?.message || error);
+    throw error;
+  }
 }
 
 /**

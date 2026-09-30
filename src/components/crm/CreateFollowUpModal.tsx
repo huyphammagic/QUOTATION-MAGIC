@@ -30,7 +30,7 @@ export const CreateFollowUpModal: React.FC<CreateFollowUpModalProps> = ({
   contactPerson = '',
   contactEmail = '',
   contactPhone = '',
-  companyId = 'default-company',
+  companyId = 'company_profile',
   user,
   onSuccess,
   relatedEntityType = 'CUSTOMER',

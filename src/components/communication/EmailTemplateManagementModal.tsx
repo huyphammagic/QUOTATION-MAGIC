@@ -61,7 +61,7 @@ export const EmailTemplateManagementModal: React.FC<EmailTemplateManagementModal
   const handleStartCreate = () => {
     const newTmpl: Partial<EmailTemplate> = {
       id: `tmpl_${Date.now()}`,
-      companyId: 'default-company',
+      companyId: 'company_profile',
       name: 'Mẫu Email Báo Giá Mới',
       code: `TMPL_${Date.now().toString().slice(-4)}`,
       type: 'QUOTATION_SEND',

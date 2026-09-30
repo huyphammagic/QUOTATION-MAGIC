@@ -66,8 +66,11 @@ export async function logOpportunityAudit(
 export async function syncRealBusinessOpportunities(
   context: OpportunityDetectionContext
 ): Promise<{ syncedCount: number; activeTotal: number; opportunities: BusinessOpportunity[] }> {
+  if (!context.companyId) {
+    return { syncedCount: 0, activeTotal: 0, opportunities: [] };
+  }
   const detected = detectRealBusinessOpportunities(context);
-  const companyId = context.companyId || 'default-company';
+  const companyId = context.companyId;
   const now = new Date().toISOString();
 
   // Load existing opportunities for this company to prevent duplication
@@ -161,7 +164,8 @@ export async function getBusinessOpportunities(
   companyId: string,
   filters?: OpportunityFilterOptions
 ): Promise<BusinessOpportunity[]> {
-  const compId = companyId || 'default-company';
+  if (!companyId) return [];
+  const compId = companyId;
   let list: BusinessOpportunity[] = [];
 
   if (db) {

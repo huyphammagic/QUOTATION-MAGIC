@@ -35,6 +35,7 @@ import { CustomerRecord } from '../../types/logistics';
 import { SupplierItem, CarrierItem } from '../../types/masterRate';
 import { ContractFormModal } from './ContractFormModal';
 import { ContractDetailModal } from './ContractDetailModal';
+import { useMultiCompany } from '../../context/MultiCompanyContext';
 
 interface ContractListTabProps {
   customers: CustomerRecord[];
@@ -47,6 +48,7 @@ export const ContractListTab: React.FC<ContractListTabProps> = ({
   suppliers,
   carriers,
 }) => {
+  const { activeCompanyId } = useMultiCompany();
   const [contracts, setContracts] = useState<ContractItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -71,13 +73,14 @@ export const ContractListTab: React.FC<ContractListTabProps> = ({
     setIsLoading(true);
     try {
       const res = await fetchContracts({
+        companyId: activeCompanyId || 'company_profile',
         contractType: contractTypeFilter === 'ALL' ? undefined : contractTypeFilter,
         status: statusFilter,
         limitCount: 100, // Safe upper bound for UI list
       });
       setContracts(res.contracts);
     } catch (err) {
-      console.error('Error loading contracts:', err);
+      console.warn('Notice loading contracts:', err);
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +88,7 @@ export const ContractListTab: React.FC<ContractListTabProps> = ({
 
   useEffect(() => {
     loadContracts();
-  }, [contractTypeFilter, statusFilter]);
+  }, [contractTypeFilter, statusFilter, activeCompanyId]);
 
   // Client-side text search & urgency filter
   const filteredContracts = useMemo(() => {

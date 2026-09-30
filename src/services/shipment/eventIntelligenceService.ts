@@ -55,7 +55,10 @@ export async function createShipmentEvent(
   payload: CreateShipmentEventPayload,
   user: { uid: string; displayName?: string; email?: string }
 ): Promise<ShipmentEventRecord> {
-  const companyId = payload.companyId || 'default-company';
+  if (!payload.companyId) {
+    throw new Error('NO_COMPANY_CONFIGURED: payload.companyId is required to record shipment event');
+  }
+  const companyId = payload.companyId;
   const nowIso = new Date().toISOString();
   const userName = user.displayName || user.email || 'Logistics Operator';
 
@@ -176,7 +179,8 @@ export async function getShipmentEvents(
     pageLimit?: number;
   } = {}
 ): Promise<ShipmentEventRecord[]> {
-  const effectiveCompanyId = companyId || 'default-company';
+  if (!companyId) return [];
+  const effectiveCompanyId = companyId;
   const pageLimit = options.pageLimit || 100;
 
   if (!db) {
@@ -489,8 +493,8 @@ export async function reconcileShipmentWithEvents(
  * Scan active shipments for Overdue Milestones and generate Exceptions idempotently
  */
 export async function detectMilestoneOverdueExceptions(companyId: string): Promise<{ created: number }> {
-  if (!db) return { created: 0 };
-  const effectiveCompanyId = companyId || 'default-company';
+  if (!db || !companyId) return { created: 0 };
+  const effectiveCompanyId = companyId;
 
   try {
     const qShipments = query(

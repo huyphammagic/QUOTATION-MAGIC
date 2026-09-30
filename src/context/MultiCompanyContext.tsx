@@ -1,14 +1,19 @@
 /**
- * Phase 37: Multi-Company Active Context & Isolation Provider
+ * Phase 50.1: Hardened Multi-Company Active Context & Isolation Provider
  * Manages activeCompany, companyList, company switching, and isolated state synchronization.
+ * Guarantees that activeCompanyId in localStorage is NEVER a security boundary.
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   CompanyRecord, 
   CompanyMetadataItem, 
+  CompanyMemberRecord,
+  CompanyMemberRole,
+  CompanyMemberPermission,
   mapCompanyRecordToProfile 
 } from '../types/multiCompany';
+import { UserRole } from '../types/analytics';
 import { CompanyProfile } from '../types/logistics';
 import { 
   fetchAllCompanies, 
@@ -19,6 +24,14 @@ import {
   generateCompanyQuotationNumber,
   subscribeToCompanies
 } from '../services/repository/companyRepository';
+import { 
+  getUserMembership, 
+  getUserMemberships, 
+  bootstrapInitialAdminMembership,
+  mapMemberRoleToUserRole,
+  DEFAULT_ROLE_PERMISSIONS 
+} from '../services/repository/companyMemberRepository';
+import { useAuth } from './AuthContext';
 import { syncHealthService } from '../services/integrity/syncHealthService';
 
 const ACTIVE_COMPANY_STORAGE_KEY = 'logistics_active_company_id';
@@ -29,6 +42,13 @@ interface MultiCompanyContextType {
   activeCompanyRecord: CompanyRecord | null;
   activeCompanyProfile: CompanyProfile;
   
+  // Real RBAC Membership state
+  activeMemberRecord: CompanyMemberRecord | null;
+  activeMemberRole: CompanyMemberRole;
+  activeUserRole: UserRole;
+  activePermissions: CompanyMemberPermission;
+  userMemberships: CompanyMemberRecord[];
+
   // Available Companies List
   companies: CompanyRecord[];
   companyMetadataList: CompanyMetadataItem[];
@@ -49,13 +69,88 @@ export const MultiCompanyProvider: React.FC<{
   initialLegacyProfile?: CompanyProfile;
   onCompanyChanged?: (newProfile: CompanyProfile, companyId: string) => void;
 }> = ({ children, initialLegacyProfile, onCompanyChanged }) => {
+  const { user } = useAuth();
+  
+  // UI preference only - NOT a security boundary
   const [activeCompanyId, setActiveCompanyId] = useState<string>(() => {
     return localStorage.getItem(ACTIVE_COMPANY_STORAGE_KEY) || 'company_profile';
   });
+  
   const [companies, setCompanies] = useState<CompanyRecord[]>([]);
   const [companyMetadataList, setCompanyMetadataList] = useState<CompanyMetadataItem[]>([]);
   const [activeCompanyRecord, setActiveCompanyRecord] = useState<CompanyRecord | null>(null);
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
+
+  // Real RBAC Membership States
+  const [activeMemberRecord, setActiveMemberRecord] = useState<CompanyMemberRecord | null>(null);
+  const [userMemberships, setUserMemberships] = useState<CompanyMemberRecord[]>([]);
+
+  // Resolve membership whenever user or activeCompanyId updates
+  useEffect(() => {
+    let isMounted = true;
+    async function syncMembership() {
+      if (!user?.uid) {
+        if (isMounted) {
+          setActiveMemberRecord(null);
+          setUserMemberships([]);
+        }
+        return;
+      }
+
+      const targetCompany = activeCompanyId || 'company_profile';
+      try {
+        // 1. Fetch user's actual active memberships across all companies
+        const allMemberships = await getUserMemberships(user.uid);
+        if (isMounted) {
+          setUserMemberships(allMemberships);
+        }
+
+        // 2. Fetch or resolve membership for current active company
+        let mRecord = await getUserMembership(user.uid, targetCompany);
+
+        // Security gate: ONLY the system root admin (huypham.magic@gmail.com) can bootstrap
+        // initial admin membership if zero memberships exist. Normal users remain unassigned viewers.
+        if (!mRecord && allMemberships.length === 0 && user.email === 'huypham.magic@gmail.com') {
+          mRecord = await bootstrapInitialAdminMembership({
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+          }, targetCompany);
+          if (mRecord && isMounted) {
+            setUserMemberships([mRecord]);
+          }
+        }
+
+        // Security boundary validation: if stored company is not in user's memberships,
+        // and user has other valid memberships, switch to their legitimate company!
+        if (!mRecord && allMemberships.length > 0) {
+          const legitimateCompany = allMemberships[0].companyId;
+          console.info(`[MultiCompanyContext] Realigning activeCompanyId from ${targetCompany} to user-authorized company: ${legitimateCompany}`);
+          if (isMounted) {
+            setActiveCompanyId(legitimateCompany);
+            localStorage.setItem(ACTIVE_COMPANY_STORAGE_KEY, legitimateCompany);
+            setActiveMemberRecord(allMemberships[0]);
+          }
+          return;
+        }
+
+        if (isMounted) {
+          setActiveMemberRecord(mRecord);
+        }
+      } catch (err) {
+        console.warn('[MultiCompanyContext] Error resolving user membership:', err);
+      }
+    }
+
+    syncMembership();
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.uid, activeCompanyId]);
+
+  const activeMemberRole: CompanyMemberRole = activeMemberRecord?.role || 'VIEWER';
+  const activeUserRole: UserRole = mapMemberRoleToUserRole(activeMemberRole);
+  const activePermissions: CompanyMemberPermission = activeMemberRecord?.permissions || DEFAULT_ROLE_PERMISSIONS.VIEWER;
 
   // Derive active CompanyProfile compatible with existing views
   const activeCompanyProfile = useMemo<CompanyProfile>(() => {
@@ -66,9 +161,9 @@ export const MultiCompanyProvider: React.FC<{
       return initialLegacyProfile;
     }
     return {
-      name: 'LOGISTICS SOLUTIONS',
-      englishName: 'LOGISTICS SOLUTIONS CO., LTD',
-      shortName: 'LOG',
+      name: '',
+      englishName: '',
+      shortName: '',
       taxId: '',
       address: '',
       phone: '',
@@ -80,7 +175,7 @@ export const MultiCompanyProvider: React.FC<{
       bankAccountHolder: '',
       bankSwiftCode: '',
       salesRepName: '',
-      salesRepTitle: 'Logistics Consultant',
+      salesRepTitle: '',
       salesRepPhone: '',
       salesRepEmail: '',
       version: 1,
@@ -89,9 +184,14 @@ export const MultiCompanyProvider: React.FC<{
 
   // Load initial companies and active record
   const loadCompaniesData = useCallback(async (force = false) => {
+    if (!user?.uid) {
+      setIsLoadingCompanies(false);
+      return;
+    }
+
     setIsLoadingCompanies(true);
     try {
-      // 1. Ensure default company is seeded/migrated from legacy profile
+      // 1. Ensure default company is initialized
       await ensureDefaultCompanyInitialized(initialLegacyProfile);
 
       // 2. Fetch all companies
@@ -126,38 +226,40 @@ export const MultiCompanyProvider: React.FC<{
     } finally {
       setIsLoadingCompanies(false);
     }
-  }, [activeCompanyId, initialLegacyProfile]);
+  }, [user?.uid, activeCompanyId, initialLegacyProfile]);
 
   // Initial mount load
   useEffect(() => {
-    loadCompaniesData();
+    if (user?.uid) {
+      loadCompaniesData();
 
-    // Subscribe to real-time changes in companies collection
-    const unsub = subscribeToCompanies((updatedList) => {
-      setCompanies(updatedList);
-      setCompanyMetadataList(updatedList.map(c => ({
-        companyId: c.companyId,
-        companyCode: c.companyCode,
-        displayName: c.displayName,
-        legalName: c.legalName,
-        logoUrl: c.branding?.logoUrl,
-        status: c.status,
-        taxCode: c.taxCode,
-        quotationPrefix: c.branding?.quotationPrefix || 'LOG',
-        defaultCurrency: c.branding?.defaultCurrency || 'USD',
-      })));
+      // Subscribe to real-time changes in companies collection
+      const unsub = subscribeToCompanies((updatedList) => {
+        setCompanies(updatedList);
+        setCompanyMetadataList(updatedList.map(c => ({
+          companyId: c.companyId,
+          companyCode: c.companyCode,
+          displayName: c.displayName,
+          legalName: c.legalName,
+          logoUrl: c.branding?.logoUrl,
+          status: c.status,
+          taxCode: c.taxCode,
+          quotationPrefix: c.branding?.quotationPrefix || 'LOG',
+          defaultCurrency: c.branding?.defaultCurrency || 'USD',
+        })));
 
-      // Sync active company record if it was modified
-      const currentActive = updatedList.find(c => c.companyId === activeCompanyId);
-      if (currentActive) {
-        setActiveCompanyRecord(currentActive);
-      }
-    });
+        // Sync active company record if it was modified
+        const currentActive = updatedList.find(c => c.companyId === activeCompanyId);
+        if (currentActive) {
+          setActiveCompanyRecord(currentActive);
+        }
+      });
 
-    return () => {
-      unsub();
-    };
-  }, []);
+      return () => {
+        unsub();
+      };
+    }
+  }, [user?.uid]);
 
   // Switch Active Company Handler
   const switchCompany = useCallback(async (newCompanyId: string): Promise<boolean> => {
@@ -190,7 +292,7 @@ export const MultiCompanyProvider: React.FC<{
     const res = await saveCompany({
       ...updated,
       companyId: targetId,
-    });
+    }, user?.uid || 'User');
 
     if (res.success && res.company) {
       setActiveCompanyRecord(res.company);
@@ -201,7 +303,7 @@ export const MultiCompanyProvider: React.FC<{
       await loadCompaniesData(true);
     }
     return res;
-  }, [activeCompanyId, onCompanyChanged, loadCompaniesData]);
+  }, [activeCompanyId, user?.uid, onCompanyChanged, loadCompaniesData]);
 
   // Create new company
   const createNewCompany = useCallback(async (
@@ -215,19 +317,27 @@ export const MultiCompanyProvider: React.FC<{
       quotationCounter: 100,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      createdBy: 'User Admin',
-      updatedBy: 'User Admin',
+      createdBy: user?.displayName || user?.email || 'User Admin',
+      updatedBy: user?.displayName || user?.email || 'User Admin',
     };
 
-    const res = await saveCompany(fullPayload);
+    const res = await saveCompany(fullPayload, user?.uid || 'Admin');
     if (res.success && res.company) {
+      // Immediately provision creator as COMPANY_ADMIN
+      if (user?.uid) {
+        await bootstrapInitialAdminMembership({
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+        }, generatedId, { isCompanyCreator: true });
+      }
+
       await loadCompaniesData(true);
-      // Auto switch to newly created company
       await switchCompany(generatedId);
       return { success: true, companyId: generatedId };
     }
     return { success: false, message: res.message || 'Không thể tạo công ty mới.' };
-  }, [loadCompaniesData, switchCompany]);
+  }, [user, loadCompaniesData, switchCompany]);
 
   // Next quotation number for the currently active company
   const generateNextQuoteNumber = useCallback(async (): Promise<string> => {
@@ -245,6 +355,11 @@ export const MultiCompanyProvider: React.FC<{
     companies,
     companyMetadataList,
     isLoadingCompanies,
+    activeMemberRecord,
+    activeMemberRole,
+    activeUserRole,
+    activePermissions,
+    userMemberships,
     switchCompany,
     updateCurrentCompany,
     createNewCompany,
@@ -254,6 +369,11 @@ export const MultiCompanyProvider: React.FC<{
     activeCompanyId,
     activeCompanyRecord,
     activeCompanyProfile,
+    activeMemberRecord,
+    activeMemberRole,
+    activeUserRole,
+    activePermissions,
+    userMemberships,
     companies,
     companyMetadataList,
     isLoadingCompanies,

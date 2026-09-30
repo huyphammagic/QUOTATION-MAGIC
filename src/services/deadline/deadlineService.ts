@@ -15,7 +15,7 @@ import {
   orderBy, 
   limit 
 } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
+import { db, auth } from '../firebase/firebaseConfig';
 import { 
   DeadlineEntity, 
   DeadlineFilterOptions, 
@@ -226,13 +226,13 @@ export async function getDeadlines(
   companyId: string,
   options: DeadlineFilterOptions = {}
 ): Promise<DeadlineEntity[]> {
-  const effectiveCompanyId = companyId || 'default-company';
+  const effectiveCompanyId = companyId || 'company_profile';
   const pageLimit = options.pageLimit || 150;
 
   try {
     let list: DeadlineEntity[] = [];
 
-    if (db) {
+    if (db && auth?.currentUser) {
       const q = query(
         collection(db, DEADLINES_COLLECTION),
         where('companyId', '==', effectiveCompanyId),
@@ -326,8 +326,8 @@ export async function getDeadlines(
     });
 
     return list;
-  } catch (err) {
-    console.error('[deadlineService] Error fetching deadlines:', err);
+  } catch (err: any) {
+    console.warn('[deadlineService] Notice fetching deadlines:', err?.message || err);
     let cached = Array.from(deadlineMemoryCache.values())
       .filter(d => d.companyId === effectiveCompanyId)
       .map(d => ({ ...d, status: resolveDeadlineStatus(d) }));
@@ -342,7 +342,7 @@ export async function getDeadlineMetrics(
   companyId: string,
   userId?: string
 ): Promise<DeadlineMetrics> {
-  const effectiveCompanyId = companyId || 'default-company';
+  const effectiveCompanyId = companyId || 'company_profile';
   const all = await getDeadlines(effectiveCompanyId, { status: 'ALL', pageLimit: 300 });
 
   let overdue = 0;
@@ -407,7 +407,7 @@ export async function createCustomDeadline(
   },
   user: { uid: string; displayName?: string; email?: string }
 ): Promise<DeadlineEntity> {
-  const effectiveCompanyId = payload.companyId || 'default-company';
+  const effectiveCompanyId = payload.companyId || 'company_profile';
   const id = `dl_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const now = new Date().toISOString();
 
@@ -723,7 +723,7 @@ export async function syncShipmentDeadlines(
   user: { uid: string; displayName?: string }
 ): Promise<number> {
   if (!shipment || !shipment.id) return 0;
-  const effectiveCompanyId = shipment.companyId || 'default-company';
+  const effectiveCompanyId = shipment.companyId || 'company_profile';
   let syncCount = 0;
 
   // 1. Cargo Ready Date
@@ -899,7 +899,7 @@ export async function syncQuotationDeadlines(
   user: { uid: string; displayName?: string }
 ): Promise<boolean> {
   if (!quotation || !quotation.id || !quotation.terms?.validityDate) return false;
-  const effectiveCompanyId = quotation.company?.companyId || 'default-company';
+  const effectiveCompanyId = quotation.company?.companyId || 'company_profile';
 
   const validUntilRaw = quotation.terms.validityDate;
   const dueAt = validUntilRaw.length === 10 ? `${validUntilRaw}T17:00:00.000Z` : validUntilRaw;
@@ -984,7 +984,7 @@ export async function createBusinessAction(
   params: CreateBusinessActionParams,
   user: { uid: string; displayName?: string; email?: string }
 ): Promise<DeadlineEntity> {
-  const effectiveCompanyId = params.companyId || 'default-company';
+  const effectiveCompanyId = params.companyId || 'company_profile';
   const rawIdempotencyKey = params.idempotencyKey || 
     `ACT_${effectiveCompanyId}_${params.actionType}_${params.sourceEntityType}_${params.sourceEntityId}_${params.dueAt.substring(0, 10)}`;
 
@@ -1101,7 +1101,7 @@ export async function updateBusinessActionStatus(
     reason?: string;
   }
 ): Promise<boolean> {
-  const effectiveCompanyId = companyId || 'default-company';
+  const effectiveCompanyId = companyId || 'company_profile';
   const nowIso = new Date().toISOString();
 
   let prevAction: DeadlineEntity | null = deadlineMemoryCache.get(actionId) || null;
@@ -1168,7 +1168,7 @@ export async function updateBusinessActionSubtasks(
   subtasks: ActionSubtask[],
   user: { uid: string; displayName?: string; email?: string }
 ): Promise<boolean> {
-  const effectiveCompanyId = companyId || 'default-company';
+  const effectiveCompanyId = companyId || 'company_profile';
   const nowIso = new Date().toISOString();
 
   const updates: Partial<DeadlineEntity> = {
@@ -1211,7 +1211,7 @@ export async function reassignBusinessAction(
   user: { uid: string; displayName?: string; email?: string },
   note?: string
 ): Promise<boolean> {
-  const effectiveCompanyId = companyId || 'default-company';
+  const effectiveCompanyId = companyId || 'company_profile';
   const nowIso = new Date().toISOString();
 
   const updates: Partial<DeadlineEntity> = {
@@ -1251,7 +1251,7 @@ export async function getBusinessActionAuditTrail(
   actionId: string,
   companyId: string
 ): Promise<DeadlineAuditLog[]> {
-  const effectiveCompanyId = companyId || 'default-company';
+  const effectiveCompanyId = companyId || 'company_profile';
   if (!db) return [];
 
   try {
@@ -1314,7 +1314,7 @@ export async function logBusinessActionTouchpoint(
     syncToCrm = true,
   } = params;
 
-  const effectiveCompanyId = companyId || 'default-company';
+  const effectiveCompanyId = companyId || 'company_profile';
   const nowIso = new Date().toISOString();
   const touchpointId = `tp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
@@ -1467,7 +1467,7 @@ export async function getBusinessActionTouchpoints(
   actionId: string,
   companyId: string
 ): Promise<FollowUpTouchpointRecord[]> {
-  const effectiveCompanyId = companyId || 'default-company';
+  const effectiveCompanyId = companyId || 'company_profile';
   if (!db) return [];
 
   try {
@@ -1495,7 +1495,7 @@ export async function getCompanyTouchpoints(
   companyId: string,
   maxLimit: number = 100
 ): Promise<FollowUpTouchpointRecord[]> {
-  const effectiveCompanyId = companyId || 'default-company';
+  const effectiveCompanyId = companyId || 'company_profile';
   if (!db) return [];
 
   try {
@@ -1525,7 +1525,7 @@ export async function quickCadenceAdvance(
   user: { uid: string; displayName?: string; email?: string },
   note: string = 'Lên lịch lại theo chu kỳ Follow-Up'
 ): Promise<boolean> {
-  const effectiveCompanyId = companyId || 'default-company';
+  const effectiveCompanyId = companyId || 'company_profile';
   const now = new Date();
   const nextDueDate = new Date(now.getTime() + hours * 60 * 60 * 1000).toISOString();
   const nowIso = now.toISOString();

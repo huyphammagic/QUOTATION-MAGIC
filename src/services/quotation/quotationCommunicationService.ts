@@ -203,9 +203,14 @@ export async function dispatchQuotationEmail(params: SendQuotationParams): Promi
   const commId = `comm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const now = new Date().toISOString();
 
+  const effectiveCompanyId = document.companyId || (quote as any).companyId;
+  if (!effectiveCompanyId) {
+    throw new Error('NO_COMPANY_CONFIGURED: Valid companyId is required to record communication.');
+  }
+
   const commRecord: QuotationCommunication = {
     id: commId,
-    companyId: document.companyId || (quote as any).companyId || 'default-company',
+    companyId: effectiveCompanyId,
     quotationId: quote.id,
     quotationNumber: quote.quoteNumber,
     documentId: document.id,
@@ -294,7 +299,7 @@ export async function dispatchQuotationEmail(params: SendQuotationParams): Promi
   // 5. Create Audit Log
   await recordAuditLog({
     id: `audit_comm_${Date.now()}`,
-    companyId: document.companyId || 'default-company',
+    companyId: effectiveCompanyId,
     quotationId: quote.id,
     entityType: 'QUOTATION_COMMUNICATION',
     entityId: commId,
@@ -373,7 +378,7 @@ export async function createFollowUp(followUp: QuotationFollowUp): Promise<void>
   // Audit log
   await recordAuditLog({
     id: `audit_followup_${Date.now()}`,
-    companyId: followUp.companyId || 'default-company',
+    companyId: followUp.companyId || '',
     quotationId: followUp.quotationId,
     entityType: 'QUOTATION_FOLLOW_UP',
     entityId: followUp.id,

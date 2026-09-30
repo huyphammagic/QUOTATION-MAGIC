@@ -1,8 +1,9 @@
 import React from 'react';
-import { Ship, RefreshCw, Menu, Plus, LayoutDashboard } from 'lucide-react';
+import { Ship, RefreshCw, Menu, Plus, LayoutDashboard, ShieldCheck, LogIn } from 'lucide-react';
 import { CompanyProfile } from '../types/logistics';
 import { CloudSyncStatusBadge } from './CloudSyncStatusBadge';
 import { CompanySwitcher } from './company/CompanySwitcher';
+import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
   company: CompanyProfile;
@@ -22,6 +23,7 @@ interface NavbarProps {
   onOpenIntegrityDashboard?: () => void;
   onOpenCompanyProfile?: (tab?: 'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview' | 'financial') => void;
   onOpenCreateCompany?: () => void;
+  onOpenAuthModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -42,7 +44,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenIntegrityDashboard,
   onOpenCompanyProfile,
   onOpenCreateCompany,
+  onOpenAuthModal,
 }) => {
+  const { user, isAuthenticated } = useAuth();
   return (
     <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-30 flex items-center justify-between px-3 sm:px-6 lg:px-8 shadow-xs">
       
@@ -112,6 +116,35 @@ export const Navbar: React.FC<NavbarProps> = ({
           />
           <span className="text-[11px] font-medium text-slate-400">VND</span>
         </div>
+
+        {/* User Authentication Status & Trigger */}
+        {onOpenAuthModal && (
+          <button
+            type="button"
+            id="btn-navbar-auth"
+            onClick={onOpenAuthModal}
+            className={`flex items-center space-x-1.5 border font-semibold text-xs px-2.5 sm:px-3 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer ${
+              isAuthenticated
+                ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+            }`}
+            title={isAuthenticated ? `Đang đăng nhập: ${user?.email}` : 'Đăng nhập Firebase Auth'}
+          >
+            {isAuthenticated ? (
+              <>
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span className="hidden md:inline truncate max-w-[120px]">
+                  {user?.displayName || user?.email?.split('@')[0]}
+                </span>
+              </>
+            ) : (
+              <>
+                <LogIn className="w-4 h-4 text-slate-600" />
+                <span className="hidden sm:inline">Đăng Nhập</span>
+              </>
+            )}
+          </button>
+        )}
 
         {/* Dashboard & BI Quick Action */}
         {onOpenDashboard && (

@@ -31,7 +31,7 @@ export const FORBIDDEN_EMAIL_VARIABLES = [
 export const DEFAULT_EMAIL_TEMPLATES: EmailTemplate[] = [
   {
     id: 'tmpl-quotation-send-vi',
-    companyId: 'default-company',
+    companyId: 'company_profile',
     name: 'Báo Giá Vận Chuyển Chuẩn (Tiếng Việt)',
     code: 'QUOTATION_SEND_VI',
     type: 'QUOTATION_SEND',
@@ -80,7 +80,7 @@ export const DEFAULT_EMAIL_TEMPLATES: EmailTemplate[] = [
   },
   {
     id: 'tmpl-quotation-send-en',
-    companyId: 'default-company',
+    companyId: 'company_profile',
     name: 'Standard Freight Quotation (English)',
     code: 'QUOTATION_SEND_EN',
     type: 'QUOTATION_SEND',
@@ -129,7 +129,7 @@ export const DEFAULT_EMAIL_TEMPLATES: EmailTemplate[] = [
   },
   {
     id: 'tmpl-quotation-followup-vi',
-    companyId: 'default-company',
+    companyId: 'company_profile',
     name: 'Follow-Up Báo Giá (Tiếng Việt)',
     code: 'QUOTATION_FOLLOWUP_VI',
     type: 'QUOTATION_FOLLOW_UP',
@@ -159,7 +159,7 @@ export const DEFAULT_EMAIL_TEMPLATES: EmailTemplate[] = [
   },
   {
     id: 'tmpl-quotation-reminder-vi',
-    companyId: 'default-company',
+    companyId: 'company_profile',
     name: 'Nhắc Nhở Báo Giá Sắp Hết Hạn (Tiếng Việt)',
     code: 'QUOTATION_REMINDER_VI',
     type: 'QUOTATION_REMINDER',

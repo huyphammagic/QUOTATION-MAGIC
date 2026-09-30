@@ -7,6 +7,8 @@ import { CompanyProfile } from './logistics';
 
 export type CompanyStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
 
+export const CANONICAL_DEFAULT_COMPANY_ID = 'company_profile';
+
 export type CompanyMemberRole = 
   | 'COMPANY_ADMIN' 
   | 'LOGISTICS_MANAGER' 

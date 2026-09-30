@@ -28,7 +28,7 @@ interface SalesFollowUpWorkspaceProps {
 }
 
 export const SalesFollowUpWorkspace: React.FC<SalesFollowUpWorkspaceProps> = ({
-  companyId = 'default-company',
+  companyId = 'company_profile',
   user,
   customers = [],
   quotes = [],

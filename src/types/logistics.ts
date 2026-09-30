@@ -157,6 +157,7 @@ export interface LineItem {
 export interface CustomerRecord extends CustomerInfo {
   id: string;
   code: string;
+  companyId?: string;
   group?: string;
   segment?: string; // VIP, STRATEGIC, STANDARD
   notes?: string;
@@ -182,6 +183,7 @@ export interface SurchargeItem {
 export interface CustomerInfo {
   id?: string;
   code?: string;
+  companyId?: string;
   segment?: string;
   customerName: string;
   companyName: string;

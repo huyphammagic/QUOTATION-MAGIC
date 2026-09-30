@@ -19,7 +19,7 @@ import {
   runTransaction,
   onSnapshot
 } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
+import { db, auth } from '../firebase/firebaseConfig';
 import { 
   CompanyRecord, 
   CompanyMetadataItem, 
@@ -29,6 +29,7 @@ import {
 import { CompanyProfile } from '../../types/logistics';
 import { syncHealthService } from '../integrity/syncHealthService';
 import { recordHealthAudit } from '../audit/systemHealthAuditService';
+import { getUserMemberships } from './companyMemberRepository';
 
 const COMPANIES_COLLECTION = 'companies';
 const MEMBERSHIPS_COLLECTION = 'companyMemberships';
@@ -54,56 +55,75 @@ export function invalidateMultiCompanyCache(): void {
  * Migrates existing legacy 'settings/company_profile' if present without destroying data.
  */
 export async function ensureDefaultCompanyInitialized(legacyProfile?: CompanyProfile): Promise<CompanyRecord> {
+  const fallback: CompanyRecord = {
+    companyId: 'company_profile',
+    companyCode: 'COMP-DEF',
+    legalName: legacyProfile?.englishName || legacyProfile?.name || '',
+    displayName: legacyProfile?.name || '',
+    shortName: legacyProfile?.shortName || '',
+    taxCode: legacyProfile?.taxId || '',
+    address: legacyProfile?.address || '',
+    country: 'Vietnam',
+    city: 'Ho Chi Minh',
+    phone: legacyProfile?.phone || '',
+    email: legacyProfile?.email || '',
+    website: legacyProfile?.website || '',
+    bankName: legacyProfile?.bankName || '',
+    bankAccountNo: legacyProfile?.bankAccountNo || '',
+    bankAccountHolder: legacyProfile?.bankAccountHolder || '',
+    bankSwiftCode: legacyProfile?.bankSwiftCode || '',
+    defaultSalesRepName: legacyProfile?.salesRepName || '',
+    defaultSalesRepTitle: legacyProfile?.salesRepTitle || '',
+    defaultSalesRepPhone: legacyProfile?.salesRepPhone || '',
+    defaultSalesRepEmail: legacyProfile?.salesRepEmail || '',
+    branding: {
+      logoUrl: legacyProfile?.logoUrl || '',
+      quotationPrefix: 'LOG',
+      defaultCurrency: 'USD',
+      defaultQuotationValidityDays: 15,
+    },
+    status: 'ACTIVE',
+    quotationCounter: 100,
+    version: 1,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    createdBy: 'System Init',
+    updatedBy: 'System Init',
+  };
+
   if (!db) {
-    const fallback: CompanyRecord = {
-      companyId: 'company_profile',
-      companyCode: 'LOG-DEF',
-      legalName: legacyProfile?.englishName || legacyProfile?.name || 'LOGISTICS SOLUTIONS CO., LTD',
-      displayName: legacyProfile?.name || 'LOGISTICS SOLUTIONS',
-      shortName: legacyProfile?.shortName || 'LOG',
-      taxCode: legacyProfile?.taxId || '',
-      address: legacyProfile?.address || '',
-      country: 'Vietnam',
-      city: 'Ho Chi Minh',
-      phone: legacyProfile?.phone || '',
-      email: legacyProfile?.email || '',
-      website: legacyProfile?.website || '',
-      bankName: legacyProfile?.bankName || '',
-      bankAccountNo: legacyProfile?.bankAccountNo || '',
-      bankAccountHolder: legacyProfile?.bankAccountHolder || '',
-      bankSwiftCode: legacyProfile?.bankSwiftCode || '',
-      defaultSalesRepName: legacyProfile?.salesRepName || '',
-      defaultSalesRepTitle: legacyProfile?.salesRepTitle || 'Logistics Consultant',
-      defaultSalesRepPhone: legacyProfile?.salesRepPhone || '',
-      defaultSalesRepEmail: legacyProfile?.salesRepEmail || '',
-      branding: {
-        logoUrl: legacyProfile?.logoUrl || '',
-        quotationPrefix: 'LOG',
-        defaultCurrency: 'USD',
-        defaultQuotationValidityDays: 15,
-      },
-      status: 'ACTIVE',
-      quotationCounter: 100,
-      version: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      createdBy: 'System Init',
-      updatedBy: 'System Init',
-    };
     return fallback;
   }
 
   try {
     const defaultDocRef = doc(db, COMPANIES_COLLECTION, 'company_profile');
-    const snap = await getDoc(defaultDocRef);
+    let snap: any = null;
+    try {
+      snap = await getDoc(defaultDocRef);
+    } catch (permErr: any) {
+      console.warn('[companyRepository] Company profile access notice:', permErr?.message || permErr);
+      return fallback;
+    }
 
-    if (snap.exists()) {
+    if (snap && snap.exists()) {
       return { ...snap.data() as CompanyRecord, companyId: snap.id };
     }
 
-    // Initialize from legacy doc if available
-    let initialLegalName = 'LOGISTICS SOLUTIONS CO., LTD';
-    let initialDisplayName = 'LOGISTICS SOLUTIONS';
+    // Check if any real company already exists in the collection
+    try {
+      const anyCompSnap = await getDocs(query(collection(db, COMPANIES_COLLECTION), limit(1)));
+      if (!anyCompSnap.empty) {
+        const firstDoc = anyCompSnap.docs[0];
+        return { ...firstDoc.data() as CompanyRecord, companyId: firstDoc.id };
+      }
+    } catch {
+      // Permission or collection query restricted, continue
+    }
+
+    // Check if real legacy data exists in settings/company_profile or legacyProfile prop
+    let hasRealLegacyData = false;
+    let initialLegalName = '';
+    let initialDisplayName = '';
     let initialTaxCode = '';
     let initialAddress = '';
     let initialPhone = '';
@@ -117,7 +137,8 @@ export async function ensureDefaultCompanyInitialized(legacyProfile?: CompanyPro
     let initialSalesRep = '';
     let initialSalesTitle = '';
 
-    if (legacyProfile && legacyProfile.name) {
+    if (legacyProfile && legacyProfile.name && legacyProfile.name.trim() && !legacyProfile.name.includes('LOGISTICS SOLUTIONS')) {
+      hasRealLegacyData = true;
       initialDisplayName = legacyProfile.name;
       initialLegalName = legacyProfile.englishName || legacyProfile.name;
       initialTaxCode = legacyProfile.taxId || '';
@@ -138,24 +159,68 @@ export async function ensureDefaultCompanyInitialized(legacyProfile?: CompanyPro
         const legSnap = await getDoc(doc(db, SETTINGS_COLLECTION, LEGACY_COMPANY_DOC));
         if (legSnap.exists()) {
           const lData = legSnap.data() as any;
-          initialDisplayName = lData.name || initialDisplayName;
-          initialLegalName = lData.englishName || lData.name || initialLegalName;
-          initialTaxCode = lData.taxId || '';
-          initialAddress = lData.address || '';
-          initialPhone = lData.phone || '';
-          initialEmail = lData.email || '';
-          initialWebsite = lData.website || '';
-          initialLogo = lData.logoUrl || '';
-          initialBankName = lData.bankName || '';
-          initialBankNo = lData.bankAccountNo || '';
-          initialBankHolder = lData.bankAccountHolder || '';
-          initialSwift = lData.bankSwiftCode || '';
-          initialSalesRep = lData.salesRepName || '';
-          initialSalesTitle = lData.salesRepTitle || '';
+          if (lData && lData.name && lData.name.trim()) {
+            hasRealLegacyData = true;
+            initialDisplayName = lData.name;
+            initialLegalName = lData.englishName || lData.name;
+            initialTaxCode = lData.taxId || '';
+            initialAddress = lData.address || '';
+            initialPhone = lData.phone || '';
+            initialEmail = lData.email || '';
+            initialWebsite = lData.website || '';
+            initialLogo = lData.logoUrl || '';
+            initialBankName = lData.bankName || '';
+            initialBankNo = lData.bankAccountNo || '';
+            initialBankHolder = lData.bankAccountHolder || '';
+            initialSwift = lData.bankSwiftCode || '';
+            initialSalesRep = lData.salesRepName || '';
+            initialSalesTitle = lData.salesRepTitle || '';
+          }
         }
       } catch (lErr) {
         console.warn('[companyRepository] Legacy company settings read notice:', lErr);
       }
+    }
+
+    if (!hasRealLegacyData) {
+      // NO FAKE COMPANY CREATION: Do not seed mock data into Firestore
+      console.log('[companyRepository] No real company configured in Firestore yet. Waiting for user setup.');
+      const unconfigured: CompanyRecord = {
+        companyId: 'company_profile',
+        companyCode: 'COMP-01',
+        legalName: 'Chưa cấu hình thông tin pháp nhân',
+        displayName: 'Chưa cấu hình công ty',
+        shortName: 'NEW',
+        taxCode: '',
+        address: '',
+        country: 'Vietnam',
+        city: 'Ho Chi Minh',
+        phone: '',
+        email: '',
+        website: '',
+        bankName: '',
+        bankAccountNo: '',
+        bankAccountHolder: '',
+        bankSwiftCode: '',
+        defaultSalesRepName: '',
+        defaultSalesRepTitle: '',
+        defaultSalesRepPhone: '',
+        defaultSalesRepEmail: '',
+        branding: {
+          logoUrl: '',
+          quotationPrefix: 'LOG',
+          defaultCurrency: 'USD',
+          defaultQuotationValidityDays: 15,
+        },
+        status: 'ACTIVE',
+        quotationCounter: 100,
+        version: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdBy: 'System',
+        updatedBy: 'System',
+      };
+      return unconfigured;
     }
 
     const newCompany: CompanyRecord = {
@@ -198,9 +263,9 @@ export async function ensureDefaultCompanyInitialized(legacyProfile?: CompanyPro
     memorySingleCompanyCache.set('company_profile', { data: newCompany, cachedAt: Date.now() });
     invalidateMultiCompanyCache();
     return newCompany;
-  } catch (err) {
-    console.error('[companyRepository] Error ensuring default company:', err);
-    throw err;
+  } catch (err: any) {
+    console.warn('[companyRepository] Notice ensuring default company:', err?.message || err);
+    return fallback;
   }
 }
 
@@ -241,7 +306,27 @@ export async function fetchAllCompanies(forceRefresh = false): Promise<CompanyRe
 
     return companies;
   } catch (error: any) {
-    console.warn('[companyRepository] Error fetching companies list:', error?.message || error);
+    console.warn('[companyRepository] Notice fetching global companies list (evaluating tenant isolation):', error?.message || error);
+    // If global query failed (expected under multi-tenant isolation rules for non-root users),
+    // load specifically authorized companies where user holds active membership
+    if (auth?.currentUser?.uid) {
+      try {
+        const memberships = await getUserMemberships(auth.currentUser.uid);
+        const memberCompanies: CompanyRecord[] = [];
+        for (const m of memberships) {
+          if (m.companyId) {
+            const comp = await getCompanyById(m.companyId);
+            if (comp) memberCompanies.push(comp);
+          }
+        }
+        if (memberCompanies.length > 0) {
+          memoryCompaniesListCache = { data: memberCompanies, cachedAt: now };
+          return memberCompanies;
+        }
+      } catch (memErr) {
+        console.warn('[companyRepository] Notice resolving member companies on fallback:', memErr);
+      }
+    }
     return memoryCompaniesListCache ? memoryCompaniesListCache.data : [];
   }
 }
@@ -307,15 +392,7 @@ export async function saveCompany(
   }
 
   if (!db) {
-    const fallback: CompanyRecord = {
-      ...company as any,
-      updatedAt: new Date().toISOString(),
-      updatedBy: userId,
-      version: (company.version || 1) + 1,
-    };
-    memorySingleCompanyCache.set(company.companyId, { data: fallback, cachedAt: Date.now() });
-    invalidateMultiCompanyCache();
-    return { success: true, company: fallback };
+    return { success: false, message: 'Cơ sở dữ liệu đám mây chưa sẵn sàng (OFFLINE).' };
   }
 
   const opKey = `save_company_${company.companyId}_${Date.now()}`;
@@ -414,7 +491,7 @@ export async function setCompanyStatus(
   userId = 'Admin User'
 ): Promise<{ success: boolean; message: string }> {
   if (!db) {
-    return { success: true, message: 'Đã cập nhật trạng thái công ty.' };
+    return { success: false, message: 'Cơ sở dữ liệu đám mây chưa sẵn sàng (OFFLINE).' };
   }
 
   try {

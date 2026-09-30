@@ -38,7 +38,7 @@ export const FollowUpModal: React.FC<FollowUpModalProps> = ({
     try {
       const newFollowUp: QuotationFollowUp = {
         id: `fu_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        companyId: 'default-company',
+        companyId: quote.companyId || quote.company?.companyId || 'company_profile',
         quotationId: quote.id,
         quotationNumber: quote.quoteNumber,
         customerName: quote.customer.companyName || quote.customer.customerName,

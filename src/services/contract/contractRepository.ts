@@ -16,8 +16,9 @@ import {
   updateDoc,
   onSnapshot
 } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
+import { db, auth } from '../firebase/firebaseConfig';
 import { syncHealthService } from '../integrity/syncHealthService';
+import { CANONICAL_DEFAULT_COMPANY_ID } from '../../types/multiCompany';
 import { 
   ContractItem, 
   ContractRateItem, 
@@ -57,6 +58,7 @@ export function invalidateContractsCache(): void {
  * ============================================================================
  */
 export interface FetchContractsOptions {
+  companyId?: string;
   contractType?: ContractType;
   status?: ContractStatus | 'ALL';
   partyId?: string;
@@ -74,6 +76,9 @@ export interface FetchContractsResult {
 export async function fetchContracts(
   options: FetchContractsOptions = {}
 ): Promise<FetchContractsResult> {
+  const targetCompany = (options.companyId && options.companyId.trim()) || 
+    localStorage.getItem('logistics_active_company_id') || 
+    CANONICAL_DEFAULT_COMPANY_ID;
   const {
     contractType,
     status,
@@ -83,13 +88,16 @@ export async function fetchContracts(
     lastDoc,
   } = options;
 
-  if (!db) {
+  if (!db || !auth?.currentUser || !targetCompany) {
     return { contracts: [], hasMore: false };
   }
 
   try {
     const collRef = collection(db, COLLECTIONS.CONTRACTS);
-    const queryConstraints: any[] = [];
+    // Explicit mandatory companyId filter — prevents any unscoped collection query
+    const queryConstraints: any[] = [
+      where('companyId', '==', targetCompany)
+    ];
 
     // Filter by Contract Type (CUSTOMER vs SUPPLIER)
     if (contractType) {
@@ -116,32 +124,49 @@ export async function fetchContracts(
       queryConstraints.push(startAfter(lastDoc));
     }
 
-    const q = query(collRef, ...queryConstraints);
-    const snap = await getDocs(q);
+    let snap: any;
+    try {
+      const q = query(collRef, ...queryConstraints);
+      snap = await getDocs(q);
+    } catch (_orderErr) {
+      // Graceful fallback with mandatory companyId constraint preserved
+      const fallbackConstraints: any[] = [
+        where('companyId', '==', targetCompany)
+      ];
+      if (contractType) fallbackConstraints.push(where('contractType', '==', contractType));
+      if (status && status !== 'ALL') fallbackConstraints.push(where('status', '==', status));
+      if (partyId) fallbackConstraints.push(where('partyId', '==', partyId));
+      fallbackConstraints.push(limit(limitCount));
+      const fallbackQ = query(collRef, ...fallbackConstraints);
+      snap = await getDocs(fallbackQ);
+    }
 
-    let contracts = snap.docs.map(d => d.data() as ContractItem);
+    let contracts = (snap?.docs || []).map((d: any) => d.data() as ContractItem);
 
     // Client-side quick search for text matching contract number or party name
     if (searchQuery && searchQuery.trim()) {
       const qLower = searchQuery.toLowerCase().trim();
       contracts = contracts.filter(c => 
-        c.contractNumber.toLowerCase().includes(qLower) ||
-        c.partyName.toLowerCase().includes(qLower) ||
-        c.contractName.toLowerCase().includes(qLower) ||
+        c.contractNumber?.toLowerCase().includes(qLower) ||
+        c.partyName?.toLowerCase().includes(qLower) ||
+        c.contractName?.toLowerCase().includes(qLower) ||
         (c.partyCode && c.partyCode.toLowerCase().includes(qLower))
       );
     }
 
-    const newLastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : undefined;
-    const hasMore = snap.docs.length === limitCount;
+    // Sort in memory by updatedAt descending
+    contracts.sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime());
+
+    const newLastDoc = snap?.docs && snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : undefined;
+    const hasMore = snap?.docs ? snap.docs.length === limitCount : false;
 
     return {
       contracts,
       lastDoc: newLastDoc,
       hasMore,
     };
-  } catch (error) {
-    console.error('Error fetching contracts from Firestore:', error);
+  } catch (error: any) {
+    console.warn('[contractRepository] Notice fetching contracts from Firestore:', error?.message || error);
     return { contracts: [], hasMore: false };
   }
 }
@@ -171,14 +196,16 @@ export async function saveContract(
   contract: ContractItem,
   actor: string = 'System'
 ): Promise<void> {
-  if (!db) return;
+  if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
 
+  const effectiveCompanyId = contract.companyId || localStorage.getItem('logistics_active_company_id') || CANONICAL_DEFAULT_COMPANY_ID;
   const docRef = doc(db, COLLECTIONS.CONTRACTS, contract.id);
   const now = new Date().toISOString();
   const isNew = !contract.createdAt;
 
   const dataToSave: ContractItem = {
     ...contract,
+    companyId: effectiveCompanyId,
     createdAt: contract.createdAt || now,
     updatedAt: now,
     updatedBy: actor,
@@ -564,7 +591,7 @@ export async function saveContractDocument(
   docItem: ContractDocumentItem,
   actor: string
 ): Promise<void> {
-  if (!db) return;
+  if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
   const docRef = doc(db, COLLECTIONS.CONTRACT_DOCUMENTS, docItem.id);
   await setDoc(docRef, docItem, { merge: true });
 

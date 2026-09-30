@@ -6,13 +6,14 @@ import {
   getDocs, 
   deleteDoc, 
   query, 
+  where,
   orderBy, 
   onSnapshot,
   Timestamp,
   serverTimestamp,
   writeBatch
 } from 'firebase/firestore';
-import { db } from './firebaseConfig';
+import { db, auth } from './firebaseConfig';
 import { QuoteData, CustomerRecord, SurchargeItem, CompanyProfile } from '../../types/logistics';
 import { 
   RateMasterItem, 
@@ -75,19 +76,7 @@ const COLLECTIONS = {
  */
 
 export async function saveQuoteToFirestore(quote: QuoteData): Promise<void> {
-  // Always update local cache first
-  const localQuotes = loadSavedQuotes();
-  const index = localQuotes.findIndex(q => q.id === quote.id);
-  let updatedList: QuoteData[];
-  if (index >= 0) {
-    updatedList = [...localQuotes];
-    updatedList[index] = quote;
-  } else {
-    updatedList = [quote, ...localQuotes];
-  }
-  saveQuotesList(updatedList);
-
-  if (!db) return;
+  if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
 
   try {
     const docRef = doc(db, COLLECTIONS.QUOTES, quote.id);
@@ -96,12 +85,25 @@ export async function saveQuoteToFirestore(quote: QuoteData): Promise<void> {
       _updatedAt: serverTimestamp(),
     }, { merge: true });
 
+    // Update in-memory cache only after confirmed write
+    const localQuotes = loadSavedQuotes();
+    const index = localQuotes.findIndex(q => q.id === quote.id);
+    let updatedList: QuoteData[];
+    if (index >= 0) {
+      updatedList = [...localQuotes];
+      updatedList[index] = quote;
+    } else {
+      updatedList = [quote, ...localQuotes];
+    }
+    saveQuotesList(updatedList);
+
     // Phase 44: Sync quotation validity deadline
     syncQuotationDeadlines(quote, { uid: (quote as any).creatorId || (quote as any).userId || 'operator' }).catch(err => {
       console.warn('[deadlineSync] Quotation sync warning:', err);
     });
   } catch (error) {
-    console.warn('Firestore quote save sync notice (saved locally):', error);
+    console.error('Firestore quote save error:', error);
+    throw error;
   }
 }
 
@@ -137,15 +139,15 @@ export async function getQuotesFromFirestore(): Promise<QuoteData[]> {
 }
 
 export async function deleteQuoteFromFirestore(id: string): Promise<void> {
-  const localQuotes = loadSavedQuotes().filter(q => q.id !== id);
-  saveQuotesList(localQuotes);
-
-  if (!db) return;
+  if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
 
   try {
     await deleteDoc(doc(db, COLLECTIONS.QUOTES, id));
+    const localQuotes = loadSavedQuotes().filter(q => q.id !== id);
+    saveQuotesList(localQuotes);
   } catch (error) {
-    console.warn('Firestore delete quote error:', error);
+    console.error('Firestore delete quote error:', error);
+    throw error;
   }
 }
 
@@ -174,12 +176,7 @@ export async function deleteCustomerFromFirestore(id: string): Promise<void> {
  */
 
 export async function saveSurchargeToFirestore(item: SurchargeItem): Promise<void> {
-  const local = loadSavedSurcharges();
-  const idx = local.findIndex(s => s.id === item.id);
-  const updated = idx >= 0 ? local.map((s, i) => i === idx ? item : s) : [item, ...local];
-  saveSurchargesList(updated);
-
-  if (!db) return;
+  if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
 
   try {
     const docRef = doc(db, COLLECTIONS.SURCHARGES, item.id);
@@ -187,8 +184,14 @@ export async function saveSurchargeToFirestore(item: SurchargeItem): Promise<voi
       ...item,
       _updatedAt: serverTimestamp(),
     }, { merge: true });
+
+    const local = loadSavedSurcharges();
+    const idx = local.findIndex(s => s.id === item.id);
+    const updated = idx >= 0 ? local.map((s, i) => i === idx ? item : s) : [item, ...local];
+    saveSurchargesList(updated);
   } catch (error) {
-    console.warn('Firestore surcharge save notice:', error);
+    console.error('Firestore surcharge save error:', error);
+    throw error;
   }
 }
 
@@ -216,15 +219,15 @@ export async function getSurchargesFromFirestore(): Promise<SurchargeItem[]> {
 }
 
 export async function deleteSurchargeFromFirestore(id: string): Promise<void> {
-  const local = loadSavedSurcharges().filter(s => s.id !== id);
-  saveSurchargesList(local);
-
-  if (!db) return;
+  if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
 
   try {
     await deleteDoc(doc(db, COLLECTIONS.SURCHARGES, id));
+    const local = loadSavedSurcharges().filter(s => s.id !== id);
+    saveSurchargesList(local);
   } catch (error) {
-    console.warn('Firestore delete surcharge error:', error);
+    console.error('Firestore delete surcharge error:', error);
+    throw error;
   }
 }
 
@@ -235,9 +238,7 @@ export async function deleteSurchargeFromFirestore(id: string): Promise<void> {
  */
 
 export async function saveCompanyProfileToFirestore(profile: CompanyProfile): Promise<void> {
-  saveCompanyProfile(profile);
-
-  if (!db) return;
+  if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
 
   try {
     const docRef = doc(db, COLLECTIONS.SETTINGS, 'company_profile');
@@ -245,8 +246,11 @@ export async function saveCompanyProfileToFirestore(profile: CompanyProfile): Pr
       ...profile,
       _updatedAt: serverTimestamp(),
     }, { merge: true });
+
+    saveCompanyProfile(profile);
   } catch (error) {
-    console.warn('Firestore save company profile notice:', error);
+    console.error('Firestore save company profile error:', error);
+    throw error;
   }
 }
 
@@ -295,9 +299,7 @@ export async function saveRateMasterToFirestore(rate: RateMasterItem, actor: str
     snapshot: rate,
     note: `Saved rate ${rate.rateCode} (${rate.status})`,
   };
-  addRateHistoryItem(historyItem);
-
-  if (!db) return;
+  if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
 
   try {
     const docRef = doc(db, COLLECTIONS.RATE_MASTERS, rate.id);
@@ -312,8 +314,12 @@ export async function saveRateMasterToFirestore(rate: RateMasterItem, actor: str
       ...historyItem,
       _createdAt: serverTimestamp(),
     }, { merge: true });
+
+    addRateHistoryItem(historyItem);
+    saveRateMasterItem(rate);
   } catch (error) {
-    console.warn('Firestore save rate master notice:', error);
+    console.error('Firestore save rate master error:', error);
+    throw error;
   }
 }
 
@@ -342,9 +348,7 @@ export async function getRateMastersFromFirestore(): Promise<RateMasterItem[]> {
 }
 
 export async function deleteRateMasterFromFirestore(id: string, softDelete: boolean = true): Promise<void> {
-  deleteRateMasterItem(id, softDelete);
-
-  if (!db) return;
+  if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
 
   try {
     if (softDelete) {
@@ -356,8 +360,10 @@ export async function deleteRateMasterFromFirestore(id: string, softDelete: bool
     } else {
       await deleteDoc(doc(db, COLLECTIONS.RATE_MASTERS, id));
     }
+    deleteRateMasterItem(id, softDelete);
   } catch (error) {
-    console.warn('Firestore delete rate master error:', error);
+    console.error('Firestore delete rate master error:', error);
+    throw error;
   }
 }
 
@@ -368,9 +374,7 @@ export async function deleteRateMasterFromFirestore(id: string, softDelete: bool
  */
 
 export async function saveChargeMasterToFirestore(charge: ChargeMasterItem): Promise<void> {
-  saveChargeMasterItem(charge);
-
-  if (!db) return;
+  if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
 
   try {
     const docRef = doc(db, COLLECTIONS.CHARGE_MASTERS, charge.id);
@@ -378,8 +382,11 @@ export async function saveChargeMasterToFirestore(charge: ChargeMasterItem): Pro
       ...charge,
       _updatedAt: serverTimestamp(),
     }, { merge: true });
+
+    saveChargeMasterItem(charge);
   } catch (error) {
-    console.warn('Firestore save charge master notice:', error);
+    console.error('Firestore save charge master error:', error);
+    throw error;
   }
 }
 
@@ -407,9 +414,7 @@ export async function getChargeMastersFromFirestore(): Promise<ChargeMasterItem[
 }
 
 export async function deleteChargeMasterFromFirestore(id: string): Promise<void> {
-  deleteChargeMasterItem(id);
-
-  if (!db) return;
+  if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
 
   try {
     const docRef = doc(db, COLLECTIONS.CHARGE_MASTERS, id);
@@ -417,8 +422,10 @@ export async function deleteChargeMasterFromFirestore(id: string): Promise<void>
       status: 'INACTIVE',
       _updatedAt: serverTimestamp(),
     }, { merge: true });
+    deleteChargeMasterItem(id);
   } catch (error) {
-    console.warn('Firestore delete charge master error:', error);
+    console.error('Firestore delete charge master error:', error);
+    throw error;
   }
 }
 
@@ -459,7 +466,7 @@ export async function getRateHistoriesFromFirestore(): Promise<RateHistoryItem[]
  */
 
 export async function saveSupplierToFirestore(supplier: SupplierItem): Promise<void> {
-  if (!db) return;
+  if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
   try {
     const docRef = doc(db, COLLECTIONS.SUPPLIERS, supplier.id);
     await setDoc(docRef, {
@@ -467,7 +474,8 @@ export async function saveSupplierToFirestore(supplier: SupplierItem): Promise<v
       _updatedAt: serverTimestamp(),
     }, { merge: true });
   } catch (error) {
-    console.warn('Firestore save supplier error:', error);
+    console.error('Firestore save supplier error:', error);
+    throw error;
   }
 }
 
@@ -490,12 +498,13 @@ export async function getSuppliersFromFirestore(): Promise<SupplierItem[]> {
 }
 
 export async function deleteSupplierFromFirestore(id: string): Promise<void> {
-  if (!db) return;
+  if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
   try {
     const docRef = doc(db, COLLECTIONS.SUPPLIERS, id);
     await setDoc(docRef, { status: 'INACTIVE', _updatedAt: serverTimestamp() }, { merge: true });
   } catch (error) {
-    console.warn('Firestore delete supplier error:', error);
+    console.error('Firestore delete supplier error:', error);
+    throw error;
   }
 }
 
@@ -506,7 +515,7 @@ export async function deleteSupplierFromFirestore(id: string): Promise<void> {
  */
 
 export async function saveCarrierToFirestore(carrier: CarrierItem): Promise<void> {
-  if (!db) return;
+  if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
   try {
     const docRef = doc(db, COLLECTIONS.CARRIERS, carrier.id);
     await setDoc(docRef, {
@@ -514,7 +523,8 @@ export async function saveCarrierToFirestore(carrier: CarrierItem): Promise<void
       _updatedAt: serverTimestamp(),
     }, { merge: true });
   } catch (error) {
-    console.warn('Firestore save carrier error:', error);
+    console.error('Firestore save carrier error:', error);
+    throw error;
   }
 }
 
@@ -802,12 +812,17 @@ export async function getMissingRateEventsFromFirestore(): Promise<MissingRateEv
 /**
  * Subscribes to real-time changes in Quotes collection across all devices
  */
-export function subscribeToQuotations(onUpdate: (quotes: QuoteData[]) => void): () => void {
-  if (!db) return () => {};
+export function subscribeToQuotations(onUpdate: (quotes: QuoteData[]) => void, companyId?: string): () => void {
+  if (!db || !auth?.currentUser) return () => {};
+  const targetCompany = companyId || localStorage.getItem('logistics_active_company_id') || undefined;
   const listenerId = 'quotes_listener';
   syncHealthService.registerListener(listenerId, 'Báo Giá Thời Gian Thực', COLLECTIONS.QUOTES);
   try {
-    const q = query(collection(db, COLLECTIONS.QUOTES));
+    const collRef = collection(db, COLLECTIONS.QUOTES);
+    const q = targetCompany 
+      ? query(collRef, where('companyId', '==', targetCompany))
+      : query(collRef);
+
     return onSnapshot(q, (snapshot) => {
       const items: QuoteData[] = [];
       snapshot.forEach(docSnap => {
@@ -823,7 +838,7 @@ export function subscribeToQuotations(onUpdate: (quotes: QuoteData[]) => void): 
       syncHealthService.reportListenerEvent(listenerId, 'Quotation', items.length);
       onUpdate(items);
     }, (err) => {
-      console.warn('[firestoreService] Live quotes snapshot notice:', err);
+      console.warn('[firestoreService] Live quotes snapshot notice:', err?.message || err);
       syncHealthService.reportListenerError(listenerId, err);
     });
   } catch (err) {
@@ -836,12 +851,17 @@ export function subscribeToQuotations(onUpdate: (quotes: QuoteData[]) => void): 
 /**
  * Subscribes to real-time changes in Customers collection across all devices
  */
-export function subscribeToCustomers(onUpdate: (customers: CustomerRecord[]) => void): () => void {
-  if (!db) return () => {};
+export function subscribeToCustomers(onUpdate: (customers: CustomerRecord[]) => void, companyId?: string): () => void {
+  if (!db || !auth?.currentUser) return () => {};
+  const targetCompany = companyId || localStorage.getItem('logistics_active_company_id') || undefined;
   const listenerId = 'customers_listener';
   syncHealthService.registerListener(listenerId, 'Khách Hàng Thời Gian Thực', COLLECTIONS.CUSTOMERS);
   try {
-    const q = query(collection(db, COLLECTIONS.CUSTOMERS));
+    const collRef = collection(db, COLLECTIONS.CUSTOMERS);
+    const q = targetCompany 
+      ? query(collRef, where('companyId', '==', targetCompany))
+      : query(collRef);
+
     return onSnapshot(q, (snapshot) => {
       const items: CustomerRecord[] = [];
       snapshot.forEach(docSnap => {
@@ -852,7 +872,7 @@ export function subscribeToCustomers(onUpdate: (customers: CustomerRecord[]) => 
       syncHealthService.reportListenerEvent(listenerId, 'Customer', items.length);
       onUpdate(items);
     }, (err) => {
-      console.warn('[firestoreService] Live customers snapshot notice:', err);
+      console.warn('[firestoreService] Live customers snapshot notice:', err?.message || err);
       syncHealthService.reportListenerError(listenerId, err);
     });
   } catch (err) {
@@ -865,12 +885,17 @@ export function subscribeToCustomers(onUpdate: (customers: CustomerRecord[]) => 
 /**
  * Subscribes to real-time changes in Master Rates across all devices
  */
-export function subscribeToRateMasters(onUpdate: (rates: RateMasterItem[]) => void): () => void {
-  if (!db) return () => {};
+export function subscribeToRateMasters(onUpdate: (rates: RateMasterItem[]) => void, companyId?: string): () => void {
+  if (!db || !auth?.currentUser) return () => {};
+  const targetCompany = companyId || localStorage.getItem('logistics_active_company_id') || undefined;
   const listenerId = 'rates_listener';
   syncHealthService.registerListener(listenerId, 'Biểu Cước Master Thời Gian Thực', COLLECTIONS.RATE_MASTERS);
   try {
-    const q = query(collection(db, COLLECTIONS.RATE_MASTERS));
+    const collRef = collection(db, COLLECTIONS.RATE_MASTERS);
+    const q = targetCompany 
+      ? query(collRef, where('companyId', '==', targetCompany))
+      : query(collRef);
+
     return onSnapshot(q, (snapshot) => {
       const items: RateMasterItem[] = [];
       snapshot.forEach(docSnap => {
@@ -881,7 +906,7 @@ export function subscribeToRateMasters(onUpdate: (rates: RateMasterItem[]) => vo
       syncHealthService.reportListenerEvent(listenerId, 'Rate', items.length);
       onUpdate(items);
     }, (err) => {
-      console.warn('[firestoreService] Live rates snapshot notice:', err);
+      console.warn('[firestoreService] Live rates snapshot notice:', err?.message || err);
       syncHealthService.reportListenerError(listenerId, err);
     });
   } catch (err) {
@@ -894,12 +919,17 @@ export function subscribeToRateMasters(onUpdate: (rates: RateMasterItem[]) => vo
 /**
  * Subscribes to real-time changes in Surcharges across all devices
  */
-export function subscribeToSurcharges(onUpdate: (surcharges: SurchargeItem[]) => void): () => void {
-  if (!db) return () => {};
+export function subscribeToSurcharges(onUpdate: (surcharges: SurchargeItem[]) => void, companyId?: string): () => void {
+  if (!db || !auth?.currentUser) return () => {};
+  const targetCompany = companyId || localStorage.getItem('logistics_active_company_id') || undefined;
   const listenerId = 'surcharges_listener';
   syncHealthService.registerListener(listenerId, 'Phụ Phí Thời Gian Thực', COLLECTIONS.SURCHARGES);
   try {
-    const q = query(collection(db, COLLECTIONS.SURCHARGES));
+    const collRef = collection(db, COLLECTIONS.SURCHARGES);
+    const q = targetCompany 
+      ? query(collRef, where('companyId', '==', targetCompany))
+      : query(collRef);
+
     return onSnapshot(q, (snapshot) => {
       const items: SurchargeItem[] = [];
       snapshot.forEach(docSnap => {
@@ -909,7 +939,7 @@ export function subscribeToSurcharges(onUpdate: (surcharges: SurchargeItem[]) =>
       syncHealthService.reportListenerEvent(listenerId, 'Surcharge', items.length);
       onUpdate(items);
     }, (err) => {
-      console.warn('[firestoreService] Live surcharges snapshot notice:', err);
+      console.warn('[firestoreService] Live surcharges snapshot notice:', err?.message || err);
       syncHealthService.reportListenerError(listenerId, err);
     });
   } catch (err) {

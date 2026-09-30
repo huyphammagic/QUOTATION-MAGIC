@@ -2,293 +2,665 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper functions
+    // =========================================================================
+    // 1. CORE SECURITY, AUTHENTICATION & MULTI-COMPANY RBAC HELPER FUNCTIONS
+    // =========================================================================
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Default rule for application collections
-    // Quotes collection: Read, Write for authenticated users (or public for demo with validation)
-    match /quotes/{quoteId} {
-      allow read, write: if true;
+    function isSystemAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email == 'huypham.magic@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
     }
 
-    // Customers directory
-    match /customers/{customerId} {
-      allow read, write: if true;
+    function isUser(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
     }
 
-    // Surcharges catalog
-    match /surcharges/{surchargeId} {
-      allow read, write: if true;
+    // Resolves membership document for the authenticated user in target company
+    function getMembership(companyId) {
+      return get(/databases/$(database)/documents/companyMemberships/$(request.auth.uid + '_' + companyId)).data;
     }
 
-    // Company Settings
-    match /settings/{settingId} {
-      allow read, write: if true;
+    // Checks if the authenticated user has an ACTIVE membership in the target company
+    // Strictly requires document existence in companyMemberships - ZERO hardcoded bypasses
+    function isCompanyMember(companyId) {
+      return isAuthenticated() && (
+        isSystemAdmin() ||
+        (
+          exists(/databases/$(database)/documents/companyMemberships/$(request.auth.uid + '_' + companyId)) &&
+          get(/databases/$(database)/documents/companyMemberships/$(request.auth.uid + '_' + companyId)).data.status == 'ACTIVE'
+        )
+      );
     }
 
-    // Logistics Master Rates
-    match /rateMasters/{rateId} {
-      allow read, write: if true;
+    function getMemberRole(companyId) {
+      return getMembership(companyId).role;
     }
 
-    // Master Charges (Standard Charge Codes)
-    match /chargeMasters/{chargeId} {
-      allow read, write: if true;
+    // Checks if the user has COMPANY_ADMIN role in the target company
+    function isCompanyAdmin(companyId) {
+      return isAuthenticated() && (
+        isSystemAdmin() ||
+        (
+          isCompanyMember(companyId) &&
+          exists(/databases/$(database)/documents/companyMemberships/$(request.auth.uid + '_' + companyId)) &&
+          getMemberRole(companyId) == 'COMPANY_ADMIN'
+        )
+      );
     }
 
-    // Master Rate Audit Histories
-    match /rateHistories/{historyId} {
-      allow read, write: if true;
+    // Granular Role & Permission Checks
+    function canCreateQuotes(companyId) {
+      return isAuthenticated() && (
+        isSystemAdmin() ||
+        (
+          isCompanyMember(companyId) &&
+          exists(/databases/$(database)/documents/companyMemberships/$(request.auth.uid + '_' + companyId)) &&
+          (
+            getMemberRole(companyId) in ['COMPANY_ADMIN', 'LOGISTICS_MANAGER', 'PRICING_SPECIALIST', 'SALES_REP'] ||
+            getMembership(companyId).permissions.canCreateQuotes == true
+          )
+        )
+      );
     }
 
-    // Phase 7: Professional Quotation Documents & Snapshots
-    match /quotationDocuments/{documentId} {
-      allow read, write: if true;
+    function canApproveQuotes(companyId) {
+      return isAuthenticated() && (
+        isSystemAdmin() ||
+        (
+          isCompanyMember(companyId) &&
+          exists(/databases/$(database)/documents/companyMemberships/$(request.auth.uid + '_' + companyId)) &&
+          (
+            getMemberRole(companyId) in ['COMPANY_ADMIN', 'LOGISTICS_MANAGER'] ||
+            getMembership(companyId).permissions.canApproveQuotes == true
+          )
+        )
+      );
     }
 
-    // Phase 7: Quotation Templates
-    match /quotationTemplates/{templateId} {
-      allow read, write: if true;
+    function canManageRates(companyId) {
+      return isAuthenticated() && (
+        isSystemAdmin() ||
+        (
+          isCompanyMember(companyId) &&
+          exists(/databases/$(database)/documents/companyMemberships/$(request.auth.uid + '_' + companyId)) &&
+          (
+            getMemberRole(companyId) in ['COMPANY_ADMIN', 'LOGISTICS_MANAGER', 'PRICING_SPECIALIST'] ||
+            getMembership(companyId).permissions.canManageRates == true
+          )
+        )
+      );
     }
 
-    // Phase 7: Quotation Terms Master Templates
-    match /quotationTerms/{termId} {
-      allow read, write: if true;
+    function canManageOperations(companyId) {
+      return isAuthenticated() && (
+        isSystemAdmin() ||
+        (
+          isCompanyMember(companyId) &&
+          exists(/databases/$(database)/documents/companyMemberships/$(request.auth.uid + '_' + companyId)) &&
+          getMemberRole(companyId) in ['COMPANY_ADMIN', 'LOGISTICS_MANAGER', 'OPERATOR', 'SALES_REP']
+        )
+      );
     }
 
-    // Phase 7: Quotation Audit Logs
-    match /quotationAuditLogs/{logId} {
-      allow read, write: if true;
+    function canManageMembers(companyId) {
+      return isAuthenticated() && (
+        isSystemAdmin() ||
+        (
+          isCompanyMember(companyId) &&
+          exists(/databases/$(database)/documents/companyMemberships/$(request.auth.uid + '_' + companyId)) &&
+          (
+            getMemberRole(companyId) == 'COMPANY_ADMIN' ||
+            getMembership(companyId).permissions.canManageMembers == true
+          )
+        )
+      );
     }
 
-    // Phase 8: Quotation Communications (Email History & Dispatch)
-    match /quotationCommunications/{commId} {
-      allow read, write: if true;
+    function canEditCompanyProfile(companyId) {
+      return isAuthenticated() && (
+        isSystemAdmin() ||
+        (
+          isCompanyMember(companyId) &&
+          exists(/databases/$(database)/documents/companyMemberships/$(request.auth.uid + '_' + companyId)) &&
+          (
+            getMemberRole(companyId) == 'COMPANY_ADMIN' ||
+            getMembership(companyId).permissions.canEditCompanyProfile == true
+          )
+        )
+      );
     }
 
-    // Phase 8: Secure Quotation Links
-    match /quotationLinks/{linkId} {
-      allow read, write: if true;
+    // Company Scoping Helpers
+    function isResourceMember() {
+      return isAuthenticated() && (
+        isSystemAdmin() ||
+        ('companyId' in resource.data && isCompanyMember(resource.data.companyId))
+      );
     }
 
-    // Phase 8: Customer Responses (Accept / Reject / Revision Requests)
-    match /quotationResponses/{responseId} {
-      allow read, write: if true;
+    function isIncomingMember() {
+      return isAuthenticated() && (
+        isSystemAdmin() ||
+        ('companyId' in request.resource.data && isCompanyMember(request.resource.data.companyId))
+      );
     }
 
-    // Phase 8: Sales Follow-Up Tasks
-    match /followUps/{followUpId} {
-      allow read, write: if true;
+    // Prevents tampering with tenant isolation by re-assigning companyId
+    function preservesCompanyId() {
+      return !('companyId' in request.resource.data) || request.resource.data.companyId == resource.data.companyId;
     }
 
-    // Phase 8: Email Templates
-    match /emailTemplates/{templateId} {
-      allow read, write: if true;
-    }
-
-    // Phase 8: Async Communication Jobs Queue
-    match /communicationJobs/{jobId} {
-      allow read, write: if true;
-    }
-
-    // Phase 10: Logistics Suppliers Master
-    match /suppliers/{supplierId} {
-      allow read, write: if true;
-    }
-
-    // Phase 10: Logistics Carriers Master
-    match /carriers/{carrierId} {
-      allow read, write: if true;
-    }
-
-    // Phase 10: Rate Approval Requests
-    match /rateApprovals/{approvalId} {
-      allow read, write: if true;
-    }
-
-    // Phase 10: Sales to Pricing Rate Requests
-    match /rateRequests/{requestId} {
-      allow read, write: if true;
-    }
-
-    // Phase 13: Bulk Rate Import Jobs
-    match /importJobs/{jobId} {
-      allow read, write: if true;
-    }
-
-    // Phase 13: Missing Rate Detection Events
-    match /missingRateEvents/{eventId} {
-      allow read, write: if true;
-    }
-
-    // Phase 14: Customer & Supplier Contracts
-    match /contracts/{contractId} {
-      allow read, write: if true;
-    }
-
-    // Phase 14: Contract Rates
-    match /contractRates/{rateId} {
-      allow read, write: if true;
-    }
-
-    // Phase 14: Contract Versions
-    match /contractVersions/{versionId} {
-      allow read, write: if true;
-    }
-
-    // Phase 14: Contract Documents
-    match /contractDocuments/{documentId} {
-      allow read, write: if true;
-    }
-
-    // Phase 14: Contract Audits
-    match /contractAudits/{auditId} {
-      allow read, write: if true;
-    }
-
-    // Phase 15: Pricing Policies
-    match /pricingPolicies/{policyId} {
-      allow read, write: if true;
-    }
-
-    // Phase 15: Pricing Audits
-    match /pricingAudits/{auditId} {
-      allow read, write: if true;
-    }
-
-    // Phase 16: Analytics Summaries
-    match /analyticsSummaries/{summaryId} {
-      allow read, write: if true;
-    }
-
-    // Phase 17: Quotation Active Drafts (Cloud Persistence)
-    match /quotationDrafts/{draftId} {
-      allow read, write: if true;
-    }
-
-    // Phase 17: Master Data (Ports, Airports, Incoterms, Countries, Currencies)
-    match /masterData/{masterId} {
-      allow read, write: if true;
-    }
-
-    // Phase 17 & Phase 37: Multi-tenant Company Hierarchy & Companies
+    // =========================================================================
+    // 2. MULTI-TENANT COMPANIES & COMPANY MEMBERSHIPS
+    // =========================================================================
     match /companies/{companyId} {
-      allow read, write: if true;
+      allow read: if isCompanyMember(companyId);
+      allow create: if isAuthenticated() && (
+        isSystemAdmin() ||
+        (
+          request.resource.data.companyId == companyId &&
+          !exists(/databases/$(database)/documents/companies/$(companyId)) &&
+          (
+            request.resource.data.createdBy == request.auth.uid ||
+            request.resource.data.createdBy == request.auth.token.email
+          )
+        )
+      );
+      allow update: if canEditCompanyProfile(companyId);
+      allow delete: if false;
+
       match /{document=**} {
-        allow read, write: if true;
+        allow read: if isCompanyMember(companyId);
+        allow write: if isCompanyAdmin(companyId);
       }
     }
 
-    // Phase 38: Multi-Company Financial & Commercial Collections
+    match /companyMemberships/{membershipId} {
+      allow read: if isAuthenticated() && (
+        isSystemAdmin() ||
+        resource.data.userId == request.auth.uid ||
+        isCompanyAdmin(resource.data.companyId)
+      );
+      
+      // Membership creation strictly guarded:
+      // 1. System Root Admin (isSystemAdmin()) bootstrapping / management
+      // 2. Company Admin adding a member to their company
+      // 3. Authenticated user creating a new company establishing initial COMPANY_ADMIN
+      allow create: if isAuthenticated() && (
+        isSystemAdmin() ||
+        isCompanyAdmin(request.resource.data.companyId) ||
+        (
+          request.resource.data.userId == request.auth.uid && 
+          request.resource.data.role == 'COMPANY_ADMIN' &&
+          membershipId == request.auth.uid + '_' + request.resource.data.companyId &&
+          !exists(/databases/$(database)/documents/companies/$(request.resource.data.companyId))
+        )
+      );
+
+      allow update: if isAuthenticated() && (
+        isSystemAdmin() ||
+        isCompanyAdmin(resource.data.companyId)
+      );
+      allow delete: if isAuthenticated() && (
+        isSystemAdmin() ||
+        isCompanyAdmin(resource.data.companyId)
+      );
+    }
+
+    // Company Financial, Tax, Payment, Bank sub-settings
     match /companyFinancialSettings/{docId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && isCompanyAdmin(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && isCompanyAdmin(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
     match /companyTaxConfigurations/{docId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && isCompanyAdmin(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && isCompanyAdmin(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
     match /companyPaymentTerms/{docId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && isCompanyAdmin(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && isCompanyAdmin(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
     match /companyBankAccounts/{docId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && isCompanyAdmin(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && isCompanyAdmin(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
     match /companyCommercialSettings/{docId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && isCompanyAdmin(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && isCompanyAdmin(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
     match /companyFinancialAudits/{auditId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isIncomingMember();
+      allow update, delete: if false;
     }
 
-    // Phase 37: Company Memberships
-    match /companyMemberships/{membershipId} {
-      allow read, write: if true;
+    // =========================================================================
+    // 3. CORE BUSINESS COLLECTIONS: QUOTATIONS, CUSTOMERS & RATES
+    // =========================================================================
+    match /quotes/{quoteId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && (
+        (!('status' in resource.data) || !(resource.data.status in ['APPROVED', 'SENT', 'ACCEPTED']) || canApproveQuotes(resource.data.companyId)) &&
+        (canCreateQuotes(resource.data.companyId) || canApproveQuotes(resource.data.companyId))
+      );
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId) && (
+        !('status' in resource.data) || !(resource.data.status in ['APPROVED', 'SENT', 'ACCEPTED'])
+      );
     }
 
-    // Phase 27: System Health & Data Integrity Issue Center
+    match /customers/{customerId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && (
+        canCreateQuotes(request.resource.data.companyId) ||
+        isCompanyAdmin(request.resource.data.companyId)
+      );
+      allow update: if isResourceMember() && preservesCompanyId() && (
+        canCreateQuotes(resource.data.companyId) ||
+        isCompanyAdmin(resource.data.companyId)
+      );
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    match /rateMasters/{rateId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageRates(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageRates(resource.data.companyId);
+      allow delete: if isResourceMember() && canManageRates(resource.data.companyId);
+    }
+
+    match /chargeMasters/{chargeId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageRates(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageRates(resource.data.companyId);
+      allow delete: if isResourceMember() && canManageRates(resource.data.companyId);
+    }
+
+    match /rateHistories/{historyId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageRates(request.resource.data.companyId);
+      allow update, delete: if false;
+    }
+
+    match /surcharges/{surchargeId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageRates(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageRates(resource.data.companyId);
+      allow delete: if isResourceMember() && canManageRates(resource.data.companyId);
+    }
+
+    // Hardened Settings & Master Data (Eliminating broad allow read, write: if isAuthenticated())
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && (
+        settingId == 'ui_preferences' ||
+        isSystemAdmin()
+      );
+      allow delete: if false;
+    }
+
+    match /masterData/{masterId} {
+      allow read: if isAuthenticated();
+      // Allow initial seeding of default presets
+      allow create: if isAuthenticated();
+      // Updates and deletes restricted to system admin
+      allow update, delete: if isAuthenticated() && (
+        request.auth.token.email == 'huypham.magic@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    match /quotationDrafts/{draftId} {
+      allow read: if isAuthenticated() && (
+        !('userId' in resource.data) || resource.data.userId == request.auth.uid
+      );
+      allow create: if isAuthenticated() && (
+        !('userId' in request.resource.data) || request.resource.data.userId == request.auth.uid
+      );
+      allow update: if isAuthenticated() && (
+        !('userId' in resource.data) || resource.data.userId == request.auth.uid
+      );
+      allow delete: if isAuthenticated() && (
+        !('userId' in resource.data) || resource.data.userId == request.auth.uid
+      );
+    }
+
+    // =========================================================================
+    // 4. DOCUMENTS, COMMUNICATIONS & EXTERNAL SECURE PORTAL
+    // =========================================================================
+    match /quotationDocuments/{documentId} {
+      allow get: if isResourceMember() || (
+        resource.data.documentType in ['CUSTOMER_QUOTATION', 'CONFIRMATION_NOTICE']
+      );
+      allow list: if isResourceMember();
+      allow create: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canCreateQuotes(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    match /quotationTemplates/{templateId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && isCompanyAdmin(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && isCompanyAdmin(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    match /quotationTerms/{termId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && isCompanyAdmin(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && isCompanyAdmin(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    match /quotationAuditLogs/{logId} {
+      allow read: if isResourceMember();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isIncomingMember();
+      allow update, delete: if false;
+    }
+
+    match /quotationCommunications/{commId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canCreateQuotes(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    // Customer Public/Secure Portal: Viewing secure link token
+    match /quotationLinks/{linkId} {
+      allow read: if true;
+      allow create: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canCreateQuotes(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    // Customer Response: Client submitting acceptance/rejection/revision
+    match /quotationResponses/{responseId} {
+      allow read: if isResourceMember();
+      allow create: if (
+        request.resource.data.linkId is string &&
+        request.resource.data.companyId is string &&
+        exists(/databases/$(database)/documents/quotationLinks/$(request.resource.data.linkId)) &&
+        get(/databases/$(database)/documents/quotationLinks/$(request.resource.data.linkId)).data.companyId == request.resource.data.companyId &&
+        request.resource.data.responseType in ['ACCEPTED', 'REJECTED', 'REVISION_REQUESTED']
+      );
+      allow update, delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    match /followUps/{followUpId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canCreateQuotes(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    match /emailTemplates/{templateId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && isCompanyAdmin(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && isCompanyAdmin(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    match /communicationJobs/{jobId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canCreateQuotes(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    // =========================================================================
+    // 5. SUPPLIERS, CARRIERS, RATE APPROVALS & CONTRACTS
+    // =========================================================================
+    match /suppliers/{supplierId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageRates(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageRates(resource.data.companyId);
+      allow delete: if isResourceMember() && canManageRates(resource.data.companyId);
+    }
+
+    match /carriers/{carrierId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageRates(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageRates(resource.data.companyId);
+      allow delete: if isResourceMember() && canManageRates(resource.data.companyId);
+    }
+
+    match /rateApprovals/{approvalId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canApproveQuotes(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    match /rateRequests/{requestId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canCreateQuotes(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    match /importJobs/{jobId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageRates(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageRates(resource.data.companyId);
+      allow delete: if isResourceMember() && canManageRates(resource.data.companyId);
+    }
+
+    match /missingRateEvents/{eventId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageRates(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageRates(resource.data.companyId);
+      allow delete: if isResourceMember() && canManageRates(resource.data.companyId);
+    }
+
+    match /contracts/{contractId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageRates(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageRates(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+    match /contractRates/{rateId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageRates(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageRates(resource.data.companyId);
+      allow delete: if isResourceMember() && canManageRates(resource.data.companyId);
+    }
+    match /contractVersions/{versionId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageRates(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageRates(resource.data.companyId);
+      allow delete: if isResourceMember() && canManageRates(resource.data.companyId);
+    }
+    match /contractDocuments/{documentId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageRates(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageRates(resource.data.companyId);
+      allow delete: if isResourceMember() && canManageRates(resource.data.companyId);
+    }
+    match /contractAudits/{auditId} {
+      allow read: if isResourceMember();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isIncomingMember();
+      allow update, delete: if false;
+    }
+
+    // Pricing Policies & Audits
+    match /pricingPolicies/{policyId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && isCompanyAdmin(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && isCompanyAdmin(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+    match /pricingAudits/{auditId} {
+      allow read: if isResourceMember();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isIncomingMember();
+      allow update, delete: if false;
+    }
+
+    match /analyticsSummaries/{summaryId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && isCompanyAdmin(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && isCompanyAdmin(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    // =========================================================================
+    // 6. SYSTEM HEALTH, INTEGRITY & LOGISTICS OPERATIONS
+    // =========================================================================
     match /dataIntegrityIssues/{issueId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageOperations(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageOperations(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
-
-    // Phase 27: System Health Audits & Concurrency Logs
     match /systemHealthAudits/{auditId} {
-      allow read, write: if true;
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
     }
 
-    // Phase 41: Smart Shipment & Logistics Operational Workspace
     match /shipments/{shipmentId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageOperations(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageOperations(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
     match /shipmentAuditLogs/{logId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isIncomingMember();
+      allow update, delete: if false;
     }
     match /shipmentTasks/{taskId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageOperations(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageOperations(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
-
-    // Phase 42: Logistics Control Tower & Exception Management Engine
     match /shipmentExceptions/{exceptionId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageOperations(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageOperations(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
     match /controlTowerSummaries/{summaryId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageOperations(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageOperations(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
-
-    // Phase 43: Logistics Event & Milestone Intelligence Engine
     match /shipmentEvents/{eventId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageOperations(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageOperations(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
 
-    // Phase 44 & 48: Smart Logistics Deadline & Action Intelligence Engine
+    // =========================================================================
+    // 7. DEADLINES, ACTION WORKSPACE & FOLLOW-UP CONTROL CENTER
+    // =========================================================================
     match /deadlines/{deadlineId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageOperations(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageOperations(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
     match /deadlineAuditLogs/{logId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isIncomingMember();
+      allow update, delete: if false;
     }
-    // Phase 49: Follow-Up Touchpoints & Cadence Control
     match /followUpTouchpoints/{touchpointId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageOperations(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageOperations(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
 
-    // Phase 45: Customer Relationship, Rate Review & Sales Follow-Up Intelligence Engine
+    // =========================================================================
+    // 8. CRM, RELATIONSHIPS, OPPORTUNITIES & DECISION WORKSPACE
+    // =========================================================================
     match /customerActivities/{activityId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canCreateQuotes(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
     match /customerFollowUps/{followUpId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canCreateQuotes(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
     match /customerContacts/{contactId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canCreateQuotes(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
     match /rateReviewSchedules/{scheduleId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageRates(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageRates(resource.data.companyId);
+      allow delete: if isResourceMember() && canManageRates(resource.data.companyId);
     }
     match /rateReviewTasks/{taskId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canManageRates(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canManageRates(resource.data.companyId);
+      allow delete: if isResourceMember() && canManageRates(resource.data.companyId);
     }
     match /customerOpportunities/{oppId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canCreateQuotes(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
     match /crmAuditLogs/{logId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isIncomingMember();
+      allow update, delete: if false;
     }
 
-    // Phase 46: Business Opportunity Radar & Customer Growth Intelligence Engine
     match /businessOpportunities/{oppId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canCreateQuotes(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
     match /opportunityAuditLogs/{logId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isIncomingMember();
+      allow update, delete: if false;
     }
-
-    // Phase 47: Logistics Business Decision & Scenario Workspace
     match /decisionSnapshots/{snapshotId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canCreateQuotes(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
     match /decisionScenarios/{scenarioId} {
-      allow read, write: if true;
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canCreateQuotes(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

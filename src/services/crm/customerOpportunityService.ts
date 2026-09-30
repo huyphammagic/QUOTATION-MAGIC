@@ -27,7 +27,7 @@ export async function createCustomerOpportunity(
   const newOpp: CustomerOpportunity = {
     ...opportunity,
     id,
-    companyId: opportunity.companyId || 'default-company',
+    companyId: opportunity.companyId || 'company_profile',
     stage: opportunity.stage || 'NEW',
     probability: opportunity.probability !== undefined ? opportunity.probability : 20,
     currency: opportunity.currency || 'USD',
@@ -85,10 +85,10 @@ export async function getCustomerOpportunities(
   if (!db) return [];
   try {
     const collRef = collection(db, COLLECTION_NAME);
-    let q = query(collRef, where('companyId', '==', companyId || 'default-company'), limit(200));
+    let q = query(collRef, where('companyId', '==', companyId || 'company_profile'), limit(200));
 
     if (filters?.customerId) {
-      q = query(collRef, where('companyId', '==', companyId || 'default-company'), where('customerId', '==', filters.customerId), limit(100));
+      q = query(collRef, where('companyId', '==', companyId || 'company_profile'), where('customerId', '==', filters.customerId), limit(100));
     }
 
     const snap = await getDocs(q);

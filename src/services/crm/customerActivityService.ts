@@ -25,7 +25,7 @@ export async function logCustomerActivity(
   const newActivity: CustomerActivity = {
     ...activity,
     id,
-    companyId: activity.companyId || 'default-company',
+    companyId: activity.companyId || 'company_profile',
     occurredAt: activity.occurredAt || now,
     createdBy: user?.email || activity.createdBy || 'system',
     createdByName: user?.name || activity.createdByName || 'System User',
@@ -75,7 +75,7 @@ export async function getCustomerActivities(
     // Query by customerId and companyId
     const q = query(
       collRef,
-      where('companyId', '==', companyId || 'default-company'),
+      where('companyId', '==', companyId || 'company_profile'),
       where('customerId', '==', customerId),
       limit(maxCount)
     );

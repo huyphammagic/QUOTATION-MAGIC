@@ -30,18 +30,20 @@ import {
   ExternalLink,
   CheckCircle2,
   AlertCircle,
-  Receipt
+  Receipt,
+  Users
 } from 'lucide-react';
 import { CompanyRecord, CompanyStatus } from '../../types/multiCompany';
 import { useMultiCompany } from '../../context/MultiCompanyContext';
 import { uploadCompanyLogo } from '../../services/firebase/fileStorageService';
 import { syncHealthService } from '../../services/integrity/syncHealthService';
 import { CompanyFinancialEngineTab } from './CompanyFinancialEngineTab';
+import { CompanyMembersTab } from './CompanyMembersTab';
 
 interface MultiCompanyManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialTab?: 'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview' | 'financial';
+  initialTab?: 'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview' | 'financial' | 'members';
   startCreateNew?: boolean;
 }
 
@@ -61,7 +63,7 @@ export const MultiCompanyManagementModal: React.FC<MultiCompanyManagementModalPr
     refreshCompanies,
   } = useMultiCompany();
 
-  const [activeTab, setActiveTab] = useState<'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview' | 'financial'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview' | 'financial' | 'members'>(initialTab);
   const [formData, setFormData] = useState<Partial<CompanyRecord>>({});
   const [isCreatingNew, setIsCreatingNew] = useState(startCreateNew);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
@@ -354,6 +356,19 @@ export const MultiCompanyManagementModal: React.FC<MultiCompanyManagementModalPr
 
           <button
             type="button"
+            onClick={() => setActiveTab('members')}
+            className={`flex items-center space-x-1.5 py-2.5 px-3 border-b-2 font-bold transition-all ${
+              activeTab === 'members'
+                ? 'border-purple-600 text-purple-700 bg-white rounded-t-lg shadow-2xs'
+                : 'border-transparent text-purple-700 hover:text-purple-900 bg-purple-50/50 hover:bg-purple-50'
+            }`}
+          >
+            <Users className="w-4 h-4 text-purple-600" />
+            <span>6. Phân Quyền RBAC (P50)</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('preview')}
             className={`flex items-center space-x-1.5 py-2.5 px-3 border-b-2 font-bold transition-all ${
               activeTab === 'preview'
@@ -362,7 +377,7 @@ export const MultiCompanyManagementModal: React.FC<MultiCompanyManagementModalPr
             }`}
           >
             <Eye className="w-4 h-4" />
-            <span>6. Xem Trước Header</span>
+            <span>7. Xem Trước Header</span>
           </button>
         </div>
 
@@ -990,9 +1005,17 @@ export const MultiCompanyManagementModal: React.FC<MultiCompanyManagementModalPr
             </div>
           )}
 
-          {/* TAB 6: Multi-Company Financial & Commercial Configuration (Phase 38) */}
+          {/* TAB 5: Multi-Company Financial & Commercial Configuration (Phase 38) */}
           {activeTab === 'financial' && (
             <CompanyFinancialEngineTab />
+          )}
+
+          {/* TAB 6: Multi-Company Team Members & RBAC (Phase 50) */}
+          {activeTab === 'members' && (
+            <CompanyMembersTab 
+              companyId={activeCompanyId}
+              companyName={formData.displayName || formData.legalName || 'Active Entity'}
+            />
           )}
 
         </div>

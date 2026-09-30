@@ -16,7 +16,7 @@ import {
   onSnapshot,
   DocumentSnapshot
 } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
+import { db, auth } from '../firebase/firebaseConfig';
 import { 
   ShipmentRecord, 
   ShipmentStatus, 
@@ -43,7 +43,10 @@ const shipmentMemoryCache = new Map<string, ShipmentRecord>();
  */
 export async function getNextShipmentNumber(companyId: string): Promise<string> {
   const currentYear = new Date().getFullYear();
-  const effectiveCompanyId = companyId || 'default-company';
+  if (!companyId) {
+    throw new Error('NO_COMPANY_CONFIGURED: companyId required to get shipment number');
+  }
+  const effectiveCompanyId = companyId;
 
   if (!db) {
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
@@ -123,10 +126,13 @@ export async function getShipments(
   companyId: string,
   options: ShipmentFilterOptions = {}
 ): Promise<{ shipments: ShipmentRecord[]; lastDoc?: DocumentSnapshot }> {
-  const effectiveCompanyId = companyId || 'default-company';
+  if (!companyId) {
+    return { shipments: [] };
+  }
+  const effectiveCompanyId = companyId;
   const pageLimit = options.pageLimit || 25;
 
-  if (!db) {
+  if (!db || !auth?.currentUser) {
     // Return cached entries filtered by company
     const list = Array.from(shipmentMemoryCache.values())
       .filter(s => s.companyId === effectiveCompanyId);
@@ -184,8 +190,8 @@ export async function getShipments(
 
     const lastDoc = snap.docs[snap.docs.length - 1];
     return { shipments: filtered, lastDoc };
-  } catch (err) {
-    console.error('[shipmentService] Error fetching shipments:', err);
+  } catch (err: any) {
+    console.warn('[shipmentService] Notice fetching shipments:', err?.message || err);
     // Fallback to memory cache
     const list = Array.from(shipmentMemoryCache.values())
       .filter(s => s.companyId === effectiveCompanyId);
@@ -239,7 +245,10 @@ export async function createShipment(
   payload: Omit<ShipmentRecord, 'id' | 'shipmentNumber' | 'createdAt' | 'updatedAt' | 'version'>,
   user: { uid: string; displayName?: string; email?: string }
 ): Promise<ShipmentRecord> {
-  const effectiveCompanyId = payload.companyId || 'default-company';
+  if (!payload.companyId) {
+    throw new Error('NO_COMPANY_CONFIGURED: payload.companyId is required to create shipment');
+  }
+  const effectiveCompanyId = payload.companyId;
   const shipmentNumber = await getNextShipmentNumber(effectiveCompanyId);
   const now = new Date().toISOString();
   const userName = user.displayName || user.email || 'System User';
@@ -317,7 +326,16 @@ export async function createShipmentFromQuotation(
   user: { uid: string; displayName?: string; email?: string },
   customOptions?: Partial<ShipmentRecord>
 ): Promise<ShipmentRecord> {
-  const companyId = quote.companyId || 'default_company';
+  const companyId = quote.companyId;
+  if (!companyId) {
+    throw new Error('NO_COMPANY_CONFIGURED: quote.companyId is required to create shipment from quotation');
+  }
+
+  const ALLOWED_SHIPMENT_QUOTE_STATUSES = ['APPROVED', 'SENT', 'ISSUED', 'ACCEPTED', 'VIEWED'];
+  if (!ALLOWED_SHIPMENT_QUOTE_STATUSES.includes(quote.status)) {
+    throw new Error(`INVALID_QUOTATION_STATUS: Chỉ báo giá đã được duyệt hoặc ban hành (${ALLOWED_SHIPMENT_QUOTE_STATUSES.join(', ')}) mới được chuyển thành Lô hàng. Trạng thái hiện tại: [${quote.status}].`);
+  }
+
   const serviceMode = mapQuotationServiceMode(quote.shipment?.serviceType || quote.shipment?.mode);
 
   // Create immutable snapshot of quotation financial reference
@@ -355,7 +373,7 @@ export async function createShipmentFromQuotation(
     companyId,
     quotationId: quote.id,
     quotationNumber: quote.quoteNumber,
-    quotationVersion: 1,
+    quotationVersion: quote.version || 1,
     quotationSnapshot,
     customerId: quote.customer?.id || quote.customer?.taxId || `cust_${Date.now()}`,
     customerName: quote.customer?.companyName || quote.customer?.customerName || 'Khách hàng',
@@ -601,7 +619,16 @@ export async function getShipmentSummaryStats(companyId: string): Promise<{
   customsPending: number;
   delivered: number;
 }> {
-  const effectiveCompanyId = companyId || 'default-company';
+  if (!companyId) {
+    return {
+      totalActive: 0,
+      inTransit: 0,
+      arrivingSoon: 0,
+      customsPending: 0,
+      delivered: 0,
+    };
+  }
+  const effectiveCompanyId = companyId;
   
   // Use memory cache + recent 50 documents
   const { shipments } = await getShipments(effectiveCompanyId, { pageLimit: 50 });

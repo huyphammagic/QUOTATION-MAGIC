@@ -1,6 +1,7 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
+import { AuthProvider } from './context/AuthContext';
 import { MultiCompanyProvider } from './context/MultiCompanyContext';
 import { FinancialConfigProvider } from './context/FinancialConfigContext';
 import './index.css';
@@ -27,11 +28,13 @@ window.addEventListener('load', () => {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <MultiCompanyProvider>
-      <FinancialConfigProvider>
-        <App />
-      </FinancialConfigProvider>
-    </MultiCompanyProvider>
+    <AuthProvider>
+      <MultiCompanyProvider>
+        <FinancialConfigProvider>
+          <App />
+        </FinancialConfigProvider>
+      </MultiCompanyProvider>
+    </AuthProvider>
   </StrictMode>,
 );
 

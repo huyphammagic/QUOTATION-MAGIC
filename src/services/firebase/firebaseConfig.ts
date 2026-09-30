@@ -7,6 +7,7 @@ import {
   Firestore 
 } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { getAuth, Auth } from 'firebase/auth';
 import firebaseConfigJson from '../../../firebase-applet-config.json';
 
 const firebaseConfig = {
@@ -70,3 +71,13 @@ try {
 }
 
 export const storage = firebaseStorage;
+
+// Initialize Firebase Auth
+let firebaseAuth: Auth | null = null;
+try {
+  firebaseAuth = getAuth(app);
+} catch (error) {
+  console.warn('Firebase Auth initialization notice:', error);
+}
+
+export const auth = firebaseAuth;

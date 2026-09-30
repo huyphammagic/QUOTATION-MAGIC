@@ -21,7 +21,7 @@ export const LogActivityModal: React.FC<LogActivityModalProps> = ({
   onClose,
   customerId,
   customerName,
-  companyId = 'default-company',
+  companyId = '',
   user,
   onSuccess,
   relatedEntityType = 'CUSTOMER',

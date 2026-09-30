@@ -47,8 +47,16 @@ export async function processCarrierWebhookPayload(
   }
 
   try {
+    const effectiveCompanyId = companyId || rawPayload.companyId;
+    if (!effectiveCompanyId) {
+      return {
+        success: false,
+        message: 'NO_COMPANY_CONFIGURED: Missing companyId in webhook payload',
+      };
+    }
+
     const payload: CreateShipmentEventPayload = {
-      companyId: companyId || rawPayload.companyId || 'default-company',
+      companyId: effectiveCompanyId,
       shipmentId: rawPayload.shipmentId,
       shipmentNumber: rawPayload.shipmentNumber || '',
       eventType: rawPayload.eventType,

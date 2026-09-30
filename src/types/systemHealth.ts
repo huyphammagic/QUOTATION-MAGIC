@@ -29,11 +29,16 @@ export type TechnicalSystemStatus =
   | 'NETWORK_ERROR';
 
 export type BusinessSaveState =
+  | 'IDLE'
   | 'UNSAVED'
   | 'SAVING'
+  | 'SAVED_TO_CLOUD'
   | 'SAVED'
   | 'SAVE_FAILED'
   | 'CONFLICT'
+  | 'UNAUTHORIZED'
+  | 'FORBIDDEN'
+  | 'OFFLINE'
   | 'RETRYING';
 
 export type IssueStatus = 'OPEN' | 'INVESTIGATING' | 'RESOLVED' | 'IGNORED';
@@ -125,7 +130,7 @@ export interface SystemHealthAuditEntry {
   id?: string;
   userId: string;
   userName?: string;
-  companyId: string;
+  companyId?: string;
   entityType: string;
   entityId: string;
   action: 
@@ -137,7 +142,15 @@ export interface SystemHealthAuditEntry {
     | 'INTEGRITY_ISSUE_RESOLVED' 
     | 'STORAGE_FAILURE' 
     | 'STORAGE_RECOVERY' 
-    | 'SNAPSHOT_PRESERVED';
+    | 'SNAPSHOT_PRESERVED'
+    | 'USER_LOGIN'
+    | 'USER_REGISTER'
+    | 'USER_LOGIN_ANONYMOUS'
+    | 'USER_LOGOUT'
+    | 'ROLE_CHANGED'
+    | 'MEMBERSHIP_CREATED'
+    | 'MEMBERSHIP_DELETED'
+    | (string & {});
   timestamp: string;
   result: 'SUCCESS' | 'FAILURE' | 'WARNING';
   correlationId?: string;

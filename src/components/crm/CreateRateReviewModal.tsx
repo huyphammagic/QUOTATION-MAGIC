@@ -19,7 +19,7 @@ export const CreateRateReviewModal: React.FC<CreateRateReviewModalProps> = ({
   onClose,
   customerId,
   customerName,
-  companyId = 'default-company',
+  companyId = 'company_profile',
   user,
   onSuccess,
 }) => {

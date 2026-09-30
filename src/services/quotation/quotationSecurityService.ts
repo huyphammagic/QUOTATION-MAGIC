@@ -104,9 +104,13 @@ export async function createQuotationSecureLink(params: CreateSecureLinkParams):
     expiresAt = expDate.toISOString();
   }
 
+  if (!params.companyId) {
+    throw new Error('NO_COMPANY_CONFIGURED: Valid companyId is required to generate secure quotation link.');
+  }
+
   const linkRecord: QuotationSecureLink = {
     id: linkId,
-    companyId: params.companyId || 'default-company',
+    companyId: params.companyId,
     quotationId: params.quotationId,
     quotationNumber: params.quotationNumber,
     revision: params.revision,
@@ -365,22 +369,20 @@ export async function submitCustomerResponse(params: {
     userAgent: navigator.userAgent,
   };
 
-  // Save to local cache
+  // Save to Firestore (Confirmation required)
+  if (!db) {
+    throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
+  }
+
+  const docRef = doc(db, COLLECTION_RESPONSES, responseId);
+  await setDoc(docRef, {
+    ...responseRecord,
+    _serverTimestamp: serverTimestamp(),
+  });
+
+  // Save to local cache only after confirmed Firestore write
   const localResponses = getLocalResponses();
   saveLocalResponses([responseRecord, ...localResponses]);
-
-  // Save to Firestore
-  if (db) {
-    try {
-      const docRef = doc(db, COLLECTION_RESPONSES, responseId);
-      await setDoc(docRef, {
-        ...responseRecord,
-        _serverTimestamp: serverTimestamp(),
-      });
-    } catch (err) {
-      console.warn('Firestore customer response save notice:', err);
-    }
-  }
 
   return responseRecord;
 }

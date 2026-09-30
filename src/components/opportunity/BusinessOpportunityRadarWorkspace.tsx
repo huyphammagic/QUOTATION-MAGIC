@@ -60,7 +60,7 @@ interface BusinessOpportunityRadarWorkspaceProps {
 }
 
 export const BusinessOpportunityRadarWorkspace: React.FC<BusinessOpportunityRadarWorkspaceProps> = ({
-  companyId = 'default-company',
+  companyId = 'company_profile',
   customers = [],
   quotes = [],
   shipments = [],

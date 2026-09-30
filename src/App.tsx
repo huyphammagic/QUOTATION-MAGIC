@@ -166,6 +166,8 @@ import { QuotationCommunicationModal } from './components/communication/Quotatio
 import { loadSuppliers, loadCarriers } from './services/masterRate/supplierCarrierService';
 import { SupplierItem, CarrierItem } from './types/masterRate';
 import { useMultiCompany } from './context/MultiCompanyContext';
+import { useAuth } from './context/AuthContext';
+import { AuthModal } from './components/auth/AuthModal';
 import { useFinancialConfig } from './context/FinancialConfigContext';
 import { MultiCompanyManagementModal } from './components/company/MultiCompanyManagementModal';
 import { createQuotationCompanySnapshot } from './types/multiCompany';
@@ -173,14 +175,36 @@ import { createQuotationCompanySnapshot } from './types/multiCompany';
 import { Check, Ship, ShieldCheck, Sparkles, SlidersHorizontal } from 'lucide-react';
 
 export default function App() {
+  // Phase 50: Firebase Authentication & RBAC Context
+  const { user: authUser, isAuthenticated } = useAuth();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
   // Phase 37: Multi-Company Active Context
   const { 
     activeCompanyId, 
     activeCompanyProfile, 
     activeCompanyRecord,
+    activeMemberRecord,
+    activeMemberRole,
+    activeUserRole,
+    activePermissions,
     generateNextQuoteNumber,
     updateCurrentCompany 
   } = useMultiCompany();
+
+  // Phase 50: Derived Role (No client-side security bypass; dev simulation only in DEV)
+  const isDev = Boolean((import.meta as any).env?.DEV);
+  const [simulatedRole, setSimulatedRole] = useState<UserRole | null>(null);
+  const appUserRole: UserRole = (isDev && simulatedRole) ? simulatedRole : activeUserRole;
+
+  const handleRoleChange = (newRole: UserRole) => {
+    if (isDev) {
+      setSimulatedRole(newRole);
+      setToastMessage(`[DEV SIM] Đang thử nghiệm giao diện vai trò: ${newRole}`);
+    } else {
+      setToastMessage('Trong môi trường vận hành thực tế, phân quyền do Company Admin thiết lập.');
+    }
+  };
 
   // Phase 38: Multi-Company Financial & Commercial Snapshot Engine
   const { createSnapshotsForQuote, financialSettings } = useFinancialConfig();
@@ -245,7 +269,6 @@ export default function App() {
   const [dashboardInitialTab, setDashboardInitialTab] = useState<string>('OVERVIEW');
   const [isMasterDataRefOpen, setIsMasterDataRefOpen] = useState(false);
   const [masterDataRefType, setMasterDataRefType] = useState<MasterDataType>('PORT');
-  const [appUserRole, setAppUserRole] = useState<UserRole>('ADMIN');
   const [appLanguage, setAppLanguage] = useState<'vi' | 'en'>('vi');
   const [isRateSearchOpen, setIsRateSearchOpen] = useState(false);
   const [isSmartAssistantOpen, setIsSmartAssistantOpen] = useState(false);
@@ -309,11 +332,11 @@ export default function App() {
   // Phase 47: Lazy Fetch Real Related Logistics Entities for Decision Workspace
   useEffect(() => {
     if (!isDecisionWorkspaceOpen) return;
-    const compId = activeCompanyId || 'default-company';
+    const compId = activeCompanyId || 'company_profile';
     let isCancelled = false;
     Promise.all([
       getShipments(compId, { pageLimit: 50 }).catch(() => ({ shipments: [] })),
-      fetchContracts({ limitCount: 50 }).catch(() => ({ contracts: [] })),
+      fetchContracts({ companyId: compId, limitCount: 50 }).catch(() => ({ contracts: [] })),
       getBusinessOpportunities(compId).catch(() => [])
     ]).then(([shipRes, contRes, opps]) => {
       if (isCancelled) return;
@@ -452,8 +475,10 @@ export default function App() {
   };
 
   const loadContractsCount = async () => {
+    if (!authUser) return;
     try {
-      const res = await fetchContracts({ limitCount: 100 });
+      const compId = activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'company_profile';
+      const res = await fetchContracts({ companyId: compId, limitCount: 100 });
       setContractsCount(res.contracts ? res.contracts.length : 0);
     } catch (e) {
       console.warn('Error loading contracts count:', e);
@@ -462,11 +487,12 @@ export default function App() {
 
   useEffect(() => {
     loadContractsCount();
-  }, [isContractsOpen]);
+  }, [isContractsOpen, authUser, activeCompanyId]);
 
   const loadOperationsCounts = async () => {
+    if (!authUser) return;
     try {
-      const compId = activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'default_company';
+      const compId = activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'company_profile';
       const [{ shipments }, { exceptions }, metrics] = await Promise.all([
         getShipments(compId, { pageLimit: 100 }),
         getExceptions(compId, { status: 'ACTIVE', pageLimit: 100 }),
@@ -908,7 +934,17 @@ export default function App() {
       console.warn('[Phase 17] Migration note:', err);
     });
 
-    // 3. Async Sync with Firebase Firestore
+  }, []);
+
+  // 3. Real-time Listeners and Cloud Synchronization gated by authUser and activeCompanyId
+  useEffect(() => {
+    if (!authUser) {
+      setIsCloudSyncing(false);
+      return;
+    }
+
+    const currentCompId = activeCompanyId || 'company_profile';
+
     async function syncFirestoreData() {
       setIsCloudSyncing(true);
       try {
@@ -921,11 +957,11 @@ export default function App() {
           cloudChargeMasters,
           cloudHistories
         ] = await Promise.all([
-          fetchQuotations(),
-          fetchCustomers(true),
+          fetchQuotations({ companyId: currentCompId, forceRefresh: true }),
+          fetchCustomers(true, currentCompId),
           getSurchargesFromFirestore(),
           getCompanyProfileFromFirestore(),
-          fetchRateMasters(),
+          fetchRateMasters(true, currentCompId),
           getChargeMastersFromFirestore(),
           getRateHistoriesFromFirestore(),
         ]);
@@ -946,8 +982,7 @@ export default function App() {
         if (cloudQuotes && cloudQuotes.length > 0) {
           syncMissingCustomersFromQuotes(cloudQuotes).then((recovered) => {
             if (recovered > 0) {
-              console.log(`[AutoRecovery] Recovered ${recovered} customer(s) from quotes into Cloud CRM`);
-              fetchCustomers(true).then((fresh) => {
+              fetchCustomers(true, currentCompId).then((fresh) => {
                 if (fresh && fresh.length > 0) setCustomers(fresh);
               });
             }
@@ -966,8 +1001,8 @@ export default function App() {
 
     syncFirestoreData();
 
-    // 4. Restore active quote draft from Cloud Firestore (cross-device continuity)
-    getActiveQuotationDraft('current_user').then((cloudDraft) => {
+    // Restore active quote draft from Cloud Firestore (cross-device continuity)
+    getActiveQuotationDraft(authUser.uid).then((cloudDraft) => {
       if (cloudDraft && cloudDraft.quote && cloudDraft.quote.quoteNumber) {
         const { calculatedQuote } = calculateQuote(cloudDraft.quote);
         setQuote(calculatedQuote);
@@ -979,31 +1014,31 @@ export default function App() {
       console.warn('Notice checking cloud draft:', err);
     });
 
-    // 5. Real-time Listeners (100% Cross-Device Instant Synchronization)
+    // Real-time Listeners scoped by companyId
     const unsubQuotes = subscribeToQuotations((cloudQuotes) => {
       if (Array.isArray(cloudQuotes)) {
         setSavedQuotes(cloudQuotes);
         setLastCloudSyncedAt(new Date());
       }
-    });
+    }, currentCompId);
 
     const unsubCustomers = subscribeToCustomers((cloudCustomers) => {
       if (Array.isArray(cloudCustomers)) {
         setCustomers(cloudCustomers);
       }
-    });
+    }, currentCompId);
 
     const unsubRates = subscribeToRateMasters((cloudRates) => {
       if (Array.isArray(cloudRates)) {
         setRates(cloudRates);
       }
-    });
+    }, currentCompId);
 
     const unsubSurcharges = subscribeToSurcharges((cloudSurcharges) => {
       if (Array.isArray(cloudSurcharges)) {
         setSurcharges(cloudSurcharges);
       }
-    });
+    }, currentCompId);
 
     const unsubCharges = subscribeToChargeMasters((cloudCharges) => {
       if (Array.isArray(cloudCharges)) {
@@ -1025,7 +1060,7 @@ export default function App() {
       unsubCharges();
       unsubCompany();
     };
-  }, []);
+  }, [authUser?.uid, activeCompanyId]);
 
   // Continuous 100% Real-Time Auto-Save & Cloud Synchronization (1200ms debounce on any quote edit)
   useEffect(() => {
@@ -1092,7 +1127,7 @@ export default function App() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [company.salesRepName]);
 
-  const showToast = (msg: string) => {
+  const showToast = (msg: string, _type?: 'info' | 'error' | 'success') => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
@@ -1201,55 +1236,91 @@ export default function App() {
 
   // Surcharge Catalog CRUD with Firestore
   const handleSaveSurcharge = async (item: SurchargeItem) => {
-    await saveSurchargeToFirestore(item);
-    const updated = await getSurchargesFromFirestore();
-    setSurcharges(updated);
-    showToast(`Đã lưu mã phụ phí [${item.code}] vào danh mục!`);
+    try {
+      await saveSurchargeToFirestore(item);
+      const updated = await getSurchargesFromFirestore();
+      setSurcharges(updated);
+      showToast(`Đã lưu mã phụ phí [${item.code}] vào danh mục!`);
+    } catch (err: any) {
+      console.error('Lỗi khi lưu phụ phí:', err);
+      showToast(`Lỗi khi lưu phụ phí lên Cloud: ${err?.message || 'Không thể đồng bộ'}`);
+      throw err;
+    }
   };
 
   const handleDeleteSurcharge = async (id: string) => {
-    await deleteSurchargeFromFirestore(id);
-    const updated = await getSurchargesFromFirestore();
-    setSurcharges(updated);
-    showToast('Đã xóa mã phí khỏi danh mục master!');
+    try {
+      await deleteSurchargeFromFirestore(id);
+      const updated = await getSurchargesFromFirestore();
+      setSurcharges(updated);
+      showToast('Đã xóa mã phí khỏi danh mục master!');
+    } catch (err: any) {
+      console.error('Lỗi khi xóa phụ phí:', err);
+      showToast('Lỗi khi xóa mã phí khỏi Cloud');
+      throw err;
+    }
   };
 
   // Master Rate CRUD with Firestore & Audit Logging
   const handleSaveRate = async (rate: RateMasterItem) => {
-    await saveRateMasterToFirestore(rate, company.salesRepName || 'Admin');
-    const [updatedRates, updatedHistories] = await Promise.all([
-      getRateMastersFromFirestore(),
-      getRateHistoriesFromFirestore()
-    ]);
-    setRates(updatedRates);
-    setRateHistories(updatedHistories);
-    showToast(`Đã lưu bảng giá [${rate.rateCode}] vào Master Rate Database!`);
+    try {
+      await saveRateMasterToFirestore(rate, company.salesRepName || 'Admin');
+      const [updatedRates, updatedHistories] = await Promise.all([
+        getRateMastersFromFirestore(),
+        getRateHistoriesFromFirestore()
+      ]);
+      setRates(updatedRates);
+      setRateHistories(updatedHistories);
+      showToast(`Đã lưu bảng giá [${rate.rateCode}] vào Master Rate Database!`);
+    } catch (err: any) {
+      console.error('Lỗi khi lưu bảng giá:', err);
+      showToast(`Lỗi khi lưu bảng giá lên Cloud: ${err?.message || 'Không thể đồng bộ'}`);
+      throw err;
+    }
   };
 
   const handleDeleteRate = async (id: string, softDelete: boolean = true) => {
-    await deleteRateMasterFromFirestore(id, softDelete);
-    const [updatedRates, updatedHistories] = await Promise.all([
-      getRateMastersFromFirestore(),
-      getRateHistoriesFromFirestore()
-    ]);
-    setRates(updatedRates);
-    setRateHistories(updatedHistories);
-    showToast('Đã cập nhật trạng thái bảng giá!');
+    try {
+      await deleteRateMasterFromFirestore(id, softDelete);
+      const [updatedRates, updatedHistories] = await Promise.all([
+        getRateMastersFromFirestore(),
+        getRateHistoriesFromFirestore()
+      ]);
+      setRates(updatedRates);
+      setRateHistories(updatedHistories);
+      showToast('Đã cập nhật trạng thái bảng giá!');
+    } catch (err: any) {
+      console.error('Lỗi khi cập nhật bảng giá:', err);
+      showToast('Lỗi khi cập nhật bảng giá trên Cloud');
+      throw err;
+    }
   };
 
   // Charge Master CRUD with Firestore
   const handleSaveCharge = async (charge: ChargeMasterItem) => {
-    await saveChargeMasterToFirestore(charge);
-    const updated = await getChargeMastersFromFirestore();
-    setChargeMasters(updated);
-    showToast(`Đã lưu phí chuẩn [${charge.chargeCode}] vào Charge Master!`);
+    try {
+      await saveChargeMasterToFirestore(charge);
+      const updated = await getChargeMastersFromFirestore();
+      setChargeMasters(updated);
+      showToast(`Đã lưu phí chuẩn [${charge.chargeCode}] vào Charge Master!`);
+    } catch (err: any) {
+      console.error('Lỗi khi lưu phí chuẩn:', err);
+      showToast(`Lỗi khi lưu phí chuẩn lên Cloud: ${err?.message || 'Không thể đồng bộ'}`);
+      throw err;
+    }
   };
 
   const handleDeleteCharge = async (id: string) => {
-    await deleteChargeMasterFromFirestore(id);
-    const updated = await getChargeMastersFromFirestore();
-    setChargeMasters(updated);
-    showToast('Đã ngừng áp dụng mã phí chuẩn!');
+    try {
+      await deleteChargeMasterFromFirestore(id);
+      const updated = await getChargeMastersFromFirestore();
+      setChargeMasters(updated);
+      showToast('Đã ngừng áp dụng mã phí chuẩn!');
+    } catch (err: any) {
+      console.error('Lỗi khi xóa phí chuẩn:', err);
+      showToast('Lỗi khi ngừng áp dụng mã phí trên Cloud');
+      throw err;
+    }
   };
 
   // Bulk Import Master Rates with Firebase Cloud Batching
@@ -1396,24 +1467,34 @@ export default function App() {
 
   // Company Settings Save with Firestore & Multi-Company Context
   const handleSaveCompanyProfile = async (updatedCompany: CompanyProfile) => {
-    setCompany(updatedCompany);
-    await updateCurrentCompany(updatedCompany);
-    const bankStr = `${updatedCompany.bankName}\nSố TK: ${updatedCompany.bankAccountNo}\nChủ TK: ${updatedCompany.bankAccountHolder}${updatedCompany.bankSwiftCode ? `\nSWIFT Code: ${updatedCompany.bankSwiftCode}` : ''}`;
-    
-    // Create new snapshot for quote
-    const currentCompany = activeCompanyRecord || updatedCompany;
-    const companySnapshot = createQuotationCompanySnapshot(currentCompany);
+    try {
+      const res = await updateCurrentCompany(updatedCompany);
+      if (!res.success) {
+        showToast(res.message || 'Lỗi khi lưu thông tin doanh nghiệp lên Cloud!', 'error');
+        return;
+      }
+      setCompany(updatedCompany);
+      const bankStr = `${updatedCompany.bankName}\nSố TK: ${updatedCompany.bankAccountNo}\nChủ TK: ${updatedCompany.bankAccountHolder}${updatedCompany.bankSwiftCode ? `\nSWIFT Code: ${updatedCompany.bankSwiftCode}` : ''}`;
+      
+      // Create new snapshot for quote
+      const currentCompany = activeCompanyRecord || updatedCompany;
+      const companySnapshot = createQuotationCompanySnapshot(currentCompany);
 
-    updateQuoteState({
-      company: updatedCompany,
-      companyId: activeCompanyId,
-      companySnapshot,
-      terms: {
-        ...quote.terms,
-        bankAccountInfo: bankStr,
-      },
-    });
-    showToast('Đã lưu thông tin doanh nghiệp & đồng bộ vào báo giá!');
+      updateQuoteState({
+        company: updatedCompany,
+        companyId: activeCompanyId,
+        companySnapshot,
+        terms: {
+          ...quote.terms,
+          bankAccountInfo: bankStr,
+        },
+      });
+      showToast('Đã lưu thông tin doanh nghiệp & đồng bộ vào báo giá!');
+    } catch (err: any) {
+      console.error('Lỗi khi lưu thông tin doanh nghiệp:', err);
+      showToast(`Lỗi khi lưu thông tin doanh nghiệp: ${err?.message || 'Không thể đồng bộ'}`, 'error');
+      throw err;
+    }
   };
 
   // Import Backup Data Handler with 100% Firebase Cloud Persistence
@@ -1649,12 +1730,17 @@ export default function App() {
       return;
     }
 
+    if (!result.success) {
+      showToast(result.message || 'Không thể lưu báo giá lên Firebase Cloud!', 'error');
+      return;
+    }
+
     const updated = await fetchQuotations({ forceRefresh: true });
     setSavedQuotes(updated);
     const savedTime = saveActiveQuoteDraft(calculatedQuote);
     if (savedTime) setLastAutoSaveTime(savedTime);
     setLastCloudSyncedAt(new Date());
-    showToast(`Đã lưu báo giá ${calculatedQuote.quoteNumber} thành công 100% lên Cloud (v${result.savedQuote?.version || calculatedQuote.version || 1})!`);
+    showToast(`Đã lưu báo giá ${calculatedQuote.quoteNumber} thành công lên Cloud (v${result.savedQuote?.version || calculatedQuote.version || 1})!`);
   };
 
   // Handle Conflict Modal Actions
@@ -1664,6 +1750,10 @@ export default function App() {
       forceOverwrite: true,
       userId: company.salesRepName || 'User',
     });
+    if (!res.success) {
+      showToast(res.message || 'Không thể ghi đè lên Cloud!', 'error');
+      return;
+    }
     setConflictState({ isOpen: false });
     const updated = await fetchQuotations({ forceRefresh: true });
     setSavedQuotes(updated);
@@ -1879,7 +1969,8 @@ export default function App() {
           exceptionsCount={exceptionsCount}
           deadlinesCount={deadlinesCount}
           currentUserRole={appUserRole}
-          onRoleChange={setAppUserRole}
+          onRoleChange={handleRoleChange}
+          onOpenAuthModal={() => setIsAuthModalOpen(true)}
           language={appLanguage}
           onLanguageChange={setAppLanguage}
           activeRouteId={activeRouteId}
@@ -1921,6 +2012,7 @@ export default function App() {
               setIsCreateCompanyOpen(true);
               setIsCompanyOpen(true);
             }}
+            onOpenAuthModal={() => setIsAuthModalOpen(true)}
           />
 
           {/* Main Content Area */}
@@ -2129,7 +2221,7 @@ export default function App() {
             }}
             isSyncing={isCloudSyncing}
             quotes={savedQuotes}
-            companyId={activeCompanyId || 'default-company'}
+            companyId={activeCompanyId || 'company_profile'}
             user={{
               name: company.salesRepName || 'Sales Logistics',
               email: company.salesRepEmail || 'sales@logistics.vn'
@@ -2414,7 +2506,7 @@ export default function App() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-900/80 backdrop-blur-xs animate-in fade-in duration-200">
             <div className="w-full max-w-7xl max-h-[96vh] overflow-hidden rounded-3xl shadow-2xl">
               <BusinessOpportunityRadarWorkspace
-                companyId={activeCompanyId || 'default-company'}
+                companyId={activeCompanyId || 'company_profile'}
                 customers={customers}
                 quotes={savedQuotes}
                 user={{
@@ -2468,7 +2560,7 @@ export default function App() {
               setIsDecisionWorkspaceOpen(false);
               setDecisionWorkspacePrefill(null);
             }}
-            companyId={activeCompanyId || 'default-company'}
+            companyId={activeCompanyId || 'company_profile'}
             customers={customers}
             allQuotes={savedQuotes}
             shipments={decisionShipments}
@@ -2676,7 +2768,7 @@ export default function App() {
                 </button>
               </div>
               <ShipmentOperationalWorkspace
-                companyId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'default_company'}
+                companyId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'company_profile'}
                 customers={customers}
                 allQuotes={savedQuotes}
                 onOpenQuotation={(quoteId) => {
@@ -2713,7 +2805,7 @@ export default function App() {
                 </button>
               </div>
               <ControlTowerWorkspace
-                companyId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'default_company'}
+                companyId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'company_profile'}
                 onOpenShipmentDetail={(shipmentId) => {
                   setIsControlTowerOpen(false);
                   setIsShipmentWorkspaceOpen(true);
@@ -2749,7 +2841,7 @@ export default function App() {
                 </button>
               </div>
               <SmartDeadlineWorkspace
-                companyId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'default_company'}
+                companyId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'company_profile'}
                 companyName={company.name || 'Logistics Company'}
                 user={{
                   uid: 'user_operator',
@@ -2804,7 +2896,7 @@ export default function App() {
             setCreateShipmentFromQuote(null);
             navigateToRoute('ops_shipments');
           }}
-          companyId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'default_company'}
+          companyId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'company_profile'}
           fromQuote={createShipmentFromQuote}
           customers={customers}
           currentUser={{
@@ -2823,7 +2915,7 @@ export default function App() {
         currentRole={appUserRole}
         requiredRoleDesc={accessDeniedState.requiredDesc}
         moduleName={accessDeniedState.moduleName}
-        onSwitchRole={setAppUserRole}
+        onSwitchRole={handleRoleChange}
       />
 
       {/* 404 Route Not Found Modal */}
@@ -2831,6 +2923,13 @@ export default function App() {
         isOpen={notFoundPath !== null}
         onClose={handleModalClose}
         requestedPath={notFoundPath || undefined}
+      />
+
+      {/* Phase 50: Firebase Authentication & User Profile Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        isVi={appLanguage === 'vi'}
       />
       </Suspense>
 

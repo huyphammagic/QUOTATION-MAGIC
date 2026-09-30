@@ -11,6 +11,7 @@ import {
   StorageHealthItem 
 } from '../../types/systemHealth';
 import { recordHealthAudit } from '../audit/systemHealthAuditService';
+import { waitForPendingWrites } from 'firebase/firestore';
 
 export type SyncHealthStatus = TechnicalSystemStatus;
 export type ErrorSeverity = 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL';
@@ -94,8 +95,8 @@ class SyncHealthService {
   private isSyncing: boolean = false;
   private lastGlobalSyncAt: Date | null = new Date();
   private lastFailedSyncAt: Date | null = null;
-  private currentSaveState: BusinessSaveState = 'SAVED';
-  private currentSaveMessage: string = 'Hệ thống sẵn sàng';
+  private currentSaveState: BusinessSaveState = 'IDLE';
+  private currentSaveMessage: string = 'Sẵn sàng';
   
   private entities: Map<string, EntityHealthRecord> = new Map();
   private listeners: Map<string, ListenerHealthRecord> = new Map();
@@ -130,13 +131,14 @@ class SyncHealthService {
 
     window.addEventListener('online', () => {
       this.isOnline = true;
+      this.setSaveState('IDLE', 'Đã khôi phục kết nối Internet. Sẵn sàng đồng bộ.');
       this.recordError('NETWORK', 'INFO', 'Đã khôi phục kết nối Internet. Đang kết nối lại Firebase.', 'NETWORK_RESTORED');
       this.notifySubscribers();
     });
 
     window.addEventListener('offline', () => {
       this.isOnline = false;
-      this.setSaveState('SAVE_FAILED', 'Mất kết nối mạng');
+      this.setSaveState('OFFLINE', 'Mất kết nối Internet: Hệ thống chuyển sang chế độ ngoại tuyến');
       this.recordError('NETWORK', 'WARNING', 'Mất kết nối Internet. Hệ thống đang chuyển sang chế độ ngoại tuyến an toàn.', 'NETWORK_ERROR');
       this.notifySubscribers();
     });
@@ -144,8 +146,8 @@ class SyncHealthService {
 
   // ================= SAVE STATE ENGINE =================
   /**
-   * Updates current business save state with strict guarantees:
-   * "SAVED" is only reported after confirmation from Firebase.
+   * Updates current business save state with strict Phase 51 guarantees:
+   * "SAVED_TO_CLOUD" is only reported after confirmation from Firebase.
    */
   public setSaveState(state: BusinessSaveState, message?: string): void {
     this.currentSaveState = state;
@@ -160,6 +162,27 @@ class SyncHealthService {
       state: this.currentSaveState,
       message: this.currentSaveMessage,
     };
+  }
+
+  /**
+   * Confirms true backend server acknowledgment for pending writes.
+   * Returns false if offline or confirmation times out.
+   */
+  public async confirmCloudAcknowledgment(dbInstance: any, timeoutMs = 4000): Promise<boolean> {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      return false;
+    }
+    if (!dbInstance) return false;
+    try {
+      const waitPromise = waitForPendingWrites(dbInstance);
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('TIMEOUT')), timeoutMs)
+      );
+      await Promise.race([waitPromise, timeoutPromise]);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   // ================= IDEMPOTENCY & OPERATION GUARD =================
@@ -196,10 +219,15 @@ class SyncHealthService {
     this.isSyncing = this.inProgressOperations.size > 0;
     
     if (success) {
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        this.setSaveState('OFFLINE', 'Đã lưu ngoại tuyến vào bộ nhớ đệm, chưa được xác nhận bởi Cloud');
+        this.notifySubscribers();
+        return;
+      }
       this.lastGlobalSyncAt = new Date();
       this.pendingOpsMap.delete(operationKey);
       if (this.inProgressOperations.size === 0 && this.currentSaveState !== 'CONFLICT') {
-        this.setSaveState('SAVED', 'Dữ liệu đã được lưu trên Firebase');
+        this.setSaveState('SAVED_TO_CLOUD', 'Dữ liệu đã được lưu thành công trên Firebase (SAVED_TO_CLOUD)');
       }
     } else {
       this.lastFailedSyncAt = new Date();
@@ -208,7 +236,8 @@ class SyncHealthService {
         existingOp.status = 'FAILED';
         existingOp.lastError = error?.message || String(error);
       }
-      this.setSaveState('SAVE_FAILED', error?.message || 'Lưu dữ liệu thất bại');
+      const classified = classifyErrorToSaveState(error);
+      this.setSaveState(classified.state, classified.messageVi);
     }
 
     this.notifySubscribers();
@@ -602,3 +631,76 @@ class SyncHealthService {
 }
 
 export const syncHealthService = new SyncHealthService();
+
+/**
+ * Standard Phase 51 Error Classifier for Save Operations
+ * Maps Firebase/Network errors to standardized BusinessSaveState:
+ * CONFLICT, FORBIDDEN, UNAUTHORIZED, OFFLINE, SAVE_FAILED
+ */
+export function classifyErrorToSaveState(error: any): { 
+  state: BusinessSaveState; 
+  messageVi: string; 
+  messageEn: string; 
+} {
+  if (!error) {
+    return { 
+      state: 'SAVE_FAILED', 
+      messageVi: 'Lỗi không xác định khi lưu dữ liệu.', 
+      messageEn: 'Unknown error occurred while saving data.' 
+    };
+  }
+
+  const errStr = (error.message || error.code || String(error)).toLowerCase();
+
+  if (errStr.includes('conflict') || errStr.includes('xung đột')) {
+    return {
+      state: 'CONFLICT',
+      messageVi: 'Xung đột phiên bản: Dữ liệu đã được cập nhật từ thiết bị khác. Vui lòng kiểm tra lại.',
+      messageEn: 'Version conflict: Record was modified on another device. Please review.',
+    };
+  }
+
+  if (
+    errStr.includes('permission-denied') || 
+    errStr.includes('insufficient permissions') || 
+    errStr.includes('forbidden') || 
+    errStr.includes('quyền')
+  ) {
+    return {
+      state: 'FORBIDDEN',
+      messageVi: 'Bị từ chối: Bạn không có quyền thực hiện thao tác này trên hệ thống.',
+      messageEn: 'Forbidden: Insufficient permissions to perform this operation.',
+    };
+  }
+
+  if (
+    errStr.includes('unauthenticated') || 
+    errStr.includes('auth/not-authenticated') || 
+    errStr.includes('chưa đăng nhập')
+  ) {
+    return {
+      state: 'UNAUTHORIZED',
+      messageVi: 'Chưa xác thực: Phiên đăng nhập đã hết hạn hoặc chưa đăng nhập.',
+      messageEn: 'Unauthorized: Authentication required or session has expired.',
+    };
+  }
+
+  if (
+    errStr.includes('offline') || 
+    errStr.includes('unavailable') || 
+    errStr.includes('network') || 
+    errStr.includes('ngoại tuyến')
+  ) {
+    return {
+      state: 'OFFLINE',
+      messageVi: 'Mất kết nối mạng: Không thể lưu dữ liệu lên Cloud.',
+      messageEn: 'Offline: Unable to persist data to Cloud.',
+    };
+  }
+
+  return {
+    state: 'SAVE_FAILED',
+    messageVi: error.message || 'Lưu dữ liệu lên Firebase thất bại.',
+    messageEn: error.message || 'Failed to save data to Firebase.',
+  };
+}

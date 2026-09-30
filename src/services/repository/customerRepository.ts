@@ -56,8 +56,9 @@ export function sanitizeCustomerRecord(customer: Partial<CustomerRecord>): Custo
   const segment = (customer.segment || 'STANDARD').trim();
   const notes = (customer.notes || '').trim();
   const createdDate = (customer.createdDate || new Date().toISOString().slice(0, 10)).trim();
+  const companyId = customer.companyId ? String(customer.companyId).trim() : undefined;
 
-  return {
+  const result: CustomerRecord = {
     id: custId,
     code,
     companyName,
@@ -72,20 +73,31 @@ export function sanitizeCustomerRecord(customer: Partial<CustomerRecord>): Custo
     notes,
     createdDate,
   };
+
+  if (companyId) {
+    result.companyId = companyId;
+  }
+
+  return result;
 }
 
 /**
  * Fetch all customers from Firestore.
  * When forceRefresh is true, attempts getDocsFromServer to guarantee freshest data across computers.
+ * Optionally filter by companyId for strict company isolation.
  */
-export async function fetchCustomers(forceRefresh = false): Promise<CustomerRecord[]> {
+export async function fetchCustomers(forceRefresh = false, companyId?: string): Promise<CustomerRecord[]> {
+  const targetCompany = companyId || localStorage.getItem('logistics_active_company_id') || undefined;
   const now = Date.now();
-  if (!forceRefresh && memoryCustomersCache && (now - memoryCustomersCache.cachedAt < CACHE_TTL_MS)) {
+  if (!forceRefresh && !targetCompany && memoryCustomersCache && (now - memoryCustomersCache.cachedAt < CACHE_TTL_MS)) {
     return memoryCustomersCache.data;
   }
 
   if (!db) {
     const local = getSavedCustomers();
+    if (targetCompany) {
+      return local.filter(c => !c.companyId || c.companyId === targetCompany);
+    }
     return local;
   }
 
@@ -93,44 +105,57 @@ export async function fetchCustomers(forceRefresh = false): Promise<CustomerReco
     let snap: any = null;
     const collRef = collection(db, COLLECTION_NAME);
 
-    if (forceRefresh) {
-      try {
-        // Direct server query bypasses local offline/browser cache
-        snap = await getDocsFromServer(collRef);
-      } catch (serverErr) {
-        console.warn('[customerRepository] Server fetch fallback to cached getDocs:', serverErr);
-        snap = await getDocs(collRef);
-      }
+    if (targetCompany) {
+      const q = query(collRef, where('companyId', '==', targetCompany));
+      snap = await getDocs(q);
     } else {
-      snap = await getDocs(collRef);
+      // Unscoped query only if no company is selected
+      try {
+        snap = await getDocs(collRef);
+      } catch (unscopedErr) {
+        // Expected when security rules enforce tenant isolation
+        const local = getSavedCustomers();
+        return local;
+      }
     }
 
     if (!snap || snap.empty) {
       const currentList = getSavedCustomers();
       if (currentList && currentList.length > 0) {
+        if (targetCompany) {
+          return currentList.filter(c => !c.companyId || c.companyId === targetCompany);
+        }
         return currentList;
       }
-      memoryCustomersCache = { data: [], cachedAt: now };
-      saveCustomersList([]);
+      if (!targetCompany) {
+        memoryCustomersCache = { data: [], cachedAt: now };
+        saveCustomersList([]);
+      }
       return [];
     }
 
     const items: CustomerRecord[] = [];
     snap.forEach((d: any) => {
       const data = d.data();
-      items.push(sanitizeCustomerRecord({ ...data, id: d.id }));
+      const sanitized = sanitizeCustomerRecord({ ...data, id: d.id });
+      if (!targetCompany || !sanitized.companyId || sanitized.companyId === targetCompany) {
+        items.push(sanitized);
+      }
     });
 
-    // Sort alphabetically by companyName or customerName
     items.sort((a, b) => (a.companyName || a.customerName || '').localeCompare(b.companyName || b.customerName || ''));
 
-    memoryCustomersCache = { data: items, cachedAt: now };
-    saveCustomersList(items);
+    if (!targetCompany) {
+      memoryCustomersCache = { data: items, cachedAt: now };
+      saveCustomersList(items);
+    }
     return items;
-  } catch (error) {
-    console.error('[customerRepository] Error fetching customers from Firestore:', error);
+  } catch (error: any) {
+    // Graceful offline / unauthenticated fallback
     const local = getSavedCustomers();
-    if (local && local.length > 0) return local;
+    if (local && local.length > 0) {
+      return targetCompany ? local.filter(c => !c.companyId || c.companyId === targetCompany) : local;
+    }
     if (memoryCustomersCache) return memoryCustomersCache.data;
     return [];
   }
@@ -139,22 +164,15 @@ export async function fetchCustomers(forceRefresh = false): Promise<CustomerReco
 /**
  * Save or update customer in Firestore with 100% data sanitization and immediate persistence.
  */
-export async function saveCustomer(customer: Partial<CustomerRecord>): Promise<CustomerRecord> {
-  const record = sanitizeCustomerRecord(customer);
-
-  // Update in-memory state immediately for responsive local UI
-  const currentList = getSavedCustomers();
-  const idx = currentList.findIndex(c => c.id === record.id);
-  const updatedList = idx >= 0 
-    ? currentList.map((c, i) => i === idx ? record : c)
-    : [record, ...currentList];
-  
-  saveCustomersList(updatedList);
-  invalidateCustomerCache();
+export async function saveCustomer(customer: Partial<CustomerRecord>, fallbackCompanyId?: string): Promise<CustomerRecord> {
+  const effectiveCompanyId = customer.companyId || fallbackCompanyId;
+  const record = sanitizeCustomerRecord({
+    ...customer,
+    companyId: effectiveCompanyId,
+  });
 
   if (!db) {
-    console.warn('[customerRepository] Firestore not initialized, customer saved in local memory only.');
-    return record;
+    throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
   }
 
   const opKey = `save_customer_${record.id}_${Date.now()}`;
@@ -167,7 +185,15 @@ export async function saveCustomer(customer: Partial<CustomerRecord>): Promise<C
         _updatedAt: serverTimestamp(),
       }, { merge: true });
 
+      // Update in-memory state only after Firebase confirmation
+      const currentList = getSavedCustomers();
+      const idx = currentList.findIndex(c => c.id === record.id);
+      const updatedList = idx >= 0 
+        ? currentList.map((c, i) => i === idx ? record : c)
+        : [record, ...currentList];
+      saveCustomersList(updatedList);
       invalidateCustomerCache();
+
       console.log(`[customerRepository] Saved customer ${record.code} (${record.id}) to Firestore successfully.`);
       return record;
     },
@@ -180,27 +206,20 @@ export async function saveCustomer(customer: Partial<CustomerRecord>): Promise<C
 }
 
 /**
- * Delete customer from Firestore and update memory cache.
+ * Delete customer from Firestore with confirmed deletion before updating cache.
  */
 export async function deleteCustomer(id: string): Promise<boolean> {
   if (!id) return false;
+  if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
+
+  const docRef = doc(db, COLLECTION_NAME, id);
+  await deleteDoc(docRef);
 
   const currentList = getSavedCustomers().filter(c => c.id !== id);
   saveCustomersList(currentList);
   invalidateCustomerCache();
-
-  if (!db) return true;
-
-  try {
-    const docRef = doc(db, COLLECTION_NAME, id);
-    await deleteDoc(docRef);
-    invalidateCustomerCache();
-    console.log(`[customerRepository] Deleted customer ${id} from Firestore.`);
-    return true;
-  } catch (error) {
-    console.error(`[customerRepository] Error deleting customer ${id}:`, error);
-    throw error;
-  }
+  console.log(`[customerRepository] Deleted customer ${id} from Firestore.`);
+  return true;
 }
 
 /**
