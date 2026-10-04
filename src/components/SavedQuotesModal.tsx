@@ -3,7 +3,7 @@ import { QuoteData, QuoteStatus } from '../types/logistics';
 import { formatUSD, formatVND } from '../utils/formatters';
 import { exportQuoteToPdf } from '../utils/exportPdf';
 import { exportQuoteToExcel } from '../utils/exportExcel';
-import { X, Search, FileText, Copy, Trash2, Edit3, FileDown, FileSpreadsheet, ChevronLeft, ChevronRight, Loader2, SlidersHorizontal } from 'lucide-react';
+import { X, Search, FileText, Copy, Trash2, Edit3, FileDown, FileSpreadsheet, ChevronLeft, ChevronRight, Loader2, SlidersHorizontal, Sparkles } from 'lucide-react';
 
 interface SavedQuotesModalProps {
   quotes: QuoteData[];
@@ -15,6 +15,7 @@ interface SavedQuotesModalProps {
   onUpdateStatus: (id: string, status: QuoteStatus) => void;
   initialStatusFilter?: string;
   onOpenDecisionWorkspace?: (quote: QuoteData) => void;
+  onOpenDealCloser?: (quote: QuoteData) => void;
 }
 
 export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
@@ -27,6 +28,7 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
   onUpdateStatus,
   initialStatusFilter = 'ALL',
   onOpenDecisionWorkspace,
+  onOpenDealCloser,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -267,6 +269,17 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                           title="Mở Decision Hub (Phân tích What-If)"
                         >
                           <SlidersHorizontal className="w-4 h-4" />
+                        </button>
+                      )}
+
+                      {/* Phase 55: Deal Closer Suite (Gói B) */}
+                      {onOpenDealCloser && (
+                        <button
+                          onClick={() => { onOpenDealCloser(quote); onClose(); }}
+                          className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                          title="Mở Trợ Lý Chốt Deal & Đàm Phán (Gói B)"
+                        >
+                          <Sparkles className="w-4 h-4" />
                         </button>
                       )}
 

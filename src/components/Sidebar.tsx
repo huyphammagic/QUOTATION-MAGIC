@@ -54,7 +54,10 @@ import {
   SlidersHorizontal,
   X,
   FileCheck,
-  Check
+  Check,
+  Award,
+  Inbox,
+  Swords
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -101,6 +104,13 @@ export interface SidebarProps {
   onOpenShipmentWorkspace?: () => void;
   onOpenControlTower?: () => void;
   onOpenActionCenter?: () => void;
+  onOpenEngagementRadar?: () => void;
+  onOpenDealCloser?: () => void;
+  onOpenRfqInbox?: () => void;
+  onOpenCompetitorRadar?: () => void;
+  onOpenCustomerReengagement?: () => void;
+  dormantCustomersCount?: number;
+  activeEngagementsCount?: number;
   exceptionsCount?: number;
   deadlinesCount?: number;
   currentUserRole?: UserRole;
@@ -175,6 +185,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenShipmentWorkspace,
   onOpenControlTower,
   onOpenActionCenter,
+  onOpenEngagementRadar,
+  onOpenDealCloser,
+  onOpenRfqInbox,
+  onOpenCompetitorRadar,
+  onOpenCustomerReengagement,
+  dormantCustomersCount = 3,
+  activeEngagementsCount = 0,
   shipmentsCount = 0,
   exceptionsCount = 0,
   deadlinesCount = 0,
@@ -382,6 +399,51 @@ export const Sidebar: React.FC<SidebarProps> = ({
       action: () => onOpenSavedQuotes('SENT'),
       badge: sentCount > 0 ? sentCount : null,
       badgeTone: 'emerald',
+    },
+    {
+      id: 'rfq_inbox',
+      label: activeLang === 'vi' ? 'Hộp Thư RFQ & Tạo Giá 5s' : 'Smart RFQ Inbox (5s)',
+      icon: Inbox,
+      group: 'quotation',
+      action: () => onOpenRfqInbox && onOpenRfqInbox(),
+      badge: '3 mới',
+      badgeTone: 'emerald',
+    },
+    {
+      id: 'engagement_radar',
+      label: activeLang === 'vi' ? 'Radar Khách Hàng (Live)' : 'Live Engagement Radar',
+      icon: Radar,
+      group: 'quotation',
+      action: () => onOpenEngagementRadar && onOpenEngagementRadar(),
+      badge: activeEngagementsCount > 0 ? `${activeEngagementsCount} online` : undefined,
+      badgeTone: activeEngagementsCount > 0 ? 'emerald' : 'default',
+    },
+    {
+      id: 'deal_closing_accelerator',
+      label: activeLang === 'vi' ? 'Trợ Lý Chốt Deal (Gói B)' : 'Deal Closer Suite',
+      icon: Award,
+      group: 'quotation',
+      action: () => onOpenDealCloser && onOpenDealCloser(),
+      badge: 'Hot Deal',
+      badgeTone: 'emerald',
+    },
+    {
+      id: 'competitor_radar',
+      label: activeLang === 'vi' ? 'Radar Giá Đối Thủ & Win-Rate' : 'Competitor & Win-Rate',
+      icon: Swords,
+      group: 'quotation',
+      action: () => onOpenCompetitorRadar && onOpenCompetitorRadar(),
+      badge: 'P50 Sweet',
+      badgeTone: 'sky',
+    },
+    {
+      id: 'customer_reengagement',
+      label: activeLang === 'vi' ? 'Đánh Thức Khách Cũ (Chu Kỳ)' : 'Shipper Re-engagement',
+      icon: UserCheck,
+      group: 'quotation',
+      action: () => onOpenCustomerReengagement && onOpenCustomerReengagement(),
+      badge: dormantCustomersCount > 0 ? `${dormantCustomersCount} cần gọi` : undefined,
+      badgeTone: 'amber',
     },
     {
       id: 'opportunity_radar',

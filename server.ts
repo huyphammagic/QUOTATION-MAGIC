@@ -195,6 +195,87 @@ app.get("/api/quotation/email-provider-status", (_req, res) => {
   });
 });
 
+// Phase 56: AI Smart RFQ Inbox & Parser Endpoint
+app.post("/api/gemini/parse-rfq", async (req, res) => {
+  try {
+    const { rawText, source } = req.body;
+    if (!rawText || typeof rawText !== "string") {
+      return res.status(400).json({ success: false, error: "rawText string is required" });
+    }
+
+    const prompt = `Bạn là Trưởng bộ phận Báo giá & Điều vận Freight Forwarding chuyên nghiệp.
+Hãy bóc tách đoạn tin nhắn/email/văn bản yêu cầu chào giá (RFQ) sau đây thành dữ liệu JSON cấu trúc chuẩn:
+NỘI DUNG RFQ:
+"""
+${rawText}
+"""
+
+Hãy suy luận và chuẩn hóa:
+1. Thông tin khách hàng (Tên người hỏi, tên công ty, số điện thoại, email nếu có).
+2. Hình thức vận tải:
+   - "SEA_FCL" (nguyên container đường biển)
+   - "SEA_LCL" (hàng lẻ ghép container)
+   - "AIR_FREIGHT" (đường hàng không)
+   - "INLAND_TRUCKING" (xe tải nội địa)
+   - "CUSTOMS_CLEARANCE" (thủ tục hải quan)
+3. Cảng/Điểm đi (POL / Origin): Ví dụ "Cat Lai Port", "Hai Phong", "Tan Son Nhat (SGN)".
+4. Cảng/Điểm đến (POD / Destination): Ví dụ "Long Beach", "Hamburg", "Shanghai", "Tokyo".
+5. Loại cont/Quy cách: "20'GP", "40'GP", "40'HC", "45'HC", "20'RF", "40'RF", "LCL (CBM/KGS)", "AIR (KGS/CW)", "Xe Tải 5 Tấn"...
+6. Số lượng container / kiện hàng.
+7. Tên hàng hóa (Commodity).
+8. Tổng trọng lượng (KG) và thể tích (CBM) nếu có hoặc ước tính.
+9. Điều kiện Incoterms: "FOB", "CIF", "EXW", "DDP", "DAP", "CFR", "FCA".
+10. Ngày hàng sẵn sàng (Cargo Ready Date / ETD) nếu có.
+11. Yêu cầu đặc biệt (Special requirements): ví dụ "14 ngày Free DEM/DET", "tàu chạy thẳng", "hàng nguy hiểm DG", "cần làm C/O form E/AK/D".
+12. Độ khẩn cấp (urgency): "URGENT" (cần báo gấp trong ngày), "HIGH", "NORMAL".
+13. Độ tin cậy bóc tách (confidenceScore: 0-100).
+14. Các thông tin còn thiếu (missingFields) mà Sales nên hỏi lại khách hàng (ví dụ: "Chưa có ngày đóng hàng", "Chưa rõ điều kiện Incoterm").
+
+Trả về ĐÚNG JSON thuần túy (không dùng markdown backticks, không giải thích dài dòng), theo cấu trúc:
+{
+  "customer": {
+    "customerName": "string",
+    "companyName": "string",
+    "phone": "string",
+    "email": "string"
+  },
+  "shipment": {
+    "mode": "SEA_FCL" | "SEA_LCL" | "AIR_FREIGHT" | "INLAND_TRUCKING" | "CUSTOMS_CLEARANCE",
+    "pol": "string",
+    "pod": "string",
+    "commodity": "string",
+    "containerType": "string",
+    "quantity": number,
+    "grossWeightKg": number,
+    "volumeCbm": number,
+    "cargoReadyDate": "string",
+    "incoterm": "string",
+    "freeTimeRequired": "string",
+    "specialNotes": ["string"]
+  },
+  "urgency": "URGENT" | "HIGH" | "NORMAL",
+  "confidenceScore": number,
+  "missingFields": ["string"],
+  "suggestedFollowUpQuestions": ["string"]
+}`;
+
+    const ai = getGeminiClient();
+    const response = await ai.models.generateContent({
+      model: "gemini-3.8-flash",
+      contents: prompt,
+    });
+
+    const text = response.text || "{}";
+    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    const parsedData = JSON.parse(cleanedText);
+
+    res.json({ success: true, parsedData });
+  } catch (error: any) {
+    console.error("Error parsing RFQ with AI:", error);
+    res.status(500).json({ success: false, error: error.message || "Failed to parse RFQ" });
+  }
+});
+
 
 // Setup Vite Development Middleware or Static Production Serving
 async function setupServer() {

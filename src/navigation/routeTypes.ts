@@ -18,6 +18,11 @@ export type AppRouteId =
   | 'quotation_document_center'
   | 'quotation_email_templates'
   | 'quotation_followup'
+  | 'rfq_inbox'
+  | 'engagement_radar'
+  | 'deal_closing_accelerator'
+  | 'competitor_radar'
+  | 'customer_reengagement'
   | 'opportunity_radar'
   | 'decision_workspace'
   // Pricing

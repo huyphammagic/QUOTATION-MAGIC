@@ -422,6 +422,44 @@ service cloud.firestore {
       allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
 
+    // Phase 54: Real-time Customer Engagement Telemetry & Hot Lead Radar
+    match /quotationEngagements/{engagementId} {
+      allow read: if isResourceMember();
+      allow create, update: if (
+        request.resource.data.companyId is string &&
+        request.resource.data.quotationId is string
+      );
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    // Phase 55: Deal-Closing Accelerator & Negotiation Outcomes
+    match /quotationDealOutcomes/{outcomeId} {
+      allow read: if isResourceMember();
+      allow create, update: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    // Phase 56: Smart RFQ Inbox & Parser
+    match /smartRfqInbox/{rfqId} {
+      allow read: if isResourceMember();
+      allow create, update: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    // Phase 57: Competitor Intelligence & Win/Loss Records (Lựa Chọn 1)
+    match /competitorWinLossRecords/{recordId} {
+      allow read: if isResourceMember();
+      allow create, update: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    // Phase 58: Customer Re-engagement & Lane Replenishment (Lựa Chọn 2)
+    match /customerReengagementAlerts/{alertId} {
+      allow read: if isResourceMember();
+      allow create, update: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
     // =========================================================================
     // 5. SUPPLIERS, CARRIERS, RATE APPROVALS & CONTRACTS
     // =========================================================================

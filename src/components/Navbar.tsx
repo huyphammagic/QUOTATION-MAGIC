@@ -27,6 +27,8 @@ interface NavbarProps {
   onOpenSavedQuotes?: () => void;
   onOpenShipments?: () => void;
   onOpenControlTower?: () => void;
+  onOpenEngagementRadar?: () => void;
+  activeEngagementsCount?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -51,6 +53,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSavedQuotes,
   onOpenShipments,
   onOpenControlTower,
+  onOpenEngagementRadar,
+  activeEngagementsCount = 0,
 }) => {
   const { user, isAuthenticated } = useAuth();
 
@@ -137,6 +141,27 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="hover:text-slate-900 transition-colors cursor-pointer"
           >
             Báo Cáo & BI
+          </button>
+        )}
+
+        {onOpenEngagementRadar && (
+          <button
+            type="button"
+            onClick={onOpenEngagementRadar}
+            className={`flex items-center space-x-1.5 px-2 py-0.5 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
+              activeEngagementsCount > 0
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-semibold'
+                : 'text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-50'
+            }`}
+            title="Radar khách hàng đang xem báo giá thời gian thực"
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${activeEngagementsCount > 0 ? 'bg-emerald-500 animate-ping' : 'bg-slate-400'}`} />
+            <span>Radar Live</span>
+            {activeEngagementsCount > 0 && (
+              <span className="font-mono text-[10px] px-1 bg-emerald-600 text-white rounded-full">
+                {activeEngagementsCount}
+              </span>
+            )}
           </button>
         )}
       </nav>

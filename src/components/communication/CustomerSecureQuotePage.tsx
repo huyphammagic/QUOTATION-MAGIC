@@ -39,6 +39,12 @@ import {
 import { QuotationDocumentRecord } from '../../types/quotationDocument';
 import { resolveSecureLink, submitCustomerResponse } from '../../services/quotation/quotationSecurityService';
 import { exportQuotationDocumentToPdf } from '../../services/quotation/quotationPdfEngine';
+import { 
+  recordCustomerSessionStart, 
+  recordCustomerHeartbeat, 
+  recordCustomerAction 
+} from '../../services/telemetry/customerEngagementService';
+import { EngagementSection } from '../../types/customerEngagement';
 import { ElectronicSignaturePad, SignatureData } from './ElectronicSignaturePad';
 import { QuotationAcceptanceCertificateModal } from './QuotationAcceptanceCertificateModal';
 import { BookingDispatchModal } from './BookingDispatchModal';
@@ -76,6 +82,10 @@ export const CustomerSecureQuotePage: React.FC<CustomerSecureQuotePageProps> = (
   const [isSubmittingAction, setIsSubmittingAction] = useState<boolean>(false);
   const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null);
 
+  // Phase 54 Real-Time Telemetry Session State
+  const [telemetrySessionId, setTelemetrySessionId] = useState<string | null>(null);
+  const [currentSection, setCurrentSection] = useState<EngagementSection>('HEADER');
+
   useEffect(() => {
     async function loadQuotation() {
       setLoading(true);
@@ -89,6 +99,23 @@ export const CustomerSecureQuotePage: React.FC<CustomerSecureQuotePageProps> = (
           if (result.link) {
             setCustomerName(result.link.customerName || '');
             setCustomerEmail(result.link.customerEmail || '');
+
+            // Initialize Phase 54 live engagement session
+            if (result.document?.snapshot) {
+              const snap = result.document.snapshot;
+              recordCustomerSessionStart({
+                companyId: result.link.companyId,
+                quotationId: result.link.quotationId,
+                quotationNumber: result.link.quotationNumber,
+                customerName: result.link.customerName,
+                customerEmail: result.link.customerEmail,
+                linkId: result.link.id,
+                routePol: snap.shipment?.pol,
+                routePod: snap.shipment?.pod,
+                totalAmount: snap.currency === 'VND' ? snap.grandTotalVnd : snap.grandTotalUsd,
+                currency: snap.currency,
+              }).then(sId => setTelemetrySessionId(sId)).catch(e => console.warn('Telemetry init error:', e));
+            }
           }
         }
       } catch (err) {
@@ -100,8 +127,24 @@ export const CustomerSecureQuotePage: React.FC<CustomerSecureQuotePageProps> = (
     loadQuotation();
   }, [token]);
 
+  // Periodic heartbeat every 8 seconds while customer is viewing
+  useEffect(() => {
+    if (!telemetrySessionId) return;
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        recordCustomerHeartbeat(telemetrySessionId, currentSection, 8).catch(() => {});
+      }
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, [telemetrySessionId, currentSection]);
+
   const handleDownloadPdf = async () => {
     if (!docRecord) return;
+    if (telemetrySessionId) {
+      recordCustomerAction(telemetrySessionId, 'PDF_DOWNLOAD').catch(() => {});
+    }
     try {
       await exportQuotationDocumentToPdf(docRecord);
     } catch (e) {
@@ -114,6 +157,9 @@ export const CustomerSecureQuotePage: React.FC<CustomerSecureQuotePageProps> = (
 
   // Step 1 of Accept: Customer enters booking dispatch details, then proceeds to E-Sign
   const handleStartAcceptance = () => {
+    if (telemetrySessionId) {
+      recordCustomerAction(telemetrySessionId, 'SIGNATURE_PAD_OPEN').catch(() => {});
+    }
     setIsBookingModalOpen(true);
   };
 
@@ -381,6 +427,34 @@ export const CustomerSecureQuotePage: React.FC<CustomerSecureQuotePageProps> = (
           </div>
         </div>
 
+        {/* Phase 55: Value-Add Privileges & Closing Urgency Banner */}
+        {!isAccepted && (
+          <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white p-4 sm:p-5 border border-emerald-700/60 shadow-md">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-start sm:items-center space-x-3">
+                <div className="w-9 h-9 bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 font-bold shrink-0 mt-0.5 sm:mt-0">
+                  ⚡
+                </div>
+                <div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300 block">
+                    Đặc Quyền Dành Riêng Cho Quý Doanh Nghiệp (Value-Add Privileges)
+                  </span>
+                  <p className="text-xs text-slate-200 mt-0.5">
+                    Bao gồm: <strong className="text-emerald-300">+14 Ngày Miễn Phí Lưu Bãi/Cont (Free DEM/DET)</strong> &bull; <strong className="text-emerald-300">Cam Kết Vỏ Cont Đẹp Không Rớt Tàu</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSignaturePadOpen(true)}
+                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-colors shrink-0 shadow-sm cursor-pointer"
+              >
+                Ký Xác Nhận Giữ Chỗ Ngay ➔
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Company & Customer Details Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           
@@ -527,7 +601,13 @@ export const CustomerSecureQuotePage: React.FC<CustomerSecureQuotePageProps> = (
             
             <button
               type="button"
-              onClick={() => setIsNegotiationOpen(true)}
+              onClick={() => {
+                if (telemetrySessionId) {
+                  recordCustomerAction(telemetrySessionId, 'COUNTER_OFFER_CLICK').catch(() => {});
+                }
+                setCurrentSection('RATES_TABLE');
+                setIsNegotiationOpen(true);
+              }}
               className="flex items-center space-x-1.5 px-3 py-1 bg-white hover:bg-slate-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-medium transition-colors cursor-pointer"
             >
               <MessageSquare className="w-3.5 h-3.5" />
@@ -656,7 +736,13 @@ export const CustomerSecureQuotePage: React.FC<CustomerSecureQuotePageProps> = (
               {/* Request Revision / Negotiation */}
               <button
                 type="button"
-                onClick={() => setIsNegotiationOpen(true)}
+                onClick={() => {
+                  if (telemetrySessionId) {
+                    recordCustomerAction(telemetrySessionId, 'COUNTER_OFFER_CLICK').catch(() => {});
+                  }
+                  setCurrentSection('RATES_TABLE');
+                  setIsNegotiationOpen(true);
+                }}
                 className="flex items-center space-x-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-semibold transition-all border border-slate-700 cursor-pointer"
               >
                 <Edit3 className="w-3.5 h-3.5 text-slate-400" />

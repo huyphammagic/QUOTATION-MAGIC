@@ -120,6 +120,14 @@ const ControlTowerWorkspace = lazyWithRetry(() => import('./components/controlTo
 const SmartDeadlineWorkspace = lazyWithRetry(() => import('./components/deadline/SmartDeadlineWorkspace').then(m => ({ default: m.SmartDeadlineWorkspace })), 'SmartDeadlineWorkspace');
 const BusinessOpportunityRadarWorkspace = lazyWithRetry(() => import('./components/opportunity/BusinessOpportunityRadarWorkspace').then(m => ({ default: m.BusinessOpportunityRadarWorkspace })), 'BusinessOpportunityRadarWorkspace');
 const DecisionWorkspaceModal = lazyWithRetry(() => import('./components/decision/DecisionWorkspaceModal').then(m => ({ default: m.DecisionWorkspaceModal })), 'DecisionWorkspaceModal');
+const LiveEngagementRadarModal = lazyWithRetry(() => import('./components/telemetry/LiveEngagementRadarModal').then(m => ({ default: m.LiveEngagementRadarModal })), 'LiveEngagementRadarModal');
+const DealClosingAcceleratorModal = lazyWithRetry(() => import('./components/dealClosing/DealClosingAcceleratorModal').then(m => ({ default: m.DealClosingAcceleratorModal })), 'DealClosingAcceleratorModal');
+const SmartRfqInboxModal = lazyWithRetry(() => import('./components/rfq/SmartRfqInboxModal').then(m => ({ default: m.SmartRfqInboxModal })), 'SmartRfqInboxModal');
+const CompetitorIntelligenceModal = lazyWithRetry(() => import('./components/competitor/CompetitorIntelligenceModal').then(m => ({ default: m.CompetitorIntelligenceModal })), 'CompetitorIntelligenceModal');
+const CustomerReengagementRadarModal = lazyWithRetry(() => import('./components/reengagement/CustomerReengagementRadarModal').then(m => ({ default: m.CustomerReengagementRadarModal })), 'CustomerReengagementRadarModal');
+import { LiveLeadToastNotifier } from './components/telemetry/LiveLeadToastNotifier';
+import { subscribeToLiveEngagements } from './services/telemetry/customerEngagementService';
+import { QuotationEngagementSession } from './types/customerEngagement';
 
 import { getShipments } from './services/shipment/shipmentService';
 import { ShipmentRecord } from './types/shipment';
@@ -399,6 +407,38 @@ export default function App() {
   const [contractSuppliers, setContractSuppliers] = useState<SupplierItem[]>([]);
   const [contractCarriers, setContractCarriers] = useState<CarrierItem[]>([]);
 
+  // Phase 54: Real-time Customer Engagement Radar & Hot Leads
+  const [liveEngagementSessions, setLiveEngagementSessions] = useState<QuotationEngagementSession[]>([]);
+  const [isEngagementRadarOpen, setIsEngagementRadarOpen] = useState(false);
+  const [selectedRadarSession, setSelectedRadarSession] = useState<QuotationEngagementSession | null>(null);
+
+  // Phase 55: Deal-Closing Accelerator & Objection Handling Suite (Gói B)
+  const [isDealCloserOpen, setIsDealCloserOpen] = useState(false);
+  const [selectedClosingQuote, setSelectedClosingQuote] = useState<QuoteData | null>(null);
+
+  // Phase 56: Smart RFQ Inbox & 5-Second Quote Generator (Ý Tưởng 1)
+  const [isRfqInboxOpen, setIsRfqInboxOpen] = useState(false);
+
+  // Phase 57: Competitor Intelligence & Dynamic Win/Loss Price Benchmark (Lựa Chọn 1)
+  const [isCompetitorRadarOpen, setIsCompetitorRadarOpen] = useState(false);
+
+  // Phase 58: Customer Re-engagement & Lane Replenishment Radar (Lựa Chọn 2)
+  const [isReengagementRadarOpen, setIsReengagementRadarOpen] = useState(false);
+
+  const handleOpenDealCloser = (target?: QuoteData | null) => {
+    const targetQuote = target || quote || (savedQuotes.length > 0 ? savedQuotes[0] : null);
+    setSelectedClosingQuote(targetQuote);
+    setIsDealCloserOpen(true);
+  };
+
+  useEffect(() => {
+    const compId = activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'company_profile';
+    const unsub = subscribeToLiveEngagements(compId, (sessions) => {
+      setLiveEngagementSessions(sessions);
+    });
+    return () => unsub();
+  }, [activeCompanyId, activeCompanyRecord?.companyId, company.companyId]);
+
   // Preload real Suppliers and Carriers for Contract and Rate Hubs (100% Cloud-First)
   const ensureSuppliersAndCarriersLoaded = async () => {
     if (contractSuppliers.length === 0) {
@@ -450,6 +490,7 @@ export default function App() {
     setIsActionCenterOpen(false);
     setIsOpportunityRadarOpen(false);
     setIsDecisionWorkspaceOpen(false);
+    setIsEngagementRadarOpen(false);
     setIsShipmentWorkspaceOpen(false);
     setIsCreateShipmentModalOpen(false);
     setCreateShipmentFromQuote(null);
@@ -614,6 +655,21 @@ export default function App() {
         break;
       case 'quotation_followup':
         setIsFollowUpOpen(true);
+        break;
+      case 'rfq_inbox':
+        setIsRfqInboxOpen(true);
+        break;
+      case 'engagement_radar':
+        setIsEngagementRadarOpen(true);
+        break;
+      case 'deal_closing_accelerator':
+        handleOpenDealCloser();
+        break;
+      case 'competitor_radar':
+        setIsCompetitorRadarOpen(true);
+        break;
+      case 'customer_reengagement':
+        setIsReengagementRadarOpen(true);
         break;
       case 'opportunity_radar':
         setIsOpportunityRadarOpen(true);
@@ -1939,6 +1995,16 @@ export default function App() {
           onOpenSmartQuotationWorkspace={() => navigateToRoute('smart_quotation_workspace')}
           onOpenEmailTemplates={() => navigateToRoute('quotation_email_templates')}
           onOpenFollowUps={() => navigateToRoute('quotation_followup')}
+          onOpenEngagementRadar={() => {
+            setSelectedRadarSession(null);
+            setIsEngagementRadarOpen(true);
+          }}
+          onOpenDealCloser={() => handleOpenDealCloser()}
+          onOpenRfqInbox={() => setIsRfqInboxOpen(true)}
+          onOpenCompetitorRadar={() => setIsCompetitorRadarOpen(true)}
+          onOpenCustomerReengagement={() => setIsReengagementRadarOpen(true)}
+          dormantCustomersCount={3}
+          activeEngagementsCount={liveEngagementSessions.filter(s => s.isCurrentlyActive).length}
           onOpenOpportunityRadar={() => navigateToRoute('opportunity_radar')}
           onOpenDecisionWorkspace={() => navigateToRoute('decision_workspace')}
           onOpenDashboard={(tab) => {
@@ -2045,6 +2111,10 @@ export default function App() {
               onOpenSendModal={() => setIsSendQuotationOpen(true)}
               onOpenDecisionWorkspace={handleOpenDecisionWorkspaceForCurrentQuote}
               onOpenSmartAssistant={() => setIsSmartAssistantOpen(true)}
+              onOpenDealCloser={() => handleOpenDealCloser(quote)}
+              onOpenRfqInbox={() => setIsRfqInboxOpen(true)}
+              onOpenCompetitorRadar={() => setIsCompetitorRadarOpen(true)}
+              onOpenCustomerReengagement={() => setIsReengagementRadarOpen(true)}
               isSaving={isAutoSaving}
               lastSavedAt={lastAutoSaveTime}
             />
@@ -2384,6 +2454,7 @@ export default function App() {
             onDeleteQuote={handleDeleteQuote}
             onUpdateStatus={handleUpdateStatus}
             onOpenDecisionWorkspace={handleOpenDecisionWorkspaceForQuote}
+            onOpenDealCloser={handleOpenDealCloser}
           />
         </RouteErrorBoundary>
       )}
@@ -2987,6 +3058,146 @@ export default function App() {
         onClose={() => setIsAuthModalOpen(false)}
         isVi={appLanguage === 'vi'}
       />
+
+      {/* Phase 54: Real-time Live Lead Toast Notifier */}
+      <LiveLeadToastNotifier
+        sessions={liveEngagementSessions}
+        onOpenRadar={() => {
+          setSelectedRadarSession(null);
+          setIsEngagementRadarOpen(true);
+        }}
+        onOpenCallScript={(s) => {
+          setSelectedRadarSession(s);
+          setIsEngagementRadarOpen(true);
+        }}
+      />
+
+      {/* Phase 54: Live Customer Engagement Radar Board Modal */}
+      {isEngagementRadarOpen && (
+        <Suspense fallback={null}>
+          <LiveEngagementRadarModal
+            isOpen={isEngagementRadarOpen}
+            onClose={() => setIsEngagementRadarOpen(false)}
+            sessions={liveEngagementSessions}
+            initialSelectedSession={selectedRadarSession}
+            onOpenQuotation={(qId) => {
+              const target = savedQuotes.find(sq => sq.id === qId);
+              if (target) {
+                setQuote(target);
+                showToast(`Đã mở báo giá ${target.quoteNumber}`);
+              }
+            }}
+            onOpenDealCloser={(qId) => {
+              const target = savedQuotes.find(sq => sq.id === qId);
+              handleOpenDealCloser(target || quote);
+            }}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 55: Deal-Closing Accelerator & Negotiation Suite Modal (Gói B) */}
+      {isDealCloserOpen && (
+        <Suspense fallback={null}>
+          <DealClosingAcceleratorModal
+            isOpen={isDealCloserOpen}
+            onClose={() => setIsDealCloserOpen(false)}
+            quotation={selectedClosingQuote || quote}
+            companyId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'company_profile'}
+            onDealClosed={(qId, outcome, shipmentId) => {
+              if (outcome === 'WON') {
+                showToast('🎉 Chúc mừng bạn đã chốt đơn thành công! Đã tạo Lô hàng mới.');
+                // Update local quote status
+                setSavedQuotes(prev => prev.map(q => q.id === qId ? { ...q, status: 'ACCEPTED' as any } : q));
+              } else {
+                showToast('Đã ghi nhận thông tin kết quả đàm phán.');
+                setSavedQuotes(prev => prev.map(q => q.id === qId ? { ...q, status: 'REJECTED' as any } : q));
+              }
+            }}
+            onOpenShipmentDetail={(shipmentId) => {
+              navigateToRoute('ops_shipments');
+            }}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 56: Smart RFQ Inbox & 5-Second Quote Generator Modal (Ý Tưởng 1) */}
+      {isRfqInboxOpen && (
+        <Suspense fallback={null}>
+          <SmartRfqInboxModal
+            isOpen={isRfqInboxOpen}
+            onClose={() => setIsRfqInboxOpen(false)}
+            companyProfile={company}
+            exchangeRate={quote.exchangeRate || 25400}
+            onQuotationCreated={(createdQuote) => {
+              setQuote(createdQuote);
+              setSavedQuotes(prev => [createdQuote, ...prev.filter(q => q.id !== createdQuote.id)]);
+              showToast(`⚡ Đã tạo thành công Báo giá ${createdQuote.quoteNumber} từ RFQ trong 5 giây!`);
+              setIsRfqInboxOpen(false);
+            }}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 57: Competitor Intelligence & Dynamic Win/Loss Price Benchmark Modal (Lựa Chọn 1) */}
+      {isCompetitorRadarOpen && (
+        <Suspense fallback={null}>
+          <CompetitorIntelligenceModal
+            isOpen={isCompetitorRadarOpen}
+            onClose={() => setIsCompetitorRadarOpen(false)}
+            currentQuote={quote}
+            onApplySweetSpotPrice={(newSellPrice) => {
+              // Update freight line item price with sweet spot price
+              setQuote(prev => {
+                const updatedItems = prev.items.map(it => {
+                  if (it.category === 'FREIGHT') {
+                    const qty = it.quantity || 1;
+                    const isUsd = it.currency === 'USD';
+                    const unitPrice = newSellPrice;
+                    const amountUsd = isUsd ? unitPrice * qty : (unitPrice * qty) / (prev.exchangeRate || 25400);
+                    const amountVnd = !isUsd ? unitPrice * qty : unitPrice * qty * (prev.exchangeRate || 25400);
+                    const costTotUsd = it.costTotalUsd || 0;
+                    return {
+                      ...it,
+                      unitPrice,
+                      amountUsd,
+                      amountVnd,
+                      profitUsd: amountUsd - costTotUsd,
+                      profitVnd: amountVnd - (it.costTotalVnd || 0),
+                      marginPercent: amountUsd > 0 ? ((amountUsd - costTotUsd) / amountUsd) * 100 : 0
+                    };
+                  }
+                  return it;
+                });
+                return {
+                  ...prev,
+                  items: updatedItems,
+                  updatedDate: new Date().toISOString().split('T')[0]
+                };
+              });
+              showToast(`⚡ Đã cập nhật giá bán cước biển theo điểm ngọt Sweet-Spot ($${newSellPrice})!`);
+              setIsCompetitorRadarOpen(false);
+            }}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 58: Customer Re-engagement & Lane Replenishment Radar Modal (Lựa Chọn 2) */}
+      {isReengagementRadarOpen && (
+        <Suspense fallback={null}>
+          <CustomerReengagementRadarModal
+            isOpen={isReengagementRadarOpen}
+            onClose={() => setIsReengagementRadarOpen(false)}
+            companyProfile={company}
+            exchangeRate={quote.exchangeRate || 25400}
+            onReQuotationCreated={(createdQuote) => {
+              setQuote(createdQuote);
+              setSavedQuotes(prev => [createdQuote, ...prev.filter(q => q.id !== createdQuote.id)]);
+              showToast(`⚡ Đã nạp thành công Báo giá kích hoạt khách hàng: ${createdQuote.quoteNumber}!`);
+              setIsReengagementRadarOpen(false);
+            }}
+          />
+        </Suspense>
+      )}
       </Suspense>
 
     </div>

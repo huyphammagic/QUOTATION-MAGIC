@@ -15,7 +15,10 @@ import {
   Navigation,
   CheckCircle2,
   Clock,
-  RotateCcw
+  RotateCcw,
+  Inbox,
+  Swords,
+  UserCheck
 } from 'lucide-react';
 
 export type WorkspaceTab = 'DETAILS' | 'TERMS' | 'COMMUNICATION' | 'ALL';
@@ -30,6 +33,10 @@ interface QuotationWorkspaceHeaderProps {
   onOpenSendModal: () => void;
   onOpenDecisionWorkspace: () => void;
   onOpenSmartAssistant?: () => void;
+  onOpenDealCloser?: () => void;
+  onOpenRfqInbox?: () => void;
+  onOpenCompetitorRadar?: () => void;
+  onOpenCustomerReengagement?: () => void;
   isSaving?: boolean;
   lastSavedAt?: string | null;
 }
@@ -44,6 +51,10 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
   onOpenSendModal,
   onOpenDecisionWorkspace,
   onOpenSmartAssistant,
+  onOpenDealCloser,
+  onOpenRfqInbox,
+  onOpenCompetitorRadar,
+  onOpenCustomerReengagement,
   isSaving = false,
   lastSavedAt,
 }) => {
@@ -181,6 +192,58 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
             <Send className="w-3.5 h-3.5 text-blue-600" />
             <span>Gửi Khách</span>
           </button>
+
+          {/* RFQ Inbox (Phase 56) */}
+          {onOpenRfqInbox && (
+            <button
+              type="button"
+              onClick={onOpenRfqInbox}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg shadow-2xs transition-colors cursor-pointer"
+              title="Mở Hộp Thư RFQ & Tạo Báo Giá 5s (AI Smart RFQ Inbox)"
+            >
+              <Inbox className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Hộp Thư RFQ (5s)</span>
+            </button>
+          )}
+
+          {/* Deal Closer (Gói B) */}
+          {onOpenDealCloser && (
+            <button
+              type="button"
+              onClick={onOpenDealCloser}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg shadow-2xs transition-colors cursor-pointer"
+              title="Mở Trợ Lý Đàm Phán & Chốt Đơn (Gói B - Phase 55)"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Chốt Deal (Gói B)</span>
+            </button>
+          )}
+
+          {/* Competitor Radar & Win-Rate (Phase 57 - Lựa Chọn 1) */}
+          {onOpenCompetitorRadar && (
+            <button
+              type="button"
+              onClick={onOpenCompetitorRadar}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg shadow-2xs transition-colors cursor-pointer"
+              title="Mở Radar Giá Đối Thủ & Dự Báo Win-Rate Sweet-Spot (Phase 57)"
+            >
+              <Swords className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Giá Đối Thủ (P50)</span>
+            </button>
+          )}
+
+          {/* Customer Re-engagement Radar (Phase 58 - Lựa Chọn 2) */}
+          {onOpenCustomerReengagement && (
+            <button
+              type="button"
+              onClick={onOpenCustomerReengagement}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-sky-800 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-lg shadow-2xs transition-colors cursor-pointer"
+              title="Mở Radar Đánh Thức Khách Cũ & Đơn Chu Kỳ (Phase 58)"
+            >
+              <UserCheck className="w-3.5 h-3.5 text-sky-600" />
+              <span>Khách Cũ (Chu Kỳ)</span>
+            </button>
+          )}
 
           {/* Primary Save to Cloud button */}
           <button
