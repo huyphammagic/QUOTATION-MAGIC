@@ -23,6 +23,8 @@ export type AppRouteId =
   | 'deal_closing_accelerator'
   | 'competitor_radar'
   | 'customer_reengagement'
+  | 'validity_surcharge_radar'
+  | 'dem_det_port_radar'
   | 'opportunity_radar'
   | 'decision_workspace'
   // Pricing

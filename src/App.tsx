@@ -125,6 +125,8 @@ const DealClosingAcceleratorModal = lazyWithRetry(() => import('./components/dea
 const SmartRfqInboxModal = lazyWithRetry(() => import('./components/rfq/SmartRfqInboxModal').then(m => ({ default: m.SmartRfqInboxModal })), 'SmartRfqInboxModal');
 const CompetitorIntelligenceModal = lazyWithRetry(() => import('./components/competitor/CompetitorIntelligenceModal').then(m => ({ default: m.CompetitorIntelligenceModal })), 'CompetitorIntelligenceModal');
 const CustomerReengagementRadarModal = lazyWithRetry(() => import('./components/reengagement/CustomerReengagementRadarModal').then(m => ({ default: m.CustomerReengagementRadarModal })), 'CustomerReengagementRadarModal');
+const RateValiditySurchargeModal = lazyWithRetry(() => import('./components/validity/RateValiditySurchargeModal').then(m => ({ default: m.RateValiditySurchargeModal })), 'RateValiditySurchargeModal');
+const DemDetPortRiskModal = lazyWithRetry(() => import('./components/demdet/DemDetPortRiskModal').then(m => ({ default: m.DemDetPortRiskModal })), 'DemDetPortRiskModal');
 import { LiveLeadToastNotifier } from './components/telemetry/LiveLeadToastNotifier';
 import { subscribeToLiveEngagements } from './services/telemetry/customerEngagementService';
 import { QuotationEngagementSession } from './types/customerEngagement';
@@ -425,6 +427,12 @@ export default function App() {
   // Phase 58: Customer Re-engagement & Lane Replenishment Radar (Lựa Chọn 2)
   const [isReengagementRadarOpen, setIsReengagementRadarOpen] = useState(false);
 
+  // Phase 59: Validity & Surcharge Volatility Alert Engine (Lựa Chọn 3)
+  const [isValiditySurchargeOpen, setIsValiditySurchargeOpen] = useState(false);
+
+  // Phase 60: AI Demurrage & Detention & Port Congestion Radar (Lựa Chọn 4)
+  const [isDemDetPortOpen, setIsDemDetPortOpen] = useState(false);
+
   const handleOpenDealCloser = (target?: QuoteData | null) => {
     const targetQuote = target || quote || (savedQuotes.length > 0 ? savedQuotes[0] : null);
     setSelectedClosingQuote(targetQuote);
@@ -670,6 +678,12 @@ export default function App() {
         break;
       case 'customer_reengagement':
         setIsReengagementRadarOpen(true);
+        break;
+      case 'validity_surcharge_radar':
+        setIsValiditySurchargeOpen(true);
+        break;
+      case 'dem_det_port_radar':
+        setIsDemDetPortOpen(true);
         break;
       case 'opportunity_radar':
         setIsOpportunityRadarOpen(true);
@@ -2003,6 +2017,8 @@ export default function App() {
           onOpenRfqInbox={() => setIsRfqInboxOpen(true)}
           onOpenCompetitorRadar={() => setIsCompetitorRadarOpen(true)}
           onOpenCustomerReengagement={() => setIsReengagementRadarOpen(true)}
+          onOpenValiditySurcharge={() => setIsValiditySurchargeOpen(true)}
+          onOpenDemDetPort={() => setIsDemDetPortOpen(true)}
           dormantCustomersCount={3}
           activeEngagementsCount={liveEngagementSessions.filter(s => s.isCurrentlyActive).length}
           onOpenOpportunityRadar={() => navigateToRoute('opportunity_radar')}
@@ -2115,6 +2131,8 @@ export default function App() {
               onOpenRfqInbox={() => setIsRfqInboxOpen(true)}
               onOpenCompetitorRadar={() => setIsCompetitorRadarOpen(true)}
               onOpenCustomerReengagement={() => setIsReengagementRadarOpen(true)}
+              onOpenValiditySurcharge={() => setIsValiditySurchargeOpen(true)}
+              onOpenDemDetPort={() => setIsDemDetPortOpen(true)}
               isSaving={isAutoSaving}
               lastSavedAt={lastAutoSaveTime}
             />
@@ -3195,6 +3213,38 @@ export default function App() {
               showToast(`⚡ Đã nạp thành công Báo giá kích hoạt khách hàng: ${createdQuote.quoteNumber}!`);
               setIsReengagementRadarOpen(false);
             }}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 59: Rate Validity & Surcharge Volatility Alert Modal (Lựa Chọn 3) */}
+      {isValiditySurchargeOpen && (
+        <Suspense fallback={null}>
+          <RateValiditySurchargeModal
+            isOpen={isValiditySurchargeOpen}
+            onClose={() => setIsValiditySurchargeOpen(false)}
+            onSelectQuoteToOpen={(selectedQuoteId) => {
+              const matched = savedQuotes.find(q => q.id === selectedQuoteId);
+              if (matched) {
+                setQuote(matched);
+                showToast(`⚡ Đã mở báo giá ${matched.quoteNumber}!`);
+              }
+              setIsValiditySurchargeOpen(false);
+            }}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 60: AI Demurrage & Detention & Port Congestion Radar Modal (Lựa Chọn 4) */}
+      {isDemDetPortOpen && (
+        <Suspense fallback={null}>
+          <DemDetPortRiskModal
+            isOpen={isDemDetPortOpen}
+            onClose={() => setIsDemDetPortOpen(false)}
+            defaultCustomerName={quote.customer?.companyName || 'Công ty Khách Hàng'}
+            defaultCarrierCode={quote.shipment?.carrier?.toUpperCase().includes('ONE') ? 'ONE_LINE' : quote.shipment?.carrier?.toUpperCase().includes('COSCO') ? 'COSCO' : 'MAERSK'}
+            defaultPortCode={quote.shipment?.pol?.toUpperCase().includes('HẢI PHÒNG') ? 'VNHPH' : 'VNCLI'}
+            defaultContainerType={quote.shipment?.containerType?.includes('20') ? '20GP' : '40HC'}
           />
         </Suspense>
       )}

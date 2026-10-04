@@ -460,6 +460,20 @@ service cloud.firestore {
       allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
 
+    // Phase 59: Validity & Surcharge Volatility Alerts (Lựa Chọn 3)
+    match /rateValiditySurchargeAlerts/{alertId} {
+      allow read: if isResourceMember();
+      allow create, update: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    // Phase 60: AI Demurrage & Detention Simulations (Lựa Chọn 4)
+    match /demDetSimulations/{simId} {
+      allow read: if isResourceMember();
+      allow create, update: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
     // =========================================================================
     // 5. SUPPLIERS, CARRIERS, RATE APPROVALS & CONTRACTS
     // =========================================================================

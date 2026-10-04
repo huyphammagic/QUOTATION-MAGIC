@@ -57,7 +57,8 @@ import {
   Check,
   Award,
   Inbox,
-  Swords
+  Swords,
+  Flame
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -109,6 +110,8 @@ export interface SidebarProps {
   onOpenRfqInbox?: () => void;
   onOpenCompetitorRadar?: () => void;
   onOpenCustomerReengagement?: () => void;
+  onOpenValiditySurcharge?: () => void;
+  onOpenDemDetPort?: () => void;
   dormantCustomersCount?: number;
   activeEngagementsCount?: number;
   exceptionsCount?: number;
@@ -190,6 +193,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenRfqInbox,
   onOpenCompetitorRadar,
   onOpenCustomerReengagement,
+  onOpenValiditySurcharge,
+  onOpenDemDetPort,
   dormantCustomersCount = 3,
   activeEngagementsCount = 0,
   shipmentsCount = 0,
@@ -444,6 +449,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
       action: () => onOpenCustomerReengagement && onOpenCustomerReengagement(),
       badge: dormantCustomersCount > 0 ? `${dormantCustomersCount} cần gọi` : undefined,
       badgeTone: 'amber',
+    },
+    {
+      id: 'validity_surcharge_radar',
+      label: activeLang === 'vi' ? 'Hiệu Lực Báo Giá & Phụ Phí GRI' : 'Rate Validity & GRI Radar',
+      icon: Flame,
+      group: 'quotation',
+      action: () => onOpenValiditySurcharge && onOpenValiditySurcharge(),
+      badge: 'GRI Alert',
+      badgeTone: 'rose',
+    },
+    {
+      id: 'dem_det_port_radar',
+      label: activeLang === 'vi' ? 'Bộ Tính DEM/DET & Kẹt Cảng' : 'DEM/DET & Port Risk Radar',
+      icon: Anchor,
+      group: 'quotation',
+      action: () => onOpenDemDetPort && onOpenDemDetPort(),
+      badge: 'Free-Time AI',
+      badgeTone: 'sky',
     },
     {
       id: 'opportunity_radar',

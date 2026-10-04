@@ -18,7 +18,9 @@ import {
   RotateCcw,
   Inbox,
   Swords,
-  UserCheck
+  UserCheck,
+  Flame,
+  Anchor
 } from 'lucide-react';
 
 export type WorkspaceTab = 'DETAILS' | 'TERMS' | 'COMMUNICATION' | 'ALL';
@@ -37,6 +39,8 @@ interface QuotationWorkspaceHeaderProps {
   onOpenRfqInbox?: () => void;
   onOpenCompetitorRadar?: () => void;
   onOpenCustomerReengagement?: () => void;
+  onOpenValiditySurcharge?: () => void;
+  onOpenDemDetPort?: () => void;
   isSaving?: boolean;
   lastSavedAt?: string | null;
 }
@@ -55,6 +59,8 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
   onOpenRfqInbox,
   onOpenCompetitorRadar,
   onOpenCustomerReengagement,
+  onOpenValiditySurcharge,
+  onOpenDemDetPort,
   isSaving = false,
   lastSavedAt,
 }) => {
@@ -242,6 +248,32 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
             >
               <UserCheck className="w-3.5 h-3.5 text-sky-600" />
               <span>Khách Cũ (Chu Kỳ)</span>
+            </button>
+          )}
+
+          {/* Rate Validity & GRI Alert Engine (Phase 59 - Lựa Chọn 3) */}
+          {onOpenValiditySurcharge && (
+            <button
+              type="button"
+              onClick={onOpenValiditySurcharge}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg shadow-2xs transition-colors cursor-pointer"
+              title="Mở Radar Đếm Ngược Hiệu Lực Cước & Biến Động Phụ Phí GRI (Phase 59)"
+            >
+              <Flame className="w-3.5 h-3.5 text-amber-600" />
+              <span>Hiệu Lực & GRI</span>
+            </button>
+          )}
+
+          {/* AI DEM/DET & Port Risk Radar (Phase 60 - Lựa Chọn 4) */}
+          {onOpenDemDetPort && (
+            <button
+              type="button"
+              onClick={onOpenDemDetPort}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-300 rounded-lg shadow-2xs transition-colors cursor-pointer"
+              title="Mở Bộ Tính DEM/DET Lũy Tiến & Radar Kẹt Cảng (Phase 60)"
+            >
+              <Anchor className="w-3.5 h-3.5 text-blue-600" />
+              <span>DEM/DET & Cảng</span>
             </button>
           )}
 
