@@ -202,11 +202,11 @@ export const CustomerReengagementRadarModal: React.FC<CustomerReengagementRadarM
         <div className="px-6 py-3 bg-white border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
           
           {/* Status Tabs */}
-          <div className="flex items-center space-x-1.5 overflow-x-auto w-full sm:w-auto">
+          <div className="flex items-center space-x-1.5 overflow-x-auto w-full sm:w-auto max-w-full pb-0.5">
             <button
               type="button"
               onClick={() => setFilterStatus('ALL')}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                 filterStatus === 'ALL'
                   ? 'bg-slate-900 text-white shadow-2xs'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -217,7 +217,7 @@ export const CustomerReengagementRadarModal: React.FC<CustomerReengagementRadarM
             <button
               type="button"
               onClick={() => setFilterStatus('APPROACHING_CYCLE')}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                 filterStatus === 'APPROACHING_CYCLE'
                   ? 'bg-emerald-600 text-white shadow-2xs'
                   : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
@@ -228,7 +228,7 @@ export const CustomerReengagementRadarModal: React.FC<CustomerReengagementRadarM
             <button
               type="button"
               onClick={() => setFilterStatus('DORMANT_30D')}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                 filterStatus === 'DORMANT_30D'
                   ? 'bg-amber-600 text-white shadow-2xs'
                   : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
@@ -239,7 +239,7 @@ export const CustomerReengagementRadarModal: React.FC<CustomerReengagementRadarM
             <button
               type="button"
               onClick={() => setFilterStatus('DORMANT_60D_PLUS')}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                 filterStatus === 'DORMANT_60D_PLUS'
                   ? 'bg-rose-600 text-white shadow-2xs'
                   : 'bg-rose-50 text-rose-700 hover:bg-rose-100'

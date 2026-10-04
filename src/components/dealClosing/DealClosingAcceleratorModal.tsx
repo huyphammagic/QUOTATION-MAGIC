@@ -302,10 +302,10 @@ export const DealClosingAcceleratorModal: React.FC<DealClosingAcceleratorModalPr
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-900/50 px-6 gap-2">
+        <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-900/50 px-6 gap-2 overflow-x-auto max-w-full">
           <button
             onClick={() => setActiveTab('SIMULATOR')}
-            className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
+            className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors shrink-0 whitespace-nowrap ${
               activeTab === 'SIMULATOR'
                 ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-white dark:bg-slate-800'
                 : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -320,7 +320,7 @@ export const DealClosingAcceleratorModal: React.FC<DealClosingAcceleratorModalPr
 
           <button
             onClick={() => setActiveTab('CONCESSIONS')}
-            className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
+            className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors shrink-0 whitespace-nowrap ${
               activeTab === 'CONCESSIONS'
                 ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-white dark:bg-slate-800'
                 : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -335,7 +335,7 @@ export const DealClosingAcceleratorModal: React.FC<DealClosingAcceleratorModalPr
 
           <button
             onClick={() => setActiveTab('OBJECTIONS')}
-            className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
+            className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors shrink-0 whitespace-nowrap ${
               activeTab === 'OBJECTIONS'
                 ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-white dark:bg-slate-800'
                 : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -347,7 +347,7 @@ export const DealClosingAcceleratorModal: React.FC<DealClosingAcceleratorModalPr
 
           <button
             onClick={() => setActiveTab('PITCH')}
-            className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
+            className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors shrink-0 whitespace-nowrap ${
               activeTab === 'PITCH'
                 ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-white dark:bg-slate-800'
                 : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'

@@ -62,7 +62,7 @@ export const LiveLeadToastNotifier: React.FC<LiveLeadToastNotifierProps> = ({
   return (
     <aside 
       aria-label="Thông báo khách hàng tương tác thời gian thực"
-      className="fixed bottom-6 right-6 z-50 max-w-sm w-full bg-slate-950 text-white rounded-2xl shadow-2xl border border-slate-800 p-4 animate-in slide-in-from-bottom-5 duration-300 select-none"
+      className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 max-w-[calc(100vw-2rem)] sm:max-w-sm w-full bg-slate-950 text-white rounded-2xl shadow-2xl border border-slate-800 p-4 animate-in slide-in-from-bottom-5 duration-300 select-none"
     >
       
       {/* Toast Header */}

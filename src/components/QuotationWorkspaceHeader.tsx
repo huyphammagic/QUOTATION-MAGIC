@@ -148,7 +148,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
         </div>
 
         {/* Primary Action Buttons */}
-        <div className="flex items-center flex-wrap gap-2 justify-end shrink-0">
+        <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 sm:flex-wrap lg:justify-end shrink-0">
           {/* Decision / What-If */}
           <button
             type="button"
@@ -269,12 +269,12 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
       </div>
 
       {/* Segmented View Mode Tabs */}
-      <div className="flex items-center justify-between border-t border-slate-100 pt-2.5">
-        <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl">
+      <div className="flex items-center justify-between border-t border-slate-100 pt-2.5 overflow-x-auto max-w-full">
+        <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl overflow-x-auto max-w-full">
           <button
             type="button"
             onClick={() => onTabChange('DETAILS')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'DETAILS'
                 ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                 : 'text-slate-600 hover:text-slate-900'
@@ -287,7 +287,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
           <button
             type="button"
             onClick={() => onTabChange('TERMS')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'TERMS'
                 ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                 : 'text-slate-600 hover:text-slate-900'
@@ -300,7 +300,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
           <button
             type="button"
             onClick={() => onTabChange('COMMUNICATION')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'COMMUNICATION'
                 ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                 : 'text-slate-600 hover:text-slate-900'
@@ -313,7 +313,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
           <button
             type="button"
             onClick={() => onTabChange('ALL')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'ALL'
                 ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                 : 'text-slate-600 hover:text-slate-900'

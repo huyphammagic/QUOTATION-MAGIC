@@ -171,11 +171,11 @@ export const LiveEngagementRadarModal: React.FC<LiveEngagementRadarModalProps> =
 
         {/* Filter and Search Bar */}
         <div className="p-3.5 border-b border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900 shrink-0">
-          <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
+          <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto max-w-full pb-0.5">
             <button
               type="button"
               onClick={() => setFilterTab('ALL')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
                 filterTab === 'ALL'
                   ? 'bg-slate-800 text-white font-semibold'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -187,7 +187,7 @@ export const LiveEngagementRadarModal: React.FC<LiveEngagementRadarModalProps> =
             <button
               type="button"
               onClick={() => setFilterTab('ACTIVE_NOW')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
                 filterTab === 'ACTIVE_NOW'
                   ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800 font-semibold'
                   : 'text-slate-400 hover:text-emerald-300'
@@ -200,7 +200,7 @@ export const LiveEngagementRadarModal: React.FC<LiveEngagementRadarModalProps> =
             <button
               type="button"
               onClick={() => setFilterTab('HOT')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
                 filterTab === 'HOT'
                   ? 'bg-amber-950/80 text-amber-300 border border-amber-800 font-semibold'
                   : 'text-slate-400 hover:text-amber-300'
@@ -213,7 +213,7 @@ export const LiveEngagementRadarModal: React.FC<LiveEngagementRadarModalProps> =
             <button
               type="button"
               onClick={() => setFilterTab('PDF_DOWNLOADED')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
                 filterTab === 'PDF_DOWNLOADED'
                   ? 'bg-blue-950/80 text-blue-300 border border-blue-800 font-semibold'
                   : 'text-slate-400 hover:text-blue-300'
@@ -225,7 +225,7 @@ export const LiveEngagementRadarModal: React.FC<LiveEngagementRadarModalProps> =
             <button
               type="button"
               onClick={() => setFilterTab('SIGNATURE_OPENED')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
                 filterTab === 'SIGNATURE_OPENED'
                   ? 'bg-purple-950/80 text-purple-300 border border-purple-800 font-semibold'
                   : 'text-slate-400 hover:text-purple-300'

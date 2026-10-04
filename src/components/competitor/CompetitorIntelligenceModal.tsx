@@ -194,12 +194,12 @@ export const CompetitorIntelligenceModal: React.FC<CompetitorIntelligenceModalPr
         </div>
 
         {/* Tab Navigation */}
-        <div className="px-6 bg-slate-50 border-b border-slate-200 flex items-center justify-between overflow-x-auto">
-          <div className="flex space-x-1">
+        <div className="px-6 bg-slate-50 border-b border-slate-200 flex items-center justify-between overflow-x-auto max-w-full">
+          <div className="flex space-x-1 overflow-x-auto max-w-full pb-0.5">
             <button
               type="button"
               onClick={() => setActiveTab('SIMULATOR')}
-              className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
+              className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                 activeTab === 'SIMULATOR'
                   ? 'border-indigo-600 text-indigo-700 bg-white shadow-2xs'
                   : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
@@ -211,7 +211,7 @@ export const CompetitorIntelligenceModal: React.FC<CompetitorIntelligenceModalPr
             <button
               type="button"
               onClick={() => setActiveTab('BENCHMARKS')}
-              className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
+              className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                 activeTab === 'BENCHMARKS'
                   ? 'border-indigo-600 text-indigo-700 bg-white shadow-2xs'
                   : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
@@ -223,7 +223,7 @@ export const CompetitorIntelligenceModal: React.FC<CompetitorIntelligenceModalPr
             <button
               type="button"
               onClick={() => setActiveTab('BATTLECARDS')}
-              className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
+              className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                 activeTab === 'BATTLECARDS'
                   ? 'border-indigo-600 text-indigo-700 bg-white shadow-2xs'
                   : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
@@ -235,7 +235,7 @@ export const CompetitorIntelligenceModal: React.FC<CompetitorIntelligenceModalPr
             <button
               type="button"
               onClick={() => setActiveTab('WIN_LOSS_LOG')}
-              className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
+              className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                 activeTab === 'WIN_LOSS_LOG'
                   ? 'border-indigo-600 text-indigo-700 bg-white shadow-2xs'
                   : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'

@@ -299,7 +299,7 @@ export const SmartRfqInboxModal: React.FC<SmartRfqInboxModalProps> = ({
                   <button
                     key={tab}
                     onClick={() => setStatusFilter(tab)}
-                    className={`px-2.5 py-1 font-bold whitespace-nowrap transition-colors ${
+                    className={`px-2.5 py-1 font-bold whitespace-nowrap shrink-0 transition-colors ${
                       statusFilter === tab
                         ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'

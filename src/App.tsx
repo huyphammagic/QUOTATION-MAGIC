@@ -2094,9 +2094,9 @@ export default function App() {
             
             {/* Toast Alert */}
             {toastMessage && (
-              <div className="fixed bottom-12 right-6 z-50 bg-slate-900 text-white font-medium text-xs px-4 py-2.5 rounded-xl shadow-xl border border-slate-700 flex items-center space-x-2 animate-bounce">
-                <Check className="w-4 h-4 text-emerald-400" />
-                <span>{toastMessage}</span>
+              <div className="fixed bottom-4 right-4 sm:bottom-12 sm:right-6 z-50 max-w-[calc(100vw-2rem)] bg-slate-900 text-white font-medium text-xs px-4 py-2.5 rounded-xl shadow-xl border border-slate-700 flex items-center space-x-2">
+                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="truncate">{toastMessage}</span>
               </div>
             )}
 
