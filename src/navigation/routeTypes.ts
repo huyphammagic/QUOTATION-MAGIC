@@ -25,6 +25,10 @@ export type AppRouteId =
   | 'customer_reengagement'
   | 'validity_surcharge_radar'
   | 'dem_det_port_radar'
+  | 'golden_hour_radar'
+  | 'concession_guard'
+  | 'enterprise_tender_engine'
+  | 'customer_dna_power_map'
   | 'opportunity_radar'
   | 'decision_workspace'
   // Pricing

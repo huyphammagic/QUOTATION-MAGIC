@@ -127,6 +127,10 @@ const CompetitorIntelligenceModal = lazyWithRetry(() => import('./components/com
 const CustomerReengagementRadarModal = lazyWithRetry(() => import('./components/reengagement/CustomerReengagementRadarModal').then(m => ({ default: m.CustomerReengagementRadarModal })), 'CustomerReengagementRadarModal');
 const RateValiditySurchargeModal = lazyWithRetry(() => import('./components/validity/RateValiditySurchargeModal').then(m => ({ default: m.RateValiditySurchargeModal })), 'RateValiditySurchargeModal');
 const DemDetPortRiskModal = lazyWithRetry(() => import('./components/demdet/DemDetPortRiskModal').then(m => ({ default: m.DemDetPortRiskModal })), 'DemDetPortRiskModal');
+const GoldenHourFollowUpModal = lazyWithRetry(() => import('./components/goldenHour/GoldenHourFollowUpModal').then(m => ({ default: m.GoldenHourFollowUpModal })), 'GoldenHourFollowUpModal');
+const SmartConcessionModal = lazyWithRetry(() => import('./components/concession/SmartConcessionModal').then(m => ({ default: m.SmartConcessionModal })), 'SmartConcessionModal');
+const EnterpriseTenderModal = lazyWithRetry(() => import('./components/tender/EnterpriseTenderModal').then(m => ({ default: m.EnterpriseTenderModal })), 'EnterpriseTenderModal');
+const CustomerDnaPowerMapModal = lazyWithRetry(() => import('./components/crm/CustomerDnaPowerMapModal').then(m => ({ default: m.CustomerDnaPowerMapModal })), 'CustomerDnaPowerMapModal');
 import { LiveLeadToastNotifier } from './components/telemetry/LiveLeadToastNotifier';
 import { subscribeToLiveEngagements } from './services/telemetry/customerEngagementService';
 import { QuotationEngagementSession } from './types/customerEngagement';
@@ -433,6 +437,18 @@ export default function App() {
   // Phase 60: AI Demurrage & Detention & Port Congestion Radar (Lựa Chọn 4)
   const [isDemDetPortOpen, setIsDemDetPortOpen] = useState(false);
 
+  // Phase 61: Golden Hour Smart Follow-Up & Intent Trigger (Gợi Ý 4)
+  const [isGoldenHourRadarOpen, setIsGoldenHourRadarOpen] = useState(false);
+
+  // Phase 62: Smart Concession & Margin Floor Guard (Gợi Ý 5)
+  const [isConcessionGuardOpen, setIsConcessionGuardOpen] = useState(false);
+
+  // Phase 63: Enterprise Multi-Lane RFQ & Portfolio Tender Engine (Chức Năng 1)
+  const [isEnterpriseTenderOpen, setIsEnterpriseTenderOpen] = useState(false);
+
+  // Phase 64: Customer Logistics DNA & Buying Center Power Map (KYS 360°)
+  const [isCustomerDnaOpen, setIsCustomerDnaOpen] = useState(false);
+
   const handleOpenDealCloser = (target?: QuoteData | null) => {
     const targetQuote = target || quote || (savedQuotes.length > 0 ? savedQuotes[0] : null);
     setSelectedClosingQuote(targetQuote);
@@ -684,6 +700,18 @@ export default function App() {
         break;
       case 'dem_det_port_radar':
         setIsDemDetPortOpen(true);
+        break;
+      case 'golden_hour_radar':
+        setIsGoldenHourRadarOpen(true);
+        break;
+      case 'concession_guard':
+        setIsConcessionGuardOpen(true);
+        break;
+      case 'enterprise_tender_engine':
+        setIsEnterpriseTenderOpen(true);
+        break;
+      case 'customer_dna_power_map':
+        setIsCustomerDnaOpen(true);
         break;
       case 'opportunity_radar':
         setIsOpportunityRadarOpen(true);
@@ -2019,6 +2047,10 @@ export default function App() {
           onOpenCustomerReengagement={() => setIsReengagementRadarOpen(true)}
           onOpenValiditySurcharge={() => setIsValiditySurchargeOpen(true)}
           onOpenDemDetPort={() => setIsDemDetPortOpen(true)}
+          onOpenGoldenHourRadar={() => setIsGoldenHourRadarOpen(true)}
+          onOpenConcessionGuard={() => setIsConcessionGuardOpen(true)}
+          onOpenEnterpriseTender={() => setIsEnterpriseTenderOpen(true)}
+          onOpenCustomerDna={() => setIsCustomerDnaOpen(true)}
           dormantCustomersCount={3}
           activeEngagementsCount={liveEngagementSessions.filter(s => s.isCurrentlyActive).length}
           onOpenOpportunityRadar={() => navigateToRoute('opportunity_radar')}
@@ -2110,8 +2142,10 @@ export default function App() {
             
             {/* Toast Alert */}
             {toastMessage && (
-              <div className="fixed bottom-4 right-4 sm:bottom-12 sm:right-6 z-50 max-w-[calc(100vw-2rem)] bg-slate-900 text-white font-medium text-xs px-4 py-2.5 rounded-xl shadow-xl border border-slate-700 flex items-center space-x-2">
-                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+              <div className="fixed bottom-4 right-4 sm:bottom-10 sm:right-8 z-50 max-w-[calc(100vw-2rem)] bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md text-white font-medium text-xs px-4 py-3 rounded-2xl shadow-2xl border border-slate-700/80 flex items-center space-x-2.5 animate-in fade-in slide-in-from-bottom-4 duration-200">
+                <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                  <Check className="w-3 h-3" />
+                </div>
                 <span className="truncate">{toastMessage}</span>
               </div>
             )}
@@ -2133,6 +2167,10 @@ export default function App() {
               onOpenCustomerReengagement={() => setIsReengagementRadarOpen(true)}
               onOpenValiditySurcharge={() => setIsValiditySurchargeOpen(true)}
               onOpenDemDetPort={() => setIsDemDetPortOpen(true)}
+              onOpenGoldenHourRadar={() => setIsGoldenHourRadarOpen(true)}
+              onOpenConcessionGuard={() => setIsConcessionGuardOpen(true)}
+              onOpenEnterpriseTender={() => setIsEnterpriseTenderOpen(true)}
+              onOpenCustomerDna={() => setIsCustomerDnaOpen(true)}
               isSaving={isAutoSaving}
               lastSavedAt={lastAutoSaveTime}
             />
@@ -3245,6 +3283,113 @@ export default function App() {
             defaultCarrierCode={quote.shipment?.carrier?.toUpperCase().includes('ONE') ? 'ONE_LINE' : quote.shipment?.carrier?.toUpperCase().includes('COSCO') ? 'COSCO' : 'MAERSK'}
             defaultPortCode={quote.shipment?.pol?.toUpperCase().includes('HẢI PHÒNG') ? 'VNHPH' : 'VNCLI'}
             defaultContainerType={quote.shipment?.containerType?.includes('20') ? '20GP' : '40HC'}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 61: Golden Hour Smart Follow-Up & Intent Trigger Modal (Gợi Ý 4) */}
+      {isGoldenHourRadarOpen && (
+        <Suspense fallback={null}>
+          <GoldenHourFollowUpModal
+            isOpen={isGoldenHourRadarOpen}
+            onClose={() => setIsGoldenHourRadarOpen(false)}
+            onSelectQuoteToOpen={(selectedQuoteId) => {
+              const matched = savedQuotes.find(q => q.id === selectedQuoteId);
+              if (matched) {
+                setQuote(matched);
+                showToast(`⚡ Đã mở báo giá ${matched.quoteNumber}!`);
+              }
+              setIsGoldenHourRadarOpen(false);
+            }}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 62: Smart Concession & Margin Floor Guard Modal (Gợi Ý 5) */}
+      {isConcessionGuardOpen && (
+        <Suspense fallback={null}>
+          <SmartConcessionModal
+            isOpen={isConcessionGuardOpen}
+            onClose={() => setIsConcessionGuardOpen(false)}
+            currentQuote={quote}
+            onApplyConcessionToQuote={(newFreightSell, tradeOffSummary) => {
+              setQuote(prev => {
+                const updatedItems = prev.items.map(it => {
+                  if (it.category === 'FREIGHT') {
+                    const qty = it.quantity || 1;
+                    const isUsd = it.currency === 'USD';
+                    const unitPrice = newFreightSell;
+                    const amountUsd = isUsd ? unitPrice * qty : (unitPrice * qty) / (prev.exchangeRate || 25400);
+                    const amountVnd = !isUsd ? unitPrice * qty : unitPrice * qty * (prev.exchangeRate || 25400);
+                    const costTotUsd = it.costTotalUsd || 0;
+                    return {
+                      ...it,
+                      unitPrice,
+                      amountUsd,
+                      amountVnd,
+                      profitUsd: amountUsd - costTotUsd,
+                      profitVnd: amountVnd - (it.costTotalVnd || 0),
+                      marginPercent: amountUsd > 0 ? ((amountUsd - costTotUsd) / amountUsd) * 100 : 0
+                    };
+                  }
+                  return it;
+                });
+                return {
+                  ...prev,
+                  items: updatedItems,
+                  terms: {
+                    ...prev.terms,
+                    exclusionsNotes: `${prev.terms.exclusionsNotes ? `${prev.terms.exclusionsNotes}\n` : ''}[ĐIỀU KHOẢN ĐỔI TRÁC]: ${tradeOffSummary}`
+                  },
+                  updatedDate: new Date().toISOString().split('T')[0]
+                };
+              });
+              showToast(`⚡ Đã áp dụng phương án đổi trác thành công! Giá cước: $${newFreightSell}`);
+              setIsConcessionGuardOpen(false);
+            }}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 63: Enterprise Multi-Lane RFQ & Portfolio Tender Modal (Chức Năng 1) */}
+      {isEnterpriseTenderOpen && (
+        <Suspense fallback={null}>
+          <EnterpriseTenderModal
+            isOpen={isEnterpriseTenderOpen}
+            onClose={() => setIsEnterpriseTenderOpen(false)}
+            onLoadTenderToWorkspace={(masterQuote) => {
+              setQuote(masterQuote);
+              setSavedQuotes(prev => [masterQuote, ...prev.filter(q => q.id !== masterQuote.id)]);
+              showToast(`⚡ Đã nạp thành công Báo Giá Master từ gói thầu ${masterQuote.quoteNumber}!`);
+              setIsEnterpriseTenderOpen(false);
+            }}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 64: Customer Logistics DNA & Buying Center Power Map Modal (KYS 360°) */}
+      {isCustomerDnaOpen && (
+        <Suspense fallback={null}>
+          <CustomerDnaPowerMapModal
+            isOpen={isCustomerDnaOpen}
+            onClose={() => setIsCustomerDnaOpen(false)}
+            initialCustomerName={quote?.customer?.companyName || (quote as any)?.customerName}
+            onApplyPlaybookToQuote={(playbook) => {
+              if (quote) {
+                const updatedNotes = quote.terms?.exclusionsNotes 
+                  ? `${quote.terms.exclusionsNotes}\n\n[CHIẾN THUẬT KYS CHỐT DEAL]: ${playbook.closingTactic}\nCam kết: ${playbook.powerValueProps.join('; ')}`
+                  : `[CHIẾN THUẬT KYS CHỐT DEAL]: ${playbook.closingTactic}\nCam kết: ${playbook.powerValueProps.join('; ')}`;
+                setQuote(prev => ({
+                  ...prev,
+                  terms: {
+                    ...prev.terms,
+                    exclusionsNotes: updatedNotes
+                  }
+                }));
+                showToast(`🧬 Đã áp dụng Playbook KYS vào điều khoản báo giá ${quote.quoteNumber}!`);
+              }
+              setIsCustomerDnaOpen(false);
+            }}
           />
         </Suspense>
       )}

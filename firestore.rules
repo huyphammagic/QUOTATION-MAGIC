@@ -474,6 +474,27 @@ service cloud.firestore {
       allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
 
+    // Phase 61: Golden Hour Smart Follow-Up & Intent Events (Gợi Ý 4)
+    match /goldenHourLeadEvents/{eventId} {
+      allow read: if isResourceMember();
+      allow create, update: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    // Phase 62: Smart Concession Simulations & Margin Guard (Gợi Ý 5)
+    match /concessionSimulations/{simId} {
+      allow read: if isResourceMember();
+      allow create, update: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
+    // Phase 63: Enterprise Multi-Lane RFQ & Portfolio Tenders (Chức Năng 1)
+    match /enterpriseTenders/{tenderId} {
+      allow read: if isResourceMember();
+      allow create, update: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+
     // =========================================================================
     // 5. SUPPLIERS, CARRIERS, RATE APPROVALS & CONTRACTS
     // =========================================================================
@@ -704,6 +725,12 @@ service cloud.firestore {
       allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
     match /decisionScenarios/{scenarioId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canCreateQuotes(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+    match /customerDnaProfiles/{profileId} {
       allow read: if isResourceMember();
       allow create: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
       allow update: if isResourceMember() && preservesCompanyId() && canCreateQuotes(resource.data.companyId);

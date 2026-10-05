@@ -58,7 +58,9 @@ import {
   Award,
   Inbox,
   Swords,
-  Flame
+  Flame,
+  Scale,
+  Dna
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -112,6 +114,10 @@ export interface SidebarProps {
   onOpenCustomerReengagement?: () => void;
   onOpenValiditySurcharge?: () => void;
   onOpenDemDetPort?: () => void;
+  onOpenGoldenHourRadar?: () => void;
+  onOpenConcessionGuard?: () => void;
+  onOpenEnterpriseTender?: () => void;
+  onOpenCustomerDna?: () => void;
   dormantCustomersCount?: number;
   activeEngagementsCount?: number;
   exceptionsCount?: number;
@@ -128,6 +134,7 @@ export interface SidebarProps {
 
 export type SidebarGroupKey = 
   | 'quotation' 
+  | 'radar'
   | 'operations' 
   | 'pricing' 
   | 'documents' 
@@ -195,6 +202,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenCustomerReengagement,
   onOpenValiditySurcharge,
   onOpenDemDetPort,
+  onOpenGoldenHourRadar,
+  onOpenConcessionGuard,
+  onOpenEnterpriseTender,
+  onOpenCustomerDna,
   dormantCustomersCount = 3,
   activeEngagementsCount = 0,
   shipmentsCount = 0,
@@ -236,8 +247,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ? saved 
       : { 
           quotation: true, 
-          operations: true, 
-          pricing: true, 
+          radar: true,
+          operations: false, 
+          pricing: false, 
           documents: false, 
           masterData: false, 
           analytics: false, 
@@ -361,7 +373,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Navigation Items - Structured for Enterprise Logistics
   const allNavItems: NavItem[] = [
-    // === 1. BÁO GIÁ & THƯƠNG MẠI (QUOTATION & COMMERCIAL) ===
+    // === 1. BÁO GIÁ & ĐƠN HÀNG (QUOTATIONS & ORDERS) ===
     {
       id: 'smart_quotation_workspace',
       label: activeLang === 'vi' ? 'Bàn Làm Việc Báo Giá' : 'Quotation Workbench',
@@ -405,38 +417,49 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: sentCount > 0 ? sentCount : null,
       badgeTone: 'emerald',
     },
+
+    // === 2. TRÍ TUỆ BÁN HÀNG & RADAR AI (SALES INTELLIGENCE & RADARS) ===
     {
-      id: 'rfq_inbox',
-      label: activeLang === 'vi' ? 'Hộp Thư RFQ & Tạo Giá 5s' : 'Smart RFQ Inbox (5s)',
-      icon: Inbox,
-      group: 'quotation',
-      action: () => onOpenRfqInbox && onOpenRfqInbox(),
-      badge: '3 mới',
-      badgeTone: 'emerald',
+      id: 'customer_dna_power_map',
+      label: activeLang === 'vi' ? 'Giải Mã Khách Hàng (DNA & Map)' : 'Customer DNA & Power Map',
+      icon: Dna,
+      group: 'radar',
+      action: () => onOpenCustomerDna && onOpenCustomerDna(),
+      badge: 'KYS 360°',
+      badgeTone: 'sky',
     },
     {
-      id: 'engagement_radar',
-      label: activeLang === 'vi' ? 'Radar Khách Hàng (Live)' : 'Live Engagement Radar',
-      icon: Radar,
-      group: 'quotation',
-      action: () => onOpenEngagementRadar && onOpenEngagementRadar(),
-      badge: activeEngagementsCount > 0 ? `${activeEngagementsCount} online` : undefined,
-      badgeTone: activeEngagementsCount > 0 ? 'emerald' : 'default',
+      id: 'golden_hour_radar',
+      label: activeLang === 'vi' ? 'Bắt Nhịp Giờ Vàng (Gọi Điện)' : 'Golden Hour Closer',
+      icon: Flame,
+      group: 'radar',
+      action: () => onOpenGoldenHourRadar && onOpenGoldenHourRadar(),
+      badge: 'Giờ Vàng 🔥',
+      badgeTone: 'rose',
     },
     {
-      id: 'deal_closing_accelerator',
-      label: activeLang === 'vi' ? 'Trợ Lý Chốt Deal (Gói B)' : 'Deal Closer Suite',
-      icon: Award,
-      group: 'quotation',
-      action: () => onOpenDealCloser && onOpenDealCloser(),
-      badge: 'Hot Deal',
+      id: 'enterprise_tender_engine',
+      label: activeLang === 'vi' ? 'Đấu Thầu Nhà Máy (Tender)' : 'Factory Tender Matrix',
+      icon: Building2,
+      group: 'radar',
+      action: () => onOpenEnterpriseTender && onOpenEnterpriseTender(),
+      badge: 'Tender 🏭',
+      badgeTone: 'sky',
+    },
+    {
+      id: 'concession_guard',
+      label: activeLang === 'vi' ? 'Đổi Trác Điều Khoản & Sàn Lãi' : 'Concession & Margin Guard',
+      icon: Scale,
+      group: 'radar',
+      action: () => onOpenConcessionGuard && onOpenConcessionGuard(),
+      badge: 'Đổi Trác ⚖️',
       badgeTone: 'emerald',
     },
     {
       id: 'competitor_radar',
       label: activeLang === 'vi' ? 'Radar Giá Đối Thủ & Win-Rate' : 'Competitor & Win-Rate',
       icon: Swords,
-      group: 'quotation',
+      group: 'radar',
       action: () => onOpenCompetitorRadar && onOpenCompetitorRadar(),
       badge: 'P50 Sweet',
       badgeTone: 'sky',
@@ -445,52 +468,47 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'customer_reengagement',
       label: activeLang === 'vi' ? 'Đánh Thức Khách Cũ (Chu Kỳ)' : 'Shipper Re-engagement',
       icon: UserCheck,
-      group: 'quotation',
+      group: 'radar',
       action: () => onOpenCustomerReengagement && onOpenCustomerReengagement(),
       badge: dormantCustomersCount > 0 ? `${dormantCustomersCount} cần gọi` : undefined,
       badgeTone: 'amber',
     },
     {
-      id: 'validity_surcharge_radar',
-      label: activeLang === 'vi' ? 'Hiệu Lực Báo Giá & Phụ Phí GRI' : 'Rate Validity & GRI Radar',
-      icon: Flame,
-      group: 'quotation',
-      action: () => onOpenValiditySurcharge && onOpenValiditySurcharge(),
-      badge: 'GRI Alert',
-      badgeTone: 'rose',
+      id: 'rfq_inbox',
+      label: activeLang === 'vi' ? 'Hộp Thư RFQ AI (5 Giây)' : 'Smart RFQ Inbox (5s)',
+      icon: Inbox,
+      group: 'radar',
+      action: () => onOpenRfqInbox && onOpenRfqInbox(),
+      badge: '3 mới',
+      badgeTone: 'emerald',
     },
     {
-      id: 'dem_det_port_radar',
-      label: activeLang === 'vi' ? 'Bộ Tính DEM/DET & Kẹt Cảng' : 'DEM/DET & Port Risk Radar',
-      icon: Anchor,
-      group: 'quotation',
-      action: () => onOpenDemDetPort && onOpenDemDetPort(),
-      badge: 'Free-Time AI',
-      badgeTone: 'sky',
+      id: 'deal_closing_accelerator',
+      label: activeLang === 'vi' ? 'Trợ Lý Chốt Deal Tốc Độ' : 'Deal Closer Suite',
+      icon: Award,
+      group: 'radar',
+      action: () => onOpenDealCloser && onOpenDealCloser(),
+      badge: 'Hot Deal',
+      badgeTone: 'emerald',
+    },
+    {
+      id: 'engagement_radar',
+      label: activeLang === 'vi' ? 'Radar Khách Trực Tuyến (Live)' : 'Live Engagement Radar',
+      icon: Radar,
+      group: 'radar',
+      action: () => onOpenEngagementRadar && onOpenEngagementRadar(),
+      badge: activeEngagementsCount > 0 ? `${activeEngagementsCount} online` : undefined,
+      badgeTone: activeEngagementsCount > 0 ? 'emerald' : 'default',
     },
     {
       id: 'opportunity_radar',
       label: activeLang === 'vi' ? 'Radar Cơ Hội Kinh Doanh' : 'Opportunity Radar',
       icon: Radar,
-      group: 'quotation',
+      group: 'radar',
       action: () => onOpenOpportunityRadar && onOpenOpportunityRadar(),
     },
-    {
-      id: 'decision_workspace',
-      label: activeLang === 'vi' ? 'Phòng Quyết Định & Kịch Bản' : 'Decision Workspace',
-      icon: SlidersHorizontal,
-      group: 'quotation',
-      action: () => onOpenDecisionWorkspace && onOpenDecisionWorkspace(),
-    },
-    {
-      id: 'quotation_followup',
-      label: activeLang === 'vi' ? 'Lịch Chăm Sóc Khách' : 'Follow-up Schedule',
-      icon: Calendar,
-      group: 'quotation',
-      action: () => onOpenFollowUps && onOpenFollowUps(),
-    },
 
-    // === 2. ĐIỀU HÀNH & LÔ HÀNG (OPERATIONS & CONTROL TOWER) ===
+    // === 3. VẬN HÀNH & RỦI RO CẢNG (OPERATIONS & LOGISTICS RISK) ===
     {
       id: 'ops_control_tower',
       label: activeLang === 'vi' ? 'Tháp Điều Hành Logistics' : 'Control Tower',
@@ -499,6 +517,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
       action: () => onOpenControlTower && onOpenControlTower(),
       badge: exceptionsCount > 0 ? `${exceptionsCount} cảnh báo` : undefined,
       badgeTone: exceptionsCount > 0 ? 'rose' : 'default',
+    },
+    {
+      id: 'ops_shipments',
+      label: activeLang === 'vi' ? 'Điều Hành & Lô Hàng' : 'Shipment Operations',
+      icon: Package,
+      group: 'operations',
+      action: () => onOpenShipmentWorkspace && onOpenShipmentWorkspace(),
+      badge: shipmentsCount > 0 ? shipmentsCount : undefined,
+      badgeTone: 'sky',
+    },
+    {
+      id: 'ops_action_center',
+      label: activeLang === 'vi' ? 'Hạn Chót & Hành Động' : 'Deadline & Action Center',
+      icon: Clock,
+      group: 'operations',
+      action: () => onOpenActionCenter && onOpenActionCenter(),
+      badge: deadlinesCount > 0 ? `${deadlinesCount} việc` : undefined,
+      badgeTone: deadlinesCount > 0 ? 'amber' : 'default',
+    },
+    {
+      id: 'dem_det_port_radar',
+      label: activeLang === 'vi' ? 'Bộ Tính DEM/DET & Kẹt Cảng' : 'DEM/DET & Port Risk Radar',
+      icon: Anchor,
+      group: 'operations',
+      action: () => onOpenDemDetPort && onOpenDemDetPort(),
+      badge: 'Free-Time AI',
+      badgeTone: 'sky',
+    },
+    {
+      id: 'validity_surcharge_radar',
+      label: activeLang === 'vi' ? 'Hiệu Lực Báo Giá & Phụ Phí GRI' : 'Rate Validity & GRI Radar',
+      icon: Flame,
+      group: 'operations',
+      action: () => onOpenValiditySurcharge && onOpenValiditySurcharge(),
+      badge: 'GRI Alert',
+      badgeTone: 'rose',
     },
     {
       id: 'ops_shipments',
@@ -570,6 +624,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       restricted: !isAdminOrManager,
       requiredRoleDesc: 'Manager',
     },
+    {
+      id: 'decision_workspace',
+      label: activeLang === 'vi' ? 'Phòng Quyết Định & Kịch Bản' : 'Decision Workspace',
+      icon: SlidersHorizontal,
+      group: 'pricing',
+      action: () => onOpenDecisionWorkspace && onOpenDecisionWorkspace(),
+    },
 
     // === 4. TÀI LIỆU & ẤN BẢN (DOCUMENTS & OUTPUT) ===
     {
@@ -616,6 +677,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       group: 'masterData',
       action: onOpenCustomers,
       badge: customersCount > 0 ? customersCount : null,
+    },
+    {
+      id: 'quotation_followup',
+      label: activeLang === 'vi' ? 'Lịch Chăm Sóc Khách' : 'Follow-up Schedule',
+      icon: Calendar,
+      group: 'masterData',
+      action: () => onOpenFollowUps && onOpenFollowUps(),
     },
     {
       id: 'master_suppliers',
@@ -762,15 +830,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }[] = [
     { 
       key: 'quotation', 
-      title: activeLang === 'vi' ? 'Báo giá & Thương mại' : 'Quotation & Sales', 
+      title: activeLang === 'vi' ? 'Báo giá & Đơn hàng' : 'Quotations & Orders', 
       icon: FileText,
       quickCount: savedQuotes.length > 0 ? savedQuotes.length : undefined
     },
     { 
+      key: 'radar', 
+      title: activeLang === 'vi' ? 'Trí tuệ Bán hàng (AI)' : 'Sales Intelligence & Radars', 
+      icon: Sparkles,
+      quickCount: 'AI ⚡'
+    },
+    { 
       key: 'operations', 
-      title: activeLang === 'vi' ? 'Điều hành & Lô hàng' : 'Operations & Logistics', 
+      title: activeLang === 'vi' ? 'Vận hành & Rủi ro cảng' : 'Operations & Logistics', 
       icon: Ship,
-      quickCount: (exceptionsCount + deadlinesCount > 0) ? `${exceptionsCount + deadlinesCount} lưu ý` : undefined
+      quickCount: (exceptionsCount + deadlinesCount > 0) ? `${exceptionsCount + deadlinesCount} việc` : undefined
     },
     { 
       key: 'pricing', 
@@ -887,20 +961,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="button"
             onClick={() => handleAction(onNewQuote)}
             className={`w-full flex items-center ${
-              isCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2'
-            } rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium shadow-sm transition-all duration-150 cursor-pointer group active:scale-[0.99]`}
+              isCollapsed ? 'justify-center p-2.5' : 'justify-between px-3.5 py-2.5'
+            } rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-sm shadow-indigo-600/25 btn-tactile cursor-pointer group`}
             title={isCollapsed ? (activeLang === 'vi' ? 'Tạo Báo Giá Mới (Ctrl+N)' : 'Create Quotation (Ctrl+N)') : undefined}
           >
             <div className="flex items-center space-x-2 min-w-0">
               <Plus className="w-4 h-4 text-white shrink-0 group-hover:rotate-90 transition-transform duration-200" />
               {!isCollapsed && (
-                <span className="text-xs font-semibold tracking-tight truncate">
+                <span className="text-xs font-bold tracking-tight truncate">
                   {activeLang === 'vi' ? 'Tạo Báo Giá Mới' : 'Create Quotation'}
                 </span>
               )}
             </div>
             {!isCollapsed && (
-              <span className="text-[10px] text-emerald-100/90 font-mono px-1.5 py-0.5 rounded bg-emerald-700/60 text-xs">
+              <span className="text-[10px] text-indigo-100 font-mono px-1.5 py-0.5 rounded bg-indigo-700/60 text-xs">
                 Ctrl+N
               </span>
             )}
@@ -917,14 +991,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={activeLang === 'vi' ? 'Tìm chức năng (Ctrl+K)...' : 'Search features (Ctrl+K)...'}
-                className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-900/80 border border-slate-800 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-slate-600 focus:bg-slate-900 transition-colors"
+                placeholder={activeLang === 'vi' ? 'Tìm nhanh chức năng (Ctrl+K)...' : 'Search features (Ctrl+K)...'}
+                className="w-full pl-8 pr-7 py-2 text-xs bg-slate-900/90 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/60 focus:bg-slate-900 transition-all"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-0.5 cursor-pointer"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-0.5 cursor-pointer btn-tactile"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -1054,27 +1128,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <button
                       type="button"
                       onClick={() => toggleGroup(group.key)}
-                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-colors text-left cursor-pointer ${
+                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-[11px] font-semibold transition-all text-left cursor-pointer btn-tactile ${
                         hasActiveChild 
-                          ? 'text-white' 
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
+                          ? 'text-indigo-300 bg-indigo-950/20' 
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
                       }`}
                       aria-expanded={isExpanded}
                     >
-                      <div className="flex items-center space-x-2 min-w-0">
-                        <GroupIcon className={`w-3.5 h-3.5 shrink-0 ${hasActiveChild ? 'text-emerald-400' : 'text-slate-500'}`} />
+                      <div className="flex items-center space-x-2.5 min-w-0">
+                        <GroupIcon className={`w-3.5 h-3.5 shrink-0 ${hasActiveChild ? 'text-indigo-400' : 'text-slate-500'}`} />
                         <span className="truncate">{group.title}</span>
                       </div>
 
                       <div className="flex items-center space-x-1.5 shrink-0 ml-2">
                         {group.quickCount && !isExpanded && (
-                          <span className="text-[10px] px-1.5 py-0.2 rounded font-mono text-slate-400 bg-slate-900/80 border border-slate-800">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-md font-mono text-slate-400 bg-slate-900/90 border border-slate-800">
                             {group.quickCount}
                           </span>
                         )}
-                        <span className="text-slate-500">
-                          {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                        </span>
+                        <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
                       </div>
                     </button>
                   ) : (
@@ -1132,10 +1204,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         return (
                           <div
                             key={item.id}
-                            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors group ${
+                            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl transition-all duration-150 group btn-tactile ${
                               isActive 
-                                ? 'bg-slate-800 text-white font-medium border-l-2 border-emerald-400 pl-2' 
-                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
+                                ? 'bg-indigo-600/15 text-indigo-400 font-semibold border border-indigo-500/30' 
+                                : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 border border-transparent'
                             } ${item.restricted ? 'opacity-60' : ''}`}
                           >
                             <button
@@ -1149,7 +1221,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                               }}
                               className="flex-1 flex items-center space-x-2.5 min-w-0 text-left cursor-pointer"
                             >
-                              <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-emerald-400' : 'text-slate-400 group-hover:text-slate-300'}`} />
+                              <Icon className={`w-3.5 h-3.5 shrink-0 transition-transform duration-150 group-hover:scale-110 ${isActive ? 'text-indigo-400' : 'text-slate-400 group-hover:text-slate-200'}`} />
                               <span className="text-xs truncate">{item.label}</span>
                             </button>
 
