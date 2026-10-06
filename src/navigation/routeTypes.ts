@@ -29,6 +29,7 @@ export type AppRouteId =
   | 'concession_guard'
   | 'enterprise_tender_engine'
   | 'customer_dna_power_map'
+  | 'quotation_payments'
   | 'opportunity_radar'
   | 'decision_workspace'
   // Pricing
@@ -52,6 +53,7 @@ export type AppRouteId =
   | 'ops_action_center'
   | 'ops_shipments'
   | 'ops_shipment_detail'
+  | 'carrier_invoice_audit'
   | 'ops_ocean'
   | 'ops_air'
   | 'ops_trucking'

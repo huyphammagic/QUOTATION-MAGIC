@@ -28,8 +28,10 @@ import {
   TrendingUp,
   ShieldAlert,
   Zap,
-  Copy
+  Copy,
+  CreditCard
 } from 'lucide-react';
+import { PaymentStatusBadge } from './payment/PaymentStatusBadge';
 
 export type WorkspaceTab = 'DETAILS' | 'TERMS' | 'COMMUNICATION' | 'ALL';
 
@@ -53,6 +55,8 @@ interface QuotationWorkspaceHeaderProps {
   onOpenConcessionGuard?: () => void;
   onOpenEnterpriseTender?: () => void;
   onOpenCustomerDna?: () => void;
+  onOpenCarrierInvoiceAudit?: () => void;
+  onOpenQuotationPayments?: () => void;
   isSaving?: boolean;
   lastSavedAt?: string | null;
 }
@@ -77,6 +81,8 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
   onOpenConcessionGuard,
   onOpenEnterpriseTender,
   onOpenCustomerDna,
+  onOpenCarrierInvoiceAudit,
+  onOpenQuotationPayments,
   isSaving = false,
   lastSavedAt,
 }) => {
@@ -194,6 +200,15 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
 
           {getStatusBadge(quote.status)}
 
+          {/* Phase 66: Quotation Payment & Receivable Status Badge */}
+          <PaymentStatusBadge
+            status={quote.paymentStatus || 'UNPAID'}
+            outstandingBalanceUsd={quote.outstandingBalanceUsd}
+            showAmount={quote.outstandingBalanceUsd !== undefined && quote.outstandingBalanceUsd > 0}
+            size="sm"
+            onClick={onOpenQuotationPayments}
+          />
+
           <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">·</span>
 
           {/* Customer & Route Indicator */}
@@ -252,6 +267,19 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
             >
               <Flame className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 animate-pulse" />
               <span>Giờ Vàng 🔥</span>
+            </button>
+          )}
+
+          {/* Quick Highlight 3: Payment & Receivable Hub */}
+          {onOpenQuotationPayments && (
+            <button
+              type="button"
+              onClick={onOpenQuotationPayments}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50/80 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 rounded-xl shadow-2xs btn-tactile cursor-pointer transition"
+              title="Trung Tâm Kiểm Soát Thanh Toán & Thu Hồi Công Nợ Báo Giá"
+            >
+              <CreditCard className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Thu Nợ & Thanh Toán</span>
             </button>
           )}
 
@@ -488,6 +516,28 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
                         <div>
                           <div className="font-semibold text-slate-900 dark:text-slate-100">Bộ Tính DEM/DET & Cảng</div>
                           <div className="text-[10px] text-slate-400">Phí phạt lưu bãi & kẹt cảng</div>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                    </button>
+                  )}
+
+                  {onOpenCarrierInvoiceAudit && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onOpenCarrierInvoiceAudit();
+                        setIsRadarDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-6 h-6 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center">
+                          <ShieldAlert className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-slate-900 dark:text-slate-100">Đối Soát Cước & Chặn Rò Rỉ</div>
+                          <div className="text-[10px] text-slate-400">Bắt lỗi hóa đơn hãng tàu & đòi tiền (Phase 65)</div>
                         </div>
                       </div>
                       <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-500 transition-colors" />

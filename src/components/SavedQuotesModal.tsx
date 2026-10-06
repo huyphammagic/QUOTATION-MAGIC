@@ -3,7 +3,8 @@ import { QuoteData, QuoteStatus } from '../types/logistics';
 import { formatUSD, formatVND } from '../utils/formatters';
 import { exportQuoteToPdf } from '../utils/exportPdf';
 import { exportQuoteToExcel } from '../utils/exportExcel';
-import { X, Search, FileText, Copy, Trash2, Edit3, FileDown, FileSpreadsheet, ChevronLeft, ChevronRight, Loader2, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { X, Search, FileText, Copy, Trash2, Edit3, FileDown, FileSpreadsheet, ChevronLeft, ChevronRight, Loader2, SlidersHorizontal, Sparkles, CreditCard } from 'lucide-react';
+import { PaymentStatusBadge } from './payment/PaymentStatusBadge';
 
 interface SavedQuotesModalProps {
   quotes: QuoteData[];
@@ -16,6 +17,7 @@ interface SavedQuotesModalProps {
   initialStatusFilter?: string;
   onOpenDecisionWorkspace?: (quote: QuoteData) => void;
   onOpenDealCloser?: (quote: QuoteData) => void;
+  onOpenQuotationPayments?: (quoteId: string) => void;
 }
 
 export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
@@ -29,6 +31,7 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
   initialStatusFilter = 'ALL',
   onOpenDecisionWorkspace,
   onOpenDealCloser,
+  onOpenQuotationPayments,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -229,7 +232,7 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                     <select
                       value={quote.status}
                       onChange={(e) => onUpdateStatus(quote.id, e.target.value as QuoteStatus)}
-                      className="text-[10px] font-bold rounded-lg border border-slate-300 p-1 bg-white focus:outline-none"
+                      className="text-[10px] font-bold rounded-lg border border-slate-300 p-1 bg-white focus:outline-none mb-1"
                     >
                       <option value="DRAFT">DRAFT</option>
                       <option value="SENT">SENT</option>
@@ -237,6 +240,14 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                       <option value="REJECTED">REJECTED</option>
                       <option value="EXPIRED">EXPIRED</option>
                     </select>
+
+                    <div className="flex justify-center">
+                      <PaymentStatusBadge
+                        status={quote.paymentStatus || 'UNPAID'}
+                        size="sm"
+                        onClick={onOpenQuotationPayments ? () => onOpenQuotationPayments(quote.id || quote.quoteNumber) : undefined}
+                      />
+                    </div>
                   </td>
 
                   {/* Action Buttons */}
@@ -251,6 +262,17 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                       >
                         <Edit3 className="w-4 h-4" />
                       </button>
+
+                      {/* Phase 66: Quotation Payment & Receivable Hub */}
+                      {onOpenQuotationPayments && (
+                        <button
+                          onClick={() => { onOpenQuotationPayments(quote.id || quote.quoteNumber); onClose(); }}
+                          className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                          title="Kiểm Soát Thanh Toán & Thu Nợ"
+                        >
+                          <CreditCard className="w-4 h-4" />
+                        </button>
+                      )}
 
                       {/* Clone */}
                       <button

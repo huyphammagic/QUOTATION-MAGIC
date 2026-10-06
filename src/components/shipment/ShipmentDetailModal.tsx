@@ -51,6 +51,7 @@ interface ShipmentDetailModalProps {
   onClose: () => void;
   onUpdated: (updated: ShipmentRecord) => void;
   onOpenQuotation?: (quoteId: string) => void;
+  onOpenCarrierInvoiceAudit?: (shipmentId: string) => void;
   currentUser?: { uid: string; displayName?: string; email?: string };
   activeLanguage?: 'vi' | 'en';
 }
@@ -76,6 +77,7 @@ export const ShipmentDetailModal: React.FC<ShipmentDetailModalProps> = ({
   onClose,
   onUpdated,
   onOpenQuotation,
+  onOpenCarrierInvoiceAudit,
   currentUser = { uid: 'user_default', displayName: 'Logistics Operator' },
   activeLanguage = 'vi',
 }) => {
@@ -677,6 +679,38 @@ export const ShipmentDetailModal: React.FC<ShipmentDetailModalProps> = ({
           {/* TAB 5: FINANCIAL REFERENCE (PROTECTED SNAPSHOT) */}
           {activeTab === 'financial' && (
             <div className="space-y-4">
+              {/* Carrier Invoice Audit & Leakage Guard Banner */}
+              <div className="p-4 rounded-xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/60 dark:bg-rose-950/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/60 text-rose-600 dark:text-rose-300 flex items-center justify-center shrink-0">
+                    <ShieldAlert className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-bold text-rose-950 dark:text-rose-200">
+                      {activeLanguage === 'vi' ? 'Đối Soát Chi Phí Hãng Tàu & Chặn Rò Rỉ' : 'Carrier Invoice Audit & Leakage Guard'}
+                    </h5>
+                    <p className="text-2xs text-rose-700 dark:text-rose-300">
+                      {activeLanguage === 'vi' 
+                        ? 'Đối soát 3 chiều phụ phí thực tế, phát hiện bẫy tính cước lố và tự động phát hành công văn đòi tiền hãng tàu (Phase 65).' 
+                        : '3-way audit against invoiced fees, detect margin leakage and generate dispute letters.'}
+                    </p>
+                  </div>
+                </div>
+                {onOpenCarrierInvoiceAudit && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onOpenCarrierInvoiceAudit(currentShipment.id);
+                      onClose();
+                    }}
+                    className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer shrink-0"
+                  >
+                    <span>{activeLanguage === 'vi' ? 'Mở Cỗ Máy Đối Soát' : 'Audit Carrier Invoice'}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
               <div className="p-4 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/60 flex items-center gap-3">
                 <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0" />
                 <div>

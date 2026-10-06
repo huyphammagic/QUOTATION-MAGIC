@@ -736,6 +736,18 @@ service cloud.firestore {
       allow update: if isResourceMember() && preservesCompanyId() && canCreateQuotes(resource.data.companyId);
       allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
     }
+    match /carrierInvoiceAudits/{auditId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canCreateQuotes(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
+    match /quotationPayments/{paymentId} {
+      allow read: if isResourceMember();
+      allow create: if isIncomingMember() && canCreateQuotes(request.resource.data.companyId);
+      allow update: if isResourceMember() && preservesCompanyId() && canCreateQuotes(resource.data.companyId);
+      allow delete: if isResourceMember() && isCompanyAdmin(resource.data.companyId);
+    }
 
     // Default deny catch-all
     match /{document=**} {

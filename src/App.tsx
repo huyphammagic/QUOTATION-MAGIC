@@ -131,6 +131,8 @@ const GoldenHourFollowUpModal = lazyWithRetry(() => import('./components/goldenH
 const SmartConcessionModal = lazyWithRetry(() => import('./components/concession/SmartConcessionModal').then(m => ({ default: m.SmartConcessionModal })), 'SmartConcessionModal');
 const EnterpriseTenderModal = lazyWithRetry(() => import('./components/tender/EnterpriseTenderModal').then(m => ({ default: m.EnterpriseTenderModal })), 'EnterpriseTenderModal');
 const CustomerDnaPowerMapModal = lazyWithRetry(() => import('./components/crm/CustomerDnaPowerMapModal').then(m => ({ default: m.CustomerDnaPowerMapModal })), 'CustomerDnaPowerMapModal');
+const CarrierInvoiceAuditModal = lazyWithRetry(() => import('./components/carrierAudit/CarrierInvoiceAuditModal').then(m => ({ default: m.CarrierInvoiceAuditModal })), 'CarrierInvoiceAuditModal');
+const QuotationPaymentHubModal = lazyWithRetry(() => import('./components/payment/QuotationPaymentHubModal').then(m => ({ default: m.QuotationPaymentHubModal })), 'QuotationPaymentHubModal');
 import { LiveLeadToastNotifier } from './components/telemetry/LiveLeadToastNotifier';
 import { subscribeToLiveEngagements } from './services/telemetry/customerEngagementService';
 import { QuotationEngagementSession } from './types/customerEngagement';
@@ -449,6 +451,19 @@ export default function App() {
   // Phase 64: Customer Logistics DNA & Buying Center Power Map (KYS 360°)
   const [isCustomerDnaOpen, setIsCustomerDnaOpen] = useState(false);
 
+  // Phase 65: Carrier Invoice Audit & Profit Leakage Guard
+  const [isCarrierInvoiceAuditOpen, setIsCarrierInvoiceAuditOpen] = useState(false);
+  const [carrierInvoiceAuditInitialShipmentId, setCarrierInvoiceAuditInitialShipmentId] = useState<string | undefined>(undefined);
+
+  // Phase 66: Quotation Payment & Receivable Hub
+  const [isQuotationPaymentHubOpen, setIsQuotationPaymentHubOpen] = useState(false);
+  const [selectedPaymentQuoteId, setSelectedPaymentQuoteId] = useState<string | undefined>(undefined);
+
+  const handleOpenPaymentHub = (quoteId?: string) => {
+    setSelectedPaymentQuoteId(quoteId || quote?.id || quote?.quoteNumber);
+    setIsQuotationPaymentHubOpen(true);
+  };
+
   const handleOpenDealCloser = (target?: QuoteData | null) => {
     const targetQuote = target || quote || (savedQuotes.length > 0 ? savedQuotes[0] : null);
     setSelectedClosingQuote(targetQuote);
@@ -515,6 +530,11 @@ export default function App() {
     setIsOpportunityRadarOpen(false);
     setIsDecisionWorkspaceOpen(false);
     setIsEngagementRadarOpen(false);
+    setIsEnterpriseTenderOpen(false);
+    setIsCustomerDnaOpen(false);
+    setIsCarrierInvoiceAuditOpen(false);
+    setIsQuotationPaymentHubOpen(false);
+    setSelectedPaymentQuoteId(undefined);
     setIsShipmentWorkspaceOpen(false);
     setIsCreateShipmentModalOpen(false);
     setCreateShipmentFromQuote(null);
@@ -712,6 +732,12 @@ export default function App() {
         break;
       case 'customer_dna_power_map':
         setIsCustomerDnaOpen(true);
+        break;
+      case 'quotation_payments':
+        handleOpenPaymentHub(param);
+        break;
+      case 'carrier_invoice_audit':
+        setIsCarrierInvoiceAuditOpen(true);
         break;
       case 'opportunity_radar':
         setIsOpportunityRadarOpen(true);
@@ -2051,6 +2077,8 @@ export default function App() {
           onOpenConcessionGuard={() => setIsConcessionGuardOpen(true)}
           onOpenEnterpriseTender={() => setIsEnterpriseTenderOpen(true)}
           onOpenCustomerDna={() => setIsCustomerDnaOpen(true)}
+          onOpenCarrierInvoiceAudit={() => setIsCarrierInvoiceAuditOpen(true)}
+          onOpenQuotationPayments={handleOpenPaymentHub}
           dormantCustomersCount={3}
           activeEngagementsCount={liveEngagementSessions.filter(s => s.isCurrentlyActive).length}
           onOpenOpportunityRadar={() => navigateToRoute('opportunity_radar')}
@@ -2171,6 +2199,8 @@ export default function App() {
               onOpenConcessionGuard={() => setIsConcessionGuardOpen(true)}
               onOpenEnterpriseTender={() => setIsEnterpriseTenderOpen(true)}
               onOpenCustomerDna={() => setIsCustomerDnaOpen(true)}
+              onOpenCarrierInvoiceAudit={() => setIsCarrierInvoiceAuditOpen(true)}
+              onOpenQuotationPayments={() => handleOpenPaymentHub(quote.id || quote.quoteNumber)}
               isSaving={isAutoSaving}
               lastSavedAt={lastAutoSaveTime}
             />
@@ -2961,6 +2991,10 @@ export default function App() {
                     navigateToRoute('quotation_preview');
                   }
                 }}
+                onOpenCarrierInvoiceAudit={(shipmentId) => {
+                  setCarrierInvoiceAuditInitialShipmentId(shipmentId);
+                  setIsCarrierInvoiceAuditOpen(true);
+                }}
                 currentUser={{
                   uid: 'user_operator',
                   displayName: company.salesRepName || 'Logistics Operator',
@@ -3389,6 +3423,37 @@ export default function App() {
                 showToast(`🧬 Đã áp dụng Playbook KYS vào điều khoản báo giá ${quote.quoteNumber}!`);
               }
               setIsCustomerDnaOpen(false);
+            }}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 65: Carrier Invoice Audit & Profit Leakage Guard Modal */}
+      {isCarrierInvoiceAuditOpen && (
+        <Suspense fallback={null}>
+          <CarrierInvoiceAuditModal
+            isOpen={isCarrierInvoiceAuditOpen}
+            onClose={() => {
+              setIsCarrierInvoiceAuditOpen(false);
+              setCarrierInvoiceAuditInitialShipmentId(undefined);
+            }}
+            initialShipmentId={carrierInvoiceAuditInitialShipmentId}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 66: Quotation Payment & Receivable Hub Modal */}
+      {isQuotationPaymentHubOpen && (
+        <Suspense fallback={null}>
+          <QuotationPaymentHubModal
+            isOpen={isQuotationPaymentHubOpen}
+            onClose={() => setIsQuotationPaymentHubOpen(false)}
+            initialQuoteId={selectedPaymentQuoteId}
+            currentQuote={quote}
+            companyName={company?.nameVi || company?.nameEn || 'BOGI LOGISTICS & FORWARDING'}
+            companyBankInfo={company?.bankAccount || 'VIETCOMBANK - STK: 0071001234567 - CTK: CTY TNHH LOGISTICS & FORWARDING'}
+            onPaymentUpdated={(updatedRecord) => {
+              showToast(`💳 Đã cập nhật thanh toán cho báo giá ${updatedRecord.quoteNumber}: ${updatedRecord.paymentStatus}!`);
             }}
           />
         </Suspense>

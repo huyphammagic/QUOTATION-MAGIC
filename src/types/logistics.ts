@@ -323,6 +323,15 @@ export interface QuoteData {
   bankSnapshot?: QuotationBankSnapshot;
   financialSnapshot?: QuotationCompleteFinancialSnapshot;
 
+  // Phase 66: Quotation Payment & Receivable Status
+  paymentStatus?: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE' | 'REFUNDED';
+  totalPaidUsd?: number;
+  totalPaidVnd?: number;
+  outstandingBalanceUsd?: number;
+  outstandingBalanceVnd?: number;
+  creditDueDate?: string;
+  isOverdue?: boolean;
+
   _updatedAt?: any;
   _updatedBy?: string;
   _createdAt?: any;

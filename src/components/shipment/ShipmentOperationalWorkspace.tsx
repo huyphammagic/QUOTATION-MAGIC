@@ -33,7 +33,8 @@ import {
   Kanban,
   ListFilter,
   ArrowUpDown,
-  Building2
+  Building2,
+  ShieldAlert
 } from 'lucide-react';
 
 interface ShipmentOperationalWorkspaceProps {
@@ -41,6 +42,7 @@ interface ShipmentOperationalWorkspaceProps {
   customers?: CustomerInfo[];
   allQuotes?: QuoteData[];
   onOpenQuotation?: (quoteId: string) => void;
+  onOpenCarrierInvoiceAudit?: (shipmentId?: string) => void;
   currentUser?: { uid: string; displayName?: string; email?: string };
   activeLanguage?: 'vi' | 'en';
 }
@@ -63,6 +65,7 @@ export const ShipmentOperationalWorkspace: React.FC<ShipmentOperationalWorkspace
   customers = [],
   allQuotes = [],
   onOpenQuotation,
+  onOpenCarrierInvoiceAudit,
   currentUser = { uid: 'user_default', displayName: 'Logistics Operator' },
   activeLanguage = 'vi',
 }) => {
@@ -185,6 +188,17 @@ export const ShipmentOperationalWorkspace: React.FC<ShipmentOperationalWorkspace
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
+
+          {onOpenCarrierInvoiceAudit && (
+            <button
+              type="button"
+              onClick={() => onOpenCarrierInvoiceAudit()}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/70 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+            >
+              <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+              <span>{activeLanguage === 'vi' ? 'Đối Soát Cước Hãng Tàu' : 'Carrier Invoice Audit'}</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -552,6 +566,7 @@ export const ShipmentOperationalWorkspace: React.FC<ShipmentOperationalWorkspace
           onClose={() => setSelectedShipment(null)}
           onUpdated={handleUpdated}
           onOpenQuotation={onOpenQuotation}
+          onOpenCarrierInvoiceAudit={onOpenCarrierInvoiceAudit}
           currentUser={currentUser}
           activeLanguage={activeLanguage}
         />

@@ -60,7 +60,8 @@ import {
   Swords,
   Flame,
   Scale,
-  Dna
+  Dna,
+  ShieldAlert
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -118,6 +119,8 @@ export interface SidebarProps {
   onOpenConcessionGuard?: () => void;
   onOpenEnterpriseTender?: () => void;
   onOpenCustomerDna?: () => void;
+  onOpenCarrierInvoiceAudit?: () => void;
+  onOpenQuotationPayments?: (quoteId?: string) => void;
   dormantCustomersCount?: number;
   activeEngagementsCount?: number;
   exceptionsCount?: number;
@@ -206,6 +209,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenConcessionGuard,
   onOpenEnterpriseTender,
   onOpenCustomerDna,
+  onOpenCarrierInvoiceAudit,
+  onOpenQuotationPayments,
   dormantCustomersCount = 3,
   activeEngagementsCount = 0,
   shipmentsCount = 0,
@@ -417,6 +422,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: sentCount > 0 ? sentCount : null,
       badgeTone: 'emerald',
     },
+    {
+      id: 'quotation_payments',
+      label: activeLang === 'vi' ? 'Kiểm Soát Thu Nợ & Thanh Toán' : 'Payments & Receivables',
+      icon: CreditCard,
+      group: 'quotation',
+      action: () => onOpenQuotationPayments && onOpenQuotationPayments(),
+      badge: 'Công Nợ',
+      badgeTone: 'emerald',
+    },
 
     // === 2. TRÍ TUỆ BÁN HÀNG & RADAR AI (SALES INTELLIGENCE & RADARS) ===
     {
@@ -528,6 +542,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badgeTone: 'sky',
     },
     {
+      id: 'carrier_invoice_audit',
+      label: activeLang === 'vi' ? 'Đối Soát Cước & Chặn Rò Rỉ' : 'Carrier Invoice Audit & Guard',
+      icon: ShieldAlert,
+      group: 'operations',
+      action: () => onOpenCarrierInvoiceAudit && onOpenCarrierInvoiceAudit(),
+      badge: 'Chặn Lỗ AI',
+      badgeTone: 'rose',
+    },
+    {
       id: 'ops_action_center',
       label: activeLang === 'vi' ? 'Hạn Chót & Hành Động' : 'Deadline & Action Center',
       icon: Clock,
@@ -553,24 +576,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       action: () => onOpenValiditySurcharge && onOpenValiditySurcharge(),
       badge: 'GRI Alert',
       badgeTone: 'rose',
-    },
-    {
-      id: 'ops_shipments',
-      label: activeLang === 'vi' ? 'Điều Hành Lô Hàng' : 'Shipment Operations',
-      icon: Package,
-      group: 'operations',
-      action: () => onOpenShipmentWorkspace && onOpenShipmentWorkspace(),
-      badge: shipmentsCount > 0 ? shipmentsCount : undefined,
-      badgeTone: 'sky',
-    },
-    {
-      id: 'ops_action_center',
-      label: activeLang === 'vi' ? 'Hạn Chót & Hành Động' : 'Deadline & Action Center',
-      icon: Clock,
-      group: 'operations',
-      action: () => onOpenActionCenter && onOpenActionCenter(),
-      badge: deadlinesCount > 0 ? `${deadlinesCount} việc` : undefined,
-      badgeTone: deadlinesCount > 0 ? 'amber' : 'default',
     },
 
     // === 3. BIỂU CƯỚC & ĐỊNH GIÁ (RATES & PRICING) ===

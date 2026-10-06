@@ -265,6 +265,16 @@ export const APP_ROUTES: Record<AppRouteId, RouteDefinition> = {
     descriptionVi: 'Trung tâm giải mã khách hàng 360°, bóc tách hồ sơ gen logistics, khẩu vị mua hàng, vết sẹo tâm lý & sơ đồ quyền lực bộ sậu nhà máy (Phase 64 - KYS 360°)',
     descriptionEn: 'Customer Logistics DNA, buying persona, past scars, and factory buying center org power map for thorough shipper understanding',
   },
+  quotation_payments: {
+    id: 'quotation_payments',
+    path: '/quotations/payments',
+    hash: '#quotations/payments',
+    titleVi: 'Kiểm Soát Thanh Toán & Thu Nợ',
+    titleEn: 'Payment & Receivable Hub',
+    group: 'quotation',
+    descriptionVi: 'Trung tâm kiểm soát thanh toán, theo dõi công nợ từng đợt, tự động phát hiện trễ hạn và xuất thư nhắc nợ 1-click (Phase 66)',
+    descriptionEn: 'Quotation payment tracking, multi-tranche receipts, automated overdue detection, and 1-click dunning reminder letters',
+  },
   opportunity_radar: {
     id: 'opportunity_radar',
     path: '/radar/opportunities',
@@ -463,6 +473,16 @@ export const APP_ROUTES: Record<AppRouteId, RouteDefinition> = {
     group: 'operations',
     descriptionVi: 'Không gian điều hành lô hàng, theo dõi tiến độ container, mốc vận hành và chứng từ',
     descriptionEn: 'Operational shipment workspace, container tracking, milestones and document flows',
+  },
+  carrier_invoice_audit: {
+    id: 'carrier_invoice_audit',
+    path: '/operations/carrier-invoice-audit',
+    hash: '#operations/carrier-invoice-audit',
+    titleVi: 'Đối Soát Cước Hãng Tàu & Chặn Rò Rỉ',
+    titleEn: 'Carrier Invoice Audit & Leakage Guard',
+    group: 'operations',
+    descriptionVi: 'Cỗ máy đối soát hóa đơn hãng tàu 3 chiều (Booking - Hóa Đơn - Giá Bán), tự động phát hiện bẫy phụ phí lạ, cước lố và phát hành công văn đòi tiền bảo vệ lợi nhuận (Phase 65)',
+    descriptionEn: 'Automated 3-way carrier invoice audit (Agreed vs Invoiced vs Sell), unauthorized surcharge detector, and dispute claim letter generator',
   },
   ops_shipment_detail: {
     id: 'ops_shipment_detail',
