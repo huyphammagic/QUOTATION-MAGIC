@@ -2318,51 +2318,6 @@ export default function App() {
                   />
                 </div>
 
-                {/* Contract & Smart Rates Toolbar */}
-                <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 bg-white border border-slate-200/90 rounded-2xl shadow-2xs">
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-slate-700">
-                      <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-slate-800">Cước hợp đồng & Định giá:</span>
-                      <span className="text-slate-500">
-                        {quote.customer.companyName ? quote.customer.companyName : 'Chưa chọn khách hàng'}
-                      </span>
-                      <span className="text-slate-300">·</span>
-                      <span className="font-mono text-slate-600">
-                        {quote.shipment.pol || 'POL'} &rarr; {quote.shipment.pod || 'POD'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={handleResolveContractPricing}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-2xs transition-colors cursor-pointer"
-                      id="btn-resolve-contract-pricing"
-                    >
-                      <ShieldCheck className="w-3.5 h-3.5" /> Khớp Giá Hợp Đồng
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsContractsOpen(true)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
-                    >
-                      Danh Sách HĐ ({contractsCount})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsSmartQuotationWorkspaceOpen(true)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
-                      id="btn-open-smart-quotation-workspace"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Bàn Tính Giá Nâng Cao
-                    </button>
-                  </div>
-                </div>
-
                 {/* Line Items Table */}
                 <div className="w-full">
                   <LineItemsTable
@@ -2375,6 +2330,8 @@ export default function App() {
                     onOpenSmartAssistant={() => setIsSmartAssistantOpen(true)}
                     onCheckRateUpdates={() => setIsComparisonModalOpen(true)}
                     outdatedRatesCount={outdatedRatesDiffs.length}
+                    onResolveContractPricing={handleResolveContractPricing}
+                    onOpenContracts={() => setIsContractsOpen(true)}
                   />
                 </div>
 

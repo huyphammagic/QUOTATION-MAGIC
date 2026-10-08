@@ -1,7 +1,17 @@
 import React, { useState } from 'react';
 import { QuoteData } from '../types/logistics';
 import { formatUSD, formatVND } from '../utils/formatters';
-import { FileCheck, TrendingUp, Anchor, Plane, Truck, LayoutDashboard, ChevronDown, ChevronUp } from 'lucide-react';
+import { 
+  FileCheck, 
+  TrendingUp, 
+  Anchor, 
+  Plane, 
+  Truck, 
+  LayoutDashboard, 
+  ChevronDown, 
+  ChevronUp,
+  Sparkles
+} from 'lucide-react';
 
 interface DashboardStatsProps {
   quotes: QuoteData[];
@@ -9,7 +19,7 @@ interface DashboardStatsProps {
 }
 
 export const DashboardStats: React.FC<DashboardStatsProps> = ({ quotes, onOpenAnalytics }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const totalCount = quotes.length;
   const acceptedQuotes = quotes.filter(q => q.status === 'ACCEPTED');
   const totalPipelineUsd = quotes.reduce((acc, q) => acc + (q.grandTotalUsd || 0), 0);
@@ -20,106 +30,121 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({ quotes, onOpenAn
   const truckingQuotes = quotes.filter(q => q.shipment.mode === 'INLAND_TRUCKING' || q.shipment.mode === 'CUSTOMS_CLEARANCE').length;
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center space-x-2 text-xs">
-          <span className="font-semibold text-slate-700 dark:text-slate-300">Tổng quan hoạt động</span>
-          <span className="text-slate-300 dark:text-slate-700">·</span>
-          <span className="text-slate-500 dark:text-slate-400 tabular-nums">{totalCount} báo giá trên hệ thống</span>
+    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs transition-all">
+      {/* Sleek Executive KPI Strip */}
+      <div className="px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+        
+        {/* Left: Key Metrics in Unboxed Quiet Typography */}
+        <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-slate-600 min-w-0">
+          <div className="flex items-center gap-1.5 font-semibold text-slate-900">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span>Hệ thống:</span>
+            <strong className="text-slate-900 font-bold tabular-nums">{totalCount} báo giá</strong>
+            <span className="text-emerald-700 font-medium">({acceptedQuotes.length} chốt)</span>
+          </div>
+
+          <span className="text-slate-300 hidden sm:inline">·</span>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-500">Pipeline:</span>
+            <span className="font-mono font-bold text-slate-900 tabular-nums">
+              {formatUSD(totalPipelineUsd)}
+            </span>
+            <span className="text-slate-400 font-mono text-[11px] hidden xl:inline">
+              (~ {formatVND(totalPipelineVnd)})
+            </span>
+          </div>
+
+          <span className="text-slate-300 hidden md:inline">·</span>
+
+          <div className="hidden md:flex items-center gap-2 text-slate-500">
+            <span className="flex items-center gap-1" title="Đường biển">
+              <Anchor className="w-3 h-3 text-slate-400" />
+              <span>{seaQuotes} biển</span>
+            </span>
+            <span className="text-slate-300">/</span>
+            <span className="flex items-center gap-1" title="Đường bay">
+              <Plane className="w-3 h-3 text-slate-400" />
+              <span>{airQuotes} air</span>
+            </span>
+            <span className="text-slate-300">/</span>
+            <span className="flex items-center gap-1" title="Đường bộ & hải quan">
+              <Truck className="w-3 h-3 text-slate-400" />
+              <span>{truckingQuotes} bộ</span>
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        {/* Right: Analytics & Expand Toggle */}
+        <div className="flex items-center gap-2 shrink-0 ml-auto">
           {onOpenAnalytics && (
             <button
               type="button"
               onClick={onOpenAnalytics}
-              className="inline-flex items-center space-x-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer px-2.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 btn-tactile"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
             >
-              <LayoutDashboard className="w-3.5 h-3.5 text-slate-400" />
-              <span>Phân tích chuyên sâu</span>
+              <LayoutDashboard className="w-3.5 h-3.5 text-slate-500" />
+              <span>Báo Cáo & BI</span>
             </button>
           )}
 
           <button
             type="button"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg transition-colors cursor-pointer btn-tactile"
-            title={isCollapsed ? "Mở rộng thống kê" : "Thu gọn thống kê"}
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+            title={isExpanded ? "Thu gọn chi tiết thống kê" : "Mở rộng 3 thẻ phân tích"}
           >
-            {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         </div>
+
       </div>
 
-      {!isCollapsed && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* Optional Expanded 3-Card Visual Breakdown */}
+      {isExpanded && (
+        <div className="p-4 pt-1 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3 animate-in fade-in duration-150">
           
-          {/* Total Quotes Card */}
           <div 
-            onClick={onOpenAnalytics}
-            className={`bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs flex items-center space-x-3.5 card-hover-lift ${
-              onOpenAnalytics ? 'cursor-pointer' : ''
-            }`}
+            onClick={onOpenAnalytics} 
+            className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 cursor-pointer hover:bg-slate-100/70 transition-colors"
           >
-            <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded-xl shrink-0">
-              <FileCheck className="w-4 h-4" />
+            <div className="flex items-center justify-between text-xs text-slate-500">
+              <span className="font-semibold uppercase tracking-wider text-[10px]">Tỷ lệ chốt đơn</span>
+              <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
             </div>
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Số lượng báo giá</p>
-              <div className="flex items-baseline space-x-2 mt-0.5">
-                <span className="text-xl font-bold text-slate-900 dark:text-white tabular-nums">{totalCount}</span>
-                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">({acceptedQuotes.length} đã chốt)</span>
-              </div>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="text-xl font-bold font-mono text-slate-900">{totalCount > 0 ? Math.round((acceptedQuotes.length / totalCount) * 100) : 0}%</span>
+              <span className="text-xs text-emerald-700 font-medium">{acceptedQuotes.length} / {totalCount} đơn</span>
             </div>
           </div>
 
-          {/* Pipeline Total Value */}
           <div 
-            onClick={onOpenAnalytics}
-            className={`bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs flex items-center space-x-3.5 card-hover-lift ${
-              onOpenAnalytics ? 'cursor-pointer' : ''
-            }`}
+            onClick={onOpenAnalytics} 
+            className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 cursor-pointer hover:bg-slate-100/70 transition-colors"
           >
-            <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-xl shrink-0">
-              <TrendingUp className="w-4 h-4" />
+            <div className="flex items-center justify-between text-xs text-slate-500">
+              <span className="font-semibold uppercase tracking-wider text-[10px]">Quy mô chào giá</span>
+              <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
             </div>
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Tổng giá trị Pipeline</p>
-              <div className="flex items-baseline space-x-2 mt-0.5">
-                <span className="text-xl font-bold text-slate-900 dark:text-white tabular-nums truncate">{formatUSD(totalPipelineUsd)}</span>
-                <span className="text-[11px] text-slate-400 tabular-nums truncate hidden xl:inline">~ {formatVND(totalPipelineVnd)}</span>
-              </div>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="text-xl font-bold font-mono text-slate-900 truncate">{formatUSD(totalPipelineUsd)}</span>
             </div>
           </div>
 
-          {/* Mode Distribution */}
           <div 
-            onClick={onOpenAnalytics}
-            className={`bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs flex items-center space-x-3.5 card-hover-lift ${
-              onOpenAnalytics ? 'cursor-pointer' : ''
-            }`}
+            onClick={onOpenAnalytics} 
+            className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 cursor-pointer hover:bg-slate-100/70 transition-colors"
           >
-            <div className="p-2.5 bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 rounded-xl shrink-0">
-              <Anchor className="w-4 h-4" />
+            <div className="flex items-center justify-between text-xs text-slate-500">
+              <span className="font-semibold uppercase tracking-wider text-[10px]">Đa phương thức</span>
+              <Anchor className="w-3.5 h-3.5 text-sky-600" />
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Phân bổ phương thức</p>
-              <div className="flex items-center space-x-2.5 text-xs text-slate-700 dark:text-slate-300 font-medium tabular-nums">
-                <span className="flex items-center space-x-1" title="Đường biển">
-                  <Anchor className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{seaQuotes} biển</span>
-                </span>
-                <span className="text-slate-300 dark:text-slate-700">·</span>
-                <span className="flex items-center space-x-1" title="Đường hàng không">
-                  <Plane className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{airQuotes} air</span>
-                </span>
-                <span className="text-slate-300 dark:text-slate-700">·</span>
-                <span className="flex items-center space-x-1" title="Trucking / Hải quan">
-                  <Truck className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{truckingQuotes} bộ</span>
-                </span>
-              </div>
+            <div className="mt-1 flex items-center gap-3 text-xs font-mono font-bold text-slate-800">
+              <span>{seaQuotes} FCL/LCL</span>
+              <span className="text-slate-300">·</span>
+              <span>{airQuotes} Air</span>
+              <span className="text-slate-300">·</span>
+              <span>{truckingQuotes} Truck</span>
             </div>
           </div>
 

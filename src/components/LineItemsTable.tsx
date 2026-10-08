@@ -12,20 +12,16 @@ import {
   Ship, 
   Anchor, 
   Compass, 
-  TrendingUp, 
   Eye, 
   EyeOff, 
-  Percent, 
-  Layers,
-  Sparkles,
-  Info,
-  RefreshCw,
-  Edit3,
-  ShieldCheck,
-  AlertTriangle,
-  AlertOctagon,
-  Clock,
-  ShieldAlert
+  Sparkles, 
+  RefreshCw, 
+  Edit3, 
+  ShieldCheck, 
+  AlertTriangle, 
+  Clock, 
+  ShieldAlert,
+  ChevronDown
 } from 'lucide-react';
 
 interface LineItemsTableProps {
@@ -38,6 +34,8 @@ interface LineItemsTableProps {
   onOpenSmartAssistant?: () => void;
   onCheckRateUpdates?: () => void;
   outdatedRatesCount?: number;
+  onResolveContractPricing?: () => void;
+  onOpenContracts?: () => void;
 }
 
 export const LineItemsTable: React.FC<LineItemsTableProps> = ({ 
@@ -49,12 +47,15 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
   onOpenRateSearch,
   onOpenSmartAssistant,
   onCheckRateUpdates,
-  outdatedRatesCount = 0
+  outdatedRatesCount = 0,
+  onResolveContractPricing,
+  onOpenContracts,
 }) => {
-  // Toggle between Compact Customer View and Full Cost/Profit Pricing Engine View
+  // Toggle Cost and Margin View
   const [showCostAndProfit, setShowCostAndProfit] = useState(true);
+  const [isPresetDropdownOpen, setIsPresetDropdownOpen] = useState(false);
 
-  // Rate Source Traceability & Warning Aggregates
+  // Rate traceability alerts
   const rateTraceabilityAlerts = useMemo(() => {
     const now = new Date();
     let expired = 0;
@@ -108,7 +109,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
 
   const handleAddPreset = (preset: typeof PRESET_LOCAL_CHARGES[0]) => {
     const price = preset.currency === 'USD' ? preset.priceUsd : preset.priceVnd;
-    const cost = Math.round(price * 0.8 * 100) / 100; // default estimated 80% cost
+    const cost = Math.round(price * 0.8 * 100) / 100;
 
     const newItem: LineItem = {
       id: `item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
@@ -129,14 +130,13 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
     };
     const calculated = calculateLineItem(newItem, exchangeRate);
     onUpdateItems([...items, calculated]);
+    setIsPresetDropdownOpen(false);
   };
 
   const handleItemChange = (id: string, field: keyof LineItem, value: any) => {
     const updated = items.map((item) => {
       if (item.id === id) {
         let itemCopy: LineItem = { ...item, [field]: value };
-
-        // If manual price change on a Master Rate item, record override audit trail
         if ((field === 'unitPrice' || field === 'costPrice') && item.rateId) {
           if (!item.isOverridden) {
             itemCopy.isOverridden = true;
@@ -146,7 +146,6 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             itemCopy.overriddenAt = new Date().toISOString();
           }
         }
-
         return calculateLineItem(itemCopy, exchangeRate);
       }
       return item;
@@ -158,125 +157,88 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
     onUpdateItems(items.filter((item) => item.id !== id));
   };
 
-  const getCategoryBadgeClass = (category: FeeCategory) => {
-    switch (category) {
-      case 'FREIGHT': return 'bg-blue-100 text-blue-900 border-blue-200';
-      case 'LOCAL_CHARGE': return 'bg-slate-100 text-slate-800 border-slate-200';
-      case 'SURCHARGE': return 'bg-purple-100 text-purple-900 border-purple-200';
-      case 'CUSTOMS': return 'bg-emerald-100 text-emerald-900 border-emerald-200';
-      case 'TRUCKING': return 'bg-amber-100 text-amber-900 border-amber-200';
-      default: return 'bg-slate-100 text-slate-700 border-slate-200';
-    }
-  };
-
-  const getLocationBadgeClass = (location?: ChargeLocation) => {
-    switch (location) {
-      case 'POL': return 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold';
-      case 'FREIGHT': return 'bg-blue-50 text-blue-800 border-blue-300 font-bold';
-      case 'POD': return 'bg-purple-50 text-purple-800 border-purple-300 font-bold';
-      case 'OTHER': return 'bg-slate-50 text-slate-700 border-slate-300 font-semibold';
-      default: return 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold';
-    }
-  };
-
-  // Calculate totals by Leg/Location
+  // Grouped Location Breakdown
   const polItems = items.filter(i => (i.location || 'POL') === 'POL');
   const freightItems = items.filter(i => i.location === 'FREIGHT' || (!i.location && i.category === 'FREIGHT'));
   const podItems = items.filter(i => i.location === 'POD');
   const otherItems = items.filter(i => i.location === 'OTHER');
 
   const sumLocationUsd = (list: LineItem[]) => list.reduce((acc, i) => acc + (i.amountUsd || 0), 0);
-  const sumLocationVnd = (list: LineItem[]) => list.reduce((acc, i) => acc + (i.amountVnd || 0), 0);
   const sumLocationProfitUsd = (list: LineItem[]) => list.reduce((acc, i) => acc + (i.profitUsd || 0), 0);
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
       
-      {/* Header & Control Actions */}
-      <div className="p-3.5 sm:p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      {/* Table Action Bar */}
+      <div className="px-4 py-3 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <div className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-            <ListChecks className="w-3.5 h-3.5" />
+            <ListChecks className="w-3.5 h-3.5 text-slate-800" />
           </div>
           <div>
-            <h3 className="text-xs font-semibold text-slate-900 tracking-tight">
-              Bảng tính giá vận tải & Phụ phí dịch vụ
-            </h3>
-            <span className="text-[11px] text-slate-500 font-medium">
-              Tự động tính Basis, Giá vốn (Cost), Giá bán (Sell), Biên lợi nhuận (Margin) & VAT
-            </span>
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs font-bold text-slate-900 tracking-tight">
+                Bảng Tính Giá Cước & Phụ Phí
+              </h3>
+              <span className="text-slate-300">·</span>
+              <span className="text-[11px] font-mono text-slate-500">
+                {items.length} hạng mục
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 flex-wrap gap-2">
+        {/* Right Toolbar */}
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Toggle Cost & Profit view */}
           <button
             type="button"
             onClick={() => setShowCostAndProfit(!showCostAndProfit)}
-            className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
               showCostAndProfit
-                ? 'bg-slate-100 text-slate-900 border-slate-300'
+                ? 'bg-slate-100 text-slate-900 border-slate-300 font-semibold'
                 : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
             }`}
-            title="Bật/Tắt hiển thị cột Giá Vốn & Lợi Nhuận Margin"
+            title="Bật/Tắt hiển thị cột Giá Vốn (Cost) & Lợi Nhuận Margin"
           >
             {showCostAndProfit ? <Eye className="w-3.5 h-3.5 text-slate-700" /> : <EyeOff className="w-3.5 h-3.5 text-slate-400" />}
             <span>{showCostAndProfit ? 'Ẩn Giá Vốn' : 'Hiện Giá Vốn'}</span>
           </button>
 
+          {/* Smart Assistant */}
           {onOpenSmartAssistant && (
             <button
               type="button"
               onClick={onOpenSmartAssistant}
-              className="flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer shadow-2xs"
-              title="Trợ lý tự động tìm & ghép giá thông minh theo tuyến đường"
+              className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-medium text-xs px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+              title="Trợ lý tự động tìm & ghép giá thông minh theo tuyến"
               id="btn-open-smart-assistant"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>Smart Rates</span>
             </button>
           )}
 
-          {onCheckRateUpdates && (
-            <button
-              type="button"
-              onClick={onCheckRateUpdates}
-              className={`flex items-center space-x-1.5 border text-xs px-2.5 py-1.5 rounded-lg transition-colors font-medium cursor-pointer ${
-                outdatedRatesCount > 0
-                  ? 'bg-amber-50 text-amber-900 border-amber-300'
-                  : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
-              }`}
-              title="Kiểm tra bảng giá có thay đổi so với Master Rate hay không"
-              id="btn-check-rate-updates"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${outdatedRatesCount > 0 ? 'text-amber-700' : 'text-slate-500'}`} />
-              <span>Cập Nhật Giá</span>
-              {outdatedRatesCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-md bg-amber-600 text-white text-[10px] font-bold">
-                  {outdatedRatesCount}
-                </span>
-              )}
-            </button>
-          )}
-
+          {/* Master Rate Search */}
           {onOpenRateSearch && (
             <button
               type="button"
               onClick={onOpenRateSearch}
-              className="flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium text-xs px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-medium text-xs px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
               title="Tra cứu từ Biểu Cước Master"
               id="btn-open-rate-search-table"
             >
-              <Layers className="w-3.5 h-3.5 text-slate-500" />
+              <Ship className="w-3.5 h-3.5 text-slate-500" />
               <span>Biểu Cước Master</span>
             </button>
           )}
 
+          {/* Surcharges Catalog */}
           {onOpenSurchargeCatalog && (
             <button
               type="button"
               onClick={onOpenSurchargeCatalog}
-              className="flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium text-xs px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-medium text-xs px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
               title="Mở Danh Mục Phụ Phí"
             >
               <Receipt className="w-3.5 h-3.5 text-slate-500" />
@@ -284,125 +246,118 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             </button>
           )}
 
+          {/* Contract Match Button */}
+          {onResolveContractPricing && (
+            <button
+              type="button"
+              onClick={onResolveContractPricing}
+              className="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold text-xs px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+              title="Khớp giá từ hợp đồng khách hàng đã ký"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Khớp HĐ</span>
+            </button>
+          )}
+
+          {/* Add Line Item Primary Button */}
           <button
             type="button"
             onClick={() => handleAddItem('LOCAL_CHARGE', 'POL')}
-            className="flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-3 py-1 rounded-lg shadow-2xs transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>+ Thêm Dòng Cước</span>
+            <span>+ Thêm Phí</span>
           </button>
         </div>
       </div>
 
-      {/* Leg Breakdown Summary Bar */}
-      <div className="mx-3.5 sm:mx-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
+      {/* Modern 4-Leg Summary Ribbon */}
+      <div className="mx-4 grid grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
         {/* POL */}
-        <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="p-1.5 bg-white rounded-lg text-slate-700 border border-slate-200">
-              <Anchor className="w-3.5 h-3.5" />
-            </div>
+        <div className="bg-slate-50/90 border border-slate-200/80 rounded-xl p-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Anchor className="w-3.5 h-3.5 text-slate-600" />
             <div>
-              <div className="text-[11px] font-semibold text-slate-800">1. Đầu Xuất (POL)</div>
+              <div className="font-semibold text-slate-800 text-[11px]">1. Đầu Xuất (POL)</div>
               <div className="text-[10px] text-slate-500 font-mono">{polItems.length} mục</div>
             </div>
           </div>
           <div className="text-right">
-            <div className="font-mono font-semibold text-slate-900 text-xs sm:text-sm">{formatUSD(sumLocationUsd(polItems))}</div>
+            <div className="font-mono font-bold text-slate-900 text-xs sm:text-sm">{formatUSD(sumLocationUsd(polItems))}</div>
             {showCostAndProfit && (
-              <div className="font-mono text-[10px] text-emerald-700">Lãi: +{formatUSD(sumLocationProfitUsd(polItems))}</div>
+              <div className="font-mono text-[10px] text-emerald-700 font-medium">Lãi: +{formatUSD(sumLocationProfitUsd(polItems))}</div>
             )}
           </div>
         </div>
 
         {/* FREIGHT */}
-        <div className="bg-blue-50/70 border border-blue-200 rounded-lg p-3 flex items-center justify-between">
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 bg-blue-100 rounded-lg text-blue-800">
-              <Ship className="w-4 h-4" />
-            </div>
+        <div className="bg-slate-50/90 border border-slate-200/80 rounded-xl p-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Ship className="w-3.5 h-3.5 text-blue-600" />
             <div>
-              <div className="text-[10px] font-bold text-blue-900 uppercase">2. Cước Chính (FREIGHT)</div>
-              <div className="text-[11px] text-blue-700 font-medium">{freightItems.length} hạng mục</div>
+              <div className="font-semibold text-slate-800 text-[11px]">2. Cước Biển/Air (FREIGHT)</div>
+              <div className="text-[10px] text-slate-500 font-mono">{freightItems.length} mục</div>
             </div>
           </div>
           <div className="text-right">
-            <div className="font-mono font-bold text-blue-950 text-xs sm:text-sm">{formatUSD(sumLocationUsd(freightItems))}</div>
+            <div className="font-mono font-bold text-slate-900 text-xs sm:text-sm">{formatUSD(sumLocationUsd(freightItems))}</div>
             {showCostAndProfit && (
-              <div className="font-mono text-[10px] text-blue-700">Lãi: +{formatUSD(sumLocationProfitUsd(freightItems))}</div>
+              <div className="font-mono text-[10px] text-emerald-700 font-medium">Lãi: +{formatUSD(sumLocationProfitUsd(freightItems))}</div>
             )}
           </div>
         </div>
 
         {/* POD */}
-        <div className="bg-purple-50/70 border border-purple-200 rounded-lg p-3 flex items-center justify-between">
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 bg-purple-100 rounded-lg text-purple-800">
-              <MapPin className="w-4 h-4" />
-            </div>
+        <div className="bg-slate-50/90 border border-slate-200/80 rounded-xl p-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <MapPin className="w-3.5 h-3.5 text-purple-600" />
             <div>
-              <div className="text-[10px] font-bold text-purple-900 uppercase">3. Đầu Nhập (POD)</div>
-              <div className="text-[11px] text-purple-700 font-medium">{podItems.length} hạng mục</div>
+              <div className="font-semibold text-slate-800 text-[11px]">3. Đầu Nhập (POD)</div>
+              <div className="text-[10px] text-slate-500 font-mono">{podItems.length} mục</div>
             </div>
           </div>
           <div className="text-right">
-            <div className="font-mono font-bold text-purple-950 text-xs sm:text-sm">{formatUSD(sumLocationUsd(podItems))}</div>
+            <div className="font-mono font-bold text-slate-900 text-xs sm:text-sm">{formatUSD(sumLocationUsd(podItems))}</div>
             {showCostAndProfit && (
-              <div className="font-mono text-[10px] text-purple-700">Lãi: +{formatUSD(sumLocationProfitUsd(podItems))}</div>
+              <div className="font-mono text-[10px] text-emerald-700 font-medium">Lãi: +{formatUSD(sumLocationProfitUsd(podItems))}</div>
             )}
           </div>
         </div>
 
         {/* OTHER */}
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center justify-between">
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 bg-slate-200 rounded-lg text-slate-700">
-              <Compass className="w-4 h-4" />
-            </div>
+        <div className="bg-slate-50/90 border border-slate-200/80 rounded-xl p-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Compass className="w-3.5 h-3.5 text-amber-600" />
             <div>
-              <div className="text-[10px] font-bold text-slate-800 uppercase">4. Dịch Vụ Khác (OTHER)</div>
-              <div className="text-[11px] text-slate-500 font-medium">{otherItems.length} hạng mục</div>
+              <div className="font-semibold text-slate-800 text-[11px]">4. Dịch Vụ Khác (OTHER)</div>
+              <div className="text-[10px] text-slate-500 font-mono">{otherItems.length} mục</div>
             </div>
           </div>
           <div className="text-right">
             <div className="font-mono font-bold text-slate-900 text-xs sm:text-sm">{formatUSD(sumLocationUsd(otherItems))}</div>
             {showCostAndProfit && (
-              <div className="font-mono text-[10px] text-slate-600">Lãi: +{formatUSD(sumLocationProfitUsd(otherItems))}</div>
+              <div className="font-mono text-[10px] text-emerald-700 font-medium">Lãi: +{formatUSD(sumLocationProfitUsd(otherItems))}</div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Rate Traceability & Intelligence Alert Banner */}
+      {/* Warnings & Traceability Ribbon */}
       {(rateTraceabilityAlerts.expired > 0 || rateTraceabilityAlerts.lossCount > 0 || pricingWarnings.length > 0) && (
-        <div className="mx-4 p-3 bg-gradient-to-r from-amber-50 via-rose-50 to-amber-50 border border-amber-300/80 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center space-x-2.5">
-            <div className="p-1.5 bg-amber-100 text-amber-900 rounded-lg">
-              <ShieldAlert className="w-4 h-4 text-amber-700" />
-            </div>
-            <div>
-              <div className="font-bold text-slate-900 flex items-center gap-2">
-                <span>Kiểm soát nguồn cước & Cảnh báo định giá</span>
-                {rateTraceabilityAlerts.lossCount > 0 && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                    {rateTraceabilityAlerts.lossCount} mục bán lỗ
-                  </span>
-                )}
-                {rateTraceabilityAlerts.expired > 0 && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                    {rateTraceabilityAlerts.expired} cước hết hạn
-                  </span>
-                )}
-                {rateTraceabilityAlerts.expiring > 0 && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                    {rateTraceabilityAlerts.expiring} cước sắp hết hạn
-                  </span>
-                )}
-              </div>
-              <div className="text-[11px] text-slate-600 mt-0.5">
-                Vui lòng kiểm tra các dòng phí được gắn nhãn cảnh báo trước khi xuất báo giá gửi khách hàng.
-              </div>
+        <div className="mx-4 p-2.5 bg-amber-50 border border-amber-200 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0" />
+            <div className="text-slate-800 font-medium">
+              <span>Cảnh báo định giá: </span>
+              {rateTraceabilityAlerts.lossCount > 0 && (
+                <span className="font-bold text-rose-700 mr-2">{rateTraceabilityAlerts.lossCount} dòng bán lỗ</span>
+              )}
+              {rateTraceabilityAlerts.expired > 0 && (
+                <span className="font-bold text-rose-700 mr-2">{rateTraceabilityAlerts.expired} cước hết hạn</span>
+              )}
+              {rateTraceabilityAlerts.expiring > 0 && (
+                <span className="font-bold text-amber-800 mr-2">{rateTraceabilityAlerts.expiring} cước sắp hết hạn</span>
+              )}
             </div>
           </div>
 
@@ -410,329 +365,130 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             <button
               type="button"
               onClick={onCheckRateUpdates}
-              className="px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-amber-900 font-semibold text-xs hover:bg-amber-50 transition-colors shadow-2xs flex items-center space-x-1.5"
+              className="px-2.5 py-1 rounded-lg bg-white border border-amber-300 text-amber-900 font-semibold text-[11px] hover:bg-amber-50 transition cursor-pointer"
             >
-              <RefreshCw className="w-3.5 h-3.5 text-amber-700" />
-              <span>Đối chiếu biểu cước Master</span>
+              Đối chiếu biểu cước Master
             </button>
           )}
         </div>
       )}
 
-      {/* Line Items Table Grid */}
-      <div className="overflow-x-auto border-t border-b border-slate-200">
+      {/* Table Content */}
+      <div className="overflow-x-auto border-t border-b border-slate-100">
         <table className="w-full text-left border-collapse text-xs">
-          
-          {/* Table Header */}
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[11px] tracking-wider">
-              <th className="px-2.5 py-3 w-8 text-center">#</th>
-              <th className="px-3 py-3 min-w-[220px]">Diễn Giải / Tên Hạng Mục</th>
-              <th className="px-2.5 py-3 min-w-[100px]">Mã Phí</th>
-              <th className="px-2.5 py-3 min-w-[130px]">Chặng / Vị Trí</th>
-              <th className="px-2.5 py-3 min-w-[130px]">Phân Loại</th>
-              <th className="px-2.5 py-3 min-w-[130px]">Cách tính (Basis)</th>
-              <th className="px-2.5 py-3 min-w-[70px] text-right">SL</th>
+            <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
+              <th className="px-2 py-2.5 w-7 text-center">#</th>
+              <th className="px-3 py-2.5 min-w-[200px]">Diễn Giải / Tên Phí</th>
+              <th className="px-2 py-2.5 min-w-[90px]">Chặng</th>
+              <th className="px-2 py-2.5 min-w-[110px]">Cách Tính (Basis)</th>
+              <th className="px-2 py-2.5 min-w-[65px] text-right">SL</th>
               
-              {/* Cost Price Column */}
               {showCostAndProfit && (
-                <th className="px-2.5 py-3 min-w-[105px] text-right bg-amber-50/70 text-amber-950 border-l border-r border-amber-200">
+                <th className="px-2 py-2.5 min-w-[95px] text-right bg-amber-50/60 text-amber-900 border-l border-r border-amber-200">
                   Giá Vốn (Cost)
                 </th>
               )}
 
-              <th className="px-2.5 py-3 min-w-[110px] text-right bg-blue-50/50 text-blue-950 font-extrabold">
+              <th className="px-2 py-2.5 min-w-[100px] text-right bg-blue-50/40 text-blue-900 font-bold">
                 Giá Bán (Sell)
               </th>
               
-              <th className="px-2.5 py-3 min-w-[80px] text-center">Loại Tiền</th>
-              <th className="px-2.5 py-3 min-w-[75px] text-center">VAT</th>
-              <th className="px-3 py-3 min-w-[125px] text-right">Thành Tiền (USD)</th>
-              <th className="px-3 py-3 min-w-[140px] text-right">Thành Tiền (VND)</th>
+              <th className="px-2 py-2.5 min-w-[65px] text-center">Tiền</th>
+              <th className="px-2 py-2.5 min-w-[65px] text-center">VAT</th>
+              <th className="px-3 py-2.5 min-w-[110px] text-right">Thành Tiền ($)</th>
+              <th className="px-3 py-2.5 min-w-[120px] text-right">Thành Tiền (₫)</th>
 
-              {/* Profit & Margin Columns */}
               {showCostAndProfit && (
                 <>
-                  <th className="px-2.5 py-3 min-w-[100px] text-right bg-emerald-50/70 text-emerald-950 border-l border-emerald-200">
-                    Lợi Nhuận
+                  <th className="px-2 py-2.5 min-w-[90px] text-right bg-emerald-50/60 text-emerald-950 border-l border-emerald-200">
+                    Lãi ($)
                   </th>
-                  <th className="px-2.5 py-3 min-w-[75px] text-right bg-emerald-50/70 text-emerald-950 border-r border-emerald-200">
+                  <th className="px-2 py-2.5 min-w-[70px] text-right bg-emerald-50/60 text-emerald-950 border-r border-emerald-200">
                     Margin %
                   </th>
                 </>
               )}
 
-              <th className="px-2 py-3 w-10 text-center">Xóa</th>
+              <th className="px-2 py-2.5 w-8 text-center">Xóa</th>
             </tr>
           </thead>
 
-          {/* Table Body */}
-          <tbody className="divide-y divide-slate-200 bg-white">
+          <tbody className="divide-y divide-slate-100 bg-white">
             {items.map((item, index) => (
-              <tr key={item.id} className="hover:bg-blue-50/20 transition-colors">
+              <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
                 
                 {/* STT */}
-                <td className="px-2.5 py-2.5 text-center text-slate-400 font-mono text-xs">{index + 1}</td>
+                <td className="px-2 py-2 text-center text-slate-400 font-mono text-[11px]">{index + 1}</td>
 
-                {/* Description & Note */}
-                <td className="px-3 py-2.5 space-y-1">
+                {/* Description */}
+                <td className="px-3 py-2">
                   <div className="flex items-center gap-1.5">
                     <input
                       type="text"
                       value={item.description}
                       onChange={(e) => handleItemChange(item.id, 'description', e.target.value)}
-                      className="w-full px-2.5 py-1.5 rounded border border-slate-200 font-medium text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
-                      placeholder="Tên phí..."
+                      className="w-full px-2 py-1 rounded-md border border-slate-200 font-semibold text-slate-900 bg-slate-50/60 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs"
+                      placeholder="Tên phí dịch vụ..."
                     />
                     {item.priceSource === 'CUSTOMER_CONTRACT' && (
-                      <span 
-                        className="shrink-0 text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-300 px-1.5 py-0.5 rounded flex items-center gap-1 shadow-2xs cursor-help"
-                        title={item.priceTraceability || `Hợp Đồng Khách Hàng: ${item.sourceContractNumber || 'CTR'} (v${item.sourceVersion || 1})`}
-                      >
-                        <ShieldCheck className="w-2.5 h-2.5 text-purple-700" />
-                        {item.sourceContractNumber ? `HĐ KH: ${item.sourceContractNumber}` : 'HĐ KH'}
-                      </span>
-                    )}
-                    {item.priceSource === 'SUPPLIER_CONTRACT' && (
-                      <span 
-                        className="shrink-0 text-[10px] font-bold bg-teal-100 text-teal-900 border border-teal-300 px-1.5 py-0.5 rounded flex items-center gap-1 shadow-2xs cursor-help"
-                        title={item.priceTraceability || `Hợp Đồng NCC: ${item.sourceContractNumber || 'CTR'}`}
-                      >
-                        <ShieldCheck className="w-2.5 h-2.5 text-teal-700" />
-                        {item.sourceContractNumber ? `HĐ NCC: ${item.sourceContractNumber}` : 'HĐ NCC'}
-                      </span>
-                    )}
-                    {item.rateId && !item.priceSource && (
-                      <span 
-                        className="shrink-0 text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded flex items-center gap-1"
-                        title={`Master Snapshot: ${item.rateCode || item.rateId} (v${item.rateVersion || 1}) - Bất biến`}
-                      >
-                        <Sparkles className="w-2.5 h-2.5 text-blue-600" />
-                        {item.rateCode || 'Master'}
+                      <span className="shrink-0 text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1 py-0.5 rounded" title="Từ hợp đồng khách hàng">
+                        HĐ KH
                       </span>
                     )}
                     {item.isOverridden && (
-                      <span 
-                        className="shrink-0 text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-1 shadow-2xs"
-                        title={`Giá đã điều chỉnh thủ công bởi Sales.\nGiá gốc Master: ${item.currency === 'USD' ? '$' + item.originalUnitPrice : item.originalUnitPrice + ' ₫'}\nLý do: ${item.overrideReason || 'N/A'}`}
-                      >
-                        <Edit3 className="w-2.5 h-2.5 text-amber-700" />
-                        Đã Sửa Giá
+                      <span className="shrink-0 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded" title="Đã chỉnh sửa giá thủ công">
+                        Sửa
                       </span>
                     )}
-
-                    {/* Rate Validity / Expiry Status Traceability */}
-                    {item.effectiveTo && (() => {
-                      const expDate = new Date(item.effectiveTo);
-                      const now = new Date();
-                      const isExpired = expDate < now;
-                      const diffDays = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-                      const isExpiringSoon = !isExpired && diffDays <= 7;
-                      
-                      if (isExpired) {
-                        return (
-                          <span 
-                            className="shrink-0 text-[10px] font-bold bg-rose-100 text-rose-900 border border-rose-300 px-1.5 py-0.5 rounded flex items-center gap-1 shadow-2xs"
-                            title={`Cước nguồn đã hết hiệu lực từ ngày ${item.effectiveTo}`}
-                          >
-                            <Clock className="w-2.5 h-2.5 text-rose-700" />
-                            Hết Hạn
-                          </span>
-                        );
-                      }
-                      if (isExpiringSoon) {
-                        return (
-                          <span 
-                            className="shrink-0 text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-1 shadow-2xs"
-                            title={`Cước nguồn sắp hết hạn sau ${diffDays} ngày (${item.effectiveTo})`}
-                          >
-                            <Clock className="w-2.5 h-2.5 text-amber-700" />
-                            Còn {diffDays}d
-                          </span>
-                        );
-                      }
-                      return null;
-                    })()}
-
-                    {/* Carrier Traceability Badge */}
-                    {item.carrier && (
-                      <span 
-                        className="shrink-0 text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-300 px-1.5 py-0.5 rounded"
-                        title={`Hãng vận tải: ${item.carrier}`}
-                      >
-                        {item.carrier}
-                      </span>
-                    )}
-
-                    {/* Negative Profit Warning Badge */}
-                    {item.costPrice !== undefined && item.costPrice > 0 && item.unitPrice < item.costPrice && (
-                      <span 
-                        className="shrink-0 text-[10px] font-bold bg-red-100 text-red-900 border border-red-300 px-1.5 py-0.5 rounded flex items-center gap-1 shadow-2xs animate-pulse"
-                        title={`Cảnh báo: Giá bán (${item.unitPrice}) thấp hơn giá vốn (${item.costPrice})!`}
-                      >
-                        <AlertOctagon className="w-2.5 h-2.5 text-red-700" />
-                        Lỗ Dòng
-                      </span>
-                    )}
-
-                    {/* Line-Specific Intelligence Warnings */}
-                    {pricingWarnings.filter(w => w.itemId === item.id).map(w => (
-                      <span 
-                        key={w.id}
-                        className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow-2xs ${
-                          w.severity === 'CRITICAL' 
-                            ? 'bg-rose-100 text-rose-900 border border-rose-300' 
-                            : 'bg-amber-100 text-amber-900 border border-amber-300'
-                        }`}
-                        title={`${w.titleVi}: ${w.messageVi}${w.actionableSuggestionVi ? `\n💡 Gợi ý: ${w.actionableSuggestionVi}` : ''}`}
-                      >
-                        <AlertTriangle className="w-2.5 h-2.5" />
-                        {w.titleVi}
-                      </span>
-                    ))}
                   </div>
-                  <input
-                    type="text"
-                    value={item.note || ''}
-                    onChange={(e) => handleItemChange(item.id, 'note', e.target.value)}
-                    className="w-full px-2.5 py-0.5 rounded text-[11px] text-slate-500 bg-transparent border border-transparent hover:border-slate-200 focus:bg-white focus:outline-none"
-                    placeholder="+ Ghi chú phụ phí..."
-                  />
                 </td>
 
-                {/* Code */}
-                <td className="px-2.5 py-2.5">
-                  <input
-                    type="text"
-                    value={item.code}
-                    onChange={(e) => handleItemChange(item.id, 'code', e.target.value.toUpperCase())}
-                    className="w-full px-2 py-1.5 rounded border border-slate-200 font-mono uppercase text-blue-900 font-bold bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
-                  />
-                </td>
-
-                {/* Location (Leg) Selector */}
-                <td className="px-2.5 py-2.5">
+                {/* Location */}
+                <td className="px-2 py-2">
                   <select
                     value={item.location || 'POL'}
                     onChange={(e) => handleItemChange(item.id, 'location', e.target.value as ChargeLocation)}
-                    className={`w-full px-2 py-1.5 rounded border text-xs font-semibold uppercase focus:outline-none ${getLocationBadgeClass(item.location || 'POL')}`}
+                    className="w-full px-1.5 py-1 rounded-md border border-slate-200 text-slate-800 bg-slate-50/60 text-xs font-semibold focus:outline-none"
                   >
-                    <option value="POL">POL (Đầu Xuất)</option>
-                    <option value="FREIGHT">FREIGHT (Chính)</option>
-                    <option value="POD">POD (Đầu Nhập)</option>
-                    <option value="OTHER">KHÁC</option>
+                    <option value="POL">1. POL (Xuất)</option>
+                    <option value="FREIGHT">2. FREIGHT (Chính)</option>
+                    <option value="POD">3. POD (Nhập)</option>
+                    <option value="OTHER">4. OTHER (Khác)</option>
                   </select>
                 </td>
 
-                {/* Category Selector */}
-                <td className="px-2.5 py-2.5">
+                {/* Basis */}
+                <td className="px-2 py-2">
                   <select
-                    value={item.category}
-                    onChange={(e) => handleItemChange(item.id, 'category', e.target.value as FeeCategory)}
-                    className={`w-full px-2 py-1.5 rounded border text-xs font-bold uppercase focus:outline-none ${getCategoryBadgeClass(item.category)}`}
+                    value={item.basis}
+                    onChange={(e) => handleItemChange(item.id, 'basis', e.target.value as ChargeBasis)}
+                    className="w-full px-1.5 py-1 rounded-md border border-slate-200 text-slate-800 bg-slate-50/60 text-xs focus:outline-none"
                   >
-                    <option value="FREIGHT">FREIGHT (Cước)</option>
-                    <option value="LOCAL_CHARGE">LOCAL CHARGE</option>
-                    <option value="SURCHARGE">SURCHARGE</option>
-                    <option value="CUSTOMS">HẢI QUAN</option>
-                    <option value="TRUCKING">TRUCKING</option>
-                    <option value="HANDLING">HANDLING</option>
-                    <option value="OTHER">KHÁC</option>
+                    <option value="PER_CONTAINER">Per Cont</option>
+                    <option value="PER_SHIPMENT">Per Set/Lô</option>
+                    <option value="PER_CBM">Per CBM</option>
+                    <option value="PER_TON">Per KGS/Tấn</option>
+                    <option value="PER_BL">Per B/L</option>
+                    <option value="PERCENTAGE">Phần trăm %</option>
                   </select>
-                </td>
-
-                {/* Combined Basis & Unit Selector */}
-                <td className="px-2.5 py-2.5">
-                  <div className="flex items-center gap-1.5">
-                    <select
-                      value={item.basis || 'PER_CONTAINER'}
-                      onChange={(e) => {
-                        const newBasis = e.target.value as ChargeBasis;
-                        handleItemChange(item.id, 'basis', newBasis);
-                        // Auto populate default unit if unit is empty or matches previous default
-                        if (!item.unit || item.unit === 'Container' || item.unit === 'B/L' || item.unit === 'Shipment' || item.unit === 'W/M' || item.unit === 'CW' || item.unit === 'KG' || item.unit === 'CBM' || item.unit === 'Truck' || item.unit === 'Trip' || item.unit === 'Doc' || item.unit === 'Pallet' || item.unit === 'Pkg' || item.unit === '%') {
-                          let autoUnit = item.unit;
-                          if (newBasis === 'PER_CONTAINER') autoUnit = 'Container';
-                          else if (newBasis === 'PER_BL') autoUnit = 'B/L';
-                          else if (newBasis === 'PER_SHIPMENT') autoUnit = 'Shipment';
-                          else if (newBasis === 'PER_WM') autoUnit = 'W/M';
-                          else if (newBasis === 'PER_CHARGEABLE_KG') autoUnit = 'CW';
-                          else if (newBasis === 'PER_KG') autoUnit = 'KG';
-                          else if (newBasis === 'PER_CBM') autoUnit = 'CBM';
-                          else if (newBasis === 'PER_TRUCK') autoUnit = 'Truck';
-                          else if (newBasis === 'PER_TRIP') autoUnit = 'Trip';
-                          else if (newBasis === 'PER_DOCUMENT') autoUnit = 'Doc';
-                          else if (newBasis === 'PER_PALLET') autoUnit = 'Pallet';
-                          else if (newBasis === 'PER_PACKAGE') autoUnit = 'Pkg';
-                          else if (newBasis === 'PERCENTAGE') autoUnit = '%';
-                          if (autoUnit !== item.unit) {
-                            handleItemChange(item.id, 'unit', autoUnit);
-                          }
-                        }
-                      }}
-                      className="w-28 shrink-0 px-2 py-1.5 rounded border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="PER_CONTAINER">Per Container</option>
-                      <option value="PER_BL">Per B/L</option>
-                      <option value="PER_SHIPMENT">Per Shipment</option>
-                      <option value="PER_WM">Per W/M (LCL)</option>
-                      <option value="PER_CHARGEABLE_KG">Per CW (Air/Kg)</option>
-                      <option value="PER_KG">Per Gross KG</option>
-                      <option value="PER_CBM">Per CBM</option>
-                      <option value="PER_TRUCK">Per Truck</option>
-                      <option value="PER_TRIP">Per Trip</option>
-                      <option value="PER_DOCUMENT">Per Document</option>
-                      <option value="PER_PALLET">Per Pallet</option>
-                      <option value="PER_PACKAGE">Per Package</option>
-                      <option value="PER_UNIT">Per Unit</option>
-                      <option value="PERCENTAGE">Percentage (%)</option>
-                      <option value="FIXED">Fixed Amount</option>
-                    </select>
-
-                    <input
-                      type="text"
-                      value={item.unit}
-                      onChange={(e) => handleItemChange(item.id, 'unit', e.target.value)}
-                      className="w-20 px-2 py-1.5 rounded border border-slate-200 text-slate-900 font-medium bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
-                      placeholder="Đơn vị..."
-                      title="Đơn vị tính (Cont, Bill, CBM, Kg...)"
-                    />
-                  </div>
-
-                  {item.basis === 'PERCENTAGE' && (
-                    <div className="mt-1">
-                      <select
-                        value={item.percentageBase || 'FREIGHT'}
-                        onChange={(e) => handleItemChange(item.id, 'percentageBase', e.target.value as PercentageBase)}
-                        className="w-full px-1.5 py-0.5 rounded border border-purple-200 bg-purple-50 text-[10px] text-purple-900 font-bold"
-                        title="Phần trăm tính trên cơ sở nào"
-                      >
-                        <option value="FREIGHT">% của Freight</option>
-                        <option value="SUBTOTAL">% của Subtotal</option>
-                        <option value="TOTAL_ORIGIN">% của Phí POL</option>
-                        <option value="TOTAL_DESTINATION">% của Phí POD</option>
-                        <option value="CUSTOMS">% của Hải Quan</option>
-                        <option value="TRUCKING">% của Trucking</option>
-                      </select>
-                    </div>
-                  )}
                 </td>
 
                 {/* Quantity */}
-                <td className="px-2.5 py-2.5">
+                <td className="px-2 py-2">
                   <input
                     type="number"
                     min="0"
                     step="any"
                     value={item.quantity}
                     onChange={(e) => handleItemChange(item.id, 'quantity', Number(e.target.value) || 0)}
-                    className="w-full px-2 py-1.5 rounded border border-slate-200 text-right font-bold text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                    className="w-full px-1.5 py-1 rounded-md border border-slate-200 text-right font-mono font-bold text-slate-900 bg-slate-50/60 focus:bg-white focus:outline-none text-xs"
                   />
                 </td>
 
-                {/* Cost Price (Giá vốn) */}
+                {/* Cost Price */}
                 {showCostAndProfit && (
-                  <td className="px-2.5 py-2.5 bg-amber-50/40 border-l border-r border-amber-200">
+                  <td className="px-2 py-2 bg-amber-50/30 border-l border-r border-amber-200">
                     <input
                       type="number"
                       min="0"
@@ -740,50 +496,48 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                       value={item.costPrice !== undefined ? item.costPrice : ''}
                       onChange={(e) => handleItemChange(item.id, 'costPrice', e.target.value === '' ? 0 : Number(e.target.value))}
                       placeholder="0"
-                      className="w-full px-2 py-1.5 rounded border border-amber-300 text-right font-bold text-amber-950 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-xs"
-                      title="Giá vốn đầu vào của công ty Forwarding"
+                      className="w-full px-1.5 py-1 rounded-md border border-amber-300 text-right font-mono font-bold text-amber-950 bg-white focus:outline-none text-xs"
                     />
                   </td>
                 )}
 
-                {/* Selling Unit Price (Giá bán) */}
-                <td className={`px-2.5 py-2.5 ${item.costPrice !== undefined && item.costPrice > 0 && item.unitPrice < item.costPrice ? 'bg-rose-50/50' : 'bg-blue-50/30'}`}>
+                {/* Unit Price (Sell) */}
+                <td className={`px-2 py-2 ${item.costPrice !== undefined && item.costPrice > 0 && item.unitPrice < item.costPrice ? 'bg-rose-50/60' : 'bg-blue-50/20'}`}>
                   <input
                     type="number"
                     min="0"
                     step="any"
                     value={item.unitPrice}
                     onChange={(e) => handleItemChange(item.id, 'unitPrice', Number(e.target.value) || 0)}
-                    className={`w-full px-2 py-1.5 rounded text-right font-bold font-mono text-xs focus:outline-none focus:ring-2 ${
+                    className={`w-full px-1.5 py-1 rounded-md text-right font-mono font-bold text-xs focus:outline-none border ${
                       item.costPrice !== undefined && item.costPrice > 0 && item.unitPrice < item.costPrice
-                        ? 'border border-rose-400 text-rose-950 bg-rose-50 focus:ring-rose-500'
-                        : 'border border-blue-300 text-blue-950 bg-white focus:ring-blue-500'
+                        ? 'border-rose-400 text-rose-900 bg-rose-50'
+                        : 'border-blue-300 text-blue-900 bg-white'
                     }`}
-                    title={item.costPrice !== undefined && item.costPrice > 0 && item.unitPrice < item.costPrice ? `Cảnh báo: Giá bán thấp hơn giá vốn (${item.costPrice})` : undefined}
                   />
                 </td>
 
                 {/* Currency */}
-                <td className="px-2.5 py-2.5 text-center">
+                <td className="px-2 py-2 text-center">
                   <button
                     type="button"
                     onClick={() => handleItemChange(item.id, 'currency', item.currency === 'USD' ? 'VND' : 'USD')}
-                    className={`w-full px-2 py-1.5 rounded font-bold text-xs border transition-colors ${
+                    className={`px-2 py-1 rounded-md font-mono font-bold text-[11px] border cursor-pointer ${
                       item.currency === 'USD'
-                        ? 'bg-blue-100 text-blue-900 border-blue-300'
-                        : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                        ? 'bg-blue-50 text-blue-800 border-blue-200'
+                        : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                     }`}
                   >
                     {item.currency}
                   </button>
                 </td>
 
-                {/* VAT % */}
-                <td className="px-2.5 py-2.5">
+                {/* VAT */}
+                <td className="px-2 py-2">
                   <select
                     value={item.vatRate}
                     onChange={(e) => handleItemChange(item.id, 'vatRate', Number(e.target.value))}
-                    className="w-full px-1.5 py-1.5 rounded border border-slate-200 text-center font-bold bg-slate-50 focus:bg-white focus:outline-none text-xs"
+                    className="w-full px-1 py-1 rounded-md border border-slate-200 text-center font-bold bg-slate-50/60 text-xs"
                   >
                     <option value={0}>0%</option>
                     <option value={5}>5%</option>
@@ -792,29 +546,29 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                   </select>
                 </td>
 
-                {/* Calculated USD Total */}
-                <td className="px-3 py-2.5 text-right font-mono font-bold text-slate-900 text-xs whitespace-nowrap">
+                {/* Amount USD */}
+                <td className="px-3 py-2 text-right font-mono font-bold text-slate-900 text-xs whitespace-nowrap">
                   {formatUSD(item.amountUsd)}
                 </td>
 
-                {/* Calculated VND Total */}
-                <td className="px-3 py-2.5 text-right font-mono font-bold text-slate-700 text-xs whitespace-nowrap">
+                {/* Amount VND */}
+                <td className="px-3 py-2 text-right font-mono text-slate-600 text-xs whitespace-nowrap">
                   {formatVND(item.amountVnd)}
                 </td>
 
-                {/* Profit & Margin Display */}
+                {/* Profit & Margin */}
                 {showCostAndProfit && (
                   <>
-                    <td className="px-2.5 py-2.5 text-right font-mono font-bold text-emerald-900 bg-emerald-50/40 border-l border-emerald-200 text-xs whitespace-nowrap">
+                    <td className="px-2 py-2 text-right font-mono font-bold text-emerald-800 bg-emerald-50/30 border-l border-emerald-200 text-xs whitespace-nowrap">
                       {formatUSD(item.profitUsd || 0)}
                     </td>
-                    <td className="px-2.5 py-2.5 text-right font-mono font-extrabold text-emerald-950 bg-emerald-50/40 border-r border-emerald-200 text-xs whitespace-nowrap">
-                      <span className={`px-1.5 py-0.5 rounded text-[11px] ${
+                    <td className="px-2 py-2 text-right font-mono font-bold bg-emerald-50/30 border-r border-emerald-200 text-xs whitespace-nowrap">
+                      <span className={`px-1 py-0.5 rounded text-[10px] ${
                         (item.marginPercent || 0) >= 15
-                          ? 'bg-emerald-100 text-emerald-800'
+                          ? 'text-emerald-800 font-bold'
                           : (item.marginPercent || 0) > 0
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-rose-100 text-rose-800'
+                          ? 'text-blue-800 font-semibold'
+                          : 'text-rose-700 font-bold'
                       }`}>
                         {formatPercent(item.marginPercent || 0, 1)}
                       </span>
@@ -822,15 +576,15 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                   </>
                 )}
 
-                {/* Remove Button */}
-                <td className="px-2 py-2.5 text-center">
+                {/* Delete */}
+                <td className="px-2 py-2 text-center">
                   <button
                     type="button"
                     onClick={() => handleRemoveItem(item.id)}
-                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                    title="Xóa hạng mục"
+                    className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition cursor-pointer"
+                    title="Xóa dòng phí"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </td>
 
@@ -839,13 +593,12 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
 
             {items.length === 0 && (
               <tr>
-                <td colSpan={showCostAndProfit ? 17 : 14} className="p-8 text-center text-slate-400 italic">
-                  Chưa có hạng mục phí nào. Bấm "Thêm Dòng Phí" hoặc chọn nhanh từ danh mục phụ phí.
+                <td colSpan={showCostAndProfit ? 14 : 11} className="py-8 text-center text-slate-400 italic">
+                  Chưa có dòng cước nào. Nhấp "+ Thêm Phí" để bắt đầu báo giá.
                 </td>
               </tr>
             )}
           </tbody>
-
         </table>
       </div>
 

@@ -83,7 +83,7 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
         id="sync-health-indicator-btn"
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`group relative flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 shadow-xs cursor-pointer select-none focus:outline-none ${
+        className={`group relative flex items-center space-x-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-200 shadow-2xs cursor-pointer select-none focus:outline-none ${
           syncHealthState === 'Real-time'
             ? 'bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20'
             : syncHealthState === 'Syncing'

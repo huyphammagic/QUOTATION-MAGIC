@@ -12,8 +12,6 @@ import {
   FileText, 
   MessageSquare, 
   Building,
-  CheckCircle2,
-  Clock,
   RotateCcw,
   Inbox,
   Swords,
@@ -25,7 +23,6 @@ import {
   Dna,
   ChevronDown,
   ArrowRight,
-  TrendingUp,
   ShieldAlert,
   Zap,
   Copy,
@@ -86,24 +83,24 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
   isSaving = false,
   lastSavedAt,
 }) => {
-  const [isRadarDropdownOpen, setIsRadarDropdownOpen] = useState(false);
+  const [isToolsDropdownOpen, setIsToolsDropdownOpen] = useState(false);
   const [copiedQuoteNumber, setCopiedQuoteNumber] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
+  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setIsRadarDropdownOpen(false);
+        setIsToolsDropdownOpen(false);
       }
     };
-    if (isRadarDropdownOpen) {
+    if (isToolsDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isRadarDropdownOpen]);
+  }, [isToolsDropdownOpen]);
 
   const handleCopyQuoteNumber = () => {
     if (quote.quoteNumber) {
@@ -113,477 +110,359 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
     }
   };
 
-  const getStatusBadge = (status: QuoteStatus) => {
+  const getStatusText = (status: QuoteStatus) => {
     switch (status) {
-      case 'APPROVED':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            Đã duyệt (Approved)
-          </span>
-        );
-      case 'SENT':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-            Đã gửi (Sent)
-          </span>
-        );
-      case 'ACCEPTED':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-            Chấp thuận (Accepted)
-          </span>
-        );
-      case 'REJECTED':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-            Từ chối (Rejected)
-          </span>
-        );
-      case 'EXPIRED':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-            Hết hạn (Expired)
-          </span>
-        );
-      case 'PENDING_APPROVAL':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-            Chờ duyệt
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-            Bản nháp (Draft)
-          </span>
-        );
+      case 'APPROVED': return { label: 'Đã duyệt', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' };
+      case 'SENT': return { label: 'Đã gửi', color: 'text-blue-700 bg-blue-50 border-blue-200' };
+      case 'ACCEPTED': return { label: 'Chấp thuận', color: 'text-indigo-700 bg-indigo-50 border-indigo-200' };
+      case 'REJECTED': return { label: 'Từ chối', color: 'text-rose-700 bg-rose-50 border-rose-200' };
+      case 'EXPIRED': return { label: 'Hết hạn', color: 'text-amber-700 bg-amber-50 border-amber-200' };
+      case 'PENDING_APPROVAL': return { label: 'Chờ duyệt', color: 'text-purple-700 bg-purple-50 border-purple-200' };
+      default: return { label: 'Bản nháp', color: 'text-slate-700 bg-slate-100 border-slate-200' };
     }
   };
 
+  const statusInfo = getStatusText(quote.status);
   const customerName = quote.customer.companyName || quote.customer.customerName || 'Khách hàng mới';
-  const pol = quote.shipment.pol || quote.shipment.origin || 'POL';
-  const pod = quote.shipment.pod || quote.shipment.destination || 'POD';
+  const pol = quote.shipment.pol || 'POL';
+  const pod = quote.shipment.pod || 'POD';
   const modeText = quote.shipment.mode || 'SEA_FCL';
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-3 sm:p-4 shadow-xs space-y-3 transition-colors">
+    <div className="bg-white border border-slate-200/90 rounded-2xl p-3 sm:p-4 shadow-2xs space-y-3">
       
-      {/* Top Header Row: Identity & Primary Actions */}
+      {/* Top Row: Identity & Action Bar */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         
-        {/* Left: Metadata & Quote Identity */}
-        <div className="flex flex-wrap items-center gap-2.5 min-w-0">
+        {/* Left: Executive Identity */}
+        <div className="flex items-center flex-wrap gap-2 text-xs min-w-0">
           
-          {/* Quote Number with 1-click copy */}
+          {/* Quote Number with copy trigger */}
           <button
             type="button"
             onClick={handleCopyQuoteNumber}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100/90 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono text-xs font-bold border border-slate-200 dark:border-slate-700 hover:border-indigo-400 transition-colors cursor-pointer group"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-900 font-mono font-bold border border-slate-200 hover:border-slate-400 transition-colors cursor-pointer group"
             title="Click để sao chép mã báo giá"
           >
             <span>{quote.quoteNumber || 'LOG-DRAFT'}</span>
             {copiedQuoteNumber ? (
-              <Check className="w-3 h-3 text-emerald-500" />
+              <Check className="w-3 h-3 text-emerald-600" />
             ) : (
-              <Copy className="w-3 h-3 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+              <Copy className="w-3 h-3 text-slate-400 group-hover:text-slate-700 transition-colors" />
             )}
           </button>
 
-          <span className="text-slate-300 dark:text-slate-700">·</span>
+          <span className="text-slate-300">·</span>
 
-          {getStatusBadge(quote.status)}
+          {/* Clean status badge */}
+          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border ${statusInfo.color}`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-current" />
+            <span>{statusInfo.label}</span>
+          </span>
 
-          {/* Phase 66: Quotation Payment & Receivable Status Badge */}
-          <PaymentStatusBadge
-            status={quote.paymentStatus || 'UNPAID'}
-            outstandingBalanceUsd={quote.outstandingBalanceUsd}
-            showAmount={quote.outstandingBalanceUsd !== undefined && quote.outstandingBalanceUsd > 0}
-            size="sm"
-            onClick={onOpenQuotationPayments}
-          />
+          {/* Payment Status Badge */}
+          {quote.paymentStatus && quote.paymentStatus !== 'UNPAID' && (
+            <PaymentStatusBadge
+              status={quote.paymentStatus}
+              outstandingBalanceUsd={quote.outstandingBalanceUsd}
+              showAmount={Boolean(quote.outstandingBalanceUsd && quote.outstandingBalanceUsd > 0)}
+              size="sm"
+              onClick={onOpenQuotationPayments}
+            />
+          )}
 
-          <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">·</span>
+          <span className="text-slate-300 hidden sm:inline">·</span>
 
-          {/* Customer & Route Indicator */}
-          <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 truncate max-w-[360px]">
-            <span className="font-semibold text-slate-900 dark:text-slate-100 truncate flex items-center gap-1" title={customerName}>
-              <Building className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          {/* Route & Customer Breadcrumb */}
+          <div className="flex items-center gap-1.5 text-slate-600 min-w-0 truncate max-w-[340px] sm:max-w-[420px]">
+            <Building className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <span className="font-semibold text-slate-900 truncate" title={customerName}>
               {customerName}
             </span>
-            <span className="text-slate-300 dark:text-slate-700">·</span>
-            <span className="font-mono text-slate-700 dark:text-slate-300 shrink-0">
+            <span className="text-slate-300">·</span>
+            <span className="font-mono text-slate-700 shrink-0">
               {pol} &rarr; {pod}
             </span>
-            <span className="text-slate-300 dark:text-slate-700 hidden md:inline">·</span>
-            <span className="text-slate-500 dark:text-slate-400 hidden md:inline">{modeText}</span>
+            <span className="text-slate-300 hidden md:inline">·</span>
+            <span className="text-slate-500 hidden md:inline">{modeText}</span>
           </div>
 
           {/* Auto-save status */}
-          <div className="hidden xl:flex items-center gap-1.5 text-[11px] text-slate-400 ml-1">
+          <div className="hidden xl:flex items-center gap-1 text-[11px] text-slate-400 ml-1">
             {isSaving ? (
               <>
-                <RotateCcw className="w-3 h-3 animate-spin text-indigo-500" />
-                <span className="text-indigo-600 dark:text-indigo-400 font-medium">Đang lưu...</span>
+                <RotateCcw className="w-3 h-3 animate-spin text-indigo-600" />
+                <span className="text-indigo-600 font-medium">Đang lưu...</span>
               </>
             ) : (
               <>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span>{lastSavedAt ? `Đã lưu ${lastSavedAt.split('T')[1]?.slice(0, 5) || 'gần đây'}` : 'Đã lưu trên mây'}</span>
+                <span>{lastSavedAt ? `Đã lưu ${lastSavedAt.split('T')[1]?.slice(0, 5) || 'gần đây'}` : 'Đã đồng bộ Cloud'}</span>
               </>
             )}
           </div>
         </div>
 
-        {/* Right: Streamlined Action Controls */}
-        <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+        {/* Right: Modern Streamlined Actions */}
+        <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap justify-between sm:justify-end">
           
-          {/* Quick Highlight 1: DNA & Power Map Quick Access */}
-          {onOpenCustomerDna && (
-            <button
-              type="button"
-              onClick={onOpenCustomerDna}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-sky-700 dark:text-sky-300 bg-sky-50/80 hover:bg-sky-100 dark:bg-sky-950/40 dark:hover:bg-sky-900/50 border border-sky-200 dark:border-sky-800 rounded-xl shadow-2xs btn-tactile cursor-pointer transition"
-              title="Trung Tâm Giải Mã Khách Hàng 360° (Customer Logistics DNA & Power Map)"
-            >
-              <Dna className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-              <span>DNA & Power Map</span>
-            </button>
-          )}
-
-          {/* Quick Highlight 2: Golden Hour Quick Access */}
-          {onOpenGoldenHourRadar && (
-            <button
-              type="button"
-              onClick={onOpenGoldenHourRadar}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-700 dark:text-rose-300 bg-rose-50/80 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 rounded-xl shadow-2xs btn-tactile cursor-pointer transition"
-              title="Bắt Nhịp Giờ Vàng Chốt Đơn & Gọi Điện Khách Đang Đọc Giá"
-            >
-              <Flame className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 animate-pulse" />
-              <span>Giờ Vàng 🔥</span>
-            </button>
-          )}
-
-          {/* Quick Highlight 3: Payment & Receivable Hub */}
-          {onOpenQuotationPayments && (
-            <button
-              type="button"
-              onClick={onOpenQuotationPayments}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50/80 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 rounded-xl shadow-2xs btn-tactile cursor-pointer transition"
-              title="Trung Tâm Kiểm Soát Thanh Toán & Thu Hồi Công Nợ Báo Giá"
-            >
-              <CreditCard className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>Thu Nợ & Thanh Toán</span>
-            </button>
-          )}
-
-          {/* UNIFIED SALES INTELLIGENCE & RADAR DROPDOWN */}
+          {/* Categorized Tools & Radar AI Popover */}
           <div className="relative" ref={dropdownRef}>
             <button
               type="button"
-              onClick={() => setIsRadarDropdownOpen(!isRadarDropdownOpen)}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50/90 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 rounded-xl shadow-2xs btn-tactile cursor-pointer transition"
-              title="Mở toàn bộ công cụ Radar & Trợ Lý Bán Hàng AI"
+              onClick={() => setIsToolsDropdownOpen(!isToolsDropdownOpen)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+              title="Mở toàn bộ công cụ Radar & Phân tích chuyên sâu"
             >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>Trợ Lý & Radar AI</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isRadarDropdownOpen ? 'rotate-180' : ''}`} />
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <span>Công Cụ & Radar AI</span>
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isToolsDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {/* Dropdown Popover */}
-            {isRadarDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 p-2.5 dropdown-popover space-y-2">
+            {isToolsDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 space-y-2">
                 
-                {/* Section 1: Customer Insight */}
-                <div className="space-y-1">
-                  <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                {/* Section 1: Customer Intelligence */}
+                <div className="space-y-0.5">
+                  <div className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     Thấu Hiểu Khách Hàng (KYS 360°)
                   </div>
 
                   {onOpenCustomerDna && (
                     <button
                       type="button"
-                      onClick={() => {
-                        onOpenCustomerDna();
-                        setIsRadarDropdownOpen(false);
-                      }}
-                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left cursor-pointer group"
+                      onClick={() => { onOpenCustomerDna(); setIsToolsDropdownOpen(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 flex items-center justify-center">
-                          <Dna className="w-3.5 h-3.5" />
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <Dna className="w-3.5 h-3.5 text-sky-600" />
                         <div>
-                          <div className="font-semibold text-slate-900 dark:text-slate-100">Customer DNA & Power Map</div>
+                          <div className="font-semibold text-slate-900">Customer DNA & Power Map</div>
                           <div className="text-[10px] text-slate-400">Bóc tách gen logistics & sơ đồ quyền lực</div>
                         </div>
                       </div>
-                      <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
                     </button>
                   )}
 
                   {onOpenGoldenHourRadar && (
                     <button
                       type="button"
-                      onClick={() => {
-                        onOpenGoldenHourRadar();
-                        setIsRadarDropdownOpen(false);
-                      }}
-                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left cursor-pointer group"
+                      onClick={() => { onOpenGoldenHourRadar(); setIsToolsDropdownOpen(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center">
-                          <Flame className="w-3.5 h-3.5" />
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <Flame className="w-3.5 h-3.5 text-rose-500" />
                         <div>
-                          <div className="font-semibold text-slate-900 dark:text-slate-100">Giờ Vàng Chốt Đơn</div>
+                          <div className="font-semibold text-slate-900">Giờ Vàng Chốt Đơn 🔥</div>
                           <div className="text-[10px] text-slate-400">Bắt nhịp khách đang xem báo giá</div>
                         </div>
                       </div>
-                      <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
                     </button>
                   )}
 
                   {onOpenCustomerReengagement && (
                     <button
                       type="button"
-                      onClick={() => {
-                        onOpenCustomerReengagement();
-                        setIsRadarDropdownOpen(false);
-                      }}
-                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left cursor-pointer group"
+                      onClick={() => { onOpenCustomerReengagement(); setIsToolsDropdownOpen(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-600 flex items-center justify-center">
-                          <UserCheck className="w-3.5 h-3.5" />
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="w-3.5 h-3.5 text-teal-600" />
                         <div>
-                          <div className="font-semibold text-slate-900 dark:text-slate-100">Đánh Thức Khách Cũ</div>
+                          <div className="font-semibold text-slate-900">Đánh Thức Khách Cũ</div>
                           <div className="text-[10px] text-slate-400">Khách trễ chu kỳ xuất khẩu</div>
                         </div>
                       </div>
-                      <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
                     </button>
                   )}
                 </div>
 
-                <div className="h-px bg-slate-100 dark:bg-slate-800" />
+                <div className="h-px bg-slate-100" />
 
-                {/* Section 2: Deals & Negotiation */}
-                <div className="space-y-1">
-                  <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Đàm Phán & Đấu Thầu (Negotiation)
+                {/* Section 2: Deals, Negotiation & Payments */}
+                <div className="space-y-0.5">
+                  <div className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Đàm Phán, Thầu & Thu Nợ
                   </div>
+
+                  {onOpenQuotationPayments && (
+                    <button
+                      type="button"
+                      onClick={() => { onOpenQuotationPayments(); setIsToolsDropdownOpen(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
+                        <div>
+                          <div className="font-semibold text-slate-900">Thu Nợ & Thanh Toán</div>
+                          <div className="text-[10px] text-slate-400">Quản lý thu hồi công nợ lô hàng</div>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
+                    </button>
+                  )}
 
                   {onOpenEnterpriseTender && (
                     <button
                       type="button"
-                      onClick={() => {
-                        onOpenEnterpriseTender();
-                        setIsRadarDropdownOpen(false);
-                      }}
-                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left cursor-pointer group"
+                      onClick={() => { onOpenEnterpriseTender(); setIsToolsDropdownOpen(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 flex items-center justify-center">
-                          <Building2 className="w-3.5 h-3.5" />
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-3.5 h-3.5 text-indigo-600" />
                         <div>
-                          <div className="font-semibold text-slate-900 dark:text-slate-100">Đấu Thầu Nhà Máy (Tender)</div>
+                          <div className="font-semibold text-slate-900">Đấu Thầu Nhà Máy (Tender)</div>
                           <div className="text-[10px] text-slate-400">Ma trận nhiều tuyến quy mô lớn</div>
                         </div>
                       </div>
-                      <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
                     </button>
                   )}
 
                   {onOpenConcessionGuard && (
                     <button
                       type="button"
-                      onClick={() => {
-                        onOpenConcessionGuard();
-                        setIsRadarDropdownOpen(false);
-                      }}
-                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left cursor-pointer group"
+                      onClick={() => { onOpenConcessionGuard(); setIsToolsDropdownOpen(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center">
-                          <Scale className="w-3.5 h-3.5" />
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <Scale className="w-3.5 h-3.5 text-emerald-600" />
                         <div>
-                          <div className="font-semibold text-slate-900 dark:text-slate-100">Đổi Trác & Sàn Lợi Nhuận</div>
-                          <div className="text-[10px] text-slate-400">Đổi điều khoản khi khách ép giảm giá</div>
+                          <div className="font-semibold text-slate-900">Đổi Trác & Sàn Lợi Nhuận</div>
+                          <div className="text-[10px] text-slate-400">Đổi điều khoản khi khách ép giá</div>
                         </div>
                       </div>
-                      <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
                     </button>
                   )}
 
                   {onOpenCompetitorRadar && (
                     <button
                       type="button"
-                      onClick={() => {
-                        onOpenCompetitorRadar();
-                        setIsRadarDropdownOpen(false);
-                      }}
-                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left cursor-pointer group"
+                      onClick={() => { onOpenCompetitorRadar(); setIsToolsDropdownOpen(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center">
-                          <Swords className="w-3.5 h-3.5" />
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <Swords className="w-3.5 h-3.5 text-amber-600" />
                         <div>
-                          <div className="font-semibold text-slate-900 dark:text-slate-100">Radar Giá Đối Thủ (P50)</div>
-                          <div className="text-[10px] text-slate-400">Dự báo điểm ngọt chốt đơn Win-Rate</div>
+                          <div className="font-semibold text-slate-900">Radar Giá Đối Thủ (P50)</div>
+                          <div className="text-[10px] text-slate-400">Điểm ngọt chốt đơn Win-Rate</div>
                         </div>
                       </div>
-                      <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
                     </button>
                   )}
 
                   {onOpenDealCloser && (
                     <button
                       type="button"
-                      onClick={() => {
-                        onOpenDealCloser();
-                        setIsRadarDropdownOpen(false);
-                      }}
-                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left cursor-pointer group"
+                      onClick={() => { onOpenDealCloser(); setIsToolsDropdownOpen(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center">
-                          <Zap className="w-3.5 h-3.5" />
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <Zap className="w-3.5 h-3.5 text-amber-500" />
                         <div>
-                          <div className="font-semibold text-slate-900 dark:text-slate-100">Chốt Deal Tốc Độ (Gói B)</div>
+                          <div className="font-semibold text-slate-900">Chốt Deal Tốc Độ</div>
                           <div className="text-[10px] text-slate-400">Kịch bản bám đuổi & chốt hạ</div>
                         </div>
                       </div>
-                      <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
                     </button>
                   )}
                 </div>
 
-                <div className="h-px bg-slate-100 dark:bg-slate-800" />
+                <div className="h-px bg-slate-100" />
 
-                {/* Section 3: Market & Operation Risks */}
-                <div className="space-y-1">
-                  <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Thị Trường & Rủi Ro (Market Risks)
+                {/* Section 3: Cost Audit & Operational Risks */}
+                <div className="space-y-0.5">
+                  <div className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Rủi Ro, Đối Soát & Mô Phỏng
                   </div>
 
-                  {onOpenValiditySurcharge && (
+                  {onOpenCarrierInvoiceAudit && (
                     <button
                       type="button"
-                      onClick={() => {
-                        onOpenValiditySurcharge();
-                        setIsRadarDropdownOpen(false);
-                      }}
-                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left cursor-pointer group"
+                      onClick={() => { onOpenCarrierInvoiceAudit(); setIsToolsDropdownOpen(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center">
-                          <Flame className="w-3.5 h-3.5" />
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
                         <div>
-                          <div className="font-semibold text-slate-900 dark:text-slate-100">Hiệu Lực & Phụ Phí GRI</div>
-                          <div className="text-[10px] text-slate-400">Cảnh báo hết hạn & biến động phụ phí</div>
+                          <div className="font-semibold text-slate-900">Đối Soát Cước Hãng Tàu</div>
+                          <div className="text-[10px] text-slate-400">Bắt lỗi hóa đơn hãng tàu đòi lại tiền</div>
                         </div>
                       </div>
-                      <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
                     </button>
                   )}
 
                   {onOpenDemDetPort && (
                     <button
                       type="button"
-                      onClick={() => {
-                        onOpenDemDetPort();
-                        setIsRadarDropdownOpen(false);
-                      }}
-                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left cursor-pointer group"
+                      onClick={() => { onOpenDemDetPort(); setIsToolsDropdownOpen(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 flex items-center justify-center">
-                          <Anchor className="w-3.5 h-3.5" />
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <Anchor className="w-3.5 h-3.5 text-sky-600" />
                         <div>
-                          <div className="font-semibold text-slate-900 dark:text-slate-100">Bộ Tính DEM/DET & Cảng</div>
-                          <div className="text-[10px] text-slate-400">Phí phạt lưu bãi & kẹt cảng</div>
+                          <div className="font-semibold text-slate-900">DEM/DET & Cảng</div>
+                          <div className="text-[10px] text-slate-400">Phí phạt lưu cont & kẹt cảng</div>
                         </div>
                       </div>
-                      <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
                     </button>
                   )}
 
-                  {onOpenCarrierInvoiceAudit && (
+                  {onOpenValiditySurcharge && (
                     <button
                       type="button"
-                      onClick={() => {
-                        onOpenCarrierInvoiceAudit();
-                        setIsRadarDropdownOpen(false);
-                      }}
-                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left cursor-pointer group"
+                      onClick={() => { onOpenValiditySurcharge(); setIsToolsDropdownOpen(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center">
-                          <ShieldAlert className="w-3.5 h-3.5" />
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <Flame className="w-3.5 h-3.5 text-amber-500" />
                         <div>
-                          <div className="font-semibold text-slate-900 dark:text-slate-100">Đối Soát Cước & Chặn Rò Rỉ</div>
-                          <div className="text-[10px] text-slate-400">Bắt lỗi hóa đơn hãng tàu & đòi tiền (Phase 65)</div>
+                          <div className="font-semibold text-slate-900">Hiệu Lực & Phụ Phí GRI</div>
+                          <div className="text-[10px] text-slate-400">Cảnh báo hết hạn & biến động phụ phí</div>
                         </div>
                       </div>
-                      <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
                     </button>
                   )}
 
                   {onOpenRfqInbox && (
                     <button
                       type="button"
-                      onClick={() => {
-                        onOpenRfqInbox();
-                        setIsRadarDropdownOpen(false);
-                      }}
-                      className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left cursor-pointer group"
+                      onClick={() => { onOpenRfqInbox(); setIsToolsDropdownOpen(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 flex items-center justify-center">
-                          <Inbox className="w-3.5 h-3.5" />
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <Inbox className="w-3.5 h-3.5 text-indigo-600" />
                         <div>
-                          <div className="font-semibold text-slate-900 dark:text-slate-100">Hộp Thư RFQ (5s)</div>
+                          <div className="font-semibold text-slate-900">Hộp Thư RFQ (5s)</div>
                           <div className="text-[10px] text-slate-400">Bóc tách yêu cầu chào giá tự động</div>
                         </div>
                       </div>
-                      <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
                     </button>
                   )}
 
                   <button
                     type="button"
-                    onClick={() => {
-                      onOpenDecisionWorkspace();
-                      setIsRadarDropdownOpen(false);
-                    }}
-                    className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left cursor-pointer group"
+                    onClick={() => { onOpenDecisionWorkspace(); setIsToolsDropdownOpen(false); }}
+                    className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-6 h-6 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 flex items-center justify-center">
-                        <SlidersHorizontal className="w-3.5 h-3.5" />
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <SlidersHorizontal className="w-3.5 h-3.5 text-purple-600" />
                       <div>
-                        <div className="font-semibold text-slate-900 dark:text-slate-100">Phòng Quyết Định (What-If)</div>
+                        <div className="font-semibold text-slate-900">Phòng Quyết Định (What-If)</div>
                         <div className="text-[10px] text-slate-400">Mô phỏng kịch bản cước & rủi ro</div>
                       </div>
                     </div>
-                    <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                    <ArrowRight className="w-3 h-3 text-slate-300" />
                   </button>
                 </div>
 
@@ -591,14 +470,14 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
             )}
           </div>
 
-          <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block" />
+          <div className="h-4 w-px bg-slate-200 hidden sm:block" />
 
-          {/* Quick Print & Export Buttons */}
+          {/* Export & Preview Group */}
           <button
             type="button"
             onClick={onOpenPreview}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xs btn-tactile transition cursor-pointer"
-            title="Xem trước mẫu in bản A4"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+            title="Xem trước bản in A4"
           >
             <Eye className="w-3.5 h-3.5 text-slate-500" />
             <span className="hidden sm:inline">Xem Trước</span>
@@ -607,30 +486,30 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
           <button
             type="button"
             onClick={onOpenGeneratePdf}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xs btn-tactile transition cursor-pointer"
-            title="Xuất file PDF chuyên nghiệp"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+            title="Xuất file PDF"
           >
-            <FileDown className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+            <FileDown className="w-3.5 h-3.5 text-indigo-600" />
             <span className="hidden sm:inline">Xuất PDF</span>
           </button>
 
-          {/* Send Quote Modal */}
+          {/* Send Quote */}
           <button
             type="button"
             onClick={onOpenSendModal}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50/90 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 rounded-xl shadow-2xs btn-tactile transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors cursor-pointer"
             title="Gửi báo giá qua email & tạo link khách hàng"
           >
-            <Send className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <Send className="w-3.5 h-3.5 text-blue-600" />
             <span>Gửi Khách</span>
           </button>
 
-          {/* Primary Save Button */}
+          {/* Primary Action: Save to Cloud */}
           <button
             type="button"
             onClick={onSaveQuote}
             disabled={isSaving}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 disabled:opacity-60 rounded-xl shadow-sm hover:shadow-indigo-500/20 btn-tactile transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-50 rounded-lg shadow-2xs transition-colors cursor-pointer"
             title="Lưu báo giá lên Firestore Cloud"
           >
             {isSaving ? (
@@ -649,57 +528,57 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
         </div>
       </div>
 
-      {/* Bottom Bar: Modern Segmented Tabs & Context Metrics */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-100 dark:border-slate-800 pt-3">
+      {/* Bottom Row: Clean Segmented Tabs & Context Meta */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-100 pt-3">
         
         {/* Sleek Segmented Control */}
-        <div className="inline-flex items-center gap-1 bg-slate-100/90 dark:bg-slate-800/90 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60 max-w-full overflow-x-auto">
+        <div className="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-xl max-w-full overflow-x-auto">
           <button
             type="button"
             onClick={() => onTabChange('DETAILS')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all btn-tactile cursor-pointer shrink-0 ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer shrink-0 ${
               activeTab === 'DETAILS'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                ? 'bg-white text-slate-900 shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Layers className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+            <Layers className="w-3.5 h-3.5 text-indigo-600" />
             <span>Chi Tiết Bảng Cước</span>
           </button>
 
           <button
             type="button"
             onClick={() => onTabChange('TERMS')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all btn-tactile cursor-pointer shrink-0 ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer shrink-0 ${
               activeTab === 'TERMS'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                ? 'bg-white text-slate-900 shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <FileText className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            <FileText className="w-3.5 h-3.5 text-amber-600" />
             <span>Điều Khoản & Ngân Hàng</span>
           </button>
 
           <button
             type="button"
             onClick={() => onTabChange('COMMUNICATION')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all btn-tactile cursor-pointer shrink-0 ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer shrink-0 ${
               activeTab === 'COMMUNICATION'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                ? 'bg-white text-slate-900 shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <MessageSquare className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+            <MessageSquare className="w-3.5 h-3.5 text-purple-600" />
             <span>Giao Tiếp & Lịch Sử</span>
           </button>
 
           <button
             type="button"
             onClick={() => onTabChange('ALL')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all btn-tactile cursor-pointer shrink-0 ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer shrink-0 ${
               activeTab === 'ALL'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                ? 'bg-white text-slate-900 shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <span>Toàn Bộ Trang</span>
@@ -707,16 +586,16 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
         </div>
 
         {/* Clean Context Figures */}
-        <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-          <span className="font-medium text-slate-700 dark:text-slate-300">
+        <div className="flex items-center gap-3 text-xs text-slate-500 tabular-nums">
+          <span className="font-medium text-slate-700">
             {quote.items.length} hạng mục cước
           </span>
-          <span className="text-slate-300 dark:text-slate-700">·</span>
-          <span>Đơn vị: <strong className="text-slate-800 dark:text-slate-200">{quote.quoteCurrency || 'USD'}</strong></span>
+          <span className="text-slate-300">·</span>
+          <span>Đơn vị: <strong className="text-slate-900">{quote.quoteCurrency || 'USD'}</strong></span>
           {quote.terms.validityDate && (
             <>
-              <span className="text-slate-300 dark:text-slate-700">·</span>
-              <span className="hidden sm:inline">Hiệu lực: {quote.terms.validityDate}</span>
+              <span className="text-slate-300">·</span>
+              <span className="hidden sm:inline">Hạn: {quote.terms.validityDate}</span>
             </>
           )}
         </div>
