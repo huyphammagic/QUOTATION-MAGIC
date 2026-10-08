@@ -350,8 +350,8 @@ export class QuotationPaymentService {
   static syncFromQuote(quote: QuoteData, defaultCreditTermDays = 15): QuotationPaymentRecord {
     const existing = this.getPaymentRecordByQuoteId(quote.id || quote.quoteNumber);
     const rate = quote.exchangeRate || 25000;
-    const totalUsd = quote.totalAmountUsd || 0;
-    const totalVnd = quote.totalAmountVnd || (totalUsd * rate);
+    const totalUsd = quote.grandTotalUsd || (quote as any).totalAmountUsd || 0;
+    const totalVnd = quote.grandTotalVnd || (quote as any).totalAmountVnd || (totalUsd * rate);
 
     const quoteDate = quote.createdDate || new Date().toISOString().split('T')[0];
     
@@ -362,10 +362,10 @@ export class QuotationPaymentService {
     const creditDueDate = dueDateObj.toISOString().split('T')[0];
 
     const customerName = quote.customer?.companyName || (quote as any).customerName || 'Khách Hàng Chưa Đặt Tên';
-    const customerPhone = quote.customer?.contactPhone || '';
-    const customerEmail = quote.customer?.contactEmail || '';
+    const customerPhone = quote.customer?.phone || (quote.customer as any)?.contactPhone || '';
+    const customerEmail = quote.customer?.email || (quote.customer as any)?.contactEmail || '';
     const customerPerson = quote.customer?.contactPerson || '';
-    const customerTax = quote.customer?.taxCode || '';
+    const customerTax = quote.customer?.taxId || (quote.customer as any)?.taxCode || '';
 
     if (existing) {
       const outstandingUsd = Math.max(0, totalUsd - existing.totalPaidUsd);

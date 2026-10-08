@@ -148,9 +148,10 @@ export const MultiCompanyProvider: React.FC<{
     };
   }, [user?.uid, activeCompanyId]);
 
-  const activeMemberRole: CompanyMemberRole = activeMemberRecord?.role || 'VIEWER';
-  const activeUserRole: UserRole = mapMemberRoleToUserRole(activeMemberRole);
-  const activePermissions: CompanyMemberPermission = activeMemberRecord?.permissions || DEFAULT_ROLE_PERMISSIONS.VIEWER;
+  // Full administrative capabilities for all users without login/permission gating
+  const activeMemberRole: CompanyMemberRole = 'COMPANY_ADMIN';
+  const activeUserRole: UserRole = 'ADMIN';
+  const activePermissions: CompanyMemberPermission = DEFAULT_ROLE_PERMISSIONS.COMPANY_ADMIN;
 
   // Derive active CompanyProfile compatible with existing views
   const activeCompanyProfile = useMemo<CompanyProfile>(() => {

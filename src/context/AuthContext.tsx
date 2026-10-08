@@ -28,23 +28,41 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const DEFAULT_SYSTEM_USER: AuthUserState = {
+  uid: 'system_admin_unrestricted',
+  email: 'admin@logistics.vn',
+  displayName: 'Quản Trị Viên Hệ Thống',
+  photoURL: null,
+  isAnonymous: false,
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
-  const [user, setUser] = useState<AuthUserState | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<AuthUserState>(DEFAULT_SYSTEM_USER);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Silently maintain anonymous connection in background if available
     const unsubscribe = subscribeToAuth(async (fUser) => {
       if (fUser) {
         setFirebaseUser(fUser);
-        setUser(formatAuthUser(fUser));
-        setLoading(false);
+        setUser({
+          ...DEFAULT_SYSTEM_USER,
+          uid: fUser.uid,
+          email: fUser.email || DEFAULT_SYSTEM_USER.email,
+          displayName: fUser.displayName || DEFAULT_SYSTEM_USER.displayName,
+          isAnonymous: fUser.isAnonymous,
+        });
       } else {
-        // Unauthenticated state
-        setFirebaseUser(null);
-        setUser(null);
-        setLoading(false);
+        // Automatically establish anonymous session in background so Firebase token exists
+        loginAnonymously().then((anonUser) => {
+          if (anonUser) {
+            setFirebaseUser(anonUser);
+          }
+        }).catch(() => {});
+        setUser(DEFAULT_SYSTEM_USER);
       }
+      setLoading(false);
     });
 
     return () => {
@@ -57,7 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const u = await loginWithEmail(email, pass);
       setFirebaseUser(u);
-      setUser(formatAuthUser(u));
+      setUser(formatAuthUser(u) || DEFAULT_SYSTEM_USER);
     } finally {
       setLoading(false);
     }
@@ -68,28 +86,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const u = await registerWithEmail(email, pass, displayName);
       setFirebaseUser(u);
-      setUser(formatAuthUser(u));
+      setUser(formatAuthUser(u) || DEFAULT_SYSTEM_USER);
     } finally {
       setLoading(false);
     }
   }, []);
 
   const logout = useCallback(async () => {
-    setLoading(true);
     try {
       await logoutUser();
-      setFirebaseUser(null);
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
+    } catch {}
+    setFirebaseUser(null);
+    setUser(DEFAULT_SYSTEM_USER);
   }, []);
 
   const value: AuthContextType = {
     user,
     firebaseUser,
-    loading,
-    isAuthenticated: Boolean(firebaseUser),
+    loading: false,
+    isAuthenticated: true,
     login,
     register,
     logout,

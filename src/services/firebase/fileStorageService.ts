@@ -61,8 +61,21 @@ export async function uploadFileToStorage(options: UploadFileOptions): Promise<F
       isCloudStorage: true,
     };
   } catch (error: any) {
-    console.error('[fileStorageService] Firebase Storage upload error:', error?.message || error);
-    throw error;
+    console.warn('[fileStorageService] Storage upload error, falling back instantly to DataURL:', error?.message || error);
+    try {
+      const fallbackUrl = await blobToDataUrl(file);
+      return {
+        storagePath,
+        downloadUrl: fallbackUrl,
+        fileName,
+        fileSizeBytes,
+        mimeType,
+        uploadedAt,
+        isCloudStorage: false,
+      };
+    } catch {
+      throw error;
+    }
   }
 }
 

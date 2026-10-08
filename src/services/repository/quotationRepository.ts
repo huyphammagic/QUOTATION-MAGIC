@@ -224,55 +224,36 @@ export async function saveQuotation(
   try {
     const docRef = doc(db, COLLECTION_NAME, quoteId);
 
-    // 1. Conflict Detection & Integrity Verification
-    let existingQuoteData: QuoteData | null = null;
-    if (!options?.forceOverwrite) {
-      let existingSnap: DocumentSnapshot | null = null;
+    // 1. Conflict Detection & Integrity Verification via Local Cache & Fast Check
+    let existingQuoteData: QuoteData | null = memorySingleQuoteCache.get(quoteId)?.data || null;
+
+    if (!existingQuoteData && !options?.forceOverwrite) {
       try {
-        existingSnap = await getDoc(docRef);
-      } catch (getErr: any) {
-        // When client is offline or network is disconnected, getDoc throws:
-        // "Failed to get document because the client is offline."
-        // Gracefully attempt reading from local offline cache
-        try {
-          existingSnap = await getDocFromCache(docRef);
-        } catch {
-          existingSnap = null;
+        const cachedSnap = await getDocFromCache(docRef);
+        if (cachedSnap.exists()) {
+          existingQuoteData = cachedSnap.data() as QuoteData;
         }
+      } catch {
+        // Cache miss is completely normal for new quotes
       }
+    }
 
-      if (existingSnap && existingSnap.exists()) {
-        const remoteData = existingSnap.data() as QuoteData;
-        existingQuoteData = remoteData;
-        const remoteVersion = remoteData.version || 1;
-        const localVersion = quote.version || 1;
+    if (existingQuoteData) {
+      const remoteVersion = existingQuoteData.version || 1;
+      const localVersion = quote.version || 1;
+      if (!options?.forceOverwrite && remoteVersion > localVersion) {
+        console.warn(`[quotationRepository] Concurrency conflict on quote ${quoteId}. Cloud v${remoteVersion} > Local v${localVersion}`);
+        syncHealthService.setSaveState('CONFLICT', `Xung đột phiên bản: Cloud v${remoteVersion} > Máy này v${localVersion}`);
+        syncHealthService.endOperation(opKey, false, new Error('Xung đột phiên bản'));
 
-        if (remoteVersion > localVersion) {
-          console.warn(`[quotationRepository] Concurrency conflict on quote ${quoteId}. Cloud v${remoteVersion} > Local v${localVersion}`);
-          syncHealthService.setSaveState('CONFLICT', `Xung đột phiên bản: Cloud v${remoteVersion} > Máy này v${localVersion}`);
-          syncHealthService.endOperation(opKey, false, new Error('Xung đột phiên bản'));
-
-          await recordHealthAudit({
-            userId: options?.userId || 'Sales User',
-            companyId: 'company_profile',
-            entityType: 'Quotation',
-            entityId: quoteId,
-            action: 'CONFLICT_DETECTED',
-            result: 'WARNING',
-            correlationId: opKey,
-            details: `Xung đột đa thiết bị: Cloud v${remoteVersion} vs Local v${localVersion}`,
-          });
-
-          return {
-            success: false,
-            conflict: true,
-            remoteQuote: { ...remoteData, id: existingSnap.id },
-            message: `Xung đột dữ liệu đa thiết bị: Bản ghi này đã được cập nhật từ thiết bị khác (Phiên bản Cloud: v${remoteVersion}, Thiết bị này: v${localVersion}).`,
-          };
-        }
-
-        newVersion = Math.max(remoteVersion, localVersion) + 1;
+        return {
+          success: false,
+          conflict: true,
+          remoteQuote: { ...existingQuoteData, id: quoteId },
+          message: `Xung đột dữ liệu đa thiết bị: Bản ghi này đã được cập nhật từ thiết bị khác (Phiên bản Cloud: v${remoteVersion}, Thiết bị này: v${localVersion}).`,
+        };
       }
+      newVersion = Math.max(remoteVersion, localVersion) + 1;
     }
 
     // Integrity & State Transition Validation (Phase 32)

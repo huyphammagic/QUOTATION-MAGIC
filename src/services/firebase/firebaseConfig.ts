@@ -28,11 +28,11 @@ const rawDatabaseId = (firebaseConfigJson as any).firestoreDatabaseId;
 const databaseId = rawDatabaseId && rawDatabaseId !== '(default)' ? rawDatabaseId : undefined;
 
 try {
-  // Primary attempt: Persistent local cache + Long Polling for sandboxed iframe stability
+  // Primary attempt: Persistent local cache + auto-detect connection for lightning-fast saving
   firestoreDb = initializeFirestore(
     app, 
     {
-      experimentalForceLongPolling: true,
+      experimentalAutoDetectLongPolling: true,
       ignoreUndefinedProperties: true,
       localCache: persistentLocalCache({
         tabManager: persistentMultipleTabManager(),
@@ -41,12 +41,12 @@ try {
     databaseId
   );
 } catch (primaryError) {
-  // Secondary attempt: Fallback to memory cache + Long Polling if IndexedDB is restricted in sandboxed iframe
+  // Secondary attempt: Fallback with auto-detect if IndexedDB is restricted
   try {
     firestoreDb = initializeFirestore(
       app,
       {
-        experimentalForceLongPolling: true,
+        experimentalAutoDetectLongPolling: true,
         ignoreUndefinedProperties: true,
       },
       databaseId

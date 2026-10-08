@@ -3450,8 +3450,8 @@ export default function App() {
             onClose={() => setIsQuotationPaymentHubOpen(false)}
             initialQuoteId={selectedPaymentQuoteId}
             currentQuote={quote}
-            companyName={company?.nameVi || company?.nameEn || 'BOGI LOGISTICS & FORWARDING'}
-            companyBankInfo={company?.bankAccount || 'VIETCOMBANK - STK: 0071001234567 - CTK: CTY TNHH LOGISTICS & FORWARDING'}
+            companyName={company?.name || company?.englishName || 'BOGI LOGISTICS & FORWARDING'}
+            companyBankInfo={company?.bankAccountNo ? `${company?.bankName || 'BANK'} - STK: ${company.bankAccountNo} - CTK: ${company.bankAccountHolder || ''}` : 'VIETCOMBANK - STK: 0071001234567 - CTK: CTY TNHH LOGISTICS & FORWARDING'}
             onPaymentUpdated={(updatedRecord) => {
               showToast(`💳 Đã cập nhật thanh toán cho báo giá ${updatedRecord.quoteNumber}: ${updatedRecord.paymentStatus}!`);
             }}

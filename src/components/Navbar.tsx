@@ -196,34 +196,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="text-[10px] text-slate-400">₫</span>
         </div>
 
-        {/* User Authentication Status */}
-        {onOpenAuthModal && (
-          <button
-            type="button"
-            id="btn-navbar-auth"
-            onClick={onOpenAuthModal}
-            className={`flex items-center space-x-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors cursor-pointer ${
-              isAuthenticated
-                ? 'bg-slate-50 text-slate-800 border-slate-200 hover:bg-slate-100'
-                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-            }`}
-            title={isAuthenticated ? `Đang đăng nhập: ${user?.email}` : 'Đăng nhập'}
-          >
-            {isAuthenticated ? (
-              <>
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="hidden md:inline truncate max-w-[100px]">
-                  {user?.displayName || user?.email?.split('@')[0]}
-                </span>
-              </>
-            ) : (
-              <>
-                <LogIn className="w-3.5 h-3.5 text-slate-500" />
-                <span className="hidden sm:inline">Đăng Nhập</span>
-              </>
-            )}
-          </button>
-        )}
+        {/* Unrestricted System Status (No login required) */}
+        <div 
+          className="flex items-center space-x-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800"
+          title="Hệ thống đã mở toàn quyền - Không yêu cầu đăng nhập hay phân quyền"
+        >
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+          <span className="hidden sm:inline">Toàn Quyền Quản Trị</span>
+        </div>
 
         {/* New Quote Quick Action */}
         {onNewQuote && (
