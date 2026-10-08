@@ -267,10 +267,10 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
 
               <div className="flex items-center justify-between text-slate-600">
                 <span className="flex items-center space-x-1.5">
-                  <Laptop className="w-3.5 h-3.5 text-slate-400" />
+                  <Laptop className="w-3.5 h-3.5 text-blue-500" />
                   <span>Đồng bộ đa thiết bị:</span>
                 </span>
-                <span className="font-medium text-slate-900">Tức thì 100% (A ⟷ B)</span>
+                <span className="font-semibold text-emerald-700">Firebase Storage & Cloud (A ⟷ B)</span>
               </div>
 
               <div className="flex items-center justify-between text-slate-600">
@@ -316,7 +316,7 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
                   setIsOpen(false);
                   onOpenIntegrityDashboard();
                 }}
-                className="w-full mt-2.5 py-2 px-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 rounded-xl text-xs font-bold transition-colors flex items-center justify-center space-x-2 border border-indigo-200"
+                className="w-full mt-2.5 py-2 px-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 rounded-xl text-xs font-bold transition-colors flex items-center justify-center space-x-2 border border-indigo-200 cursor-pointer"
               >
                 <Cpu className="w-3.5 h-3.5 text-indigo-600" />
                 <span>Mở Trung Tâm Tự Chẩn Đoán Toàn Vẹn</span>
@@ -324,7 +324,7 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
             )}
 
             <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-[10px] text-slate-400 italic">Dữ liệu đám mây Firestore</span>
+              <span className="text-[10px] text-slate-500 font-medium">Đồng bộ Storage & Cloud</span>
               {onForceSync && (
                 <button
                   id="force-sync-btn"
@@ -334,10 +334,11 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
                     await onForceSync();
                     setIsOpen(false);
                   }}
-                  className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition-colors flex items-center space-x-1.5 disabled:opacity-50"
+                  className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition-colors flex items-center space-x-1.5 disabled:opacity-50 cursor-pointer shadow-xs"
+                  title="Đồng bộ toàn bộ dữ liệu qua Firebase Storage để máy khác xem được ngay"
                 >
                   <RefreshCw className={`w-3 h-3 ${isSyncing || isOperationInProgress ? 'animate-spin' : ''}`} />
-                  <span>{isSyncing || isOperationInProgress ? 'Đang tải...' : 'Đồng bộ ngay'}</span>
+                  <span>{isSyncing || isOperationInProgress ? 'Đang đồng bộ...' : 'Đồng bộ Storage đa máy'}</span>
                 </button>
               )}
             </div>

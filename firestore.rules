@@ -2,7 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Global instant-save and sync access without authentication barriers or permission delays
+    // Global instant-save and sync access without authentication barriers or permission delays across all machines
     match /{document=**} {
       allow read, write: if true;
     }

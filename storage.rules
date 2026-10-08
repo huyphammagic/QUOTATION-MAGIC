@@ -1,8 +1,8 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    // Direct, instant access for logistics media, PDFs, contracts, and documents
+
+    // Global logistics cloud storage: accessible from any computer without login gating
     match /companies/{companyId}/logo/{allPaths=**} {
       allow read, write: if true;
     }
@@ -27,10 +27,18 @@ service firebase.storage {
       allow read, write: if true;
     }
 
-    // Default open access for application assets without authentication delay
+    // Master cross-device JSON snapshot and backup files
+    match /systemBackups/{allPaths=**} {
+      allow read, write: if true;
+    }
+
+    match /cloudSync/{allPaths=**} {
+      allow read, write: if true;
+    }
+
+    // Default open access for application assets across all devices
     match /{allPaths=**} {
       allow read, write: if true;
     }
   }
 }
-

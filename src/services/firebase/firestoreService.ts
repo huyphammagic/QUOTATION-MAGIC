@@ -812,16 +812,13 @@ export async function getMissingRateEventsFromFirestore(): Promise<MissingRateEv
 /**
  * Subscribes to real-time changes in Quotes collection across all devices
  */
-export function subscribeToQuotations(onUpdate: (quotes: QuoteData[]) => void, companyId?: string): () => void {
-  if (!db || !auth?.currentUser) return () => {};
-  const targetCompany = companyId || localStorage.getItem('logistics_active_company_id') || undefined;
+export function subscribeToQuotations(onUpdate: (quotes: QuoteData[]) => void, _companyId?: string): () => void {
+  if (!db) return () => {};
   const listenerId = 'quotes_listener';
   syncHealthService.registerListener(listenerId, 'Báo Giá Thời Gian Thực', COLLECTIONS.QUOTES);
   try {
     const collRef = collection(db, COLLECTIONS.QUOTES);
-    const q = targetCompany 
-      ? query(collRef, where('companyId', '==', targetCompany))
-      : query(collRef);
+    const q = query(collRef);
 
     return onSnapshot(q, (snapshot) => {
       const items: QuoteData[] = [];
@@ -851,16 +848,13 @@ export function subscribeToQuotations(onUpdate: (quotes: QuoteData[]) => void, c
 /**
  * Subscribes to real-time changes in Customers collection across all devices
  */
-export function subscribeToCustomers(onUpdate: (customers: CustomerRecord[]) => void, companyId?: string): () => void {
-  if (!db || !auth?.currentUser) return () => {};
-  const targetCompany = companyId || localStorage.getItem('logistics_active_company_id') || undefined;
+export function subscribeToCustomers(onUpdate: (customers: CustomerRecord[]) => void, _companyId?: string): () => void {
+  if (!db) return () => {};
   const listenerId = 'customers_listener';
   syncHealthService.registerListener(listenerId, 'Khách Hàng Thời Gian Thực', COLLECTIONS.CUSTOMERS);
   try {
     const collRef = collection(db, COLLECTIONS.CUSTOMERS);
-    const q = targetCompany 
-      ? query(collRef, where('companyId', '==', targetCompany))
-      : query(collRef);
+    const q = query(collRef);
 
     return onSnapshot(q, (snapshot) => {
       const items: CustomerRecord[] = [];
@@ -885,16 +879,13 @@ export function subscribeToCustomers(onUpdate: (customers: CustomerRecord[]) => 
 /**
  * Subscribes to real-time changes in Master Rates across all devices
  */
-export function subscribeToRateMasters(onUpdate: (rates: RateMasterItem[]) => void, companyId?: string): () => void {
-  if (!db || !auth?.currentUser) return () => {};
-  const targetCompany = companyId || localStorage.getItem('logistics_active_company_id') || undefined;
+export function subscribeToRateMasters(onUpdate: (rates: RateMasterItem[]) => void, _companyId?: string): () => void {
+  if (!db) return () => {};
   const listenerId = 'rates_listener';
   syncHealthService.registerListener(listenerId, 'Biểu Cước Master Thời Gian Thực', COLLECTIONS.RATE_MASTERS);
   try {
     const collRef = collection(db, COLLECTIONS.RATE_MASTERS);
-    const q = targetCompany 
-      ? query(collRef, where('companyId', '==', targetCompany))
-      : query(collRef);
+    const q = query(collRef);
 
     return onSnapshot(q, (snapshot) => {
       const items: RateMasterItem[] = [];
@@ -919,16 +910,13 @@ export function subscribeToRateMasters(onUpdate: (rates: RateMasterItem[]) => vo
 /**
  * Subscribes to real-time changes in Surcharges across all devices
  */
-export function subscribeToSurcharges(onUpdate: (surcharges: SurchargeItem[]) => void, companyId?: string): () => void {
-  if (!db || !auth?.currentUser) return () => {};
-  const targetCompany = companyId || localStorage.getItem('logistics_active_company_id') || undefined;
+export function subscribeToSurcharges(onUpdate: (surcharges: SurchargeItem[]) => void, _companyId?: string): () => void {
+  if (!db) return () => {};
   const listenerId = 'surcharges_listener';
   syncHealthService.registerListener(listenerId, 'Phụ Phí Thời Gian Thực', COLLECTIONS.SURCHARGES);
   try {
     const collRef = collection(db, COLLECTIONS.SURCHARGES);
-    const q = targetCompany 
-      ? query(collRef, where('companyId', '==', targetCompany))
-      : query(collRef);
+    const q = query(collRef);
 
     return onSnapshot(q, (snapshot) => {
       const items: SurchargeItem[] = [];

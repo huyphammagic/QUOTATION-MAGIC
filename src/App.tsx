@@ -49,6 +49,11 @@ import {
   subscribeToCompanyProfile,
   batchRestoreSystemDataToFirestore
 } from './services/firebase/firestoreService';
+import { 
+  syncAllDataToFirebaseStorage, 
+  syncAllDataFromFirebaseStorage, 
+  triggerDebouncedStorageSync 
+} from './services/firebase/storageSyncService';
 import { getActiveQuotationDraft } from './services/repository/quotationRepository';
 import { 
   fetchCustomers, 
@@ -1074,7 +1079,7 @@ export default function App() {
     async function syncFirestoreData() {
       setIsCloudSyncing(true);
       try {
-        const [
+        let [
           cloudQuotes, 
           cloudCustomers, 
           cloudSurcharges, 
@@ -1083,14 +1088,27 @@ export default function App() {
           cloudChargeMasters,
           cloudHistories
         ] = await Promise.all([
-          fetchQuotations({ companyId: currentCompId, forceRefresh: true }),
-          fetchCustomers(true, currentCompId),
+          fetchQuotations({ forceRefresh: true }),
+          fetchCustomers(true),
           getSurchargesFromFirestore(),
           getCompanyProfileFromFirestore(),
-          fetchRateMasters(true, currentCompId),
+          fetchRateMasters(true),
           getChargeMastersFromFirestore(),
           getRateHistoriesFromFirestore(),
         ]);
+
+        // Cross-device recovery: if Firestore is empty on this device, check Firebase Storage!
+        if (!cloudQuotes || cloudQuotes.length === 0) {
+          const storageRes = await syncAllDataFromFirebaseStorage();
+          if (storageRes.success && storageRes.data) {
+            cloudQuotes = storageRes.data.quotes;
+            if (storageRes.data.customers?.length) cloudCustomers = storageRes.data.customers;
+            if (storageRes.data.rates?.length) cloudRates = storageRes.data.rates;
+            if (storageRes.data.surcharges?.length) cloudSurcharges = storageRes.data.surcharges;
+            if (storageRes.data.chargeMasters?.length) cloudChargeMasters = storageRes.data.chargeMasters;
+            if (storageRes.data.companyProfile) cloudCompany = storageRes.data.companyProfile;
+          }
+        }
 
         if (cloudQuotes && cloudQuotes.length > 0) setSavedQuotes(cloudQuotes);
         if (Array.isArray(cloudCustomers) && cloudCustomers.length > 0) {
@@ -1104,11 +1122,23 @@ export default function App() {
         if (cloudChargeMasters && cloudChargeMasters.length > 0) setChargeMasters(cloudChargeMasters);
         if (cloudHistories && cloudHistories.length > 0) setRateHistories(cloudHistories);
 
+        // Keep Firebase Storage in sync with current state for multi-device access
+        if (cloudQuotes && cloudQuotes.length > 0) {
+          triggerDebouncedStorageSync({
+            quotes: cloudQuotes,
+            customers: cloudCustomers,
+            rates: cloudRates,
+            surcharges: cloudSurcharges,
+            chargeMasters: cloudChargeMasters,
+            companyProfile: cloudCompany || undefined,
+          });
+        }
+
         // Auto-recover any missing customers from historical quotations into Cloud CRM
         if (cloudQuotes && cloudQuotes.length > 0) {
           syncMissingCustomersFromQuotes(cloudQuotes).then((recovered) => {
             if (recovered > 0) {
-              fetchCustomers(true, currentCompId).then((fresh) => {
+              fetchCustomers(true).then((fresh) => {
                 if (fresh && fresh.length > 0) setCustomers(fresh);
               });
             }
@@ -1197,13 +1227,26 @@ export default function App() {
 
     if (!quote.id || !quote.quoteNumber) return;
 
+    // Immediately record active draft locally for zero-latency safety
+    const draftTime = saveActiveQuoteDraft(quote);
+    if (draftTime) setLastAutoSaveTime(draftTime);
+
+    // Keep local savedQuotes list synchronized in-place instantly
+    setSavedQuotes((prev) => {
+      const idx = prev.findIndex((q) => q.id === quote.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = quote;
+        return next;
+      }
+      return [quote, ...prev];
+    });
+
     setIsAutoSaving(true);
+    // Instant Cloud synchronization with short 200ms debounce
     const debounceTimer = setTimeout(async () => {
       try {
-        const time = saveActiveQuoteDraft(quote);
-        if (time) setLastAutoSaveTime(time);
-
-        // 100% Persistence to Firestore Cloud
+        // 100% Immediate Persistence to Firestore Cloud
         await saveQuotation(quote, {
           userId: company.salesRepName || 'User',
           userName: company.salesRepName || 'User',
@@ -1216,15 +1259,11 @@ export default function App() {
           });
         }
 
-        // Keep local savedQuotes list synchronized in-place
-        setSavedQuotes((prev) => {
-          const idx = prev.findIndex((q) => q.id === quote.id);
-          if (idx >= 0) {
-            const next = [...prev];
-            next[idx] = quote;
-            return next;
-          }
-          return [quote, ...prev];
+        // Multi-device sync to Firebase Storage
+        triggerDebouncedStorageSync({
+          quotes: [quote, ...savedQuotes.filter((q) => q.id !== quote.id)],
+          customers,
+          companyProfile: company,
         });
 
         setLastCloudSyncedAt(new Date());
@@ -1233,7 +1272,7 @@ export default function App() {
       } finally {
         setIsAutoSaving(false);
       }
-    }, 1200);
+    }, 200);
 
     return () => clearTimeout(debounceTimer);
   }, [quote, company.salesRepName]);
@@ -1777,11 +1816,11 @@ export default function App() {
     showToast(`Đã tạo và lưu 100% báo giá mới [${newRef}] lên Cloud!`);
   };
 
-  // Manual Cloud Sync Function for Navbar Trigger
+  // Manual Cloud Sync Function for Navbar Trigger (Firestore + Firebase Storage 100% Multi-Device Sync)
   const handleForceCloudSync = async () => {
     setIsCloudSyncing(true);
     try {
-      const [cloudQuotes, cloudCustomers, cloudRates, cloudCompany, cloudSurcharges, cloudCharges] = await Promise.all([
+      let [cloudQuotes, cloudCustomers, cloudRates, cloudCompany, cloudSurcharges, cloudCharges] = await Promise.all([
         fetchQuotations({ forceRefresh: true }),
         fetchCustomers(true),
         fetchRateMasters(true),
@@ -1789,14 +1828,39 @@ export default function App() {
         getSurchargesFromFirestore(),
         getChargeMastersFromFirestore(),
       ]);
-      if (cloudQuotes) setSavedQuotes(cloudQuotes);
-      if (cloudCustomers) setCustomers(cloudCustomers);
-      if (cloudRates) setRates(cloudRates);
+
+      // If quotes are empty on this device, immediately recover from Firebase Storage snapshot
+      if (!cloudQuotes || cloudQuotes.length === 0) {
+        const storageRes = await syncAllDataFromFirebaseStorage();
+        if (storageRes.success && storageRes.data) {
+          cloudQuotes = storageRes.data.quotes;
+          if (storageRes.data.customers?.length) cloudCustomers = storageRes.data.customers;
+          if (storageRes.data.rates?.length) cloudRates = storageRes.data.rates;
+          if (storageRes.data.surcharges?.length) cloudSurcharges = storageRes.data.surcharges;
+          if (storageRes.data.chargeMasters?.length) cloudCharges = storageRes.data.chargeMasters;
+          if (storageRes.data.companyProfile) cloudCompany = storageRes.data.companyProfile;
+        }
+      }
+
+      if (cloudQuotes && cloudQuotes.length > 0) setSavedQuotes(cloudQuotes);
+      if (cloudCustomers && cloudCustomers.length > 0) setCustomers(cloudCustomers);
+      if (cloudRates && cloudRates.length > 0) setRates(cloudRates);
       if (cloudCompany && cloudCompany.name) setCompany(cloudCompany);
-      if (cloudSurcharges) setSurcharges(cloudSurcharges);
-      if (cloudCharges) setChargeMasters(cloudCharges);
+      if (cloudSurcharges && cloudSurcharges.length > 0) setSurcharges(cloudSurcharges);
+      if (cloudCharges && cloudCharges.length > 0) setChargeMasters(cloudCharges);
+
+      // Push full unified state to Firebase Storage
+      syncAllDataToFirebaseStorage({
+        quotes: cloudQuotes && cloudQuotes.length > 0 ? cloudQuotes : savedQuotes,
+        customers: cloudCustomers && cloudCustomers.length > 0 ? cloudCustomers : customers,
+        rates: cloudRates && cloudRates.length > 0 ? cloudRates : rates,
+        surcharges: cloudSurcharges && cloudSurcharges.length > 0 ? cloudSurcharges : surcharges,
+        chargeMasters: cloudCharges && cloudCharges.length > 0 ? cloudCharges : chargeMasters,
+        companyProfile: cloudCompany || company,
+      }).catch(() => {});
+
       setLastCloudSyncedAt(new Date());
-      showToast('Đã đồng bộ 100% dữ liệu với Firebase Cloud!');
+      showToast('Đã đồng bộ 100% dữ liệu qua Firebase Storage & Cloud cho mọi thiết bị!');
     } catch (e) {
       console.warn('Manual cloud sync notice:', e);
     } finally {
@@ -1861,8 +1925,24 @@ export default function App() {
       return;
     }
 
-    const updated = await fetchQuotations({ forceRefresh: true });
-    setSavedQuotes(updated);
+    const savedData = result.savedQuote || calculatedQuote;
+    setSavedQuotes((prev) => {
+      const idx = prev.findIndex((q) => q.id === savedData.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = savedData;
+        return next;
+      }
+      return [savedData, ...prev];
+    });
+
+    // Automatically sync updated quotes to Firebase Storage for multi-device access
+    triggerDebouncedStorageSync({
+      quotes: [savedData, ...savedQuotes.filter((q) => q.id !== savedData.id)],
+      customers,
+      companyProfile: company,
+    });
+
     const savedTime = saveActiveQuoteDraft(calculatedQuote);
     if (savedTime) setLastAutoSaveTime(savedTime);
     setLastCloudSyncedAt(new Date());

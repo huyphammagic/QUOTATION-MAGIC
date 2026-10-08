@@ -105,31 +105,16 @@ export async function fetchCustomers(forceRefresh = false, companyId?: string): 
     let snap: any = null;
     const collRef = collection(db, COLLECTION_NAME);
 
-    if (targetCompany) {
-      const q = query(collRef, where('companyId', '==', targetCompany));
-      snap = await getDocs(q);
-    } else {
-      // Unscoped query only if no company is selected
-      try {
-        snap = await getDocs(collRef);
-      } catch (unscopedErr) {
-        // Expected when security rules enforce tenant isolation
-        const local = getSavedCustomers();
-        return local;
-      }
+    try {
+      snap = await getDocs(collRef);
+    } catch {
+      snap = null;
     }
 
     if (!snap || snap.empty) {
       const currentList = getSavedCustomers();
       if (currentList && currentList.length > 0) {
-        if (targetCompany) {
-          return currentList.filter(c => !c.companyId || c.companyId === targetCompany);
-        }
         return currentList;
-      }
-      if (!targetCompany) {
-        memoryCustomersCache = { data: [], cachedAt: now };
-        saveCustomersList([]);
       }
       return [];
     }
@@ -138,9 +123,7 @@ export async function fetchCustomers(forceRefresh = false, companyId?: string): 
     snap.forEach((d: any) => {
       const data = d.data();
       const sanitized = sanitizeCustomerRecord({ ...data, id: d.id });
-      if (!targetCompany || !sanitized.companyId || sanitized.companyId === targetCompany) {
-        items.push(sanitized);
-      }
+      items.push(sanitized);
     });
 
     items.sort((a, b) => (a.companyName || a.customerName || '').localeCompare(b.companyName || b.customerName || ''));
