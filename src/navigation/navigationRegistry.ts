@@ -155,6 +155,16 @@ export const APP_ROUTES: Record<AppRouteId, RouteDefinition> = {
     descriptionVi: 'Quản lý lịch hẹn và tác vụ theo dõi báo giá',
     descriptionEn: 'Schedule and manage customer follow-up actions',
   },
+  ai_document_parser: {
+    id: 'ai_document_parser',
+    path: '/documents/ocr-parser',
+    hash: '#documents/ocr-parser',
+    titleVi: 'Trích Xuất Chứng Từ AI (OCR)',
+    titleEn: 'AI Logistics Document OCR Parser',
+    group: 'quotation',
+    descriptionVi: 'Trích xuất tự động dữ liệu B/L, Booking, Invoice & Tờ khai hải quan bằng AI (Phase 67)',
+    descriptionEn: 'Automated multimodal OCR extraction for Bills of Lading, Bookings, Invoices & Customs declarations',
+  },
   rfq_inbox: {
     id: 'rfq_inbox',
     path: '/quotations/rfq-inbox',
@@ -765,11 +775,38 @@ export function parseRouteFromUrl(pathname: string, hash: string): {
 
 /**
  * Checks role permission for a given route.
- * Bỏ phân quyền - toàn quyền truy cập 100% tất cả các màn hình và tính năng.
  */
-export function checkRoutePermission(_routeId: AppRouteId, _role: UserRole): { 
+export function checkRoutePermission(routeId: AppRouteId, role: UserRole): { 
   hasAccess: boolean; 
   requiredDesc: string;
 } {
+  const route = APP_ROUTES[routeId];
+  if (!route) return { hasAccess: true, requiredDesc: '' };
+
+  if (route.requiredPermission === 'admin_manager') {
+    const ok = role === 'ADMIN' || role === 'SALES_MANAGER';
+    return {
+      hasAccess: ok,
+      requiredDesc: 'Cần vai trò Quản Trị Viên (Admin) hoặc Trưởng Phòng Kinh Doanh (Sales Manager)',
+    };
+  }
+
+  if (route.requiredPermission === 'profitability.view') {
+    const perms = ROLE_PERMISSIONS[role] || [];
+    const ok = perms.includes('profitability.view');
+    return {
+      hasAccess: ok,
+      requiredDesc: 'Cần quyền xem phân tích biên lợi nhuận (Admin, Sales Manager, Pricing Specialist)',
+    };
+  }
+
+  if (route.allowedRoles && route.allowedRoles.length > 0) {
+    const ok = route.allowedRoles.includes(role);
+    return {
+      hasAccess: ok,
+      requiredDesc: `Yêu cầu vai trò: ${route.allowedRoles.join(', ')}`,
+    };
+  }
+
   return { hasAccess: true, requiredDesc: '' };
 }

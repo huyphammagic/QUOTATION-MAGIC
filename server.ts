@@ -14,7 +14,14 @@ function getGeminiClient() {
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY environment variable is missing.");
   }
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({ 
+    apiKey,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      }
+    }
+  });
 }
 
 // Health check route
@@ -273,6 +280,178 @@ Trả về ĐÚNG JSON thuần túy (không dùng markdown backticks, không gi�
   } catch (error: any) {
     console.error("Error parsing RFQ with AI:", error);
     res.status(500).json({ success: false, error: error.message || "Failed to parse RFQ" });
+  }
+});
+
+// Phase 67: AI Logistics OCR & Document Parser Engine
+app.post("/api/gemini/parse-document", async (req, res) => {
+  try {
+    const { fileBase64, mimeType, fileName, rawText, docTypeHint } = req.body;
+
+    if (!fileBase64 && (!rawText || rawText.trim() === "")) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Either fileBase64 or rawText is required for document parsing." 
+      });
+    }
+
+    const systemPrompt = `Bạn là Chuyên gia Cao Cấp về Chứng Từ Vận Tải Quốc Tế, Hàng Hải & Thủ Tục Hải Quan (AI Logistics Document OCR Parser).
+Nhiệm vụ của bạn là bóc tách và chuẩn hóa dữ liệu từ chứng từ logistics (Bill of Lading B/L, Booking Confirmation, Commercial Invoice, Packing List, Tờ Khai Hải Quan VNACCS, Arrival Notice, Certificate of Origin, Delivery Order).
+
+LOẠI CHỨNG TỪ GỢI Ý (NẾU CÓ): ${docTypeHint || 'AUTO_DETECT'}
+TÊN TẬP TIN: ${fileName || 'document'}
+
+HÃY PHÂN TÍCH VÀ TRẢ VỀ DUY NHẤT MỘT ĐỐI TƯỢNG JSON (không bọc markdown \`\`\`json, chỉ JSON chuẩn) theo cấu trúc sau:
+{
+  "documentType": "BILL_OF_LADING" | "BOOKING_CONFIRMATION" | "COMMERCIAL_INVOICE" | "PACKING_LIST" | "CUSTOMS_DECLARATION" | "ARRIVAL_NOTICE" | "CERTIFICATE_OF_ORIGIN" | "DELIVERY_ORDER",
+  "documentTypeNameVi": "Tên tiếng Việt của chứng từ",
+  "documentNumber": "Số B/L hoặc Số Booking hoặc Số Hóa Đơn hoặc Số Tờ Khai",
+  "issueDate": "YYYY-MM-DD",
+  "carrierOrIssuer": "Tên hãng tàu hoặc hãng bay hoặc người phát hành (VD: Maersk, ONE, MSC, Wan Hai, Chi cục HQ...)",
+  "bookingReference": "Mã booking nếu có",
+  "blNumber": "Số B/L nếu có",
+  "invoiceNumber": "Số hóa đơn nếu có",
+  "declarationNumber": "Số tờ khai hải quan nếu có",
+  "vesselOrFlight": "Tên tàu biển hoặc chuyến bay",
+  "voyageNo": "Số chuyến",
+  "contractNumber": "Số hợp đồng / PO nếu có",
+  "shipper": {
+    "name": "Tên đầy đủ của Shipper / Người xuất khẩu / Người bán",
+    "taxId": "Mã số thuế nếu có",
+    "address": "Địa chỉ",
+    "phone": "Điện thoại",
+    "email": "Email",
+    "contactPerson": "Người liên hệ"
+  },
+  "consignee": {
+    "name": "Tên đầy đủ của Consignee / Người nhập khẩu / Người mua",
+    "taxId": "Mã số thuế nếu có",
+    "address": "Địa chỉ",
+    "phone": "Điện thoại",
+    "email": "Email",
+    "contactPerson": "Người liên hệ"
+  },
+  "notifyParty": {
+    "name": "Bên nhận thông báo Notify Party nếu có",
+    "address": "Địa chỉ"
+  },
+  "mode": "SEA_FCL" | "SEA_LCL" | "AIR_FREIGHT" | "INLAND_TRUCKING" | "CUSTOMS_CLEARANCE",
+  "pol": "Cảng/Điểm xếp hàng (POL / Origin)",
+  "pod": "Cảng/Điểm dỡ hàng (POD / Destination)",
+  "placeOfReceipt": "Nơi nhận hàng",
+  "placeOfDelivery": "Nơi giao hàng cuối cùng",
+  "etd": "YYYY-MM-DD",
+  "eta": "YYYY-MM-DD",
+  "cyCutOff": "Thời gian cắt máng / closing time CY",
+  "siCutOff": "Thời gian cắt SI (Shipping Instruction)",
+  "vgmCutOff": "Hạn nộp VGM",
+  "emptyDepot": "Bãi lấy vỏ cont rỗng",
+  "fullTerminal": "Bãi hạ cont đầy",
+  "transitTime": "Thời gian vận chuyển ước tính",
+  "freeTimeDemDet": "Thời gian miễn phí lưu bãi/vỏ (Free time DEM/DET)",
+  "commodity": "Tên mô tả hàng hóa chính xác",
+  "containerType": "20'GP" | "40'GP" | "40'HC" | "45'HC" | "20'RF" | "40'RF" | "LCL (CBM/KGS)" | "AIR (KGS/CW)",
+  "containerCount": 1,
+  "packageCount": 1000,
+  "packageUnit": "Cartons" | "Pallets" | "Bags" | "Kiện",
+  "grossWeightKg": 18500,
+  "netWeightKg": 16500,
+  "volumeCbm": 65.4,
+  "chargeableWeightKg": 18500,
+  "hsCode": "Mã HS Code nếu có",
+  "marksAndNumbers": "Ký mã hiệu bao bì",
+  "temperatureSetting": "Cài đặt nhiệt độ (cho cont lạnh, VD: -18C)",
+  "dgClass": "Phân loại hàng nguy hiểm nếu có (VD: Class 9 - UN 3480)",
+  "containers": [
+    {
+      "id": "c1",
+      "containerNo": "MSKU1234567",
+      "sealNo": "ML-VN12345",
+      "type": "40'HC",
+      "tareWeightKg": 3800,
+      "maxPayloadKg": 28700,
+      "packageCount": 500,
+      "grossWeightKg": 18500
+    }
+  ],
+  "incoterm": "FOB" | "CIF" | "EXW" | "DDP" | "DAP" | "CFR",
+  "currency": "USD" | "VND",
+  "totalInvoiceAmount": 0,
+  "paymentTerms": "Điều khoản thanh toán nếu có",
+  "charges": [
+    {
+      "id": "ch1",
+      "code": "O/F",
+      "description": "Ocean Freight",
+      "amount": 2500,
+      "currency": "USD",
+      "unit": "Container",
+      "category": "FREIGHT"
+    }
+  ],
+  "confidenceScore": 95,
+  "fieldConfidence": {
+    "documentNumber": 99,
+    "shipper": 95,
+    "consignee": 95,
+    "pol": 98,
+    "pod": 98,
+    "grossWeightKg": 95
+  },
+  "warnings": [
+    "Cảnh báo nếu có sai lệch hoặc trường thông tin mờ/không rõ"
+  ],
+  "extractionNotes": [
+    "Ghi chú chuyên môn về chứng từ này"
+  ],
+  "rawSummary": "Tóm tắt ngắn gọn 1-2 câu về lô hàng và chứng từ này"
+}`;
+
+    const ai = getGeminiClient();
+
+    let contentsPayload: any;
+
+    if (fileBase64) {
+      // Clean base64 header if present (e.g. data:image/png;base64,...)
+      const cleanedBase64 = fileBase64.includes(",") 
+        ? fileBase64.split(",")[1] 
+        : fileBase64;
+
+      const filePart = {
+        inlineData: {
+          mimeType: mimeType || "image/jpeg",
+          data: cleanedBase64,
+        },
+      };
+
+      const promptPart = {
+        text: `${systemPrompt}\n\n[Hãy phân tích tập tin chứng từ đính kèm ở trên và trích xuất đầy đủ thông tin]`,
+      };
+
+      contentsPayload = { parts: [filePart, promptPart] };
+    } else {
+      contentsPayload = `${systemPrompt}\n\nNỘI DUNG VĂN BẢN CHỨNG TỪ:\n"""\n${rawText}\n"""`;
+    }
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.8-flash",
+      contents: contentsPayload,
+      config: {
+        responseMimeType: "application/json",
+      },
+    });
+
+    const text = response.text || "{}";
+    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    const parsedData = JSON.parse(cleanedText);
+
+    res.json({ success: true, parsedData });
+  } catch (error: any) {
+    console.error("Error in AI document parser:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || "Failed to parse document with Gemini AI" 
+    });
   }
 });
 

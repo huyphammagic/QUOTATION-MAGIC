@@ -54,6 +54,7 @@ interface QuotationWorkspaceHeaderProps {
   onOpenCustomerDna?: () => void;
   onOpenCarrierInvoiceAudit?: () => void;
   onOpenQuotationPayments?: () => void;
+  onOpenDocumentParser?: () => void;
   isSaving?: boolean;
   lastSavedAt?: string | null;
 }
@@ -80,6 +81,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
   onOpenCustomerDna,
   onOpenCarrierInvoiceAudit,
   onOpenQuotationPayments,
+  onOpenDocumentParser,
   isSaving = false,
   lastSavedAt,
 }) => {
@@ -450,6 +452,23 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
                     </button>
                   )}
 
+                  {onOpenDocumentParser && (
+                    <button
+                      type="button"
+                      onClick={() => { onOpenDocumentParser(); setIsToolsDropdownOpen(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                        <div>
+                          <div className="font-semibold text-slate-900">Trích Xuất Chứng Từ (OCR AI)</div>
+                          <div className="text-[10px] text-slate-400">Bóc tách B/L, Booking, Invoice & Tờ khai</div>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => { onOpenDecisionWorkspace(); setIsToolsDropdownOpen(false); }}
@@ -469,6 +488,20 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
               </div>
             )}
           </div>
+
+          {/* Direct Quick Action: AI OCR Document Scanner */}
+          {onOpenDocumentParser && (
+            <button
+              type="button"
+              onClick={onOpenDocumentParser}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors cursor-pointer"
+              title="Quét chứng từ B/L, Booking, Invoice, Tờ khai bằng AI"
+            >
+              <FileText className="w-3.5 h-3.5 text-indigo-600" />
+              <span className="hidden sm:inline">Quét B/L & Booking AI</span>
+              <span className="sm:hidden">OCR AI</span>
+            </button>
+          )}
 
           <div className="h-4 w-px bg-slate-200 hidden sm:block" />
 

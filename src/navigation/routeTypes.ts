@@ -18,6 +18,7 @@ export type AppRouteId =
   | 'quotation_document_center'
   | 'quotation_email_templates'
   | 'quotation_followup'
+  | 'ai_document_parser'
   | 'rfq_inbox'
   | 'engagement_radar'
   | 'deal_closing_accelerator'

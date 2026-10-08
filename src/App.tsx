@@ -138,6 +138,7 @@ const EnterpriseTenderModal = lazyWithRetry(() => import('./components/tender/En
 const CustomerDnaPowerMapModal = lazyWithRetry(() => import('./components/crm/CustomerDnaPowerMapModal').then(m => ({ default: m.CustomerDnaPowerMapModal })), 'CustomerDnaPowerMapModal');
 const CarrierInvoiceAuditModal = lazyWithRetry(() => import('./components/carrierAudit/CarrierInvoiceAuditModal').then(m => ({ default: m.CarrierInvoiceAuditModal })), 'CarrierInvoiceAuditModal');
 const QuotationPaymentHubModal = lazyWithRetry(() => import('./components/payment/QuotationPaymentHubModal').then(m => ({ default: m.QuotationPaymentHubModal })), 'QuotationPaymentHubModal');
+const AiDocumentParserModal = lazyWithRetry(() => import('./components/documentParser/AiDocumentParserModal').then(m => ({ default: m.AiDocumentParserModal })), 'AiDocumentParserModal');
 import { LiveLeadToastNotifier } from './components/telemetry/LiveLeadToastNotifier';
 import { subscribeToLiveEngagements } from './services/telemetry/customerEngagementService';
 import { QuotationEngagementSession } from './types/customerEngagement';
@@ -464,6 +465,9 @@ export default function App() {
   const [isQuotationPaymentHubOpen, setIsQuotationPaymentHubOpen] = useState(false);
   const [selectedPaymentQuoteId, setSelectedPaymentQuoteId] = useState<string | undefined>(undefined);
 
+  // Phase 67: AI Logistics OCR & Document Parser
+  const [isDocumentParserOpen, setIsDocumentParserOpen] = useState(false);
+
   const handleOpenPaymentHub = (quoteId?: string) => {
     setSelectedPaymentQuoteId(quoteId || quote?.id || quote?.quoteNumber);
     setIsQuotationPaymentHubOpen(true);
@@ -539,6 +543,7 @@ export default function App() {
     setIsCustomerDnaOpen(false);
     setIsCarrierInvoiceAuditOpen(false);
     setIsQuotationPaymentHubOpen(false);
+    setIsDocumentParserOpen(false);
     setSelectedPaymentQuoteId(undefined);
     setIsShipmentWorkspaceOpen(false);
     setIsCreateShipmentModalOpen(false);
@@ -704,6 +709,9 @@ export default function App() {
         break;
       case 'quotation_followup':
         setIsFollowUpOpen(true);
+        break;
+      case 'ai_document_parser':
+        setIsDocumentParserOpen(true);
         break;
       case 'rfq_inbox':
         setIsRfqInboxOpen(true);
@@ -2143,6 +2151,7 @@ export default function App() {
           onOpenSmartQuotationWorkspace={() => navigateToRoute('smart_quotation_workspace')}
           onOpenEmailTemplates={() => navigateToRoute('quotation_email_templates')}
           onOpenFollowUps={() => navigateToRoute('quotation_followup')}
+          onOpenDocumentParser={() => setIsDocumentParserOpen(true)}
           onOpenEngagementRadar={() => {
             setSelectedRadarSession(null);
             setIsEngagementRadarOpen(true);
@@ -2281,6 +2290,7 @@ export default function App() {
               onOpenCustomerDna={() => setIsCustomerDnaOpen(true)}
               onOpenCarrierInvoiceAudit={() => setIsCarrierInvoiceAuditOpen(true)}
               onOpenQuotationPayments={() => handleOpenPaymentHub(quote.id || quote.quoteNumber)}
+              onOpenDocumentParser={() => setIsDocumentParserOpen(true)}
               isSaving={isAutoSaving}
               lastSavedAt={lastAutoSaveTime}
             />
@@ -3491,6 +3501,26 @@ export default function App() {
             companyBankInfo={company?.bankAccountNo ? `${company?.bankName || 'BANK'} - STK: ${company.bankAccountNo} - CTK: ${company.bankAccountHolder || ''}` : 'VIETCOMBANK - STK: 0071001234567 - CTK: CTY TNHH LOGISTICS & FORWARDING'}
             onPaymentUpdated={(updatedRecord) => {
               showToast(`💳 Đã cập nhật thanh toán cho báo giá ${updatedRecord.quoteNumber}: ${updatedRecord.paymentStatus}!`);
+            }}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 67: AI Logistics OCR & Document Parser Modal */}
+      {isDocumentParserOpen && (
+        <Suspense fallback={null}>
+          <AiDocumentParserModal
+            isOpen={isDocumentParserOpen}
+            onClose={() => setIsDocumentParserOpen(false)}
+            currentQuote={quote}
+            onApplyToQuote={(updatedQuote) => {
+              setQuote(updatedQuote);
+              showToast(`⚡ Đã điền tự động dữ liệu từ chứng từ vào báo giá ${updatedQuote.quoteNumber}!`);
+            }}
+            onQuotationCreated={(createdQuote) => {
+              setQuote(createdQuote);
+              setSavedQuotes(prev => [createdQuote, ...prev.filter(q => q.id !== createdQuote.id)]);
+              showToast(`📄 Đã tạo thành công Báo giá mới ${createdQuote.quoteNumber} từ chứng từ OCR!`);
             }}
           />
         </Suspense>

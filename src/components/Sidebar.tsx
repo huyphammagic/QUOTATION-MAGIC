@@ -121,6 +121,7 @@ export interface SidebarProps {
   onOpenCustomerDna?: () => void;
   onOpenCarrierInvoiceAudit?: () => void;
   onOpenQuotationPayments?: (quoteId?: string) => void;
+  onOpenDocumentParser?: () => void;
   dormantCustomersCount?: number;
   activeEngagementsCount?: number;
   exceptionsCount?: number;
@@ -211,6 +212,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenCustomerDna,
   onOpenCarrierInvoiceAudit,
   onOpenQuotationPayments,
+  onOpenDocumentParser,
   dormantCustomersCount = 3,
   activeEngagementsCount = 0,
   shipmentsCount = 0,
@@ -655,6 +657,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
 
     // === 4. TÀI LIỆU & ẤN BẢN (DOCUMENTS & OUTPUT) ===
+    {
+      id: 'ai_document_parser',
+      label: activeLang === 'vi' ? 'Trích Xuất Chứng Từ AI (OCR)' : 'AI Document OCR Parser',
+      icon: Sparkles,
+      group: 'documents',
+      action: () => onOpenDocumentParser && onOpenDocumentParser(),
+      badge: 'AI OCR',
+      badgeTone: 'emerald',
+    },
     {
       id: 'quotation_preview',
       label: activeLang === 'vi' ? 'Xem Trước Bản In (A4)' : 'Print Preview (A4)',
