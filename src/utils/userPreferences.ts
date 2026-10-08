@@ -56,21 +56,33 @@ export function persistPinnedFavorites(ids: string[]): void {
 }
 
 export const DEFAULT_EXPANDED_GROUPS: Record<string, boolean> = {
-  main: false,
-  quotation: false,
-  pricing: false,
-  masterData: false,
+  quotation: true,
+  radar: false,
   operations: false,
+  pricing: false,
+  documents: false,
+  masterData: false,
   analytics: false,
   system: false,
 };
 
 /**
  * Loads expanded group states.
- * Defaults to all false so that whenever accessing the app,
- * all navigation categories/groups are in the collapsed state (thu gọn).
+ * Keeps quotation workbench expanded while keeping Master Data, Analytics, and System collapsed.
  */
 export function loadSavedExpandedGroups(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_EXPANDED_GROUPS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed === 'object' && parsed !== null) {
+        return {
+          ...DEFAULT_EXPANDED_GROUPS,
+          ...parsed,
+        };
+      }
+    }
+  } catch {}
   return { ...DEFAULT_EXPANDED_GROUPS };
 }
 

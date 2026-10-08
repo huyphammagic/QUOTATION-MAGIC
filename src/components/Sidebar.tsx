@@ -318,6 +318,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
     });
   };
 
+  // Auto-expand system management group if active route is inside it
+  useEffect(() => {
+    if (activeRouteId) {
+      const activeItem = allNavItems.find(i => i.id === activeRouteId);
+      if (activeItem && (activeItem.group === 'masterData' || activeItem.group === 'analytics' || activeItem.group === 'system')) {
+        setExpandedGroups(prev => {
+          if (!prev[activeItem.group]) {
+            const next = { ...prev, [activeItem.group]: true };
+            persistExpandedGroups(next);
+            return next;
+          }
+          return prev;
+        });
+      }
+    }
+  }, [activeRouteId]);
+
   const handleAction = (callback: () => void) => {
     callback();
     if (isOpenMobile) {
@@ -826,8 +843,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     );
   }, [allNavItems, searchQuery]);
 
-  // Clean, professional group taxonomy with calm titles
-  const groups: { 
+  // Primary Quotation & Core Sales Groups (Always displayed clearly at top)
+  const primaryWorkspaceGroups: { 
     key: SidebarGroupKey; 
     title: string; 
     icon: React.FC<{ className?: string }>;
@@ -835,7 +852,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }[] = [
     { 
       key: 'quotation', 
-      title: activeLang === 'vi' ? 'Báo giá & Đơn hàng' : 'Quotations & Orders', 
+      title: activeLang === 'vi' ? 'Báo giá & Bàn làm việc' : 'Quotations & Orders', 
       icon: FileText,
       quickCount: savedQuotes.length > 0 ? savedQuotes.length : undefined
     },
@@ -862,23 +879,52 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: activeLang === 'vi' ? 'Tài liệu & Ấn bản' : 'Documents & Output', 
       icon: Layers 
     },
+  ];
+
+  // System Management Groups (Collapsible by default: Master Data, Analytics, System)
+  const systemManagementGroups: { 
+    key: SidebarGroupKey; 
+    title: string; 
+    icon: React.FC<{ className?: string }>;
+    quickCount?: string | number;
+  }[] = [
     { 
       key: 'masterData', 
-      title: activeLang === 'vi' ? 'Danh mục & CRM' : 'Master Data & CRM', 
+      title: activeLang === 'vi' ? 'Danh mục & CRM (Master Data)' : 'Master Data & CRM', 
       icon: Database,
-      quickCount: customersCount > 0 ? customersCount : undefined
+      quickCount: customersCount > 0 ? `${customersCount} KH` : '9 mục'
     },
     { 
       key: 'analytics', 
-      title: activeLang === 'vi' ? 'Báo cáo & Phân tích' : 'Analytics & BI', 
-      icon: TrendingUp 
+      title: activeLang === 'vi' ? 'Báo cáo & Phân tích (Analytics)' : 'Analytics & BI', 
+      icon: TrendingUp,
+      quickCount: '4 báo cáo'
     },
     { 
       key: 'system', 
-      title: activeLang === 'vi' ? 'Hệ thống & Cài đặt' : 'System Settings', 
-      icon: Settings 
+      title: activeLang === 'vi' ? 'Hệ thống & Cài đặt (System)' : 'System Settings', 
+      icon: Settings,
+      quickCount: '6 mục'
     },
   ];
+
+  const isAnySystemGroupExpanded = Boolean(
+    expandedGroups.masterData || expandedGroups.analytics || expandedGroups.system
+  );
+
+  const toggleAllSystemGroups = (expand?: boolean) => {
+    const target = typeof expand === 'boolean' ? expand : !isAnySystemGroupExpanded;
+    setExpandedGroups(prev => {
+      const next = {
+        ...prev,
+        masterData: target,
+        analytics: target,
+        system: target,
+      };
+      persistExpandedGroups(next);
+      return next;
+    });
+  };
 
   const pinnedItems = useMemo(() => {
     return allNavItems.filter(item => pinnedIds.includes(item.id));
@@ -1116,63 +1162,104 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </div>
           ) : (
-            /* CLEAN LOGICAL WORKFLOW GROUPS */
-            groups.map((group) => {
-              const groupItems = allNavItems.filter(item => item.group === group.key);
-              if (groupItems.length === 0) return null;
+            /* 1. CORE QUOTATION & OPERATIONS WORKSPACE GROUPS */
+            <>
+              {primaryWorkspaceGroups.map((group) => {
+                const groupItems = allNavItems.filter(item => item.group === group.key);
+                if (groupItems.length === 0) return null;
 
-              const isExpanded = expandedGroups[group.key] ?? false;
-              const GroupIcon = group.icon;
-              const hasActiveChild = groupItems.some(i => i.id === activeRouteId);
+                const isExpanded = expandedGroups[group.key] ?? false;
+                const GroupIcon = group.icon;
+                const hasActiveChild = groupItems.some(i => i.id === activeRouteId);
 
-              return (
-                <div key={group.key} className="space-y-0.5">
-                  
-                  {/* Category Header */}
-                  {!isCollapsed ? (
-                    <button
-                      type="button"
-                      onClick={() => toggleGroup(group.key)}
-                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-[11px] font-semibold transition-all text-left cursor-pointer btn-tactile ${
-                        hasActiveChild 
-                          ? 'text-indigo-300 bg-indigo-950/20' 
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
-                      }`}
-                      aria-expanded={isExpanded}
-                    >
-                      <div className="flex items-center space-x-2.5 min-w-0">
-                        <GroupIcon className={`w-3.5 h-3.5 shrink-0 ${hasActiveChild ? 'text-indigo-400' : 'text-slate-500'}`} />
-                        <span className="truncate">{group.title}</span>
+                return (
+                  <div key={group.key} className="space-y-0.5">
+                    {/* Category Header */}
+                    {!isCollapsed ? (
+                      <button
+                        type="button"
+                        onClick={() => toggleGroup(group.key)}
+                        className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-[11px] font-semibold transition-all text-left cursor-pointer btn-tactile ${
+                          hasActiveChild 
+                            ? 'text-indigo-300 bg-indigo-950/20' 
+                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                        }`}
+                        aria-expanded={isExpanded}
+                      >
+                        <div className="flex items-center space-x-2.5 min-w-0">
+                          <GroupIcon className={`w-3.5 h-3.5 shrink-0 ${hasActiveChild ? 'text-indigo-400' : 'text-slate-500'}`} />
+                          <span className="truncate">{group.title}</span>
+                        </div>
+
+                        <div className="flex items-center space-x-1.5 shrink-0 ml-2">
+                          {group.quickCount && !isExpanded && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-md font-mono text-slate-400 bg-slate-900/90 border border-slate-800">
+                              {group.quickCount}
+                            </span>
+                          )}
+                          <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
+                        </div>
+                      </button>
+                    ) : (
+                      /* Collapsed icon divider */
+                      <div className="w-full py-1.5 flex items-center justify-center border-t border-slate-800/80">
+                        <GroupIcon className={`w-3.5 h-3.5 ${hasActiveChild ? 'text-emerald-400' : 'text-slate-500'}`} />
                       </div>
+                    )}
 
-                      <div className="flex items-center space-x-1.5 shrink-0 ml-2">
-                        {group.quickCount && !isExpanded && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-md font-mono text-slate-400 bg-slate-900/90 border border-slate-800">
-                            {group.quickCount}
-                          </span>
-                        )}
-                        <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
-                      </div>
-                    </button>
-                  ) : (
-                    /* Collapsed icon divider */
-                    <div className="w-full py-1.5 flex items-center justify-center border-t border-slate-800/80">
-                      <GroupIcon className={`w-3.5 h-3.5 ${hasActiveChild ? 'text-emerald-400' : 'text-slate-500'}`} />
-                    </div>
-                  )}
+                    {/* Group Items */}
+                    {isExpanded && (
+                      <div className="space-y-0.5 pl-1">
+                        {groupItems.map((item) => {
+                          const Icon = item.icon;
+                          const isPinned = pinnedIds.includes(item.id);
+                          const isActive = activeRouteId === item.id;
 
-                  {/* Group Items */}
-                  {isExpanded && (
-                    <div className="space-y-0.5 pl-1">
-                      {groupItems.map((item) => {
-                        const Icon = item.icon;
-                        const isPinned = pinnedIds.includes(item.id);
-                        const isActive = activeRouteId === item.id;
+                          // Collapsed Mode Item
+                          if (isCollapsed) {
+                            return (
+                              <div key={item.id} className="relative group/tooltip">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (item.restricted) {
+                                      if (onAccessDenied) onAccessDenied(item.label, item.requiredRoleDesc || activeRole);
+                                      return;
+                                    }
+                                    handleAction(item.action);
+                                  }}
+                                  className={`w-full flex items-center justify-center p-2 rounded-lg transition-colors cursor-pointer ${
+                                    isActive 
+                                      ? 'bg-slate-800 text-white font-medium border-l-2 border-emerald-400' 
+                                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                                  } ${item.restricted ? 'opacity-50' : ''}`}
+                                  aria-label={item.label}
+                                >
+                                  <Icon className="w-4 h-4 shrink-0" />
+                                </button>
 
-                        // Collapsed Mode Item
-                        if (isCollapsed) {
+                                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover/tooltip:flex items-center gap-2 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg shadow-xl border border-slate-800 whitespace-nowrap z-50 pointer-events-none">
+                                  <span>{item.label}</span>
+                                  {item.badge && (
+                                    <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-slate-800 text-slate-300">
+                                      {item.badge}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // Expanded Mode Item
                           return (
-                            <div key={item.id} className="relative group/tooltip">
+                            <div
+                              key={item.id}
+                              className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl transition-all duration-150 group btn-tactile ${
+                                isActive 
+                                  ? 'bg-indigo-600/15 text-indigo-400 font-semibold border border-indigo-500/30' 
+                                  : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 border border-transparent'
+                              } ${item.restricted ? 'opacity-60' : ''}`}
+                            >
                               <button
                                 type="button"
                                 onClick={() => {
@@ -1182,99 +1269,253 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                   }
                                   handleAction(item.action);
                                 }}
-                                className={`w-full flex items-center justify-center p-2 rounded-lg transition-colors cursor-pointer ${
-                                  isActive 
-                                    ? 'bg-slate-800 text-white font-medium border-l-2 border-emerald-400' 
-                                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                                } ${item.restricted ? 'opacity-50' : ''}`}
-                                aria-label={item.label}
+                                className="flex-1 flex items-center space-x-2.5 min-w-0 text-left cursor-pointer"
                               >
-                                <Icon className="w-4 h-4 shrink-0" />
+                                <Icon className={`w-3.5 h-3.5 shrink-0 transition-transform duration-150 group-hover:scale-110 ${isActive ? 'text-indigo-400' : 'text-slate-400 group-hover:text-slate-200'}`} />
+                                <span className="text-xs truncate">{item.label}</span>
                               </button>
 
-                              {/* Floating Tooltip in Collapsed Mode */}
-                              <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover/tooltip:flex items-center gap-2 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg shadow-xl border border-slate-800 whitespace-nowrap z-50 pointer-events-none">
-                                <span>{item.label}</span>
+                              <div className="flex items-center space-x-1.5 ml-2 shrink-0">
+                                {item.restricted && (
+                                  <span title={item.requiredRoleDesc} className="inline-flex items-center">
+                                    <Lock className="w-3 h-3 text-rose-400 shrink-0" />
+                                  </span>
+                                )}
+
                                 {item.badge && (
-                                  <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-slate-800 text-slate-300">
+                                  <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-medium border ${
+                                    item.badgeTone === 'amber'
+                                      ? 'bg-amber-950/40 border-amber-800/60 text-amber-300'
+                                      : item.badgeTone === 'emerald'
+                                      ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-300'
+                                      : item.badgeTone === 'rose'
+                                      ? 'bg-rose-950/40 border-rose-800/60 text-rose-300'
+                                      : item.badgeTone === 'sky'
+                                      ? 'bg-sky-950/40 border-sky-800/60 text-sky-300'
+                                      : 'bg-slate-900 border-slate-800 text-slate-400'
+                                  }`}>
                                     {item.badge}
                                   </span>
                                 )}
+
+                                <button
+                                  type="button"
+                                  onClick={(e) => togglePin(e, item.id)}
+                                  className={`p-0.5 rounded transition-opacity cursor-pointer ${
+                                    isPinned 
+                                      ? 'text-amber-400 opacity-100' 
+                                      : 'text-slate-600 opacity-0 group-hover:opacity-100 hover:text-amber-400'
+                                  }`}
+                                  title={isPinned ? 'Bỏ ghim' : 'Ghim'}
+                                >
+                                  <Star className={`w-3 h-3 ${isPinned ? 'fill-amber-400' : ''}`} />
+                                </button>
                               </div>
                             </div>
                           );
-                        }
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
 
-                        // Expanded Mode Item
-                        return (
-                          <div
-                            key={item.id}
-                            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl transition-all duration-150 group btn-tactile ${
-                              isActive 
-                                ? 'bg-indigo-600/15 text-indigo-400 font-semibold border border-indigo-500/30' 
-                                : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 border border-transparent'
-                            } ${item.restricted ? 'opacity-60' : ''}`}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (item.restricted) {
-                                  if (onAccessDenied) onAccessDenied(item.label, item.requiredRoleDesc || activeRole);
-                                  return;
-                                }
-                                handleAction(item.action);
-                              }}
-                              className="flex-1 flex items-center space-x-2.5 min-w-0 text-left cursor-pointer"
-                            >
-                              <Icon className={`w-3.5 h-3.5 shrink-0 transition-transform duration-150 group-hover:scale-110 ${isActive ? 'text-indigo-400' : 'text-slate-400 group-hover:text-slate-200'}`} />
-                              <span className="text-xs truncate">{item.label}</span>
-                            </button>
-
-                            <div className="flex items-center space-x-1.5 ml-2 shrink-0">
-                              {item.restricted && (
-                                <span title={item.requiredRoleDesc} className="inline-flex items-center">
-                                  <Lock className="w-3 h-3 text-rose-400 shrink-0" />
-                                </span>
-                              )}
-
-                              {item.badge && (
-                                <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-medium border ${
-                                  item.badgeTone === 'amber'
-                                    ? 'bg-amber-950/40 border-amber-800/60 text-amber-300'
-                                    : item.badgeTone === 'emerald'
-                                    ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-300'
-                                    : item.badgeTone === 'rose'
-                                    ? 'bg-rose-950/40 border-rose-800/60 text-rose-300'
-                                    : item.badgeTone === 'sky'
-                                    ? 'bg-sky-950/40 border-sky-800/60 text-sky-300'
-                                    : 'bg-slate-900 border-slate-800 text-slate-400'
-                                }`}>
-                                  {item.badge}
-                                </span>
-                              )}
-
-                              <button
-                                type="button"
-                                onClick={(e) => togglePin(e, item.id)}
-                                className={`p-0.5 rounded transition-opacity cursor-pointer ${
-                                  isPinned 
-                                    ? 'text-amber-400 opacity-100' 
-                                    : 'text-slate-600 opacity-0 group-hover:opacity-100 hover:text-amber-400'
-                                }`}
-                                title={isPinned ? 'Bỏ ghim' : 'Ghim'}
-                              >
-                                <Star className={`w-3 h-3 ${isPinned ? 'fill-amber-400' : ''}`} />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
+              {/* 2. DEDICATED COLLAPSIBLE SYSTEM MANAGEMENT SECTION */}
+              <div className="pt-2">
+                {!isCollapsed ? (
+                  <div className="px-2 py-1.5 mb-1 flex items-center justify-between border-t border-slate-800/80 pt-2.5">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      <SlidersHorizontal className="w-3 h-3 text-slate-500" />
+                      <span>{activeLang === 'vi' ? 'Quản Trị Hệ Thống' : 'System Administration'}</span>
                     </div>
-                  )}
+                    <button
+                      type="button"
+                      onClick={() => toggleAllSystemGroups()}
+                      className="text-[10px] font-medium text-slate-400 hover:text-indigo-300 transition-colors cursor-pointer px-1.5 py-0.5 rounded bg-slate-900/80 border border-slate-800 hover:border-slate-700"
+                      title={isAnySystemGroupExpanded ? 'Thu gọn các menu quản trị' : 'Mở rộng các menu quản trị'}
+                    >
+                      {isAnySystemGroupExpanded 
+                        ? (activeLang === 'vi' ? 'Thu gọn' : 'Collapse') 
+                        : (activeLang === 'vi' ? 'Mở rộng' : 'Expand')}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="my-1.5 border-t border-slate-800/80" />
+                )}
 
+                {/* System Management Groups: Master Data, Analytics, System */}
+                <div className="space-y-1">
+                  {systemManagementGroups.map((group) => {
+                    const groupItems = allNavItems.filter(item => item.group === group.key);
+                    if (groupItems.length === 0) return null;
+
+                    const isExpanded = expandedGroups[group.key] ?? false;
+                    const GroupIcon = group.icon;
+                    const hasActiveChild = groupItems.some(i => i.id === activeRouteId);
+
+                    return (
+                      <div 
+                        key={group.key} 
+                        className={`space-y-0.5 ${
+                          !isCollapsed 
+                            ? 'bg-slate-900/40 rounded-xl border border-slate-800/60 p-1 transition-colors' 
+                            : ''
+                        }`}
+                      >
+                        {/* Collapsible Header */}
+                        {!isCollapsed ? (
+                          <button
+                            type="button"
+                            onClick={() => toggleGroup(group.key)}
+                            className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] font-semibold transition-all text-left cursor-pointer btn-tactile ${
+                              hasActiveChild 
+                                ? 'text-indigo-300 bg-indigo-950/30' 
+                                : isExpanded
+                                ? 'text-slate-200 bg-slate-800/50'
+                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                            }`}
+                            aria-expanded={isExpanded}
+                          >
+                            <div className="flex items-center space-x-2 min-w-0">
+                              <GroupIcon className={`w-3.5 h-3.5 shrink-0 ${hasActiveChild ? 'text-indigo-400' : 'text-slate-400'}`} />
+                              <span className="truncate">{group.title}</span>
+                            </div>
+
+                            <div className="flex items-center space-x-1.5 shrink-0 ml-1.5">
+                              {group.quickCount && (
+                                <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
+                                  isExpanded 
+                                    ? 'text-slate-500 bg-slate-900/60' 
+                                    : 'text-slate-300 bg-slate-800 border border-slate-700/60'
+                                }`}>
+                                  {group.quickCount}
+                                </span>
+                              )}
+                              <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
+                            </div>
+                          </button>
+                        ) : (
+                          /* Collapsed icon divider */
+                          <div className="w-full py-1.5 flex items-center justify-center border-t border-slate-800/80">
+                            <GroupIcon className={`w-3.5 h-3.5 ${hasActiveChild ? 'text-emerald-400' : 'text-slate-500'}`} />
+                          </div>
+                        )}
+
+                        {/* Collapsible Children */}
+                        {isExpanded && (
+                          <div className="space-y-0.5 pt-0.5 border-t border-slate-800/40 mt-0.5 pl-0.5">
+                            {groupItems.map((item) => {
+                              const Icon = item.icon;
+                              const isPinned = pinnedIds.includes(item.id);
+                              const isActive = activeRouteId === item.id;
+
+                              // Collapsed Mode Item
+                              if (isCollapsed) {
+                                return (
+                                  <div key={item.id} className="relative group/tooltip">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (item.restricted) {
+                                          if (onAccessDenied) onAccessDenied(item.label, item.requiredRoleDesc || activeRole);
+                                          return;
+                                        }
+                                        handleAction(item.action);
+                                      }}
+                                      className={`w-full flex items-center justify-center p-2 rounded-lg transition-colors cursor-pointer ${
+                                        isActive 
+                                          ? 'bg-slate-800 text-white font-medium border-l-2 border-emerald-400' 
+                                          : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                                      } ${item.restricted ? 'opacity-50' : ''}`}
+                                      aria-label={item.label}
+                                    >
+                                      <Icon className="w-4 h-4 shrink-0" />
+                                    </button>
+
+                                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover/tooltip:flex items-center gap-2 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg shadow-xl border border-slate-800 whitespace-nowrap z-50 pointer-events-none">
+                                      <span>{item.label}</span>
+                                      {item.badge && (
+                                        <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-slate-800 text-slate-300">
+                                          {item.badge}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              }
+
+                              // Expanded Mode Item
+                              return (
+                                <div
+                                  key={item.id}
+                                  className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg transition-all duration-150 group btn-tactile ${
+                                    isActive 
+                                      ? 'bg-indigo-600/15 text-indigo-400 font-semibold border border-indigo-500/30' 
+                                      : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 border border-transparent'
+                                  } ${item.restricted ? 'opacity-60' : ''}`}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (item.restricted) {
+                                        if (onAccessDenied) onAccessDenied(item.label, item.requiredRoleDesc || activeRole);
+                                        return;
+                                      }
+                                      handleAction(item.action);
+                                    }}
+                                    className="flex-1 flex items-center space-x-2 min-w-0 text-left cursor-pointer"
+                                  >
+                                    <Icon className={`w-3.5 h-3.5 shrink-0 transition-transform duration-150 group-hover:scale-110 ${isActive ? 'text-indigo-400' : 'text-slate-400 group-hover:text-slate-200'}`} />
+                                    <span className="text-xs truncate">{item.label}</span>
+                                  </button>
+
+                                  <div className="flex items-center space-x-1.5 ml-2 shrink-0">
+                                    {item.restricted && (
+                                      <span title={item.requiredRoleDesc} className="inline-flex items-center">
+                                        <Lock className="w-3 h-3 text-rose-400 shrink-0" />
+                                      </span>
+                                    )}
+
+                                    {item.badge && (
+                                      <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-medium border ${
+                                        item.badgeTone === 'amber'
+                                          ? 'bg-amber-950/40 border-amber-800/60 text-amber-300'
+                                          : item.badgeTone === 'emerald'
+                                          ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-300'
+                                          : item.badgeTone === 'rose'
+                                          ? 'bg-rose-950/40 border-rose-800/60 text-rose-300'
+                                          : item.badgeTone === 'sky'
+                                          ? 'bg-sky-950/40 border-sky-800/60 text-sky-300'
+                                          : 'bg-slate-900 border-slate-800 text-slate-400'
+                                      }`}>
+                                        {item.badge}
+                                      </span>
+                                    )}
+
+                                    <button
+                                      type="button"
+                                      onClick={(e) => togglePin(e, item.id)}
+                                      className={`p-0.5 rounded transition-opacity cursor-pointer ${
+                                        isPinned 
+                                          ? 'text-amber-400 opacity-100' 
+                                          : 'text-slate-600 opacity-0 group-hover:opacity-100 hover:text-amber-400'
+                                      }`}
+                                      title={isPinned ? 'Bỏ ghim' : 'Ghim'}
+                                    >
+                                      <Star className={`w-3 h-3 ${isPinned ? 'fill-amber-400' : ''}`} />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })
+              </div>
+            </>
           )}
 
         </div>
