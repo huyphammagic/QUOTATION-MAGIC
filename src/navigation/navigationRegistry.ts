@@ -165,6 +165,16 @@ export const APP_ROUTES: Record<AppRouteId, RouteDefinition> = {
     descriptionVi: 'Trích xuất tự động dữ liệu B/L, Booking, Invoice & Tờ khai hải quan bằng AI (Phase 67)',
     descriptionEn: 'Automated multimodal OCR extraction for Bills of Lading, Bookings, Invoices & Customs declarations',
   },
+  customs_tariff_ai: {
+    id: 'customs_tariff_ai',
+    path: '/customs/tariff-ai',
+    hash: '#customs/tariff-ai',
+    titleVi: 'Tra Cứu Mã HS & Tính Thuế XNK AI',
+    titleEn: 'AI Customs Tariff & HS Code Intelligence',
+    group: 'quotation',
+    descriptionVi: 'Phân loại mã HS 8 số, tra cứu thuế ưu đãi FTA và tự động tính thuế hải quan DDP/DAP bằng AI (Phase 68)',
+    descriptionEn: '8-digit HS Code classification, FTA preferential tariff comparison and automated customs duty calculator',
+  },
   rfq_inbox: {
     id: 'rfq_inbox',
     path: '/quotations/rfq-inbox',

@@ -13,15 +13,21 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
-  Info
+  Info,
+  Sparkles
 } from 'lucide-react';
 
 interface ShipmentFormProps {
   shipment: ShipmentDetails;
   onChangeShipment: (updated: Partial<ShipmentDetails>) => void;
+  onOpenHsCodeTariff?: () => void;
 }
 
-export const ShipmentForm: React.FC<ShipmentFormProps> = ({ shipment, onChangeShipment }) => {
+export const ShipmentForm: React.FC<ShipmentFormProps> = ({ 
+  shipment, 
+  onChangeShipment,
+  onOpenHsCodeTariff,
+}) => {
   const [showTransitDetails, setShowTransitDetails] = useState(false);
 
   const handleModeChange = (mode: TransportMode) => {
@@ -161,9 +167,22 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({ shipment, onChangeSh
 
           {/* Commodity */}
           <div className="sm:col-span-3">
-            <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-              Tên hàng (Commodity) *
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[11px] font-semibold text-slate-600">
+                Tên hàng (Commodity) *
+              </label>
+              {onOpenHsCodeTariff && (
+                <button
+                  type="button"
+                  onClick={onOpenHsCodeTariff}
+                  className="text-[10px] font-bold text-amber-700 hover:text-amber-800 transition flex items-center gap-1 cursor-pointer"
+                  title="Tra cứu mã HS và tính thuế bằng AI"
+                >
+                  <Sparkles className="w-2.5 h-2.5 text-amber-500" />
+                  <span>Mã HS AI</span>
+                </button>
+              )}
+            </div>
             <input
               type="text"
               value={shipment.commodity}

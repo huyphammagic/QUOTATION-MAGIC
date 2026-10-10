@@ -455,6 +455,125 @@ HÃY PHÂN TÍCH VÀ TRẢ VỀ DUY NHẤT MỘT ĐỐI TƯỢNG JSON (không b�
   }
 });
 
+// Phase 68: AI Customs Tariff & HS Code Intelligence Engine
+app.post("/api/gemini/hs-code-lookup", async (req, res) => {
+  try {
+    const { commodityQuery, originCountry } = req.body;
+    if (!commodityQuery || typeof commodityQuery !== "string") {
+      return res.status(400).json({ success: false, error: "commodityQuery is required" });
+    }
+
+    const prompt = `Bạn là Chuyên gia Khai Báo Hải Quan & Phân Loại Mã HS Cao Cấp tại Việt Nam (Vietnam Customs HS Classification & Tariff Specialist).
+Dựa trên tên hàng hóa và mô tả sau đây:
+TÊN HÀNG HÓA: "${commodityQuery}"
+XUẤT XỨ / NƯỚC NHẬP KHẨU DỰ KIẾN: "${originCountry || 'Quốc tế / Trung Quốc / Hàn Quốc / EU / Mỹ'}"
+
+Hãy phân loại chính xác theo Danh mục Hàng hóa Xuất khẩu, Nhập khẩu Việt Nam (8 chữ số) và Biểu thuế XNK hiện hành.
+Áp dụng đúng 6 Quy tắc tổng quát giải thích phân loại hàng hóa (GIR 1 đến GIR 6).
+
+Hãy trả về duy nhất một JSON (không markdown, chỉ JSON thuần túy) theo định dạng:
+{
+  "query": "${commodityQuery}",
+  "detectedCategory": "Tên nhóm ngành hàng hóa",
+  "rulingAdvice": "Lời khuyên nghiệp vụ hải quan về cách khai báo tên hàng để tránh bị hải quan bẻ mã HS hoặc phạt ấn định thuế",
+  "items": [
+    {
+      "id": "hs_generated_1",
+      "hsCode": "XXXX.XX.XX",
+      "chapter": "XX",
+      "heading": "XXXX",
+      "descriptionVi": "Mô tả chi tiết bằng tiếng Việt theo biểu thuế XNK",
+      "descriptionEn": "English description in HS nomenclature",
+      "unit": "Chiếc / Cái / KG / Bộ / Hộp",
+      "confidenceScore": 95,
+      "classificationReason": "Căn cứ theo Quy tắc 1 & 6 (GIR), giải thích tại sao hàng này lại xếp vào phân nhóm này",
+      "exportTariff": 0,
+      "importNormalTariff": 15,
+      "importPreferentialTariff": 10,
+      "vatTariff": 8,
+      "specialConsumptionTariff": 0,
+      "environmentalTaxVnd": 0,
+      "ftaTariffs": [
+        {
+          "agreementCode": "ACFTA",
+          "agreementName": "ASEAN - Trung Quốc (ACFTA)",
+          "rate": 0,
+          "coForm": "Form E",
+          "qualifyingRule": "RVC 40% hoặc CTH"
+        },
+        {
+          "agreementCode": "VKFTA",
+          "agreementName": "Việt Nam - Hàn Quốc (VKFTA)",
+          "rate": 0,
+          "coForm": "Form VK",
+          "qualifyingRule": "CTH"
+        },
+        {
+          "agreementCode": "EVFTA",
+          "agreementName": "Việt Nam - EU (EVFTA)",
+          "rate": 0,
+          "coForm": "Form EUR.1 / REX",
+          "qualifyingRule": "CTH"
+        },
+        {
+          "agreementCode": "CPTPP",
+          "agreementName": "Hiệp định Đối tác CPTPP",
+          "rate": 0,
+          "coForm": "Form CPTPP",
+          "qualifyingRule": "RVC 45%"
+        },
+        {
+          "agreementCode": "RCEP",
+          "agreementName": "Hiệp định Đối tác RCEP",
+          "rate": 0,
+          "coForm": "Form RCEP",
+          "qualifyingRule": "CTH"
+        }
+      ],
+      "specializedInspection": {
+        "isRequired": true,
+        "agency": "Bộ Công Thương (MOIT) / Bộ Thông Tin Truyền Thông (MIC) / Bộ Y Tế (MOH) / Bộ Nông Nghiệp (MARD) / Bộ KH&CN",
+        "inspectionType": "Tên loại kiểm tra chuyên ngành nếu có (Kiểm tra chất lượng / Kiểm dịch / Hiệu suất năng lượng / An toàn thực phẩm / Giấy phép mật mã dân sự)",
+        "procedureName": "Quy trình thực hiện",
+        "estimatedCostVnd": 2500000,
+        "estimatedDays": 3,
+        "warningNotes": ["Lưu ý hồ sơ kỹ thuật hoặc chứng chỉ cần chuẩn bị trước khi tàu cập cảng"]
+      },
+      "warnings": [
+        "Cảnh báo rủi ro về thuế, luồng tờ khai, kiểm hóa hoặc trị giá tính thuế"
+      ],
+      "recommendations": [
+        "Khuyến nghị về chứng nhận xuất xứ (C/O) để được áp thuế 0%"
+      ]
+    }
+  ]
+}
+
+Đưa ra từ 2 đến 3 mã HS phù hợp nhất kèm xác suất % tin cậy.`;
+
+    const ai = getGeminiClient();
+    const response = await ai.models.generateContent({
+      model: "gemini-3.8-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+      },
+    });
+
+    const text = response.text || "{}";
+    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    const resultData = JSON.parse(cleanedText);
+
+    res.json({ success: true, ...resultData });
+  } catch (error: any) {
+    console.error("Error in AI HS Code lookup:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || "Failed to lookup HS code with Gemini AI" 
+    });
+  }
+});
+
 
 // Setup Vite Development Middleware or Static Production Serving
 async function setupServer() {

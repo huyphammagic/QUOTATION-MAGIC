@@ -26,7 +26,8 @@ import {
   ShieldAlert,
   Zap,
   Copy,
-  CreditCard
+  CreditCard,
+  Calculator
 } from 'lucide-react';
 import { PaymentStatusBadge } from './payment/PaymentStatusBadge';
 
@@ -55,6 +56,7 @@ interface QuotationWorkspaceHeaderProps {
   onOpenCarrierInvoiceAudit?: () => void;
   onOpenQuotationPayments?: () => void;
   onOpenDocumentParser?: () => void;
+  onOpenHsCodeTariff?: () => void;
   isSaving?: boolean;
   lastSavedAt?: string | null;
 }
@@ -82,6 +84,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
   onOpenCarrierInvoiceAudit,
   onOpenQuotationPayments,
   onOpenDocumentParser,
+  onOpenHsCodeTariff,
   isSaving = false,
   lastSavedAt,
 }) => {
@@ -469,6 +472,23 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
                     </button>
                   )}
 
+                  {onOpenHsCodeTariff && (
+                    <button
+                      type="button"
+                      onClick={() => { onOpenHsCodeTariff(); setIsToolsDropdownOpen(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Calculator className="w-3.5 h-3.5 text-amber-600" />
+                        <div>
+                          <div className="font-semibold text-slate-900">Tra Cứu Mã HS & Thuế XNK AI</div>
+                          <div className="text-[10px] text-slate-400">Biểu thuế, ưu đãi FTA & tính thuế trọn gói</div>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => { onOpenDecisionWorkspace(); setIsToolsDropdownOpen(false); }}
@@ -488,6 +508,20 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
               </div>
             )}
           </div>
+
+          {/* Direct Quick Action: AI HS Code & Duty Calculator */}
+          {onOpenHsCodeTariff && (
+            <button
+              type="button"
+              onClick={onOpenHsCodeTariff}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-800 bg-amber-50/90 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors cursor-pointer"
+              title="Tra cứu mã HS và tự động tính thuế XNK bằng AI"
+            >
+              <Calculator className="w-3.5 h-3.5 text-amber-600" />
+              <span className="hidden sm:inline">Tra Mã HS & Thuế AI</span>
+              <span className="sm:hidden">Thuế AI</span>
+            </button>
+          )}
 
           {/* Direct Quick Action: AI OCR Document Scanner */}
           {onOpenDocumentParser && (

@@ -61,7 +61,8 @@ import {
   Flame,
   Scale,
   Dna,
-  ShieldAlert
+  ShieldAlert,
+  Calculator
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -122,6 +123,7 @@ export interface SidebarProps {
   onOpenCarrierInvoiceAudit?: () => void;
   onOpenQuotationPayments?: (quoteId?: string) => void;
   onOpenDocumentParser?: () => void;
+  onOpenHsCodeTariff?: () => void;
   dormantCustomersCount?: number;
   activeEngagementsCount?: number;
   exceptionsCount?: number;
@@ -213,6 +215,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenCarrierInvoiceAudit,
   onOpenQuotationPayments,
   onOpenDocumentParser,
+  onOpenHsCodeTariff,
   dormantCustomersCount = 3,
   activeEngagementsCount = 0,
   shipmentsCount = 0,
@@ -628,6 +631,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       group: 'pricing',
       action: () => onOpenSmartAssistant && onOpenSmartAssistant(),
       badge: 'AI',
+      badgeTone: 'emerald',
+    },
+    {
+      id: 'customs_tariff_ai',
+      label: activeLang === 'vi' ? 'Tra Cứu Mã HS & Thuế AI' : 'AI HS Code & Tariff',
+      icon: Calculator,
+      group: 'pricing',
+      action: () => onOpenHsCodeTariff && onOpenHsCodeTariff(),
+      badge: 'HS AI',
       badgeTone: 'emerald',
     },
     {

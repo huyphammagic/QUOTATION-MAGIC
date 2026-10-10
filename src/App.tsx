@@ -139,6 +139,7 @@ const CustomerDnaPowerMapModal = lazyWithRetry(() => import('./components/crm/Cu
 const CarrierInvoiceAuditModal = lazyWithRetry(() => import('./components/carrierAudit/CarrierInvoiceAuditModal').then(m => ({ default: m.CarrierInvoiceAuditModal })), 'CarrierInvoiceAuditModal');
 const QuotationPaymentHubModal = lazyWithRetry(() => import('./components/payment/QuotationPaymentHubModal').then(m => ({ default: m.QuotationPaymentHubModal })), 'QuotationPaymentHubModal');
 const AiDocumentParserModal = lazyWithRetry(() => import('./components/documentParser/AiDocumentParserModal').then(m => ({ default: m.AiDocumentParserModal })), 'AiDocumentParserModal');
+const HsCodeTariffModal = lazyWithRetry(() => import('./components/customsTariff/HsCodeTariffModal').then(m => ({ default: m.HsCodeTariffModal })), 'HsCodeTariffModal');
 import { LiveLeadToastNotifier } from './components/telemetry/LiveLeadToastNotifier';
 import { subscribeToLiveEngagements } from './services/telemetry/customerEngagementService';
 import { QuotationEngagementSession } from './types/customerEngagement';
@@ -468,6 +469,9 @@ export default function App() {
   // Phase 67: AI Logistics OCR & Document Parser
   const [isDocumentParserOpen, setIsDocumentParserOpen] = useState(false);
 
+  // Phase 68: AI Customs Tariff & HS Code Intelligence
+  const [isHsCodeTariffOpen, setIsHsCodeTariffOpen] = useState(false);
+
   const handleOpenPaymentHub = (quoteId?: string) => {
     setSelectedPaymentQuoteId(quoteId || quote?.id || quote?.quoteNumber);
     setIsQuotationPaymentHubOpen(true);
@@ -544,6 +548,7 @@ export default function App() {
     setIsCarrierInvoiceAuditOpen(false);
     setIsQuotationPaymentHubOpen(false);
     setIsDocumentParserOpen(false);
+    setIsHsCodeTariffOpen(false);
     setSelectedPaymentQuoteId(undefined);
     setIsShipmentWorkspaceOpen(false);
     setIsCreateShipmentModalOpen(false);
@@ -712,6 +717,9 @@ export default function App() {
         break;
       case 'ai_document_parser':
         setIsDocumentParserOpen(true);
+        break;
+      case 'customs_tariff_ai':
+        setIsHsCodeTariffOpen(true);
         break;
       case 'rfq_inbox':
         setIsRfqInboxOpen(true);
@@ -2152,6 +2160,7 @@ export default function App() {
           onOpenEmailTemplates={() => navigateToRoute('quotation_email_templates')}
           onOpenFollowUps={() => navigateToRoute('quotation_followup')}
           onOpenDocumentParser={() => setIsDocumentParserOpen(true)}
+          onOpenHsCodeTariff={() => setIsHsCodeTariffOpen(true)}
           onOpenEngagementRadar={() => {
             setSelectedRadarSession(null);
             setIsEngagementRadarOpen(true);
@@ -2291,6 +2300,7 @@ export default function App() {
               onOpenCarrierInvoiceAudit={() => setIsCarrierInvoiceAuditOpen(true)}
               onOpenQuotationPayments={() => handleOpenPaymentHub(quote.id || quote.quoteNumber)}
               onOpenDocumentParser={() => setIsDocumentParserOpen(true)}
+              onOpenHsCodeTariff={() => setIsHsCodeTariffOpen(true)}
               isSaving={isAutoSaving}
               lastSavedAt={lastAutoSaveTime}
             />
@@ -2325,6 +2335,7 @@ export default function App() {
                   <ShipmentForm
                     shipment={quote.shipment}
                     onChangeShipment={handleChangeShipment}
+                    onOpenHsCodeTariff={() => setIsHsCodeTariffOpen(true)}
                   />
                 </div>
 
@@ -3521,6 +3532,35 @@ export default function App() {
               setQuote(createdQuote);
               setSavedQuotes(prev => [createdQuote, ...prev.filter(q => q.id !== createdQuote.id)]);
               showToast(`📄 Đã tạo thành công Báo giá mới ${createdQuote.quoteNumber} từ chứng từ OCR!`);
+            }}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 68: AI Customs Tariff & HS Code Intelligence Modal */}
+      {isHsCodeTariffOpen && (
+        <Suspense fallback={null}>
+          <HsCodeTariffModal
+            isOpen={isHsCodeTariffOpen}
+            onClose={() => setIsHsCodeTariffOpen(false)}
+            currentQuote={quote}
+            onApplyLineItemsToQuote={(newItems) => {
+              setQuote(prev => ({
+                ...prev,
+                items: [...prev.items, ...newItems],
+              }));
+              showToast(`🏛️ Đã thêm ${newItems.length} dòng chi phí thuế & thủ tục hải quan vào báo giá!`);
+            }}
+            onApplyHsCodeToShipment={(hsCode, desc) => {
+              setQuote(prev => ({
+                ...prev,
+                shipment: {
+                  ...prev.shipment,
+                  hsCode,
+                  commodity: prev.shipment.commodity || desc || prev.shipment.commodity,
+                },
+              }));
+              showToast(`🏷️ Đã gán mã HS ${hsCode} vào lô hàng!`);
             }}
           />
         </Suspense>
