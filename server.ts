@@ -464,12 +464,15 @@ app.post("/api/gemini/hs-code-lookup", async (req, res) => {
     }
 
     const prompt = `Bạn là Chuyên gia Khai Báo Hải Quan & Phân Loại Mã HS Cao Cấp tại Việt Nam (Vietnam Customs HS Classification & Tariff Specialist).
-Dựa trên tên hàng hóa và mô tả sau đây:
-TÊN HÀNG HÓA: "${commodityQuery}"
+Dựa trên tên hàng hóa hoặc mã HS sau đây:
+TÊN HÀNG HÓA HOẶC MÃ HS: "${commodityQuery}"
 XUẤT XỨ / NƯỚC NHẬP KHẨU DỰ KIẾN: "${originCountry || 'Quốc tế / Trung Quốc / Hàn Quốc / EU / Mỹ'}"
 
-Hãy phân loại chính xác theo Danh mục Hàng hóa Xuất khẩu, Nhập khẩu Việt Nam (8 chữ số) và Biểu thuế XNK hiện hành.
-Áp dụng đúng 6 Quy tắc tổng quát giải thích phân loại hàng hóa (GIR 1 đến GIR 6).
+Quy tắc bắt buộc:
+1. Nếu người dùng nhập trực tiếp một mã HS (ví dụ: "8507.60.90", "8471.30.20", "6109.10.00"...), hãy định danh chính xác 100% dòng hàng đó theo Danh mục Hàng hóa XNK và Biểu thuế XNK Việt Nam mới nhất (Nghị định 26/2023/NĐ-CP).
+2. Phân loại chuẩn 8 chữ số theo 6 Quy tắc tổng quát giải thích phân loại hàng hóa (GIR 1 đến GIR 6).
+3. Đưa ra chính xác mức thuế nhập khẩu ưu đãi MFN, thuế VAT (8% hoặc 10%), thuế xuất khẩu và các hiệp định FTA ưu đãi đặc biệt (ACFTA, EVFTA, CPTPP, VKFTA, ATIGA, RCEP).
+4. Xác định rõ yêu cầu Kiểm tra chuyên ngành (Bộ Công Thương, Bộ TTTT, Bộ Y Tế, Bộ NN&PTNT...).
 
 Hãy trả về duy nhất một JSON (không markdown, chỉ JSON thuần túy) theo định dạng:
 {

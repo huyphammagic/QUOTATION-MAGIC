@@ -21,17 +21,39 @@ import {
   Clock,
   Layers,
   ChevronRight,
-  BookOpen
+  BookOpen,
+  ShieldCheck,
+  Award,
+  Zap,
+  Tag,
+  SlidersHorizontal,
+  PackageCheck,
+  Cpu,
+  Shirt,
+  Apple,
+  Cog,
+  Car,
+  Boxes,
+  FlaskConical,
+  Home,
+  Stethoscope
 } from 'lucide-react';
 import { 
   HsCodeTariffItem, 
   CustomsTaxCalculationResult 
 } from '../../types/customsTariff';
 import { QuoteData, LineItem } from '../../types/logistics';
-import { COMMON_HS_CODE_DATABASE } from '../../data/commonHsTariffs';
+import { 
+  COMMON_HS_CODE_DATABASE, 
+  TARIFF_CATEGORIES, 
+  TariffCategoryMeta 
+} from '../../data/commonHsTariffs';
 import { 
   lookupHsCodeWithAi, 
-  calculateCustomsTaxes 
+  calculateCustomsTaxes,
+  searchMasterHsTariffs,
+  normalizeHsDigits,
+  removeVietnameseDiacritics
 } from '../../services/customsTariff/customsTariffService';
 
 interface HsCodeTariffModalProps {
@@ -49,17 +71,47 @@ export const HsCodeTariffModal: React.FC<HsCodeTariffModalProps> = ({
   onApplyLineItemsToQuote,
   onApplyHsCodeToShipment,
 }) => {
-  // Search State
+  // Search & Filter State
   const [searchQuery, setSearchQuery] = useState(currentQuote.shipment.commodity || 'Pin Lithium');
-  const [isSearching, setIsSearching] = useState(false);
-  const [candidateItems, setCandidateItems] = useState<HsCodeTariffItem[]>(() => COMMON_HS_CODE_DATABASE.slice(0, 3));
-  const [selectedHsItem, setSelectedHsItem] = useState<HsCodeTariffItem>(() => COMMON_HS_CODE_DATABASE[0]);
-  const [rulingAdvice, setRulingAdvice] = useState<string>('Áp dụng theo Danh mục Hàng hóa XNK Việt Nam và 6 Quy tắc tổng quát GIR.');
-  const [detectedCategory, setDetectedCategory] = useState<string>('Thiết bị điện & Pin');
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [isSearchingAi, setIsSearchingAi] = useState(false);
+  const [aiCustomItems, setAiCustomItems] = useState<HsCodeTariffItem[] | null>(null);
+  const [rulingAdviceOverride, setRulingAdviceOverride] = useState<string | null>(null);
+  const [detectedCategoryOverride, setDetectedCategoryOverride] = useState<string | null>(null);
+
+  // Instant deterministic search across master tariff schedule
+  const localSearchResult = useMemo(() => {
+    return searchMasterHsTariffs(searchQuery, selectedCategory);
+  }, [searchQuery, selectedCategory]);
+
+  // Combined candidate items: priority to AI if explicitly fetched, otherwise instant local match
+  const candidateItems = useMemo(() => {
+    if (aiCustomItems && aiCustomItems.length > 0) {
+      return aiCustomItems;
+    }
+    return localSearchResult.items;
+  }, [aiCustomItems, localSearchResult.items]);
+
+  // Selected HS item for calculator
+  const [selectedHsItem, setSelectedHsItem] = useState<HsCodeTariffItem>(() => {
+    return localSearchResult.exactMatch || localSearchResult.items[0] || COMMON_HS_CODE_DATABASE[0];
+  });
+
+  // When exact match is found locally, auto-select it for immediate calculator synchronization
+  useEffect(() => {
+    if (localSearchResult.exactMatch) {
+      setSelectedHsItem(localSearchResult.exactMatch);
+    } else if (candidateItems.length > 0 && !candidateItems.some(i => i.id === selectedHsItem?.id)) {
+      setSelectedHsItem(candidateItems[0]);
+    }
+  }, [localSearchResult.exactMatch, candidateItems]);
+
+  // Advice & Category labels
+  const rulingAdvice = rulingAdviceOverride || localSearchResult.rulingAdvice;
+  const detectedCategory = detectedCategoryOverride || localSearchResult.detectedCategory;
 
   // Calculator Inputs
   const [cifValueUsd, setCifValueUsd] = useState<number>(() => {
-    // Estimate from shipment gross weight or default
     const gw = currentQuote.shipment.grossWeightKg || 1000;
     return Math.max(1000, Math.round(gw * 2.5));
   });
@@ -82,36 +134,51 @@ export const HsCodeTariffModal: React.FC<HsCodeTariffModalProps> = ({
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  // Perform AI Lookup
-  const handlePerformLookup = async (queryText?: string) => {
+  // Perform AI Deep Lookup
+  const handlePerformAiLookup = async (queryText?: string) => {
     const q = (queryText !== undefined ? queryText : searchQuery).trim();
     if (!q) return;
 
-    setIsSearching(true);
+    setIsSearchingAi(true);
     try {
       const res = await lookupHsCodeWithAi(q, currentQuote.shipment.pol);
-      setCandidateItems(res.items);
+      setAiCustomItems(res.items);
       if (res.items.length > 0) {
         setSelectedHsItem(res.items[0]);
-        // Reset selected agreement if current not in fta
         setSelectedAgreement('MFN');
       }
-      setRulingAdvice(res.rulingAdvice);
-      setDetectedCategory(res.detectedCategory);
+      setRulingAdviceOverride(res.rulingAdvice);
+      setDetectedCategoryOverride(res.detectedCategory);
+      showToast(res.isExactMatch ? 'Đã tìm thấy mã HS chính xác 100%!' : 'Đã phân loại mã HS thành công!');
     } catch (err: any) {
-      showToast('Lỗi khi tra cứu mã HS.');
+      showToast('Lỗi khi tra cứu mã HS AI.');
     } finally {
-      setIsSearching(false);
+      setIsSearchingAi(false);
     }
+  };
+
+  // Reset AI override on user manual typing to re-enable 0ms instant local search
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setAiCustomItems(null);
+    setRulingAdviceOverride(null);
+    setDetectedCategoryOverride(null);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setAiCustomItems(null);
+    setRulingAdviceOverride(null);
+    setDetectedCategoryOverride(null);
   };
 
   // Auto trigger lookup when opened if quote has commodity
   useEffect(() => {
     if (isOpen && currentQuote.shipment.commodity) {
       setSearchQuery(currentQuote.shipment.commodity);
-      handlePerformLookup(currentQuote.shipment.commodity);
+      setAiCustomItems(null);
     }
-  }, [isOpen]);
+  }, [isOpen, currentQuote.shipment.commodity]);
 
   // Real-time Tax Calculation Result
   const taxCalculation: CustomsTaxCalculationResult = useMemo(() => {
@@ -172,14 +239,20 @@ export const HsCodeTariffModal: React.FC<HsCodeTariffModalProps> = ({
     }
   };
 
-  // Quick Preset Tags
+  // Quick Preset Tags with exact HS codes
   const QUICK_TAGS = [
-    { label: 'Pin Lithium Ắc Quy', query: 'Pin Lithium ion sạc lại được' },
-    { label: 'Áo Thun Cotton', query: 'Áo thun may mặc dệt kim 100% cotton' },
-    { label: 'Máy Tính Laptop', query: 'Máy tính xách tay xách tay Laptop' },
-    { label: 'Thanh Long Đông Lạnh', query: 'Quả thanh long ruột đỏ đông lạnh' },
-    { label: 'Xe Nâng Hàng Tự Hành', query: 'Xe nâng hàng tự hành diesel' },
-    { label: 'Mỹ Phẩm Dưỡng Da', query: 'Kem dưỡng ẩm da mặt mỹ phẩm' },
+    { label: 'Pin Lithium (8507.60.90)', query: '8507.60.90' },
+    { label: 'Laptop (8471.30.20)', query: '8471.30.20' },
+    { label: 'Sầu Riêng Tươi (0810.60.00)', query: '0810.60.00' },
+    { label: 'Áo Thun Cotton (6109.10.00)', query: '6109.10.00' },
+    { label: 'Xe Nâng Diesel (8427.20.00)', query: '8427.20.00' },
+    { label: 'Tôn Mạ Kẽm (7210.49.12)', query: '7210.49.12' },
+    { label: 'Hạt Nhựa PP (3902.10.40)', query: '3902.10.40' },
+    { label: 'Kem Dưỡng Da (3304.99.30)', query: '3304.99.30' },
+    { label: 'Gạo ST25 (1006.30.99)', query: '1006.30.99' },
+    { label: 'Tôm Thẻ ĐL (0306.17.21)', query: '0306.17.21' },
+    { label: 'Ô Tô Điện EV (8703.80.98)', query: '8703.80.98' },
+    { label: 'Thép HRC (7208.39.90)', query: '7208.39.90' },
   ];
 
   if (!isOpen) return null;
@@ -198,23 +271,27 @@ export const HsCodeTariffModal: React.FC<HsCodeTariffModalProps> = ({
       <div className="bg-white w-full max-w-7xl h-[94vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200/90 text-slate-900">
         
         {/* Header Bar */}
-        <div className="p-3 sm:p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-slate-50/80">
+        <div className="p-3 sm:p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-amber-50/50 via-white to-slate-50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-rose-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20">
               <Calculator className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-                  Tra Cứu Mã HS Code & Tự Động Tính Thuế XNK Bằng AI
+                  Tra Cứu Mã HS Code & Tự Động Tính Thuế XNK
                 </h2>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                  <Sparkles className="w-3 h-3 text-amber-600" />
-                  Biểu Thuế XNK Việt Nam
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  Biểu Thuế XNK Mới Nhất (Nghị Định 26/2023/NĐ-CP)
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                  <Award className="w-3 h-3 text-amber-600" />
+                  Lọc Chính Xác 100%
                 </span>
               </div>
               <p className="text-xs text-slate-500">
-                Phân loại mã HS 8 chữ số theo 6 quy tắc GIR, so sánh thuế FTA ưu đãi và tự động tính toán thuế trọn gói DDP/DAP
+                Lọc chính xác theo mã HS hoặc tên sản phẩm, đối chiếu 6 quy tắc GIR, so sánh thuế quan FTA và tính thuế DDP/DAP tức thì
               </p>
             </div>
           </div>
@@ -239,44 +316,83 @@ export const HsCodeTariffModal: React.FC<HsCodeTariffModalProps> = ({
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handlePerformLookup()}
-                placeholder="Nhập tên hàng hóa, thành phần hoặc công dụng (VD: Pin lithium xe điện, Áo thun 100% cotton, Laptop...)..."
-                className="w-full pl-9 pr-24 py-2 text-xs sm:text-sm font-semibold rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                onChange={handleSearchInputChange}
+                onKeyDown={(e) => e.key === 'Enter' && handlePerformAiLookup()}
+                placeholder="Nhập tên sản phẩm (VD: Pin lithium, Laptop, Sầu riêng, Áo thun...) hoặc Mã HS (VD: 8507.60.90, 8471...)..."
+                className="w-full pl-9 pr-24 py-2.5 text-xs sm:text-sm font-semibold rounded-xl border border-slate-300 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all shadow-2xs"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="absolute right-28 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded transition"
+                  title="Xóa tìm kiếm"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => handlePerformLookup()}
-                disabled={isSearching}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                onClick={() => handlePerformAiLookup()}
+                disabled={isSearchingAi}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-sm"
               >
-                {isSearching ? (
+                {isSearchingAi ? (
                   <>
-                    <RefreshCw className="w-3 h-3 animate-spin" />
-                    <span>Đang Tra Cứu...</span>
+                    <RefreshCw className="w-3 h-3 animate-spin text-amber-400" />
+                    <span>AI Đang Phân Tích...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-3 h-3 text-amber-400" />
-                    <span>AI Tra Cứu</span>
+                    <span>AI Phân Tích</span>
                   </>
                 )}
               </button>
             </div>
           </div>
 
-          {/* Quick Preset Tags */}
+          {/* Category Tabs Strip */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-thin">
-            <span className="text-slate-400 text-[11px] font-semibold shrink-0">Hàng mẫu nhanh:</span>
+            {TARIFF_CATEGORIES.map((cat) => {
+              const isActive = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategory(cat.id);
+                    setAiCustomItems(null);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition shrink-0 cursor-pointer flex items-center gap-1 border ${
+                    isActive
+                      ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
+                      : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700 border-slate-200'
+                  }`}
+                >
+                  <span>{cat.labelVi}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Quick Preset Tags */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs scrollbar-thin">
+            <span className="text-slate-400 text-[11px] font-semibold shrink-0 flex items-center gap-1">
+              <Tag className="w-3 h-3" />
+              Tra nhanh mẫu:
+            </span>
             {QUICK_TAGS.map((tag, idx) => (
               <button
                 key={idx}
                 type="button"
                 onClick={() => {
                   setSearchQuery(tag.query);
-                  handlePerformLookup(tag.query);
+                  setAiCustomItems(null);
+                  setRulingAdviceOverride(null);
+                  setDetectedCategoryOverride(null);
                 }}
-                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-amber-50 text-slate-700 hover:text-amber-900 border border-slate-200 transition shrink-0 cursor-pointer"
+                className="px-2 py-0.5 rounded text-[11px] font-medium bg-white hover:bg-amber-50 text-slate-600 hover:text-amber-900 border border-slate-200 transition shrink-0 cursor-pointer shadow-2xs font-mono"
               >
                 {tag.label}
               </button>
@@ -290,13 +406,44 @@ export const HsCodeTariffModal: React.FC<HsCodeTariffModalProps> = ({
           {/* LEFT PANE: CANDIDATE HS CODES & DETAILS */}
           <div className="w-full lg:w-7/12 border-r border-slate-200 flex flex-col overflow-y-auto p-3 sm:p-5 space-y-4">
             
-            {/* Advice Box from AI */}
+            {/* EXACT MATCH HIGHLIGHT BANNER */}
+            {localSearchResult.exactMatch && (
+              <div className="p-3.5 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-300 rounded-xl flex items-center justify-between gap-3 shadow-2xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-black text-emerald-950 uppercase tracking-tight">
+                        ĐÃ KHỚP CHÍNH XÁC 100% VỚI BIỂU THUẾ XNK:
+                      </span>
+                      <span className="font-mono text-xs font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
+                        {localSearchResult.exactMatch.hsCode}
+                      </span>
+                    </div>
+                    <p className="text-[11.5px] text-emerald-800 font-medium">
+                      {localSearchResult.exactMatch.descriptionVi}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedHsItem(localSearchResult.exactMatch!)}
+                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg transition shrink-0 cursor-pointer shadow-2xs"
+                >
+                  Chọn Mã Này
+                </button>
+              </div>
+            )}
+
+            {/* Advice Box */}
             {rulingAdvice && (
               <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-xs space-y-1">
                 <div className="flex items-center justify-between font-bold text-amber-900">
                   <div className="flex items-center gap-1.5">
                     <BookOpen className="w-4 h-4 text-amber-700" />
-                    <span>Khuyến Nghị Phân Loại Hải Quan (GIR Rulings):</span>
+                    <span>Căn Cứ Phân Loại Hải Quan & Biểu Thuế:</span>
                   </div>
                   <span className="text-[11px] bg-amber-200/60 px-2 py-0.5 rounded text-amber-800 font-mono">
                     {detectedCategory}
@@ -311,134 +458,159 @@ export const HsCodeTariffModal: React.FC<HsCodeTariffModalProps> = ({
             {/* Candidate HS Code Cards */}
             <div className="space-y-3">
               <div className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center justify-between">
-                <span>Các Mã HS Phù Hợp Nhất ({candidateItems.length}):</span>
+                <span>Danh Sách Mã HS ({candidateItems.length}):</span>
                 <span className="text-[11px] text-slate-400 font-normal">Click chọn để đưa vào máy tính thuế</span>
               </div>
 
-              {candidateItems.map((item) => {
-                const isSelected = selectedHsItem?.id === item.id;
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() => setSelectedHsItem(item)}
-                    className={`p-3 sm:p-4 rounded-xl border transition-all cursor-pointer space-y-3 ${
-                      isSelected
-                        ? 'bg-white border-amber-400 shadow-md ring-2 ring-amber-400/20'
-                        : 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs'
-                    }`}
-                  >
-                    {/* Header: HS Code & Confidence Badge */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-base sm:text-lg font-black text-amber-600 tracking-tight">
-                          {item.hsCode}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            copyToClipboard(item.hsCode, item.id);
-                          }}
-                          className="p-1 text-slate-400 hover:text-slate-700 rounded transition"
-                          title="Sao chép mã HS"
-                        >
-                          {copiedKey === item.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 font-mono">
-                          Chương {item.chapter}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          <span>{item.confidenceScore}% Tin cậy</span>
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Descriptions */}
-                    <div className="space-y-1 text-xs">
-                      <div className="font-bold text-slate-900 leading-snug">
-                        {item.descriptionVi}
-                      </div>
-                      <div className="text-slate-500 font-mono text-[11px] italic">
-                        {item.descriptionEn}
-                      </div>
-                    </div>
-
-                    {/* Classification Reason */}
-                    <div className="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                      <span className="font-bold text-slate-700">Căn cứ phân loại: </span>
-                      <span>{item.classificationReason}</span>
-                    </div>
-
-                    {/* Base Tariff Strip */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs pt-1">
-                      <div className="bg-slate-50 p-2 rounded-lg border border-slate-200/80">
-                        <span className="text-[10px] text-slate-400 block font-semibold">Thuế NK Ưu Đãi (MFN):</span>
-                        <span className="font-bold text-amber-700">{item.importPreferentialTariff}%</span>
-                      </div>
-
-                      <div className="bg-slate-50 p-2 rounded-lg border border-slate-200/80">
-                        <span className="text-[10px] text-slate-400 block font-semibold">Thuế GTGT (VAT):</span>
-                        <span className="font-bold text-indigo-700">{item.vatTariff}%</span>
-                      </div>
-
-                      <div className="bg-slate-50 p-2 rounded-lg border border-slate-200/80">
-                        <span className="text-[10px] text-slate-400 block font-semibold">Thuế Xuất Khẩu:</span>
-                        <span className="font-bold text-emerald-700">{item.exportTariff}%</span>
-                      </div>
-
-                      <div className="bg-slate-50 p-2 rounded-lg border border-slate-200/80">
-                        <span className="text-[10px] text-slate-400 block font-semibold">Đơn Vị Tính:</span>
-                        <span className="font-bold text-slate-900">{item.unit || 'Chiếc'}</span>
-                      </div>
-                    </div>
-
-                    {/* FTA Preferential Table */}
-                    {item.ftaTariffs && item.ftaTariffs.length > 0 && (
-                      <div className="space-y-1.5 pt-1">
-                        <div className="text-[11px] font-bold text-slate-600 flex items-center justify-between">
-                          <span>Ưu đãi Thuế quan Hiệp định Thương mại Tự do (FTA):</span>
-                          <span className="text-[10px] text-indigo-600 font-normal">Cần C/O hợp lệ để hưởng thuế</span>
+              {candidateItems.length === 0 ? (
+                <div className="p-8 text-center bg-white rounded-xl border border-dashed border-slate-300 space-y-2">
+                  <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
+                  <p className="text-xs font-bold text-slate-700">
+                    Không tìm thấy mã HS phù hợp trong biểu thuế cho "{searchQuery}"
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    Thử từ khóa khác hoặc bấm nút "AI Phân Tích" ở trên để mô hình Gemini phân loại tự động.
+                  </p>
+                </div>
+              ) : (
+                candidateItems.map((item) => {
+                  const isSelected = selectedHsItem?.id === item.id;
+                  const isItemExact = item.isExactMatch || item.confidenceScore === 100;
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => setSelectedHsItem(item)}
+                      className={`p-3 sm:p-4 rounded-xl border transition-all cursor-pointer space-y-3 ${
+                        isSelected
+                          ? 'bg-white border-amber-400 shadow-md ring-2 ring-amber-400/20'
+                          : 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs'
+                      }`}
+                    >
+                      {/* Header: HS Code & Confidence Badge */}
+                      <div className="flex items-start justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-base sm:text-lg font-black text-amber-600 tracking-tight">
+                            {item.hsCode}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyToClipboard(item.hsCode, item.id);
+                            }}
+                            className="p-1 text-slate-400 hover:text-slate-700 rounded transition cursor-pointer"
+                            title="Sao chép mã HS"
+                          >
+                            {copiedKey === item.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 font-mono">
+                            Chương {item.chapter}
+                          </span>
+                          {item.categoryNameVi && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                              {item.categoryNameVi}
+                            </span>
+                          )}
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-xs">
-                          {item.ftaTariffs.map((fta, fIdx) => (
-                            <div key={fIdx} className="bg-indigo-50/50 p-1.5 rounded border border-indigo-100 flex items-center justify-between text-[11px]">
-                              <div>
-                                <span className="font-bold text-indigo-900 block">{fta.agreementCode}</span>
-                                <span className="text-[10px] text-slate-500">{fta.coForm}</span>
-                              </div>
-                              <span className="font-mono font-bold text-emerald-700 bg-white px-1.5 py-0.5 rounded border border-indigo-200">
-                                {fta.rate}%
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
 
-                    {/* Specialized Inspection Badge */}
-                    {item.specializedInspection?.isRequired && (
-                      <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-xs space-y-1">
-                        <div className="flex items-center gap-1.5 font-bold text-rose-900 text-[11.5px]">
-                          <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
-                          <span>Yêu Cầu Kiểm Tra Chuyên Ngành:</span>
-                        </div>
-                        <div className="text-rose-800 text-[11px] space-y-0.5">
-                          <p>• <strong>Cơ quan:</strong> {item.specializedInspection.agency}</p>
-                          <p>• <strong>Thủ tục:</strong> {item.specializedInspection.inspectionType}</p>
-                          {item.specializedInspection.estimatedCostVnd && (
-                            <p>• <strong>Chi phí ước tính:</strong> {item.specializedInspection.estimatedCostVnd.toLocaleString()} VND (Dự kiến {item.specializedInspection.estimatedDays || 3} ngày)</p>
+                        <div className="flex items-center gap-1.5">
+                          {isItemExact ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Khớp 100% Chính Xác</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                              <CheckCircle2 className="w-3 h-3 text-slate-500" />
+                              <span>{item.confidenceScore}% Tin cậy</span>
+                            </span>
                           )}
                         </div>
                       </div>
-                    )}
 
-                  </div>
-                );
-              })}
+                      {/* Descriptions */}
+                      <div className="space-y-1 text-xs">
+                        <div className="font-bold text-slate-900 leading-snug">
+                          {item.descriptionVi}
+                        </div>
+                        <div className="text-slate-500 font-mono text-[11px] italic">
+                          {item.descriptionEn}
+                        </div>
+                      </div>
+
+                      {/* Classification Reason */}
+                      <div className="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                        <span className="font-bold text-slate-700">Căn cứ phân loại: </span>
+                        <span>{item.classificationReason}</span>
+                      </div>
+
+                      {/* Base Tariff Strip */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs pt-1">
+                        <div className="bg-slate-50 p-2 rounded-lg border border-slate-200/80">
+                          <span className="text-[10px] text-slate-400 block font-semibold">Thuế NK Ưu Đãi (MFN):</span>
+                          <span className="font-bold text-amber-700">{item.importPreferentialTariff}%</span>
+                        </div>
+
+                        <div className="bg-slate-50 p-2 rounded-lg border border-slate-200/80">
+                          <span className="text-[10px] text-slate-400 block font-semibold">Thuế GTGT (VAT):</span>
+                          <span className="font-bold text-indigo-700">{item.vatTariff}%</span>
+                        </div>
+
+                        <div className="bg-slate-50 p-2 rounded-lg border border-slate-200/80">
+                          <span className="text-[10px] text-slate-400 block font-semibold">Thuế Xuất Khẩu:</span>
+                          <span className="font-bold text-emerald-700">{item.exportTariff}%</span>
+                        </div>
+
+                        <div className="bg-slate-50 p-2 rounded-lg border border-slate-200/80">
+                          <span className="text-[10px] text-slate-400 block font-semibold">Đơn Vị Tính:</span>
+                          <span className="font-bold text-slate-900">{item.unit || 'Chiếc'}</span>
+                        </div>
+                      </div>
+
+                      {/* FTA Preferential Table */}
+                      {item.ftaTariffs && item.ftaTariffs.length > 0 && (
+                        <div className="space-y-1.5 pt-1">
+                          <div className="text-[11px] font-bold text-slate-600 flex items-center justify-between">
+                            <span>Ưu đãi Thuế quan Hiệp định Thương mại Tự do (FTA):</span>
+                            <span className="text-[10px] text-indigo-600 font-normal">Cần C/O hợp lệ để hưởng thuế 0%</span>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-xs">
+                            {item.ftaTariffs.map((fta, fIdx) => (
+                              <div key={fIdx} className="bg-indigo-50/50 p-1.5 rounded border border-indigo-100 flex items-center justify-between text-[11px]">
+                                <div>
+                                  <span className="font-bold text-indigo-900 block">{fta.agreementCode}</span>
+                                  <span className="text-[10px] text-slate-500">{fta.coForm}</span>
+                                </div>
+                                <span className="font-mono font-bold text-emerald-700 bg-white px-1.5 py-0.5 rounded border border-indigo-200">
+                                  {fta.rate}%
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Specialized Inspection Badge */}
+                      {item.specializedInspection?.isRequired && (
+                        <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-xs space-y-1">
+                          <div className="flex items-center gap-1.5 font-bold text-rose-900 text-[11.5px]">
+                            <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+                            <span>Yêu Cầu Kiểm Tra Chuyên Ngành:</span>
+                          </div>
+                          <div className="text-rose-800 text-[11px] space-y-0.5">
+                            <p>• <strong>Cơ quan:</strong> {item.specializedInspection.agency}</p>
+                            <p>• <strong>Thủ tục:</strong> {item.specializedInspection.inspectionType}</p>
+                            {item.specializedInspection.estimatedCostVnd && (
+                              <p>• <strong>Chi phí ước tính:</strong> {item.specializedInspection.estimatedCostVnd.toLocaleString()} VND (Dự kiến {item.specializedInspection.estimatedDays || 3} ngày)</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                    </div>
+                  );
+                })
+              )}
             </div>
 
           </div>
@@ -452,9 +624,11 @@ export const HsCodeTariffModal: React.FC<HsCodeTariffModalProps> = ({
                   <Calculator className="w-4 h-4 text-amber-600" />
                   <span>Máy Tính Thuế XNK Trực Quan</span>
                 </div>
-                <span className="font-mono text-xs font-bold text-amber-700 bg-amber-100/60 px-2 py-0.5 rounded">
-                  {selectedHsItem?.hsCode || '---'}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-xs font-bold text-amber-700 bg-amber-100/60 px-2 py-0.5 rounded">
+                    {selectedHsItem?.hsCode || '---'}
+                  </span>
+                </div>
               </div>
 
               {/* Input Form */}
@@ -473,7 +647,7 @@ export const HsCodeTariffModal: React.FC<HsCodeTariffModalProps> = ({
                     />
                   </div>
                   <div className="text-[10px] text-slate-400 mt-0.5">
-                    Tương đương: <strong>{(cifValueUsd * exchangeRate).toLocaleString()} VND</strong> (Tỷ giá: {exchangeRate.toLocaleString()})
+                    Tương đương: <strong>{(cifValueUsd * exchangeRate).toLocaleString()} VND</strong> (Tỷ giá: {exchangeRate.toLocaleString()} VND/USD)
                   </div>
                 </div>
 
@@ -492,7 +666,7 @@ export const HsCodeTariffModal: React.FC<HsCodeTariffModalProps> = ({
 
                   <div>
                     <label className="text-[11px] font-bold text-slate-600 block mb-1">
-                      Hiệp Định Áp Dụng:
+                      Biểu Thuế Áp Dụng:
                     </label>
                     <select
                       value={selectedAgreement}

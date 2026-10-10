@@ -26,9 +26,13 @@ export interface HsCodeTariffItem {
   heading: string;             // 4 số đầu - Nhóm
   descriptionVi: string;       // Mô tả tiếng Việt
   descriptionEn: string;       // English description
+  keywords?: string[];         // Các từ khóa thông dụng, tên thương mại, tên viết tắt
+  categoryGroup?: string;      // Nhóm ngành: 'ELECTRONICS' | 'TEXTILE' | 'AGRICULTURE' | 'MACHINERY' | 'STEEL' | 'CHEMICAL' | 'FURNITURE' | 'VEHICLE' | 'COSMETICS' | 'MEDICAL'
+  categoryNameVi?: string;     // Tên nhóm ngành tiếng Việt
   unit: string;                // e.g. 'Chiếc', 'Cái', 'KG', 'Bộ', 'Mét vuông'
   confidenceScore: number;     // 0 - 100 (%)
   classificationReason: string;// Căn cứ phân loại theo 6 quy tắc tổng quát GIR
+  isExactMatch?: boolean;      // Đánh dấu khớp 100%
   
   // Base Tariffs (%)
   exportTariff: number;        // Thuế xuất khẩu (%)
