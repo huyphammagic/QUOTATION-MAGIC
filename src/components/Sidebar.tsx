@@ -62,7 +62,9 @@ import {
   Scale,
   Dna,
   ShieldAlert,
-  Calculator
+  Calculator,
+  BarChart3,
+  Target
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -124,6 +126,7 @@ export interface SidebarProps {
   onOpenQuotationPayments?: (quoteId?: string) => void;
   onOpenDocumentParser?: () => void;
   onOpenHsCodeTariff?: () => void;
+  onOpenFreightRateBenchmarking?: () => void;
   dormantCustomersCount?: number;
   activeEngagementsCount?: number;
   exceptionsCount?: number;
@@ -216,6 +219,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenQuotationPayments,
   onOpenDocumentParser,
   onOpenHsCodeTariff,
+  onOpenFreightRateBenchmarking,
   dormantCustomersCount = 3,
   activeEngagementsCount = 0,
   shipmentsCount = 0,
@@ -641,6 +645,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       action: () => onOpenHsCodeTariff && onOpenHsCodeTariff(),
       badge: 'HS AI',
       badgeTone: 'emerald',
+    },
+    {
+      id: 'freight_rate_benchmarking',
+      label: activeLang === 'vi' ? 'Đối Soát Cước & Biên Lãi AI' : 'Freight Benchmark & Margin AI',
+      icon: BarChart3,
+      group: 'pricing',
+      action: () => onOpenFreightRateBenchmarking && onOpenFreightRateBenchmarking(),
+      badge: 'P.72',
+      badgeTone: 'sky',
     },
     {
       id: 'pricing_profit',

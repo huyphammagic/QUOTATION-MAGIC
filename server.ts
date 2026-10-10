@@ -577,6 +577,84 @@ Hãy trả về duy nhất một JSON (không markdown, chỉ JSON thuần túy)
   }
 });
 
+// Phase 72: AI Freight Rate Benchmarking & Profit Margin Optimizer
+app.post("/api/ai/freight-rate-benchmark", async (req, res) => {
+  try {
+    const { 
+      originPort, 
+      destinationPort, 
+      mode, 
+      equipmentType, 
+      lowSpotRate, 
+      marketMedianRate, 
+      highSpotRate, 
+      currentBuyRate, 
+      currentSellingRate, 
+      currentMargin,
+      customerName 
+    } = req.body;
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ success: false, error: "GEMINI_API_KEY is not configured" });
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+
+    const prompt = `Bạn là Chuyên gia Chiến lược Định giá Cước Quốc tế & Tối ưu Biên Lợi nhuận Hàng hải (International Freight Pricing & Profit Margin Strategist).
+Hãy phân tích dữ liệu đối soát cước và thị trường sau đây:
+
+THÔNG TIN TUYẾN VẬN TẢI:
+- Cảng đi (Origin): ${originPort || 'Việt Nam'}
+- Cảng đến (Destination): ${destinationPort || 'Quốc tế'}
+- Phương thức: ${mode || 'SEA_FCL'} | Thiết bị: ${equipmentType || '40HC'}
+- Mức giá thị trường (USD): Sàn (P10) = $${lowSpotRate}, Trung bình (P50) = $${marketMedianRate}, Trần (P90) = $${highSpotRate}
+- Chi phí giá vốn (Buy Rate): $${currentBuyRate}
+- Giá chào hiện tại của Sales: $${currentSellingRate} (Biên lợi nhuận gộp: $${currentMargin})
+- Khách hàng mục tiêu: ${customerName || 'Doanh nghiệp'}
+
+YÊU CẦU PHÂN TÍCH:
+1. macroMarketSummaryVi: Tóm tắt bức tranh vĩ mô tuyến này (biến động SCFI/Drewry/Xeneta, rủi ro kênh đào Suez/Panama, phụ phí GRI/BAF).
+2. carrierSpaceAdviceVi: Tình trạng giữ chỗ (Space), tỷ lệ hủy chuyến (Blank sailings) và khuyến nghị đặt tàu.
+3. competitorCountermeasuresVi: Mảng 3 chiêu bài đối phó cụ thể trước các đối thủ (Global FWD như K+N/DHL, hãng tàu bán trực tiếp Maersk Spot, và FWD giá rẻ).
+4. salesPitchTalkingPointsVi: Mảng 3 luận điểm vàng (Battlecard Talking Points) giúp Sales bảo vệ giá chào và chốt hợp đồng nhanh.
+5. demDetNegotiationAdviceVi: Khuyến nghị đàm phán thời gian lưu bãi Free DEM/DET tại cảng đến.
+6. recommendedSellingPrice: Mức giá chào tối ưu nhất (Sweet Spot) để đạt tổng lợi nhuận kỳ vọng lớn nhất.
+7. confidenceScore: Điểm độ tin cậy từ 90-99.
+
+Trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm backticks markdown hay giải thích ngoài JSON):
+{
+  "macroMarketSummaryVi": "string",
+  "carrierSpaceAdviceVi": "string",
+  "competitorCountermeasuresVi": ["string", "string", "string"],
+  "salesPitchTalkingPointsVi": ["string", "string", "string"],
+  "demDetNegotiationAdviceVi": "string",
+  "recommendedSellingPrice": number,
+  "confidenceScore": number
+}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.8-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+      },
+    });
+
+    const text = response.text || "{}";
+    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    const resultData = JSON.parse(cleanedText);
+
+    res.json({ success: true, ...resultData });
+  } catch (error: any) {
+    console.error("Error in AI Freight Rate Benchmark:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to analyze freight rate benchmark with Gemini AI"
+    });
+  }
+});
+
 
 // Setup Vite Development Middleware or Static Production Serving
 async function setupServer() {

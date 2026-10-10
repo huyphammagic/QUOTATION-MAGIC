@@ -21,7 +21,8 @@ import {
   AlertTriangle, 
   Clock, 
   ShieldAlert,
-  ChevronDown
+  ChevronDown,
+  BarChart3
 } from 'lucide-react';
 
 interface LineItemsTableProps {
@@ -32,6 +33,7 @@ interface LineItemsTableProps {
   onOpenSurchargeCatalog?: () => void;
   onOpenRateSearch?: () => void;
   onOpenSmartAssistant?: () => void;
+  onOpenFreightRateBenchmarking?: () => void;
   onCheckRateUpdates?: () => void;
   outdatedRatesCount?: number;
   onResolveContractPricing?: () => void;
@@ -46,6 +48,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
   onOpenSurchargeCatalog,
   onOpenRateSearch,
   onOpenSmartAssistant,
+  onOpenFreightRateBenchmarking,
   onCheckRateUpdates,
   outdatedRatesCount = 0,
   onResolveContractPricing,
@@ -216,6 +219,20 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>Smart Rates</span>
+            </button>
+          )}
+
+          {/* Phase 72: Freight Rate Benchmark & Margin Optimizer */}
+          {onOpenFreightRateBenchmarking && (
+            <button
+              type="button"
+              onClick={onOpenFreightRateBenchmarking}
+              className="inline-flex items-center gap-1.5 bg-blue-50/80 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold text-xs px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+              title="Đối soát cước thị trường SCFI/Drewry & tối ưu tỷ lệ thắng thầu (Phase 72)"
+              id="btn-open-freight-benchmarking"
+            >
+              <BarChart3 className="w-3.5 h-3.5 text-blue-600" />
+              <span>Đối Soát Cước AI (P.72)</span>
             </button>
           )}
 

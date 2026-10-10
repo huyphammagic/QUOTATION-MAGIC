@@ -140,6 +140,7 @@ const CarrierInvoiceAuditModal = lazyWithRetry(() => import('./components/carrie
 const QuotationPaymentHubModal = lazyWithRetry(() => import('./components/payment/QuotationPaymentHubModal').then(m => ({ default: m.QuotationPaymentHubModal })), 'QuotationPaymentHubModal');
 const AiDocumentParserModal = lazyWithRetry(() => import('./components/documentParser/AiDocumentParserModal').then(m => ({ default: m.AiDocumentParserModal })), 'AiDocumentParserModal');
 const HsCodeTariffModal = lazyWithRetry(() => import('./components/customsTariff/HsCodeTariffModal').then(m => ({ default: m.HsCodeTariffModal })), 'HsCodeTariffModal');
+const FreightRateBenchmarkingModal = lazyWithRetry(() => import('./components/pricing/FreightRateBenchmarkingModal').then(m => ({ default: m.FreightRateBenchmarkingModal })), 'FreightRateBenchmarkingModal');
 import { LiveLeadToastNotifier } from './components/telemetry/LiveLeadToastNotifier';
 import { subscribeToLiveEngagements } from './services/telemetry/customerEngagementService';
 import { QuotationEngagementSession } from './types/customerEngagement';
@@ -472,6 +473,64 @@ export default function App() {
   // Phase 68: AI Customs Tariff & HS Code Intelligence
   const [isHsCodeTariffOpen, setIsHsCodeTariffOpen] = useState(false);
 
+  // Phase 72: Freight Rate Benchmarking & Profit Margin Optimizer
+  const [isFreightRateBenchmarkingOpen, setIsFreightRateBenchmarkingOpen] = useState(false);
+
+  const handleApplyBenchmarkRate = (newRate: number, strategyName: string, equipmentType?: string) => {
+    setQuote(prev => {
+      const exchangeRate = Number(prev.exchangeRate) || 25400;
+      let hasUpdated = false;
+      const updatedItems = prev.items.map(item => {
+        const descNorm = (item.description || item.code || '').toLowerCase();
+        const isFreight = item.category === 'FREIGHT' || 
+          item.location === 'FREIGHT' || 
+          descNorm.includes('freight') || 
+          descNorm.includes('cước biển') || 
+          descNorm.includes('cước bay');
+
+        if (isFreight && !hasUpdated) {
+          hasUpdated = true;
+          const updated: LineItem = {
+            ...item,
+            unitPrice: newRate,
+            currency: 'USD',
+            note: `${item.note ? item.note + ' | ' : ''}Đối soát P.72: ${strategyName}`,
+          };
+          return calculateLineItem(updated, exchangeRate);
+        }
+        return item;
+      });
+
+      if (!hasUpdated) {
+        const newFreightItem: LineItem = {
+          id: `item-bench-${Date.now()}`,
+          code: 'O/F',
+          description: prev.shipment.mode === 'AIR_FREIGHT' ? 'Cước Vận Chuyển Hàng Không (Air Freight)' : 'Cước Vận Chuyển Đường Biển (Ocean Freight)',
+          category: 'FREIGHT',
+          location: 'FREIGHT',
+          basis: prev.shipment.mode === 'AIR_FREIGHT' ? 'PER_KG' : 'PER_CONTAINER',
+          quantity: 1,
+          unit: equipmentType || (prev.shipment.mode === 'AIR_FREIGHT' ? 'KG' : "40'HC"),
+          unitPrice: newRate,
+          costPrice: Math.round(newRate * 0.85),
+          currency: 'USD',
+          vatRate: 0,
+          amountUsd: 0,
+          amountVnd: 0,
+          note: `Áp dụng từ bộ tối ưu cước thị trường Phase 72: ${strategyName}`,
+        };
+        const calculated = calculateLineItem(newFreightItem, exchangeRate);
+        updatedItems.unshift(calculated);
+      }
+
+      return {
+        ...prev,
+        items: updatedItems,
+      };
+    });
+    showToast(`🎯 Đã áp dụng mức cước đối soát $${newRate} (${strategyName}) vào báo giá!`);
+  };
+
   const handleOpenPaymentHub = (quoteId?: string) => {
     setSelectedPaymentQuoteId(quoteId || quote?.id || quote?.quoteNumber);
     setIsQuotationPaymentHubOpen(true);
@@ -549,6 +608,7 @@ export default function App() {
     setIsQuotationPaymentHubOpen(false);
     setIsDocumentParserOpen(false);
     setIsHsCodeTariffOpen(false);
+    setIsFreightRateBenchmarkingOpen(false);
     setSelectedPaymentQuoteId(undefined);
     setIsShipmentWorkspaceOpen(false);
     setIsCreateShipmentModalOpen(false);
@@ -720,6 +780,9 @@ export default function App() {
         break;
       case 'customs_tariff_ai':
         setIsHsCodeTariffOpen(true);
+        break;
+      case 'freight_rate_benchmarking':
+        setIsFreightRateBenchmarkingOpen(true);
         break;
       case 'rfq_inbox':
         setIsRfqInboxOpen(true);
@@ -2161,6 +2224,7 @@ export default function App() {
           onOpenFollowUps={() => navigateToRoute('quotation_followup')}
           onOpenDocumentParser={() => setIsDocumentParserOpen(true)}
           onOpenHsCodeTariff={() => setIsHsCodeTariffOpen(true)}
+          onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
           onOpenEngagementRadar={() => {
             setSelectedRadarSession(null);
             setIsEngagementRadarOpen(true);
@@ -2301,6 +2365,7 @@ export default function App() {
               onOpenQuotationPayments={() => handleOpenPaymentHub(quote.id || quote.quoteNumber)}
               onOpenDocumentParser={() => setIsDocumentParserOpen(true)}
               onOpenHsCodeTariff={() => setIsHsCodeTariffOpen(true)}
+              onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
               isSaving={isAutoSaving}
               lastSavedAt={lastAutoSaveTime}
             />
@@ -2336,6 +2401,7 @@ export default function App() {
                     shipment={quote.shipment}
                     onChangeShipment={handleChangeShipment}
                     onOpenHsCodeTariff={() => setIsHsCodeTariffOpen(true)}
+                    onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
                   />
                 </div>
 
@@ -2349,6 +2415,7 @@ export default function App() {
                     onOpenSurchargeCatalog={() => setIsSurchargesOpen(true)}
                     onOpenRateSearch={() => setIsRateSearchOpen(true)}
                     onOpenSmartAssistant={() => setIsSmartAssistantOpen(true)}
+                    onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
                     onCheckRateUpdates={() => setIsComparisonModalOpen(true)}
                     outdatedRatesCount={outdatedRatesDiffs.length}
                     onResolveContractPricing={handleResolveContractPricing}
@@ -2368,6 +2435,7 @@ export default function App() {
                   onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
                   onOpenSendModal={() => setIsSendQuotationOpen(true)}
                   onOpenProfitIntelligence={() => setIsProfitIntelligenceOpen(true)}
+                  onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
                 />
               </>
             )}
@@ -3561,6 +3629,21 @@ export default function App() {
                 },
               }));
               showToast(`🏷️ Đã gán mã HS ${hsCode} vào lô hàng!`);
+            }}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 72: Freight Rate Benchmarking & Profit Margin Optimizer Modal */}
+      {isFreightRateBenchmarkingOpen && (
+        <Suspense fallback={null}>
+          <FreightRateBenchmarkingModal
+            isOpen={isFreightRateBenchmarkingOpen}
+            onClose={() => setIsFreightRateBenchmarkingOpen(false)}
+            activeQuote={quote}
+            onApplyBenchmarkRate={(newRate, strategyName, equipmentType) => {
+              handleApplyBenchmarkRate(newRate, strategyName, equipmentType);
+              setIsFreightRateBenchmarkingOpen(false);
             }}
           />
         </Suspense>

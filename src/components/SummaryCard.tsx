@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   ShieldAlert,
   AlertOctagon,
-  Lock
+  Lock,
+  BarChart3
 } from 'lucide-react';
 
 interface SummaryCardProps {
@@ -29,6 +30,7 @@ interface SummaryCardProps {
   onOpenGeneratePdf?: () => void;
   onOpenSendModal?: () => void;
   onOpenProfitIntelligence?: () => void;
+  onOpenFreightRateBenchmarking?: () => void;
 }
 
 export const SummaryCard: React.FC<SummaryCardProps> = ({
@@ -42,6 +44,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
   onOpenGeneratePdf,
   onOpenSendModal,
   onOpenProfitIntelligence,
+  onOpenFreightRateBenchmarking,
 }) => {
   const margin = quote.overallMarginPercent || 0;
   const markup = quote.markupPercent || 0;
@@ -266,6 +269,18 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
             <Save className="w-4 h-4 text-slate-900" />
             <span>Lưu Báo Giá Lên Cloud</span>
           </button>
+
+          {onOpenFreightRateBenchmarking && (
+            <button
+              type="button"
+              onClick={onOpenFreightRateBenchmarking}
+              className="w-full flex items-center justify-center space-x-1.5 bg-indigo-900/60 hover:bg-indigo-900 text-indigo-200 border border-indigo-700/60 font-bold text-xs py-1.5 px-3 rounded-xl transition-colors cursor-pointer"
+              title="Đối soát cước thị trường & Tối ưu tỷ lệ chốt đơn (Phase 72)"
+            >
+              <BarChart3 className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Đối Soát Cước & Tối Ưu Lãi (P.72)</span>
+            </button>
+          )}
 
           {onOpenSendModal && (
             <button

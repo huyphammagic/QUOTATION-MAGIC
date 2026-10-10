@@ -14,19 +14,22 @@ import {
   ChevronUp,
   Clock,
   Info,
-  Sparkles
+  Sparkles,
+  BarChart3
 } from 'lucide-react';
 
 interface ShipmentFormProps {
   shipment: ShipmentDetails;
   onChangeShipment: (updated: Partial<ShipmentDetails>) => void;
   onOpenHsCodeTariff?: () => void;
+  onOpenFreightRateBenchmarking?: () => void;
 }
 
 export const ShipmentForm: React.FC<ShipmentFormProps> = ({ 
   shipment, 
   onChangeShipment,
   onOpenHsCodeTariff,
+  onOpenFreightRateBenchmarking,
 }) => {
   const [showTransitDetails, setShowTransitDetails] = useState(false);
 
@@ -125,9 +128,22 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
           
           {/* POL */}
           <div className="sm:col-span-4">
-            <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-              Cảng đi / Nơi gửi (POL) *
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[11px] font-semibold text-slate-600">
+                Cảng đi / Nơi gửi (POL) *
+              </label>
+              {onOpenFreightRateBenchmarking && (
+                <button
+                  type="button"
+                  onClick={onOpenFreightRateBenchmarking}
+                  className="text-[10px] font-bold text-blue-700 hover:text-blue-800 transition flex items-center gap-1 cursor-pointer"
+                  title="Đối soát cước thị trường tuyến này bằng AI"
+                >
+                  <BarChart3 className="w-2.5 h-2.5 text-blue-600" />
+                  <span>Đối Soát Cước AI</span>
+                </button>
+              )}
+            </div>
             <input
               type="text"
               list="ports-list"

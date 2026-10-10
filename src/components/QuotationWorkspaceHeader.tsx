@@ -27,7 +27,8 @@ import {
   Zap,
   Copy,
   CreditCard,
-  Calculator
+  Calculator,
+  BarChart3
 } from 'lucide-react';
 import { PaymentStatusBadge } from './payment/PaymentStatusBadge';
 
@@ -57,6 +58,7 @@ interface QuotationWorkspaceHeaderProps {
   onOpenQuotationPayments?: () => void;
   onOpenDocumentParser?: () => void;
   onOpenHsCodeTariff?: () => void;
+  onOpenFreightRateBenchmarking?: () => void;
   isSaving?: boolean;
   lastSavedAt?: string | null;
 }
@@ -85,6 +87,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
   onOpenQuotationPayments,
   onOpenDocumentParser,
   onOpenHsCodeTariff,
+  onOpenFreightRateBenchmarking,
   isSaving = false,
   lastSavedAt,
 }) => {
@@ -489,6 +492,26 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
                     </button>
                   )}
 
+                  {onOpenFreightRateBenchmarking && (
+                    <button
+                      type="button"
+                      onClick={() => { onOpenFreightRateBenchmarking(); setIsToolsDropdownOpen(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer bg-blue-50/50"
+                    >
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="w-3.5 h-3.5 text-blue-600" />
+                        <div>
+                          <div className="font-semibold text-slate-900 flex items-center gap-1">
+                            <span>Đối Soát Cước & Biên Lãi (P.72)</span>
+                            <span className="text-[9px] bg-blue-500 text-white px-1.5 py-0.2 rounded font-bold">HOT</span>
+                          </div>
+                          <div className="text-[10px] text-slate-500">Benchmark SCFI/Drewry & Tối ưu Win-Rate</div>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => { onOpenDecisionWorkspace(); setIsToolsDropdownOpen(false); }}
@@ -534,6 +557,20 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
               <FileText className="w-3.5 h-3.5 text-indigo-600" />
               <span className="hidden sm:inline">Quét B/L & Booking AI</span>
               <span className="sm:hidden">OCR AI</span>
+            </button>
+          )}
+
+          {/* Direct Quick Action: Phase 72 Freight Rate Benchmark & Margin Optimizer */}
+          {onOpenFreightRateBenchmarking && (
+            <button
+              type="button"
+              onClick={onOpenFreightRateBenchmarking}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-800 bg-blue-50/90 hover:bg-blue-100 border border-blue-300 rounded-lg transition-colors cursor-pointer shadow-xs"
+              title="Đối soát cước thị trường SCFI/Drewry & tối ưu hóa biên lợi nhuận thông minh (Phase 72)"
+            >
+              <BarChart3 className="w-3.5 h-3.5 text-blue-600" />
+              <span className="hidden md:inline">Đối Soát Cước & Biên Lãi (P.72)</span>
+              <span className="md:hidden">Cước AI</span>
             </button>
           )}
 

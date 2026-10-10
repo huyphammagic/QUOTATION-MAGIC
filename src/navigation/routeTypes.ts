@@ -20,6 +20,7 @@ export type AppRouteId =
   | 'quotation_followup'
   | 'ai_document_parser'
   | 'customs_tariff_ai'
+  | 'freight_rate_benchmarking'
   | 'rfq_inbox'
   | 'engagement_radar'
   | 'deal_closing_accelerator'

@@ -175,6 +175,16 @@ export const APP_ROUTES: Record<AppRouteId, RouteDefinition> = {
     descriptionVi: 'Phân loại mã HS 8 số, tra cứu thuế ưu đãi FTA và tự động tính thuế hải quan DDP/DAP bằng AI (Phase 68)',
     descriptionEn: '8-digit HS Code classification, FTA preferential tariff comparison and automated customs duty calculator',
   },
+  freight_rate_benchmarking: {
+    id: 'freight_rate_benchmarking',
+    path: '/pricing/freight-rate-benchmark',
+    hash: '#pricing/freight-rate-benchmark',
+    titleVi: 'Đối Soát Giá Thị Trường & Tối Ưu Biên Lợi Nhuận AI',
+    titleEn: 'Freight Rate Benchmarking & Profit Margin Optimizer',
+    group: 'pricing',
+    descriptionVi: 'Đối soát dải cước thị trường (SCFI/Drewry/Xeneta), mô phỏng tỷ lệ chốt thầu (Win Rate) & 3 chiến lược định giá tối ưu (Phase 72)',
+    descriptionEn: 'Freight spot rate benchmarking (SCFI/Drewry/Xeneta), win probability simulation curve and AI profit margin optimizer',
+  },
   rfq_inbox: {
     id: 'rfq_inbox',
     path: '/quotations/rfq-inbox',
