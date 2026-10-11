@@ -47,7 +47,7 @@ import {
 } from '../../services/debitNote/debitNoteService';
 import { exportDebitNotePdf } from '../../utils/exportDebitNotePdf';
 import { exportDebitNoteExcel } from '../../utils/exportDebitNoteExcel';
-import { formatUSD, formatVND } from '../../utils/formatters';
+import { formatUSD, formatVND, formatNumberVND } from '../../utils/formatters';
 
 interface DebitNoteModalProps {
   isOpen: boolean;
@@ -366,7 +366,7 @@ Chi tiết lô hàng:
 - Tàu/Chuyến: ${debitNote.shipment.vesselVoyage || 'N/A'}
 
 TỔNG SỐ TIỀN CẦN THANH TOÁN:
-👉 ${debitNote.finalCurrency === 'USD' ? formatUSD(debitNote.finalAmountToPay) : formatVND(debitNote.finalAmountToPay)} (${debitNote.finalCurrency})
+👉 ${debitNote.finalCurrency === 'USD' ? formatUSD(debitNote.finalAmountToPay) : `${formatNumberVND(debitNote.finalAmountToPay)} VND`}
 Bằng chữ: ${debitNote.amountInWordsVi}
 Hạn thanh toán: trước ngày ${debitNote.dueDate}
 
@@ -972,7 +972,7 @@ ${debitNote.company.name}`;
                     <div className="border-t border-slate-200 pt-1.5 flex justify-between text-sm font-bold text-blue-900">
                       <span>TỔNG THANH TOÁN:</span>
                       <span className="text-rose-600">
-                        {debitNote.finalCurrency === 'USD' ? formatUSD(debitNote.finalAmountToPay) : formatVND(debitNote.finalAmountToPay)} {debitNote.finalCurrency}
+                        {debitNote.finalCurrency === 'USD' ? formatUSD(debitNote.finalAmountToPay) : `${formatNumberVND(debitNote.finalAmountToPay)} VND`}
                       </span>
                     </div>
                   </div>
@@ -1393,23 +1393,23 @@ ${debitNote.company.name}`;
                       <div className="mb-2.5 overflow-hidden rounded-lg border border-slate-200">
                         <table className="w-full text-xs border-collapse table-fixed">
                           <colgroup>
-                            <col style={{ width: '30px' }} />
-                            <col style={{ width: 'auto' }} />
-                            <col style={{ width: '56px' }} />
                             <col style={{ width: '36px' }} />
+                            <col style={{ width: 'auto' }} />
+                            <col style={{ width: '78px' }} />
+                            <col style={{ width: '36px' }} />
+                            <col style={{ width: '58px' }} />
+                            <col style={{ width: '78px' }} />
                             <col style={{ width: '42px' }} />
-                            <col style={{ width: '76px' }} />
-                            <col style={{ width: '42px' }} />
-                            <col style={{ width: '84px' }} />
+                            <col style={{ width: '82px' }} />
                             <col style={{ width: '38px' }} />
-                            <col style={{ width: '76px' }} />
-                            <col style={{ width: '88px' }} />
+                            <col style={{ width: '78px' }} />
+                            <col style={{ width: '94px' }} />
                           </colgroup>
                           <thead>
                             <tr className="bg-slate-900 text-white font-bold text-[10px]">
                               <th className="py-1.5 px-1 text-center">STT</th>
                               <th className="py-1.5 px-2 text-left">Hạng Mục Chi Phí (Description)</th>
-                              <th className="py-1.5 px-1 text-center">Mã</th>
+                              <th className="py-1.5 px-1 text-center">Mã Phí</th>
                               <th className="py-1.5 px-1 text-center">SL</th>
                               <th className="py-1.5 px-1 text-center">ĐVT</th>
                               <th className="py-1.5 px-2 text-right">Đơn Giá</th>
@@ -1533,7 +1533,7 @@ ${debitNote.company.name}`;
                               TỔNG CẦN THANH TOÁN ({debitNote.finalCurrency}):
                             </div>
                             <div className="text-base sm:text-lg font-black text-rose-600 tracking-tight mt-0.5 font-mono tabular-nums">
-                              {debitNote.finalCurrency === 'USD' ? formatUSD(debitNote.finalAmountToPay) : formatVND(debitNote.finalAmountToPay)} {debitNote.finalCurrency}
+                              {debitNote.finalCurrency === 'USD' ? formatUSD(debitNote.finalAmountToPay) : `${formatNumberVND(debitNote.finalAmountToPay)} VND`}
                             </div>
                           </div>
                         </div>
