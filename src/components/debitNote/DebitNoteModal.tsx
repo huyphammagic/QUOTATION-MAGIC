@@ -647,7 +647,7 @@ ${debitNote.company.name}`;
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                   <div>
-                    <label className="text-[11px] font-medium text-slate-500">Phương Thức</label>
+                    <label className="text-[11px] font-medium text-slate-500">Phương Thức (Mode)</label>
                     <input
                       type="text"
                       value={debitNote.shipment.mode}
@@ -656,7 +656,7 @@ ${debitNote.company.name}`;
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] font-medium text-slate-500">Cảng Đi (POL)</label>
+                    <label className="text-[11px] font-medium text-slate-500">Cảng Đi (POL / Port of Loading)</label>
                     <input
                       type="text"
                       value={debitNote.shipment.pol}
@@ -665,7 +665,7 @@ ${debitNote.company.name}`;
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] font-medium text-slate-500">Cảng Đến (POD)</label>
+                    <label className="text-[11px] font-medium text-slate-500">Cảng Đến (POD / Port of Discharge)</label>
                     <input
                       type="text"
                       value={debitNote.shipment.pod}
@@ -674,7 +674,7 @@ ${debitNote.company.name}`;
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] font-medium text-slate-500">Hãng Vận Chuyển / Hãng Tàu</label>
+                    <label className="text-[11px] font-medium text-slate-500">Hãng Vận Chuyển / Hãng Tàu (Carrier)</label>
                     <input
                       type="text"
                       value={debitNote.shipment.carrier || ''}
@@ -684,7 +684,7 @@ ${debitNote.company.name}`;
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-medium text-slate-500">Số Vận Đơn (B/L No.)</label>
+                    <label className="text-[11px] font-medium text-slate-500">Số Vận Đơn (B/L No. / AWB No.)</label>
                     <input
                       type="text"
                       value={debitNote.shipment.blNumber || ''}
@@ -694,7 +694,7 @@ ${debitNote.company.name}`;
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] font-medium text-slate-500">Số Booking</label>
+                    <label className="text-[11px] font-medium text-slate-500">Số Booking (Booking Ref No.)</label>
                     <input
                       type="text"
                       value={debitNote.shipment.bookingNumber || ''}
@@ -704,7 +704,7 @@ ${debitNote.company.name}`;
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] font-medium text-slate-500">Tàu / Chuyến (Vessel / Voyage)</label>
+                    <label className="text-[11px] font-medium text-slate-500">Tàu / Chuyến (Vessel / Voyage No.)</label>
                     <input
                       type="text"
                       value={debitNote.shipment.vesselVoyage || ''}
@@ -714,7 +714,7 @@ ${debitNote.company.name}`;
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] font-medium text-slate-500">Số Cont & Số Chì (Container/Seal)</label>
+                    <label className="text-[11px] font-medium text-slate-500">Số Cont & Số Chì (Container / Seal No.)</label>
                     <input
                       type="text"
                       value={debitNote.shipment.containerSealNo || ''}
@@ -725,7 +725,7 @@ ${debitNote.company.name}`;
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="text-[11px] font-medium text-slate-500">Tên Hàng Hóa / Quy Cách Đóng Gói</label>
+                    <label className="text-[11px] font-medium text-slate-500">Mặt Hàng & Quy Cách (Commodity / Packages)</label>
                     <input
                       type="text"
                       value={debitNote.shipment.cargoDescription || ''}
@@ -734,7 +734,7 @@ ${debitNote.company.name}`;
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] font-medium text-slate-500">Trọng Lượng (GW - KGS)</label>
+                    <label className="text-[11px] font-medium text-slate-500">Trọng Lượng Gộp (Gross Weight - KGS)</label>
                     <input
                       type="number"
                       value={debitNote.shipment.grossWeightKg || 0}
@@ -743,7 +743,7 @@ ${debitNote.company.name}`;
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] font-medium text-slate-500">Thể Tích (CBM)</label>
+                    <label className="text-[11px] font-medium text-slate-500">Thể Tích Lô Hàng (Volume - CBM)</label>
                     <input
                       type="number"
                       value={debitNote.shipment.volumeCbm || 0}
@@ -1347,21 +1347,21 @@ ${debitNote.company.name}`;
                         {/* Bill To Box */}
                         <div className="bg-slate-50/70 border border-slate-200 rounded-lg overflow-hidden">
                           <div className="bg-blue-50/90 text-blue-900 font-bold px-2.5 py-1 text-[10px] uppercase border-b border-blue-100 flex items-center justify-between">
-                            <span>I. Đơn Vị Thanh Toán (Bill To)</span>
-                            <span className="text-[8.5px] text-blue-600 font-normal">APPLICANT</span>
+                            <span>I. Đơn Vị Thanh Toán (Bill To / Payer)</span>
+                            <span className="text-[8.5px] text-blue-600 font-normal">CUSTOMER / APPLICANT</span>
                           </div>
                           <div className="p-2 space-y-0.5 text-[10.5px]">
                             <div className="font-bold text-slate-900 text-[11px] leading-tight">
                               {debitNote.customer.companyName || debitNote.customer.customerName}
                             </div>
                             <p className="text-slate-600 leading-tight">
-                              <strong>MST:</strong> {debitNote.customer.taxId || 'N/A'} | <strong>Liên hệ:</strong> {debitNote.customer.contactPerson || debitNote.customer.customerName || 'N/A'}
+                              <strong>MST / Tax ID:</strong> {debitNote.customer.taxId || 'N/A'} | <strong>Liên hệ / Contact:</strong> {debitNote.customer.contactPerson || debitNote.customer.customerName || 'N/A'}
                             </p>
                             <p className="text-slate-600 leading-tight">
-                              <strong>Điện thoại:</strong> {debitNote.customer.phone || 'N/A'} | <strong>Email:</strong> {debitNote.customer.email || 'N/A'}
+                              <strong>Điện thoại / Tel:</strong> {debitNote.customer.phone || 'N/A'} | <strong>Email:</strong> {debitNote.customer.email || 'N/A'}
                             </p>
                             <p className="text-slate-600 truncate leading-tight" title={debitNote.customer.address}>
-                              <strong>Địa chỉ:</strong> {debitNote.customer.address || 'N/A'}
+                              <strong>Địa chỉ / Address:</strong> {debitNote.customer.address || 'N/A'}
                             </p>
                           </div>
                         </div>
@@ -1369,21 +1369,24 @@ ${debitNote.company.name}`;
                         {/* Shipment Particulars Box */}
                         <div className="bg-slate-50/70 border border-slate-200 rounded-lg overflow-hidden">
                           <div className="bg-emerald-50/90 text-emerald-900 font-bold px-2.5 py-1 text-[10px] uppercase border-b border-emerald-100 flex items-center justify-between">
-                            <span>II. Chi Tiết Lô Hàng (Shipment)</span>
-                            <span className="text-[8.5px] text-emerald-600 font-normal">PARTICULARS</span>
+                            <span>II. Chi Tiết Lô Hàng (Shipment Particulars)</span>
+                            <span className="text-[8.5px] text-emerald-600 font-normal">CARGO DETAILS</span>
                           </div>
                           <div className="p-2 space-y-0.5 text-[10.5px]">
                             <p className="text-slate-700 leading-tight">
-                              <strong>Tuyến:</strong> {debitNote.shipment.pol} &rarr; {debitNote.shipment.pod} ({debitNote.shipment.mode})
+                              <strong>Tuyến vận chuyển (Routing):</strong> {debitNote.shipment.pol} &rarr; {debitNote.shipment.pod}
                             </p>
                             <p className="text-slate-700 leading-tight">
-                              <strong>Số B/L:</strong> <span className="font-bold text-blue-900 font-mono">{debitNote.shipment.blNumber || 'N/A'}</span> | <strong>Booking:</strong> {debitNote.shipment.bookingNumber || 'N/A'}
+                              <strong>Phương thức (Mode):</strong> {debitNote.shipment.mode} | <strong>Hãng VC:</strong> {debitNote.shipment.carrier || 'N/A'}
+                            </p>
+                            <p className="text-slate-700 leading-tight">
+                              <strong>Vận đơn (B/L No.):</strong> <span className="font-bold text-blue-900 font-mono">{debitNote.shipment.blNumber || 'N/A'}</span> | <strong>Booking:</strong> {debitNote.shipment.bookingNumber || 'N/A'}
                             </p>
                             <p className="text-slate-700 truncate leading-tight">
-                              <strong>Tàu/Chuyến:</strong> {debitNote.shipment.vesselVoyage || 'N/A'} | <strong>Số Cont/Seal:</strong> {debitNote.shipment.containerSealNo || 'N/A'}
+                              <strong>Tàu / Chuyến (Vsl/Voy):</strong> {debitNote.shipment.vesselVoyage || 'N/A'} | <strong>Cont/Chì:</strong> {debitNote.shipment.containerSealNo || 'N/A'}
                             </p>
                             <p className="text-slate-700 truncate leading-tight">
-                              <strong>Hàng hóa:</strong> {debitNote.shipment.cargoDescription || 'N/A'} | <strong>GW:</strong> {debitNote.shipment.grossWeightKg || 0} kg | <strong>Vol:</strong> {debitNote.shipment.volumeCbm || 0} CBM
+                              <strong>Mặt hàng (Commodity):</strong> {debitNote.shipment.cargoDescription || 'N/A'} | <strong>G.W:</strong> {debitNote.shipment.grossWeightKg || 0} kg | <strong>Vol:</strong> {debitNote.shipment.volumeCbm || 0} CBM
                             </p>
                           </div>
                         </div>
@@ -1395,29 +1398,29 @@ ${debitNote.company.name}`;
                           <colgroup>
                             <col style={{ width: '36px' }} />
                             <col style={{ width: 'auto' }} />
-                            <col style={{ width: '78px' }} />
-                            <col style={{ width: '36px' }} />
-                            <col style={{ width: '58px' }} />
-                            <col style={{ width: '78px' }} />
-                            <col style={{ width: '42px' }} />
-                            <col style={{ width: '82px' }} />
+                            <col style={{ width: '74px' }} />
                             <col style={{ width: '38px' }} />
-                            <col style={{ width: '78px' }} />
-                            <col style={{ width: '94px' }} />
+                            <col style={{ width: '56px' }} />
+                            <col style={{ width: '76px' }} />
+                            <col style={{ width: '44px' }} />
+                            <col style={{ width: '80px' }} />
+                            <col style={{ width: '42px' }} />
+                            <col style={{ width: '76px' }} />
+                            <col style={{ width: '92px' }} />
                           </colgroup>
                           <thead>
                             <tr className="bg-slate-900 text-white font-bold text-[10px]">
                               <th className="py-1.5 px-1 text-center">STT</th>
-                              <th className="py-1.5 px-2 text-left">Hạng Mục Chi Phí (Description)</th>
+                              <th className="py-1.5 px-2 text-left">Nội Dung Chi Phí (Description)</th>
                               <th className="py-1.5 px-1 text-center">Mã Phí</th>
                               <th className="py-1.5 px-1 text-center">SL</th>
                               <th className="py-1.5 px-1 text-center">ĐVT</th>
                               <th className="py-1.5 px-2 text-right">Đơn Giá</th>
-                              <th className="py-1.5 px-1 text-center">Loại</th>
+                              <th className="py-1.5 px-1 text-center">Loại Tiền</th>
                               <th className="py-1.5 px-2 text-right">Thành Tiền</th>
-                              <th className="py-1.5 px-1 text-center">VAT</th>
+                              <th className="py-1.5 px-1 text-center">Thuế %</th>
                               <th className="py-1.5 px-2 text-right">Tiền Thuế</th>
-                              <th className="py-1.5 px-2 text-right">Tổng Tiền</th>
+                              <th className="py-1.5 px-2 text-right">Tổng Cộng</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-150 text-[10.5px]">
@@ -1460,7 +1463,7 @@ ${debitNote.company.name}`;
                         <div className="col-span-7 bg-amber-50/60 border border-amber-200/80 rounded-lg p-2.5 flex flex-col justify-between">
                           <div>
                             <div className="font-bold text-amber-900 uppercase text-[10px] flex items-center justify-between pb-1 border-b border-amber-200/60 mb-1.5">
-                              <span>Thông Tin Thanh Toán & VietQR (Payment Details)</span>
+                              <span>Thông Tin Thanh Toán (Payment Details) & VietQR</span>
                               <span className="text-[8.5px] text-amber-700 font-semibold">24/7 NAPAS</span>
                             </div>
 
@@ -1468,19 +1471,19 @@ ${debitNote.company.name}`;
                               {/* Left Text */}
                               <div className="flex-1 space-y-0.5 text-[10.5px]">
                                 <p className="text-slate-800 leading-tight">
-                                  Tên thụ hưởng: <strong className="text-blue-900">{debitNote.bankAccountVnd.accountHolder}</strong>
+                                  Đơn vị thụ hưởng: <strong className="text-blue-900">{debitNote.bankAccountVnd.accountHolder}</strong>
                                 </p>
                                 <p className="text-slate-800 leading-tight">
-                                  Số TK: <strong className="font-mono text-xs text-blue-950 font-black">{debitNote.bankAccountVnd.accountNumber}</strong> ({debitNote.bankAccountVnd.bankId})
+                                  Số TK (A/C No.): <strong className="font-mono text-xs text-blue-950 font-black">{debitNote.bankAccountVnd.accountNumber}</strong> ({debitNote.bankAccountVnd.bankId})
                                 </p>
                                 <p className="text-slate-700 truncate leading-tight" title={debitNote.bankAccountVnd.bankName}>
                                   Ngân hàng: {debitNote.bankAccountVnd.bankName}
                                 </p>
                                 <p className="text-slate-700 leading-tight">
-                                  Nội dung CK: <strong className="bg-white px-1.5 py-0.2 border border-amber-300 rounded font-mono text-[10px] text-blue-900">{debitNote.debitNoteNumber} {debitNote.customer.companyName || ''}</strong>
+                                  Nội dung CK (Memo): <strong className="bg-white px-1.5 py-0.2 border border-amber-300 rounded font-mono text-[10px] text-blue-900">{debitNote.debitNoteNumber} {debitNote.customer.companyName || ''}</strong>
                                 </p>
                                 <p className="text-[9.5px] text-slate-500 italic pt-0.5 leading-tight">
-                                  (Tỷ giá quy đổi: 1 USD = <strong>{formatVND(debitNote.exchangeRate)} VND</strong> - {debitNote.exchangeRateSource || 'VCB'})
+                                  Tỷ giá quy đổi (Ex. Rate): 1 USD = <strong>{formatVND(debitNote.exchangeRate)} VND</strong> ({debitNote.exchangeRateSource || 'VCB'})
                                 </p>
                               </div>
 
@@ -1502,7 +1505,7 @@ ${debitNote.company.name}`;
                           {/* Amount in words strip */}
                           <div className="mt-1.5 bg-white/90 border border-amber-200/60 rounded px-2 py-1 text-[9.5px] space-y-0.5">
                             <p className="text-slate-800 leading-tight">
-                              <strong>Bằng chữ:</strong> <span className="font-bold text-blue-900 italic">{debitNote.amountInWordsVi}</span>
+                              <strong>Bằng chữ (In words - VND):</strong> <span className="font-bold text-blue-900 italic">{debitNote.amountInWordsVi}</span>
                             </p>
                             <p className="text-slate-500 leading-tight italic">
                               <strong>In English:</strong> {debitNote.amountInWordsEn}
@@ -1514,15 +1517,15 @@ ${debitNote.company.name}`;
                         <div className="col-span-5 bg-slate-50 border border-slate-200 rounded-lg p-2.5 flex flex-col justify-between text-xs">
                           <div className="space-y-1 text-[10.5px]">
                             <div className="flex justify-between text-slate-600">
-                              <span>Cộng tiền chưa thuế USD:</span>
+                              <span>Cộng tiền trước thuế (Subtotal USD):</span>
                               <span className="font-semibold text-slate-800 font-mono tabular-nums">{formatUSD(debitNote.subtotalUsd)}</span>
                             </div>
                             <div className="flex justify-between text-slate-600">
-                              <span>Cộng tiền chưa thuế VND:</span>
+                              <span>Cộng tiền trước thuế (Subtotal VND):</span>
                               <span className="font-semibold text-slate-800 font-mono tabular-nums">{formatVND(debitNote.subtotalVnd)}</span>
                             </div>
                             <div className="flex justify-between text-slate-600">
-                              <span>Tiền thuế VAT (USD / VND):</span>
+                              <span>Tiền thuế GTGT (VAT USD / VND):</span>
                               <span className="font-semibold text-slate-800 font-mono tabular-nums">{formatUSD(debitNote.vatTotalUsd)} / {formatVND(debitNote.vatTotalVnd)}</span>
                             </div>
                           </div>
@@ -1541,7 +1544,7 @@ ${debitNote.company.name}`;
 
                       {/* TERMS & BANK CHARGE NOTE */}
                       <div className="text-[9.5px] text-slate-500 italic mb-2 leading-tight">
-                        • {debitNote.paymentTerms} | {debitNote.bankChargeClause}
+                        • Điều khoản thanh toán (Payment Terms): {debitNote.paymentTerms} | {debitNote.bankChargeClause}
                       </div>
                     </div>
 
@@ -1549,7 +1552,7 @@ ${debitNote.company.name}`;
                     <div className="border-t border-slate-200 pt-2 mt-auto">
                       <div className="grid grid-cols-3 gap-2 text-center text-xs">
                         <div>
-                          <div className="font-bold text-slate-800 text-[10.5px]">NGƯỜI LẬP PHIẾU</div>
+                          <div className="font-bold text-slate-800 text-[10.5px]">NGƯỜI LẬP BIỂU</div>
                           <div className="text-[9px] text-slate-400 italic">(Prepared By)</div>
                           <div className="h-9 flex items-end justify-center font-bold text-slate-800 text-[10.5px]">
                             {debitNote.preparedBy}
@@ -1558,15 +1561,15 @@ ${debitNote.company.name}`;
 
                         <div>
                           <div className="font-bold text-slate-800 text-[10.5px]">KẾ TOÁN TRƯỞNG / DUYỆT</div>
-                          <div className="text-[9px] text-slate-400 italic">(Chief Accountant / Approved)</div>
+                          <div className="text-[9px] text-slate-400 italic">(Chief Accountant / Approved By)</div>
                           <div className="h-9 flex items-end justify-center font-bold text-slate-800 text-[10.5px]">
                             {debitNote.approvedBy}
                           </div>
                         </div>
 
                         <div>
-                          <div className="font-bold text-slate-800 text-[10.5px]">XÁC NHẬN KHÁCH HÀNG</div>
-                          <div className="text-[9px] text-slate-400 italic">(Customer Acceptance)</div>
+                          <div className="font-bold text-slate-800 text-[10.5px]">ĐẠI DIỆN KHÁCH HÀNG</div>
+                          <div className="text-[9px] text-slate-400 italic">(Customer Acceptance / Stamp)</div>
                           <div className="h-9 flex items-end justify-center text-slate-400 italic text-[9.5px]">
                             (Ký, ghi rõ họ tên & đóng dấu)
                           </div>

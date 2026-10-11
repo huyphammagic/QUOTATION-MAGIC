@@ -181,20 +181,20 @@ export const DebitNoteManagementModal: React.FC<DebitNoteManagementModalProps> =
                     </div>
 
                     <div className="text-[11px] text-slate-500 flex flex-wrap items-center gap-3">
-                      <span>Tuyến: <strong>{dn.shipment.pol} &rarr; {dn.shipment.pod}</strong></span>
-                      {dn.shipment.blNumber && <span>B/L: <strong>{dn.shipment.blNumber}</strong></span>}
-                      <span>Ngày lập: {dn.issueDate}</span>
-                      <span>Hạn: <strong className="text-rose-600">{dn.dueDate}</strong></span>
+                      <span>Tuyến (Routing): <strong>{dn.shipment.pol} &rarr; {dn.shipment.pod}</strong></span>
+                      {dn.shipment.blNumber && <span>Vận đơn (B/L No.): <strong>{dn.shipment.blNumber}</strong></span>}
+                      <span>Ngày lập (Date): {dn.issueDate}</span>
+                      <span>Hạn TT (Due Date): <strong className="text-rose-600">{dn.dueDate}</strong></span>
                     </div>
                   </div>
 
                   <div className="flex items-center space-x-4">
                     <div className="text-right">
-                      <div className="text-[10px] text-slate-400 uppercase font-semibold">Tổng tiền thanh toán</div>
+                      <div className="text-[10px] text-slate-400 uppercase font-semibold">Tổng Tiền Thanh Toán (Total Payable)</div>
                       <div className="text-base font-black text-rose-600">
                         {dn.finalCurrency === 'USD' ? formatUSD(dn.finalAmountToPay) : formatVND(dn.finalAmountToPay)} {dn.finalCurrency}
                       </div>
-                      <div className="text-[10px] text-slate-400">{dn.items.length} hạng mục phí</div>
+                      <div className="text-[10px] text-slate-400">{dn.items.length} khoản mục chi phí</div>
                     </div>
 
                     <div className="flex items-center space-x-1 pl-3 border-l border-slate-100">

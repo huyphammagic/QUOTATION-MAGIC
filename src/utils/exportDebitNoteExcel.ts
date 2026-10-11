@@ -8,38 +8,38 @@ export async function exportDebitNoteExcel(dn: DebitNoteRecord): Promise<void> {
   const excelRows: any[][] = [
     [dn.company.name.toUpperCase()],
     [dn.company.englishName ? dn.company.englishName.toUpperCase() : ''],
-    [`Địa chỉ: ${dn.company.address}`],
-    [`MST: ${dn.company.taxId} | Hotline: ${dn.company.phone} | Email: ${dn.company.email}`],
+    [`Địa chỉ / Address: ${dn.company.address}`],
+    [`MST / Tax ID: ${dn.company.taxId} | Hotline: ${dn.company.phone} | Email: ${dn.company.email}`],
     [],
-    ['DEBIT NOTE / GIẤY BÁO NỢ & YÊU CẦU THANH TOÁN CƯỚC DỊCH VỤ'],
-    [`Số Debit Note: ${dn.debitNoteNumber}`, '', `Ngày phát hành: ${dn.issueDate}`, '', `Hạn thanh toán: ${dn.dueDate}`],
-    [`Số Báo Giá Gốc: ${dn.quotationNumber}`, '', `Tỷ giá hạch toán: 1 USD = ${formatVND(dn.exchangeRate)} VND`],
+    ['DEBIT NOTE / GIẤY BÁO NỢ & QUYẾT TOÁN CƯỚC DỊCH VỤ LOGISTICS'],
+    [`Số Debit Note (No.): ${dn.debitNoteNumber}`, '', `Ngày lập (Issue Date): ${dn.issueDate}`, '', `Hạn thanh toán (Due Date): ${dn.dueDate}`],
+    [`Số Báo Giá Gốc (Quote No.): ${dn.quotationNumber}`, '', `Tỷ giá hạch toán (Ex. Rate): 1 USD = ${formatVND(dn.exchangeRate)} VND`],
     [],
-    ['I. THÔNG TIN KHÁCH HÀNG (BILL TO)'],
-    ['Công ty / Khách hàng:', dn.customer.companyName || dn.customer.customerName],
-    ['Mã số thuế:', dn.customer.taxId || 'N/A', 'Người liên hệ:', dn.customer.contactPerson || dn.customer.customerName || 'N/A'],
-    ['Địa chỉ:', dn.customer.address || 'N/A', 'Điện thoại / Email:', `${dn.customer.phone || 'N/A'} - ${dn.customer.email || 'N/A'}`],
+    ['I. THÔNG TIN KHÁCH HÀNG (BILL TO / PAYER)'],
+    ['Công ty / Khách hàng (Customer):', dn.customer.companyName || dn.customer.customerName],
+    ['Mã số thuế (Tax ID):', dn.customer.taxId || 'N/A', 'Người liên hệ (Contact):', dn.customer.contactPerson || dn.customer.customerName || 'N/A'],
+    ['Địa chỉ (Address):', dn.customer.address || 'N/A', 'Điện thoại / Email:', `${dn.customer.phone || 'N/A'} - ${dn.customer.email || 'N/A'}`],
     [],
     ['II. THÔNG TIN LÔ HÀNG VẬN TẢI (SHIPMENT PARTICULARS)'],
-    ['Phương thức:', dn.shipment.mode, 'Cảng đi (POL):', dn.shipment.pol, 'Cảng đến (POD):', dn.shipment.pod],
-    ['Số B/L:', dn.shipment.blNumber || 'N/A', 'Số Booking:', dn.shipment.bookingNumber || 'N/A', 'Tàu/Chuyến:', dn.shipment.vesselVoyage || 'N/A'],
-    ['Số Cont/Seal:', dn.shipment.containerSealNo || 'N/A', 'Tên hàng:', dn.shipment.cargoDescription || 'N/A'],
-    ['Trọng lượng (GW):', `${dn.shipment.grossWeightKg || 0} KGS`, 'Thể tích:', `${dn.shipment.volumeCbm || 0} CBM`, 'Quy cách:', dn.shipment.packages || 'N/A'],
+    ['Tuyến vận chuyển (Routing):', `${dn.shipment.pol} -> ${dn.shipment.pod}`, 'Phương thức (Mode):', dn.shipment.mode, 'Hãng VC (Carrier):', dn.shipment.carrier || 'N/A'],
+    ['Vận đơn (B/L No.):', dn.shipment.blNumber || 'N/A', 'Số Booking:', dn.shipment.bookingNumber || 'N/A', 'Tàu / Chuyến (Vsl/Voy):', dn.shipment.vesselVoyage || 'N/A'],
+    ['Số Cont / Chì (Seal):', dn.shipment.containerSealNo || 'N/A', 'Mặt hàng (Commodity):', dn.shipment.cargoDescription || 'N/A'],
+    ['Trọng lượng gộp (G.W):', `${dn.shipment.grossWeightKg || 0} KGS`, 'Thể tích (Volume):', `${dn.shipment.volumeCbm || 0} CBM`, 'Quy cách kiện (Packages):', dn.shipment.packages || 'N/A'],
     [],
     ['III. CHI TIẾT CÁC KHOẢN CƯỚC & PHÍ (CHARGES BREAKDOWN)'],
     [
-      'STT',
-      'Hạng Mục Chi Phí (Description)',
-      'Mã Phí',
-      'Số Lượng',
-      'Đơn Vị',
-      'Đơn Giá',
-      'Tiền Tệ',
-      'Thành Tiền',
-      'Thuế VAT (%)',
-      'Tiền Thuế VAT',
-      'Tổng Tiền (Gồm VAT)',
-      'Ghi Chú'
+      'STT (No.)',
+      'Nội Dung Chi Phí (Description of Charges)',
+      'Mã Phí (Charge Code)',
+      'Số Lượng (Qty)',
+      'Đơn Vị Tính (Unit)',
+      'Đơn Giá (Unit Price)',
+      'Loại Tiền (Curr)',
+      'Thành Tiền (Amount)',
+      'Thuế Suất (VAT %)',
+      'Tiền Thuế VAT (VAT Amt)',
+      'Tổng Cộng (Total Amount)',
+      'Ghi Chú (Remarks)'
     ]
   ];
 
@@ -47,7 +47,7 @@ export async function exportDebitNoteExcel(dn: DebitNoteRecord): Promise<void> {
   dn.items.forEach((it, idx) => {
     excelRows.push([
       idx + 1,
-      it.description,
+      it.descriptionEn ? `${it.description} / ${it.descriptionEn}` : it.description,
       it.code,
       it.quantity,
       it.unit,
@@ -57,18 +57,18 @@ export async function exportDebitNoteExcel(dn: DebitNoteRecord): Promise<void> {
       `${it.vatRate}%`,
       it.vatAmount,
       it.totalAmount,
-      it.notes || (it.isCustomCharge ? 'Phí phát sinh ngoài báo giá' : '')
+      it.notes || (it.isCustomCharge ? 'Phí phát sinh ngoài báo giá gốc' : '')
     ]);
   });
 
   // Summary rows
   excelRows.push([]);
-  excelRows.push(['', '', '', '', '', '', 'TỔNG TIỀN CHƯA THUẾ (USD):', dn.subtotalUsd]);
-  excelRows.push(['', '', '', '', '', '', 'TỔNG TIỀN CHƯA THUẾ (VND):', dn.subtotalVnd]);
-  excelRows.push(['', '', '', '', '', '', 'TỔNG TIỀN THUẾ VAT (USD):', dn.vatTotalUsd]);
-  excelRows.push(['', '', '', '', '', '', 'TỔNG TIỀN THUẾ VAT (VND):', dn.vatTotalVnd]);
-  excelRows.push(['', '', '', '', '', '', 'TỔNG CỘNG THANH TOÁN (USD):', dn.grandTotalUsd]);
-  excelRows.push(['', '', '', '', '', '', 'TỔNG CỘNG THANH TOÁN (VND):', dn.grandTotalVnd]);
+  excelRows.push(['', '', '', '', '', '', 'CỘNG TIỀN TRƯỚC THUẾ (SUBTOTAL USD):', dn.subtotalUsd]);
+  excelRows.push(['', '', '', '', '', '', 'CỘNG TIỀN TRƯỚC THUẾ (SUBTOTAL VND):', dn.subtotalVnd]);
+  excelRows.push(['', '', '', '', '', '', 'TỔNG TIỀN THUẾ GTGT (VAT TOTAL USD):', dn.vatTotalUsd]);
+  excelRows.push(['', '', '', '', '', '', 'TỔNG TIỀN THUẾ GTGT (VAT TOTAL VND):', dn.vatTotalVnd]);
+  excelRows.push(['', '', '', '', '', '', 'TỔNG SỐ TIỀN THANH TOÁN (TOTAL PAYABLE USD):', dn.grandTotalUsd]);
+  excelRows.push(['', '', '', '', '', '', 'TỔNG SỐ TIỀN THANH TOÁN (TOTAL PAYABLE VND):', dn.grandTotalVnd]);
   excelRows.push([
     '',
     '',
@@ -80,23 +80,23 @@ export async function exportDebitNoteExcel(dn: DebitNoteRecord): Promise<void> {
     dn.finalAmountToPay
   ]);
   excelRows.push([]);
-  excelRows.push(['Số tiền bằng chữ (VNĐ):', dn.amountInWordsVi]);
+  excelRows.push(['Số tiền bằng chữ (In words - VND):', dn.amountInWordsVi]);
   excelRows.push(['In English:', dn.amountInWordsEn]);
   excelRows.push([]);
   excelRows.push(['IV. THÔNG TIN THANH TOÁN NGÂN HÀNG (BANK PAYMENT INSTRUCTIONS)']);
-  excelRows.push(['Tên tài khoản:', dn.bankAccountVnd.accountHolder]);
-  excelRows.push(['Số tài khoản VND:', dn.bankAccountVnd.accountNumber, 'Ngân hàng:', dn.bankAccountVnd.bankName]);
-  excelRows.push(['Nội dung chuyển khoản:', `"${dn.debitNoteNumber} ${dn.customer.companyName || ''}"`]);
-  excelRows.push(['Điều khoản phí ngân hàng:', dn.bankChargeClause]);
+  excelRows.push(['Đơn vị thụ hưởng (Beneficiary):', dn.bankAccountVnd.accountHolder]);
+  excelRows.push(['Số tài khoản VND (A/C No.):', dn.bankAccountVnd.accountNumber, 'Ngân hàng (Bank):', dn.bankAccountVnd.bankName]);
+  excelRows.push(['Nội dung chuyển khoản (Memo):', `"${dn.debitNoteNumber} ${dn.customer.companyName || ''}"`]);
+  excelRows.push(['Điều khoản phí ngân hàng (Banking Clause):', dn.bankChargeClause]);
   excelRows.push([]);
   excelRows.push([
-    'NGƯỜI LẬP PHIẾU',
+    'NGƯỜI LẬP BIỂU (PREPARED BY)',
     '',
     '',
-    'KẾ TOÁN TRƯỞNG / PHỤ TRÁCH',
+    'KẾ TOÁN TRƯỞNG / DUYỆT (CHIEF ACCOUNTANT / APPROVED BY)',
     '',
     '',
-    'XÁC NHẬN KHÁCH HÀNG'
+    'ĐẠI DIỆN KHÁCH HÀNG (CUSTOMER ACCEPTANCE)'
   ]);
   excelRows.push([
     dn.preparedBy,
@@ -105,25 +105,25 @@ export async function exportDebitNoteExcel(dn: DebitNoteRecord): Promise<void> {
     dn.approvedBy,
     '',
     '',
-    '(Ký & Đóng dấu)'
+    '(Ký & Đóng dấu / Stamp & Sign)'
   ]);
 
   const ws = XLSX.utils.aoa_to_sheet(excelRows);
 
   // Set column widths
   ws['!cols'] = [
-    { wch: 6 },  // STT
-    { wch: 38 }, // Description
-    { wch: 12 }, // Code
+    { wch: 8 },  // STT
+    { wch: 42 }, // Description
+    { wch: 14 }, // Code
     { wch: 10 }, // Qty
-    { wch: 10 }, // Unit
-    { wch: 14 }, // Unit Price
+    { wch: 12 }, // Unit
+    { wch: 16 }, // Unit Price
     { wch: 10 }, // Currency
-    { wch: 16 }, // Amount
+    { wch: 18 }, // Amount
     { wch: 12 }, // VAT %
     { wch: 16 }, // VAT Amount
-    { wch: 18 }, // Total Amount
-    { wch: 25 }, // Notes
+    { wch: 20 }, // Total Amount
+    { wch: 28 }, // Notes
   ];
 
   XLSX.utils.book_append_sheet(wb, ws, 'Debit Note');
