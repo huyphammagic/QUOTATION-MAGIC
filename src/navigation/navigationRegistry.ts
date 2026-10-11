@@ -305,6 +305,16 @@ export const APP_ROUTES: Record<AppRouteId, RouteDefinition> = {
     descriptionVi: 'Trung tâm kiểm soát thanh toán, theo dõi công nợ từng đợt, tự động phát hiện trễ hạn và xuất thư nhắc nợ 1-click (Phase 66)',
     descriptionEn: 'Quotation payment tracking, multi-tranche receipts, automated overdue detection, and 1-click dunning reminder letters',
   },
+  debit_note_management: {
+    id: 'debit_note_management',
+    path: '/quotations/debit-notes',
+    hash: '#quotations/debit-notes',
+    titleVi: 'Quản Lý Debit Note (Giấy Báo Nợ)',
+    titleEn: 'Debit Note Demand Generator',
+    group: 'quotation',
+    descriptionVi: 'Lập và quản lý Debit Note theo từng báo giá, tự động tính cước, phí phát sinh, xuất PDF A4 song ngữ và tích hợp mã thanh toán VietQR 24/7',
+    descriptionEn: 'Generate and manage customer debit notes for quotations with multi-currency VAT calculation, Unicode A4 PDF export, and dynamic VietQR banking integration',
+  },
   opportunity_radar: {
     id: 'opportunity_radar',
     path: '/radar/opportunities',

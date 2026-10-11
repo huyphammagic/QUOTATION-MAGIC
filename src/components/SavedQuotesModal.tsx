@@ -3,7 +3,7 @@ import { QuoteData, QuoteStatus } from '../types/logistics';
 import { formatUSD, formatVND } from '../utils/formatters';
 import { exportQuoteToPdf } from '../utils/exportPdf';
 import { exportQuoteToExcel } from '../utils/exportExcel';
-import { X, Search, FileText, Copy, Trash2, Edit3, FileDown, FileSpreadsheet, ChevronLeft, ChevronRight, Loader2, SlidersHorizontal, Sparkles, CreditCard } from 'lucide-react';
+import { X, Search, FileText, Copy, Trash2, Edit3, FileDown, FileSpreadsheet, ChevronLeft, ChevronRight, Loader2, SlidersHorizontal, Sparkles, CreditCard, Receipt } from 'lucide-react';
 import { PaymentStatusBadge } from './payment/PaymentStatusBadge';
 
 interface SavedQuotesModalProps {
@@ -18,6 +18,7 @@ interface SavedQuotesModalProps {
   onOpenDecisionWorkspace?: (quote: QuoteData) => void;
   onOpenDealCloser?: (quote: QuoteData) => void;
   onOpenQuotationPayments?: (quoteId: string) => void;
+  onOpenDebitNote?: (quote: QuoteData) => void;
 }
 
 export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
@@ -32,6 +33,7 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
   onOpenDecisionWorkspace,
   onOpenDealCloser,
   onOpenQuotationPayments,
+  onOpenDebitNote,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -271,6 +273,17 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                           title="Kiểm Soát Thanh Toán & Thu Nợ"
                         >
                           <CreditCard className="w-4 h-4" />
+                        </button>
+                      )}
+
+                      {/* Debit Note Generator (User Request) */}
+                      {onOpenDebitNote && (
+                        <button
+                          onClick={() => { onOpenDebitNote(quote); onClose(); }}
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                          title="Tạo / Quản Lý Debit Note (Giấy Báo Nợ) Cho Báo Giá Này"
+                        >
+                          <Receipt className="w-4 h-4" />
                         </button>
                       )}
 

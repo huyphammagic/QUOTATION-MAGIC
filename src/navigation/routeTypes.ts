@@ -33,6 +33,7 @@ export type AppRouteId =
   | 'enterprise_tender_engine'
   | 'customer_dna_power_map'
   | 'quotation_payments'
+  | 'debit_note_management'
   | 'opportunity_radar'
   | 'decision_workspace'
   // Pricing

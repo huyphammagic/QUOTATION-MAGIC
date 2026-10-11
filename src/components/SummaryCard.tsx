@@ -16,7 +16,8 @@ import {
   ShieldAlert,
   AlertOctagon,
   Lock,
-  BarChart3
+  BarChart3,
+  Receipt
 } from 'lucide-react';
 
 interface SummaryCardProps {
@@ -31,6 +32,7 @@ interface SummaryCardProps {
   onOpenSendModal?: () => void;
   onOpenProfitIntelligence?: () => void;
   onOpenFreightRateBenchmarking?: () => void;
+  onOpenDebitNote?: () => void;
 }
 
 export const SummaryCard: React.FC<SummaryCardProps> = ({
@@ -45,6 +47,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
   onOpenSendModal,
   onOpenProfitIntelligence,
   onOpenFreightRateBenchmarking,
+  onOpenDebitNote,
 }) => {
   const margin = quote.overallMarginPercent || 0;
   const markup = quote.markupPercent || 0;
@@ -290,6 +293,18 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
             >
               <Send className="w-3.5 h-3.5" />
               <span>Gửi Khách Hàng (Email & Link)</span>
+            </button>
+          )}
+
+          {onOpenDebitNote && (
+            <button
+              type="button"
+              onClick={onOpenDebitNote}
+              className="w-full flex items-center justify-center space-x-1.5 bg-blue-950/80 hover:bg-blue-900 text-blue-200 border border-blue-700/60 font-bold text-xs py-1.5 px-3 rounded-xl transition-colors cursor-pointer"
+              title="Lập Debit Note (Giấy Báo Nợ) gửi khách hàng kèm mã VietQR"
+            >
+              <Receipt className="w-3.5 h-3.5 text-blue-400" />
+              <span>Tạo Debit Note Đòi Nợ (VietQR)</span>
             </button>
           )}
 

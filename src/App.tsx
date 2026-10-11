@@ -141,6 +141,8 @@ const QuotationPaymentHubModal = lazyWithRetry(() => import('./components/paymen
 const AiDocumentParserModal = lazyWithRetry(() => import('./components/documentParser/AiDocumentParserModal').then(m => ({ default: m.AiDocumentParserModal })), 'AiDocumentParserModal');
 const HsCodeTariffModal = lazyWithRetry(() => import('./components/customsTariff/HsCodeTariffModal').then(m => ({ default: m.HsCodeTariffModal })), 'HsCodeTariffModal');
 const FreightRateBenchmarkingModal = lazyWithRetry(() => import('./components/pricing/FreightRateBenchmarkingModal').then(m => ({ default: m.FreightRateBenchmarkingModal })), 'FreightRateBenchmarkingModal');
+const DebitNoteModal = lazyWithRetry(() => import('./components/debitNote/DebitNoteModal').then(m => ({ default: m.DebitNoteModal })), 'DebitNoteModal');
+const DebitNoteManagementModal = lazyWithRetry(() => import('./components/debitNote/DebitNoteManagementModal').then(m => ({ default: m.DebitNoteManagementModal })), 'DebitNoteManagementModal');
 import { LiveLeadToastNotifier } from './components/telemetry/LiveLeadToastNotifier';
 import { subscribeToLiveEngagements } from './services/telemetry/customerEngagementService';
 import { QuotationEngagementSession } from './types/customerEngagement';
@@ -475,6 +477,21 @@ export default function App() {
 
   // Phase 72: Freight Rate Benchmarking & Profit Margin Optimizer
   const [isFreightRateBenchmarkingOpen, setIsFreightRateBenchmarkingOpen] = useState(false);
+
+  // Debit Note Generator & Management
+  const [isDebitNoteModalOpen, setIsDebitNoteModalOpen] = useState(false);
+  const [debitNoteTargetQuote, setDebitNoteTargetQuote] = useState<QuoteData | null>(null);
+  const [isDebitNoteManagementModalOpen, setIsDebitNoteManagementModalOpen] = useState(false);
+
+  const handleOpenDebitNoteForQuote = (targetQ?: QuoteData) => {
+    const q = targetQ || quote;
+    setDebitNoteTargetQuote(q);
+    setIsDebitNoteModalOpen(true);
+  };
+
+  const handleOpenDebitNoteManagement = () => {
+    setIsDebitNoteManagementModalOpen(true);
+  };
 
   const handleApplyBenchmarkRate = (newRate: number, strategyName: string, equipmentType?: string) => {
     setQuote(prev => {
@@ -819,6 +836,9 @@ export default function App() {
         break;
       case 'quotation_payments':
         handleOpenPaymentHub(param);
+        break;
+      case 'debit_note_management':
+        handleOpenDebitNoteManagement();
         break;
       case 'carrier_invoice_audit':
         setIsCarrierInvoiceAuditOpen(true);
@@ -2225,6 +2245,7 @@ export default function App() {
           onOpenDocumentParser={() => setIsDocumentParserOpen(true)}
           onOpenHsCodeTariff={() => setIsHsCodeTariffOpen(true)}
           onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
+          onOpenDebitNoteManagement={handleOpenDebitNoteManagement}
           onOpenEngagementRadar={() => {
             setSelectedRadarSession(null);
             setIsEngagementRadarOpen(true);
@@ -2366,6 +2387,7 @@ export default function App() {
               onOpenDocumentParser={() => setIsDocumentParserOpen(true)}
               onOpenHsCodeTariff={() => setIsHsCodeTariffOpen(true)}
               onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
+              onOpenDebitNote={() => handleOpenDebitNoteForQuote()}
               isSaving={isAutoSaving}
               lastSavedAt={lastAutoSaveTime}
             />
@@ -2436,6 +2458,7 @@ export default function App() {
                   onOpenSendModal={() => setIsSendQuotationOpen(true)}
                   onOpenProfitIntelligence={() => setIsProfitIntelligenceOpen(true)}
                   onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
+                  onOpenDebitNote={() => handleOpenDebitNoteForQuote(quote)}
                 />
               </>
             )}
@@ -2462,6 +2485,7 @@ export default function App() {
                     onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
                     onOpenSendModal={() => setIsSendQuotationOpen(true)}
                     onOpenProfitIntelligence={() => setIsProfitIntelligenceOpen(true)}
+                    onOpenDebitNote={() => handleOpenDebitNoteForQuote(quote)}
                   />
                 )}
               </div>
@@ -2493,6 +2517,7 @@ export default function App() {
                     onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
                     onOpenSendModal={() => setIsSendQuotationOpen(true)}
                     onOpenProfitIntelligence={() => setIsProfitIntelligenceOpen(true)}
+                    onOpenDebitNote={() => handleOpenDebitNoteForQuote(quote)}
                   />
                 )}
               </div>
@@ -2667,6 +2692,8 @@ export default function App() {
             onUpdateStatus={handleUpdateStatus}
             onOpenDecisionWorkspace={handleOpenDecisionWorkspaceForQuote}
             onOpenDealCloser={handleOpenDealCloser}
+            onOpenQuotationPayments={(qId) => handleOpenPaymentHub(qId)}
+            onOpenDebitNote={(targetQ) => handleOpenDebitNoteForQuote(targetQ)}
           />
         </RouteErrorBoundary>
       )}
@@ -3645,6 +3672,34 @@ export default function App() {
               handleApplyBenchmarkRate(newRate, strategyName, equipmentType);
               setIsFreightRateBenchmarkingOpen(false);
             }}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 73: Debit Note Generator & Receivable Demand Modal */}
+      {isDebitNoteModalOpen && (
+        <Suspense fallback={null}>
+          <DebitNoteModal
+            isOpen={isDebitNoteModalOpen}
+            onClose={() => {
+              setIsDebitNoteModalOpen(false);
+              setDebitNoteTargetQuote(null);
+            }}
+            quote={debitNoteTargetQuote || quote}
+            onOpenPaymentHub={(quoteId) => handleOpenPaymentHub(quoteId)}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 73: Debit Note Central Management Modal */}
+      {isDebitNoteManagementModalOpen && (
+        <Suspense fallback={null}>
+          <DebitNoteManagementModal
+            isOpen={isDebitNoteManagementModalOpen}
+            onClose={() => setIsDebitNoteManagementModalOpen(false)}
+            quotes={savedQuotes.length > 0 ? savedQuotes : [quote]}
+            onOpenDebitNoteForQuote={(targetQ) => handleOpenDebitNoteForQuote(targetQ)}
+            onOpenPaymentHub={(quoteId) => handleOpenPaymentHub(quoteId)}
           />
         </Suspense>
       )}

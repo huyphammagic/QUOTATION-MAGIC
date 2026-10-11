@@ -127,6 +127,7 @@ export interface SidebarProps {
   onOpenDocumentParser?: () => void;
   onOpenHsCodeTariff?: () => void;
   onOpenFreightRateBenchmarking?: () => void;
+  onOpenDebitNoteManagement?: () => void;
   dormantCustomersCount?: number;
   activeEngagementsCount?: number;
   exceptionsCount?: number;
@@ -220,6 +221,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenDocumentParser,
   onOpenHsCodeTariff,
   onOpenFreightRateBenchmarking,
+  onOpenDebitNoteManagement,
   dormantCustomersCount = 3,
   activeEngagementsCount = 0,
   shipmentsCount = 0,
@@ -456,6 +458,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       action: () => onOpenQuotationPayments && onOpenQuotationPayments(),
       badge: 'Công Nợ',
       badgeTone: 'emerald',
+    },
+    {
+      id: 'debit_note_management',
+      label: activeLang === 'vi' ? 'Quản Lý Debit Note (Giấy Báo Nợ)' : 'Debit Note Management',
+      icon: Receipt,
+      group: 'quotation',
+      action: () => onOpenDebitNoteManagement && onOpenDebitNoteManagement(),
+      badge: 'D/N',
+      badgeTone: 'sky',
     },
 
     // === 2. TRÍ TUỆ BÁN HÀNG & RADAR AI (SALES INTELLIGENCE & RADARS) ===
