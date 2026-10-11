@@ -84,13 +84,27 @@ export const DebitNoteModal: React.FC<DebitNoteModalProps> = ({
   onOpenPaymentHub
 }) => {
   const [activeTab, setActiveTab] = useState<'editor' | 'preview' | 'send' | 'history'>('editor');
-  const [debitNote, setDebitNote] = useState<DebitNoteRecord | null>(null);
-  const [allNotesForQuote, setAllNotesForQuote] = useState<DebitNoteRecord[]>([]);
+  const [debitNote, setDebitNote] = useState<DebitNoteRecord | null>(() => {
+    if (!quote?.id) return null;
+    const existingList = DebitNoteService.getDebitNotesForQuote(quote.id);
+    if (existingList.length > 0) return existingList[0];
+    const newDn = createDebitNoteFromQuote(quote, '01');
+    return DebitNoteService.saveDebitNote(newDn);
+  });
+  const [allNotesForQuote, setAllNotesForQuote] = useState<DebitNoteRecord[]>(() => {
+    if (!quote?.id) return [];
+    const existingList = DebitNoteService.getDebitNotesForQuote(quote.id);
+    if (existingList.length > 0) return existingList;
+    const newDn = createDebitNoteFromQuote(quote, '01');
+    const saved = DebitNoteService.saveDebitNote(newDn);
+    return [saved];
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isExportingExcel, setIsExportingExcel] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [presetDropdownOpen, setPresetDropdownOpen] = useState(false);
+  const [previewZoom, setPreviewZoom] = useState<number>(100);
   const previewRef = useRef<HTMLDivElement>(null);
 
   // Initialize or load Debit Notes for this quote
@@ -1121,309 +1135,446 @@ ${debitNote.company.name}`;
           {/* TAB 2: A4 LIVE PRINT-READY PREVIEW & VIETQR */}
           {activeTab === 'preview' && (
             <div className="space-y-4">
+              {/* Scoped Print CSS for 100% 1-Page A4 Precision */}
+              <style>{`
+                @page {
+                  size: A4 portrait;
+                  margin: 8mm 8mm 8mm 8mm;
+                }
+                @media print {
+                  html, body {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    background: #ffffff !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                  }
+                  body * {
+                    visibility: hidden !important;
+                  }
+                  #a4-debit-note-sheet, #a4-debit-note-sheet * {
+                    visibility: visible !important;
+                  }
+                  #a4-debit-note-sheet {
+                    position: absolute !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100% !important;
+                    max-width: 194mm !important;
+                    height: 281mm !important;
+                    max-height: 281mm !important;
+                    box-sizing: border-box !important;
+                    margin: 0 auto !important;
+                    padding: 0 !important;
+                    box-shadow: none !important;
+                    border: none !important;
+                    transform: none !important;
+                    page-break-after: avoid !important;
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
+                    overflow: hidden !important;
+                    display: flex !important;
+                    flex-direction: column !important;
+                    justify-content: space-between !important;
+                  }
+                }
+              `}</style>
+
               {/* Preview top toolbar */}
-              <div className="flex flex-wrap items-center justify-between gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
-                <div className="flex items-center space-x-2 text-xs text-slate-600">
-                  <Printer className="w-4 h-4 text-slate-500" />
-                  <span>Bản in A4 tiêu chuẩn thương mại quốc tế (Bilingual VN/EN) - Sẵn sàng xuất PDF / In ngay</span>
-                </div>
+              <div className="flex flex-wrap items-center justify-between gap-2.5 bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
                 <div className="flex items-center space-x-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Chuẩn Khổ A4 (210 x 297mm) • 1 Trang Duy Nhất • Chống Tràn & Không Lỗi Font</span>
+                  </span>
+                  <span className="text-[11px] text-slate-500 hidden sm:inline">
+                    Font: Roboto / Inter Unicode • VietQR 24/7 NAPAS
+                  </span>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  {/* Zoom Controls */}
+                  <div className="flex items-center space-x-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewZoom(80)}
+                      className={`px-2 py-1 rounded font-medium transition cursor-pointer ${previewZoom === 80 ? 'bg-white shadow-2xs text-blue-700 font-bold' : 'text-slate-600 hover:text-slate-900'}`}
+                      title="Thu nhỏ 80%"
+                    >
+                      80%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewZoom(90)}
+                      className={`px-2 py-1 rounded font-medium transition cursor-pointer ${previewZoom === 90 ? 'bg-white shadow-2xs text-blue-700 font-bold' : 'text-slate-600 hover:text-slate-900'}`}
+                      title="Thu phóng 90%"
+                    >
+                      90%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewZoom(100)}
+                      className={`px-2 py-1 rounded font-medium transition cursor-pointer ${previewZoom === 100 ? 'bg-white shadow-2xs text-blue-700 font-bold' : 'text-slate-600 hover:text-slate-900'}`}
+                      title="100% chuẩn khổ A4"
+                    >
+                      100%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewZoom(110)}
+                      className={`px-2 py-1 rounded font-medium transition cursor-pointer ${previewZoom === 110 ? 'bg-white shadow-2xs text-blue-700 font-bold' : 'text-slate-600 hover:text-slate-900'}`}
+                      title="Phóng to 110%"
+                    >
+                      110%
+                    </button>
+                  </div>
+
                   <button
+                    type="button"
                     onClick={handleDirectPrint}
-                    className="inline-flex items-center space-x-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-lg transition-colors cursor-pointer border border-slate-200"
+                    title="In trực tiếp ra máy in hoặc Lưu dưới dạng PDF máy in"
                   >
                     <Printer className="w-3.5 h-3.5" />
-                    <span>In Ngay (Print)</span>
+                    <span>In Ngay</span>
                   </button>
+
                   <button
+                    type="button"
                     onClick={handleExportPdf}
                     disabled={isExportingPdf}
-                    className="inline-flex items-center space-x-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
+                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
+                    title="Tải PDF chuẩn font Unicode Roboto không lỗi dấu"
                   >
                     <FileDown className="w-3.5 h-3.5" />
-                    <span>Tải File PDF</span>
+                    <span>{isExportingPdf ? 'Đang xuất...' : 'Tải PDF Chuẩn'}</span>
                   </button>
+
                   <button
+                    type="button"
                     onClick={handleExportExcel}
                     disabled={isExportingExcel}
-                    className="inline-flex items-center space-x-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
+                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
+                    title="Tải file Excel"
                   >
                     <FileSpreadsheet className="w-3.5 h-3.5" />
-                    <span>Tải File Excel</span>
+                    <span>Excel</span>
                   </button>
                 </div>
               </div>
 
               {/* The A4 Document Container */}
-              <div className="flex justify-center pb-8">
-                <div 
-                  ref={previewRef}
-                  className="w-full max-w-[800px] bg-white p-8 sm:p-12 shadow-xl border border-slate-200 rounded-sm text-slate-800 print:m-0 print:p-0 print:border-none print:shadow-none"
-                  style={{ minHeight: '1050px', fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              <div className="flex justify-center pb-8 overflow-x-auto">
+                <div
+                  style={{
+                    transform: `scale(${previewZoom / 100})`,
+                    transformOrigin: 'top center',
+                    transition: 'transform 0.15s ease'
+                  }}
                 >
-                  {/* Decorative top bar */}
-                  <div className="h-1.5 bg-blue-900 w-full mb-6" />
+                  <div 
+                    id="a4-debit-note-sheet"
+                    ref={previewRef}
+                    className="w-[794px] max-w-[794px] min-h-[1120px] max-h-[1123px] bg-white p-7 sm:p-8 shadow-2xl border border-slate-300 rounded-xs text-slate-800 flex flex-col justify-between overflow-hidden"
+                    style={{ 
+                      fontFamily: "'Roboto', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    {/* TOP SECTION: BRAND, HEADER & CHARGES */}
+                    <div>
+                      {/* Top Decorative Dark Accent Line */}
+                      <div className="h-1 bg-slate-900 w-full mb-3 rounded-full" />
 
-                  {/* Company Header */}
-                  <div className="border-b border-slate-200 pb-4 mb-6">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                          {debitNote.company.name.toUpperCase()}
-                        </h1>
-                        {debitNote.company.englishName && (
-                          <div className="text-xs font-bold text-slate-500 tracking-wide uppercase">
-                            {debitNote.company.englishName}
+                      {/* SECTION 1: HEADER & METADATA GRID */}
+                      <div className="border-b border-slate-200 pb-3 mb-2.5">
+                        <div className="flex justify-between items-start gap-3">
+                          {/* Left: Company Details */}
+                          <div className="flex-1">
+                            <h1 className="text-sm sm:text-base font-black text-slate-900 tracking-tight leading-tight">
+                              {debitNote.company.name.toUpperCase()}
+                            </h1>
+                            {debitNote.company.englishName && (
+                              <div className="text-[10px] font-bold text-slate-500 tracking-wide uppercase mt-0.5">
+                                {debitNote.company.englishName}
+                              </div>
+                            )}
+                            <p className="text-[10px] text-slate-600 mt-1 leading-snug">
+                              Địa chỉ: {debitNote.company.address}
+                            </p>
+                            <p className="text-[10px] text-slate-600 leading-snug">
+                              MST: <strong>{debitNote.company.taxId}</strong> | Hotline: {debitNote.company.phone} | Email: {debitNote.company.email}
+                            </p>
                           </div>
-                        )}
-                        <p className="text-[11px] text-slate-600 mt-1 max-w-lg leading-relaxed">
-                          Địa chỉ: {debitNote.company.address}
-                        </p>
-                        <p className="text-[11px] text-slate-600">
-                          MST: <strong>{debitNote.company.taxId}</strong> | Hotline: {debitNote.company.phone} | Email: {debitNote.company.email}
-                        </p>
+
+                          {/* Right: Debit Note Official Badge Box */}
+                          <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs w-[255px] shrink-0 shadow-2xs">
+                            <div className="text-center pb-1.5 mb-1.5 border-b border-slate-200">
+                              <h2 className="text-xs font-black text-blue-950 uppercase tracking-tight">
+                                DEBIT NOTE / GIẤY BÁO NỢ
+                              </h2>
+                              <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                                CHỨNG TỪ THU TIỀN CƯỚC DỊCH VỤ
+                              </div>
+                            </div>
+
+                            <div className="space-y-1 text-[11px]">
+                              <div className="flex justify-between items-center">
+                                <span className="text-slate-500">Số D/N (No.):</span>
+                                <strong className="text-blue-900 font-mono font-bold text-xs">{debitNote.debitNoteNumber}</strong>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-slate-500">Ngày lập:</span>
+                                <span className="text-slate-700 font-medium">{debitNote.issueDate}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-slate-500">Hạn thanh toán:</span>
+                                <span className="px-1.5 py-0.2 rounded text-[10.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                  {debitNote.dueDate}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center pt-0.5 border-t border-slate-100">
+                                <span className="text-slate-500">Số Báo Giá:</span>
+                                <span className="font-semibold text-slate-800">{debitNote.quotationNumber}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="text-right">
-                        <span className="inline-block px-3 py-1 rounded bg-blue-50 border border-blue-200 text-blue-900 font-bold text-xs uppercase tracking-wider">
-                          ORIGINAL
-                        </span>
+                      {/* SECTION 2: BILL TO & SHIPMENT DETAILS SIDE-BY-SIDE */}
+                      <div className="grid grid-cols-2 gap-3 mb-2.5 text-xs">
+                        {/* Bill To Box */}
+                        <div className="bg-slate-50/70 border border-slate-200 rounded-lg overflow-hidden">
+                          <div className="bg-blue-50/90 text-blue-900 font-bold px-2.5 py-1 text-[10px] uppercase border-b border-blue-100 flex items-center justify-between">
+                            <span>I. Đơn Vị Thanh Toán (Bill To)</span>
+                            <span className="text-[8.5px] text-blue-600 font-normal">APPLICANT</span>
+                          </div>
+                          <div className="p-2 space-y-0.5 text-[10.5px]">
+                            <div className="font-bold text-slate-900 text-[11px] leading-tight">
+                              {debitNote.customer.companyName || debitNote.customer.customerName}
+                            </div>
+                            <p className="text-slate-600 leading-tight">
+                              <strong>MST:</strong> {debitNote.customer.taxId || 'N/A'} | <strong>Liên hệ:</strong> {debitNote.customer.contactPerson || debitNote.customer.customerName || 'N/A'}
+                            </p>
+                            <p className="text-slate-600 leading-tight">
+                              <strong>Điện thoại:</strong> {debitNote.customer.phone || 'N/A'} | <strong>Email:</strong> {debitNote.customer.email || 'N/A'}
+                            </p>
+                            <p className="text-slate-600 truncate leading-tight" title={debitNote.customer.address}>
+                              <strong>Địa chỉ:</strong> {debitNote.customer.address || 'N/A'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Shipment Particulars Box */}
+                        <div className="bg-slate-50/70 border border-slate-200 rounded-lg overflow-hidden">
+                          <div className="bg-emerald-50/90 text-emerald-900 font-bold px-2.5 py-1 text-[10px] uppercase border-b border-emerald-100 flex items-center justify-between">
+                            <span>II. Chi Tiết Lô Hàng (Shipment)</span>
+                            <span className="text-[8.5px] text-emerald-600 font-normal">PARTICULARS</span>
+                          </div>
+                          <div className="p-2 space-y-0.5 text-[10.5px]">
+                            <p className="text-slate-700 leading-tight">
+                              <strong>Tuyến:</strong> {debitNote.shipment.pol} &rarr; {debitNote.shipment.pod} ({debitNote.shipment.mode})
+                            </p>
+                            <p className="text-slate-700 leading-tight">
+                              <strong>Số B/L:</strong> <span className="font-bold text-blue-900 font-mono">{debitNote.shipment.blNumber || 'N/A'}</span> | <strong>Booking:</strong> {debitNote.shipment.bookingNumber || 'N/A'}
+                            </p>
+                            <p className="text-slate-700 truncate leading-tight">
+                              <strong>Tàu/Chuyến:</strong> {debitNote.shipment.vesselVoyage || 'N/A'} | <strong>Số Cont/Seal:</strong> {debitNote.shipment.containerSealNo || 'N/A'}
+                            </p>
+                            <p className="text-slate-700 truncate leading-tight">
+                              <strong>Hàng hóa:</strong> {debitNote.shipment.cargoDescription || 'N/A'} | <strong>GW:</strong> {debitNote.shipment.grossWeightKg || 0} kg | <strong>Vol:</strong> {debitNote.shipment.volumeCbm || 0} CBM
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* SECTION 3: CHARGES BREAKDOWN TABLE (ANTI-OVERFLOW TABLE-FIXED) */}
+                      <div className="mb-2.5 overflow-hidden rounded-lg border border-slate-200">
+                        <table className="w-full text-xs border-collapse table-fixed">
+                          <colgroup>
+                            <col style={{ width: '30px' }} />
+                            <col style={{ width: 'auto' }} />
+                            <col style={{ width: '56px' }} />
+                            <col style={{ width: '36px' }} />
+                            <col style={{ width: '42px' }} />
+                            <col style={{ width: '76px' }} />
+                            <col style={{ width: '42px' }} />
+                            <col style={{ width: '84px' }} />
+                            <col style={{ width: '38px' }} />
+                            <col style={{ width: '76px' }} />
+                            <col style={{ width: '88px' }} />
+                          </colgroup>
+                          <thead>
+                            <tr className="bg-slate-900 text-white font-bold text-[10px]">
+                              <th className="py-1.5 px-1 text-center">STT</th>
+                              <th className="py-1.5 px-2 text-left">Hạng Mục Chi Phí (Description)</th>
+                              <th className="py-1.5 px-1 text-center">Mã</th>
+                              <th className="py-1.5 px-1 text-center">SL</th>
+                              <th className="py-1.5 px-1 text-center">ĐVT</th>
+                              <th className="py-1.5 px-2 text-right">Đơn Giá</th>
+                              <th className="py-1.5 px-1 text-center">Loại</th>
+                              <th className="py-1.5 px-2 text-right">Thành Tiền</th>
+                              <th className="py-1.5 px-1 text-center">VAT</th>
+                              <th className="py-1.5 px-2 text-right">Tiền Thuế</th>
+                              <th className="py-1.5 px-2 text-right">Tổng Tiền</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-150 text-[10.5px]">
+                            {debitNote.items.map((it, idx) => {
+                              const isCompact = debitNote.items.length > 6;
+                              return (
+                                <tr key={it.id} className={idx % 2 === 1 ? 'bg-slate-50/60' : 'bg-white'}>
+                                  <td className={`${isCompact ? 'py-0.8' : 'py-1.2'} px-1 text-center text-slate-500 font-medium`}>{idx + 1}</td>
+                                  <td className={`${isCompact ? 'py-0.8' : 'py-1.2'} px-2 font-medium text-slate-900 truncate`}>
+                                    <div className="font-semibold leading-tight text-slate-800">{it.description}</div>
+                                    {it.descriptionEn && <div className="text-[9px] text-slate-500 italic leading-none">{it.descriptionEn}</div>}
+                                  </td>
+                                  <td className={`${isCompact ? 'py-0.8' : 'py-1.2'} px-1 text-center font-mono text-[9.5px] text-slate-600`}>{it.code}</td>
+                                  <td className={`${isCompact ? 'py-0.8' : 'py-1.2'} px-1 text-center font-semibold tabular-nums`}>{it.quantity}</td>
+                                  <td className={`${isCompact ? 'py-0.8' : 'py-1.2'} px-1 text-center text-slate-600`}>{it.unit}</td>
+                                  <td className={`${isCompact ? 'py-0.8' : 'py-1.2'} px-2 text-right text-slate-700 font-mono tabular-nums text-[10px]`}>
+                                    {it.currency === 'USD' ? formatUSD(it.unitPrice) : formatVND(it.unitPrice)}
+                                  </td>
+                                  <td className={`${isCompact ? 'py-0.8' : 'py-1.2'} px-1 text-center font-semibold text-slate-600 text-[10px]`}>{it.currency}</td>
+                                  <td className={`${isCompact ? 'py-0.8' : 'py-1.2'} px-2 text-right font-medium text-slate-800 font-mono tabular-nums text-[10px]`}>
+                                    {it.currency === 'USD' ? formatUSD(it.amount) : formatVND(it.amount)}
+                                  </td>
+                                  <td className={`${isCompact ? 'py-0.8' : 'py-1.2'} px-1 text-center font-medium tabular-nums`}>{it.vatRate}%</td>
+                                  <td className={`${isCompact ? 'py-0.8' : 'py-1.2'} px-2 text-right text-slate-600 font-mono tabular-nums text-[10px]`}>
+                                    {it.currency === 'USD' ? formatUSD(it.vatAmount) : formatVND(it.vatAmount)}
+                                  </td>
+                                  <td className={`${isCompact ? 'py-0.8' : 'py-1.2'} px-2 text-right font-bold text-slate-900 font-mono tabular-nums text-[10px]`}>
+                                    {it.currency === 'USD' ? formatUSD(it.totalAmount) : formatVND(it.totalAmount)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* SECTION 4: COMBINED BOTTOM BLOCK (PARALLEL 2 COLUMNS - ANTI-OVERFLOW) */}
+                      <div className="grid grid-cols-12 gap-3 mb-2">
+                        {/* LEFT (7 cols): Bank Instructions, Words & VietQR */}
+                        <div className="col-span-7 bg-amber-50/60 border border-amber-200/80 rounded-lg p-2.5 flex flex-col justify-between">
+                          <div>
+                            <div className="font-bold text-amber-900 uppercase text-[10px] flex items-center justify-between pb-1 border-b border-amber-200/60 mb-1.5">
+                              <span>Thông Tin Thanh Toán & VietQR (Payment Details)</span>
+                              <span className="text-[8.5px] text-amber-700 font-semibold">24/7 NAPAS</span>
+                            </div>
+
+                            <div className="flex items-start gap-2.5">
+                              {/* Left Text */}
+                              <div className="flex-1 space-y-0.5 text-[10.5px]">
+                                <p className="text-slate-800 leading-tight">
+                                  Tên thụ hưởng: <strong className="text-blue-900">{debitNote.bankAccountVnd.accountHolder}</strong>
+                                </p>
+                                <p className="text-slate-800 leading-tight">
+                                  Số TK: <strong className="font-mono text-xs text-blue-950 font-black">{debitNote.bankAccountVnd.accountNumber}</strong> ({debitNote.bankAccountVnd.bankId})
+                                </p>
+                                <p className="text-slate-700 truncate leading-tight" title={debitNote.bankAccountVnd.bankName}>
+                                  Ngân hàng: {debitNote.bankAccountVnd.bankName}
+                                </p>
+                                <p className="text-slate-700 leading-tight">
+                                  Nội dung CK: <strong className="bg-white px-1.5 py-0.2 border border-amber-300 rounded font-mono text-[10px] text-blue-900">{debitNote.debitNoteNumber} {debitNote.customer.companyName || ''}</strong>
+                                </p>
+                                <p className="text-[9.5px] text-slate-500 italic pt-0.5 leading-tight">
+                                  (Tỷ giá quy đổi: 1 USD = <strong>{formatVND(debitNote.exchangeRate)} VND</strong> - {debitNote.exchangeRateSource || 'VCB'})
+                                </p>
+                              </div>
+
+                              {/* Right VietQR Badge */}
+                              <div className="flex flex-col items-center justify-center p-1 bg-white rounded-md border border-amber-200 shadow-2xs shrink-0 text-center">
+                                <img 
+                                  src={vietQrPaymentUrl} 
+                                  alt="VietQR Chuyển Khoản Tức Thì"
+                                  className="w-17 h-17 object-contain rounded"
+                                  loading="lazy"
+                                />
+                                <span className="text-[8px] font-bold text-slate-700 mt-0.5">
+                                  Quét VietQR
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Amount in words strip */}
+                          <div className="mt-1.5 bg-white/90 border border-amber-200/60 rounded px-2 py-1 text-[9.5px] space-y-0.5">
+                            <p className="text-slate-800 leading-tight">
+                              <strong>Bằng chữ:</strong> <span className="font-bold text-blue-900 italic">{debitNote.amountInWordsVi}</span>
+                            </p>
+                            <p className="text-slate-500 leading-tight italic">
+                              <strong>In English:</strong> {debitNote.amountInWordsEn}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* RIGHT (5 cols): Summary Totals & Final Payable Box */}
+                        <div className="col-span-5 bg-slate-50 border border-slate-200 rounded-lg p-2.5 flex flex-col justify-between text-xs">
+                          <div className="space-y-1 text-[10.5px]">
+                            <div className="flex justify-between text-slate-600">
+                              <span>Cộng tiền chưa thuế USD:</span>
+                              <span className="font-semibold text-slate-800 font-mono tabular-nums">{formatUSD(debitNote.subtotalUsd)}</span>
+                            </div>
+                            <div className="flex justify-between text-slate-600">
+                              <span>Cộng tiền chưa thuế VND:</span>
+                              <span className="font-semibold text-slate-800 font-mono tabular-nums">{formatVND(debitNote.subtotalVnd)}</span>
+                            </div>
+                            <div className="flex justify-between text-slate-600">
+                              <span>Tiền thuế VAT (USD / VND):</span>
+                              <span className="font-semibold text-slate-800 font-mono tabular-nums">{formatUSD(debitNote.vatTotalUsd)} / {formatVND(debitNote.vatTotalVnd)}</span>
+                            </div>
+                          </div>
+
+                          {/* Grand Total Box */}
+                          <div className="mt-1.5 pt-1.5 border-t border-slate-200 bg-blue-50/60 -mx-1 -mb-1 p-2 rounded-b-lg border-blue-100">
+                            <div className="text-[9.5px] uppercase font-bold text-blue-950 tracking-wider">
+                              TỔNG CẦN THANH TOÁN ({debitNote.finalCurrency}):
+                            </div>
+                            <div className="text-base sm:text-lg font-black text-rose-600 tracking-tight mt-0.5 font-mono tabular-nums">
+                              {debitNote.finalCurrency === 'USD' ? formatUSD(debitNote.finalAmountToPay) : formatVND(debitNote.finalAmountToPay)} {debitNote.finalCurrency}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* TERMS & BANK CHARGE NOTE */}
+                      <div className="text-[9.5px] text-slate-500 italic mb-2 leading-tight">
+                        • {debitNote.paymentTerms} | {debitNote.bankChargeClause}
                       </div>
                     </div>
+
+                    {/* SECTION 5: 3-COLUMN LEGAL SIGNATURES (PINNED TO BOTTOM - ZERO OVERFLOW) */}
+                    <div className="border-t border-slate-200 pt-2 mt-auto">
+                      <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                        <div>
+                          <div className="font-bold text-slate-800 text-[10.5px]">NGƯỜI LẬP PHIẾU</div>
+                          <div className="text-[9px] text-slate-400 italic">(Prepared By)</div>
+                          <div className="h-9 flex items-end justify-center font-bold text-slate-800 text-[10.5px]">
+                            {debitNote.preparedBy}
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="font-bold text-slate-800 text-[10.5px]">KẾ TOÁN TRƯỞNG / DUYỆT</div>
+                          <div className="text-[9px] text-slate-400 italic">(Chief Accountant / Approved)</div>
+                          <div className="h-9 flex items-end justify-center font-bold text-slate-800 text-[10.5px]">
+                            {debitNote.approvedBy}
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="font-bold text-slate-800 text-[10.5px]">XÁC NHẬN KHÁCH HÀNG</div>
+                          <div className="text-[9px] text-slate-400 italic">(Customer Acceptance)</div>
+                          <div className="h-9 flex items-end justify-center text-slate-400 italic text-[9.5px]">
+                            (Ký, ghi rõ họ tên & đóng dấu)
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
-
-                  {/* Title & Metadata */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                    <div>
-                      <h2 className="text-xl sm:text-2xl font-black text-blue-950 tracking-tight">
-                        DEBIT NOTE
-                      </h2>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                        GIẤY BÁO NỢ & YÊU CẦU THANH TOÁN
-                      </p>
-                    </div>
-
-                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs min-w-[240px]">
-                      <div className="flex justify-between py-0.5">
-                        <span className="text-slate-500 font-medium">Số D/N (No.):</span>
-                        <strong className="text-blue-900 font-bold">{debitNote.debitNoteNumber}</strong>
-                      </div>
-                      <div className="flex justify-between py-0.5">
-                        <span className="text-slate-500 font-medium">Ngày lập (Date):</span>
-                        <span className="text-slate-700">{debitNote.issueDate}</span>
-                      </div>
-                      <div className="flex justify-between py-0.5">
-                        <span className="text-slate-500 font-medium">Hạn thanh toán (Due):</span>
-                        <strong className="text-rose-600 font-semibold">{debitNote.dueDate}</strong>
-                      </div>
-                      <div className="flex justify-between py-0.5 border-t border-slate-200 mt-1 pt-1">
-                        <span className="text-slate-500 font-medium">Số Báo Giá (Quote Ref):</span>
-                        <span className="font-semibold text-slate-800">{debitNote.quotationNumber}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bill To & Shipment Info Side-by-side */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 text-xs">
-                    {/* Bill To */}
-                    <div className="bg-slate-50/70 border border-slate-200 rounded-lg p-3">
-                      <div className="font-bold text-blue-900 uppercase text-[11px] pb-1 mb-2 border-b border-slate-200">
-                        I. Khách Hàng Thanh Toán (Bill To)
-                      </div>
-                      <div className="font-bold text-slate-900 text-xs mb-1">
-                        {debitNote.customer.companyName || debitNote.customer.customerName}
-                      </div>
-                      <p className="text-slate-600 text-[11px] leading-tight">
-                        <strong>MST:</strong> {debitNote.customer.taxId || 'N/A'}
-                      </p>
-                      <p className="text-slate-600 text-[11px] leading-tight">
-                        <strong>Người liên hệ:</strong> {debitNote.customer.contactPerson || debitNote.customer.customerName || 'N/A'}
-                      </p>
-                      <p className="text-slate-600 text-[11px] leading-tight">
-                        <strong>Điện thoại:</strong> {debitNote.customer.phone || 'N/A'} | {debitNote.customer.email || ''}
-                      </p>
-                      <p className="text-slate-600 text-[11px] leading-tight mt-0.5">
-                        <strong>Địa chỉ:</strong> {debitNote.customer.address || 'N/A'}
-                      </p>
-                    </div>
-
-                    {/* Shipment particulars */}
-                    <div className="bg-slate-50/70 border border-slate-200 rounded-lg p-3">
-                      <div className="font-bold text-emerald-900 uppercase text-[11px] pb-1 mb-2 border-b border-slate-200">
-                        II. Chi Tiết Lô Hàng (Shipment Particulars)
-                      </div>
-                      <p className="text-slate-700 text-[11px] leading-tight">
-                        <strong>Tuyến:</strong> {debitNote.shipment.pol} &rarr; {debitNote.shipment.pod} ({debitNote.shipment.mode})
-                      </p>
-                      <p className="text-slate-700 text-[11px] leading-tight">
-                        <strong>Số B/L:</strong> <span className="font-semibold text-blue-900">{debitNote.shipment.blNumber || 'N/A'}</span> | <strong>Booking:</strong> {debitNote.shipment.bookingNumber || 'N/A'}
-                      </p>
-                      <p className="text-slate-700 text-[11px] leading-tight">
-                        <strong>Tàu/Chuyến:</strong> {debitNote.shipment.vesselVoyage || 'N/A'}
-                      </p>
-                      <p className="text-slate-700 text-[11px] leading-tight">
-                        <strong>Cont/Chì:</strong> {debitNote.shipment.containerSealNo || 'N/A'}
-                      </p>
-                      <p className="text-slate-700 text-[11px] leading-tight">
-                        <strong>Hàng hóa:</strong> {debitNote.shipment.cargoDescription || 'N/A'} | <strong>GW:</strong> {debitNote.shipment.grossWeightKg} kg | <strong>Vol:</strong> {debitNote.shipment.volumeCbm} CBM
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Breakdown Table */}
-                  <div className="mb-6 overflow-x-auto">
-                    <table className="w-full text-xs border border-slate-300 border-collapse">
-                      <thead>
-                        <tr className="bg-blue-950 text-white font-bold text-[11px]">
-                          <th className="border border-slate-300 py-2 px-2 text-center w-8">STT</th>
-                          <th className="border border-slate-300 py-2 px-3 text-left">Hạng Mục Chi Phí (Description)</th>
-                          <th className="border border-slate-300 py-2 px-2 text-center w-12">Mã</th>
-                          <th className="border border-slate-300 py-2 px-2 text-center w-12">SL</th>
-                          <th className="border border-slate-300 py-2 px-2 text-center w-12">ĐVT</th>
-                          <th className="border border-slate-300 py-2 px-2 text-right w-20">Đơn Giá</th>
-                          <th className="border border-slate-300 py-2 px-2 text-center w-12">Loại</th>
-                          <th className="border border-slate-300 py-2 px-2 text-right w-24">Thành Tiền</th>
-                          <th className="border border-slate-300 py-2 px-2 text-center w-12">VAT</th>
-                          <th className="border border-slate-300 py-2 px-2 text-right w-20">Tiền Thuế</th>
-                          <th className="border border-slate-300 py-2 px-2 text-right w-24">Tổng Tiền</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {debitNote.items.map((it, idx) => (
-                          <tr key={it.id} className={idx % 2 === 1 ? 'bg-slate-50' : 'bg-white'}>
-                            <td className="border border-slate-300 py-1.5 px-2 text-center text-slate-500 font-medium">{idx + 1}</td>
-                            <td className="border border-slate-300 py-1.5 px-3 font-medium text-slate-900">
-                              {it.description}
-                              {it.descriptionEn && <div className="text-[10px] text-slate-500 italic">{it.descriptionEn}</div>}
-                            </td>
-                            <td className="border border-slate-300 py-1.5 px-2 text-center font-mono text-[10px] text-slate-600">{it.code}</td>
-                            <td className="border border-slate-300 py-1.5 px-2 text-center font-semibold">{it.quantity}</td>
-                            <td className="border border-slate-300 py-1.5 px-2 text-center text-slate-600">{it.unit}</td>
-                            <td className="border border-slate-300 py-1.5 px-2 text-right text-slate-700">
-                              {it.currency === 'USD' ? formatUSD(it.unitPrice) : formatVND(it.unitPrice)}
-                            </td>
-                            <td className="border border-slate-300 py-1.5 px-2 text-center font-semibold text-slate-600">{it.currency}</td>
-                            <td className="border border-slate-300 py-1.5 px-2 text-right font-medium text-slate-800">
-                              {it.currency === 'USD' ? formatUSD(it.amount) : formatVND(it.amount)}
-                            </td>
-                            <td className="border border-slate-300 py-1.5 px-2 text-center font-medium">{it.vatRate}%</td>
-                            <td className="border border-slate-300 py-1.5 px-2 text-right text-slate-600">
-                              {it.currency === 'USD' ? formatUSD(it.vatAmount) : formatVND(it.vatAmount)}
-                            </td>
-                            <td className="border border-slate-300 py-1.5 px-2 text-right font-bold text-slate-900">
-                              {it.currency === 'USD' ? formatUSD(it.totalAmount) : formatVND(it.totalAmount)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Subtotals & Grand Total Box */}
-                  <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
-                    <div className="text-xs text-slate-500 italic max-w-sm">
-                      <p>• Tỷ giá quy đổi thanh toán: 1 USD = <strong>{formatVND(debitNote.exchangeRate)} VND</strong> ({debitNote.exchangeRateSource || 'VCB'})</p>
-                      <p>• {debitNote.bankChargeClause}</p>
-                    </div>
-
-                    <div className="bg-slate-50 border border-slate-300 rounded-lg p-3 text-xs w-full sm:w-72 space-y-1.5">
-                      <div className="flex justify-between text-slate-600">
-                        <span>Cộng tiền chưa thuế USD:</span>
-                        <span className="font-semibold">{formatUSD(debitNote.subtotalUsd)}</span>
-                      </div>
-                      <div className="flex justify-between text-slate-600">
-                        <span>Cộng tiền chưa thuế VND:</span>
-                        <span className="font-semibold">{formatVND(debitNote.subtotalVnd)}</span>
-                      </div>
-                      <div className="flex justify-between text-slate-600">
-                        <span>Tiền thuế VAT:</span>
-                        <span className="font-semibold">{formatUSD(debitNote.vatTotalUsd)} / {formatVND(debitNote.vatTotalVnd)}</span>
-                      </div>
-                      <div className="border-t border-slate-300 pt-1.5 flex justify-between font-bold text-sm text-blue-950">
-                        <span>TỔNG CẦN THANH TOÁN:</span>
-                        <span className="text-rose-600 font-black">
-                          {debitNote.finalCurrency === 'USD' ? formatUSD(debitNote.finalAmountToPay) : formatVND(debitNote.finalAmountToPay)} {debitNote.finalCurrency}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Amount in words */}
-                  <div className="bg-slate-100 p-3 rounded-lg text-xs mb-6 border border-slate-200">
-                    <p className="text-slate-800">
-                      <strong>Số tiền bằng chữ (VNĐ):</strong> <span className="font-semibold italic">{debitNote.amountInWordsVi}</span>
-                    </p>
-                    <p className="text-slate-600 mt-0.5">
-                      <strong>In English:</strong> <span className="italic">{debitNote.amountInWordsEn}</span>
-                    </p>
-                  </div>
-
-                  {/* Payment Details with VietQR */}
-                  <div className="bg-amber-50/60 border border-amber-200 rounded-xl p-4 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="space-y-1 text-xs">
-                      <div className="font-bold text-amber-900 uppercase text-[11px] flex items-center space-x-1 mb-1">
-                        <CreditCard className="w-3.5 h-3.5 text-amber-700" />
-                        <span>Thông Tin Tài Khoản Ngân Hàng Thụ Hưởng (Beneficiary Bank)</span>
-                      </div>
-                      <p className="text-slate-800">
-                        Tên tài khoản: <strong className="text-blue-900">{debitNote.bankAccountVnd.accountHolder}</strong>
-                      </p>
-                      <p className="text-slate-800">
-                        Số tài khoản VND: <strong className="font-mono text-sm text-blue-950">{debitNote.bankAccountVnd.accountNumber}</strong>
-                      </p>
-                      <p className="text-slate-700">
-                        Ngân hàng: {debitNote.bankAccountVnd.bankName}
-                      </p>
-                      <p className="text-slate-700">
-                        Nội dung chuyển khoản: <strong className="bg-white px-2 py-0.5 border border-amber-300 rounded font-mono text-blue-900">{debitNote.debitNoteNumber} {debitNote.customer.companyName || ''}</strong>
-                      </p>
-                      <p className="text-[11px] text-amber-800 italic pt-1">
-                        {debitNote.paymentTerms}
-                      </p>
-                    </div>
-
-                    {/* QR Code Container */}
-                    <div className="flex flex-col items-center justify-center p-2 bg-white rounded-xl border border-amber-200 shadow-2xs shrink-0 text-center">
-                      <img 
-                        src={vietQrPaymentUrl} 
-                        alt="VietQR Chuyển Khoản Tức Thì"
-                        className="w-32 h-32 object-contain rounded"
-                        loading="lazy"
-                      />
-                      <span className="text-[10px] font-bold text-slate-600 mt-1 flex items-center gap-1">
-                        <QrCode className="w-3 h-3 text-blue-600" />
-                        <span>Quét VietQR 24/7</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Signatures */}
-                  <div className="grid grid-cols-3 gap-4 text-center text-xs pt-4 border-t border-slate-200">
-                    <div>
-                      <div className="font-bold text-slate-800">NGƯỜI LẬP PHIẾU</div>
-                      <div className="text-[10px] text-slate-400 italic">(Prepared By)</div>
-                      <div className="h-16 flex items-end justify-center font-bold text-slate-800">
-                        {debitNote.preparedBy}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="font-bold text-slate-800">KẾ TOÁN TRƯỞNG</div>
-                      <div className="text-[10px] text-slate-400 italic">(Chief Accountant / Approved)</div>
-                      <div className="h-16 flex items-end justify-center font-bold text-slate-800">
-                        {debitNote.approvedBy}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="font-bold text-slate-800">XÁC NHẬN KHÁCH HÀNG</div>
-                      <div className="text-[10px] text-slate-400 italic">(Customer Acceptance)</div>
-                      <div className="h-16 flex items-end justify-center text-slate-400 italic text-[11px]">
-                        (Ký, ghi rõ họ tên & đóng dấu)
-                      </div>
-                    </div>
-                  </div>
-
                 </div>
               </div>
             </div>
