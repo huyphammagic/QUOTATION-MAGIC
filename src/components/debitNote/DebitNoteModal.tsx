@@ -113,7 +113,18 @@ export const DebitNoteModal: React.FC<DebitNoteModalProps> = ({
     setActiveTab('editor');
   }, [isOpen, quote?.id]);
 
-  if (!isOpen || !quote || !debitNote) return null;
+  // VietQR URL for instant scan & pay (Hook called unconditionally)
+  const vietQrPaymentUrl = useMemo(() => {
+    if (!debitNote) return '';
+    const transferDesc = `${debitNote.debitNoteNumber}`;
+    return generateVietQrUrl(
+      debitNote.bankAccountVnd.bankId,
+      debitNote.bankAccountVnd.accountNumber,
+      debitNote.finalCurrency === 'VND' ? debitNote.finalAmountToPay : Math.round(debitNote.finalAmountToPay * debitNote.exchangeRate),
+      transferDesc,
+      debitNote.bankAccountVnd.accountHolder
+    );
+  }, [debitNote]);
 
   // Handle Create Another Debit Note (e.g. Phase 2 or Supplementary D/N)
   const handleCreateNewDebitNote = () => {
@@ -325,18 +336,8 @@ export const DebitNoteModal: React.FC<DebitNoteModalProps> = ({
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  // VietQR URL for instant scan & pay
-  const vietQrPaymentUrl = useMemo(() => {
-    if (!debitNote) return '';
-    const transferDesc = `${debitNote.debitNoteNumber}`;
-    return generateVietQrUrl(
-      debitNote.bankAccountVnd.bankId,
-      debitNote.bankAccountVnd.accountNumber,
-      debitNote.finalCurrency === 'VND' ? debitNote.finalAmountToPay : Math.round(debitNote.finalAmountToPay * debitNote.exchangeRate),
-      transferDesc,
-      debitNote.bankAccountVnd.accountHolder
-    );
-  }, [debitNote]);
+  // Guard render if modal is closed or data is not yet ready
+  if (!isOpen || !quote || !debitNote) return null;
 
   // Email template content
   const emailSubject = `[DEBIT NOTE] Yêu Cầu Thanh Toán Cước Dịch Vụ - Số: ${debitNote.debitNoteNumber} - Báo Giá: ${debitNote.quotationNumber}`;
