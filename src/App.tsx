@@ -143,6 +143,8 @@ const HsCodeTariffModal = lazyWithRetry(() => import('./components/customsTariff
 const FreightRateBenchmarkingModal = lazyWithRetry(() => import('./components/pricing/FreightRateBenchmarkingModal').then(m => ({ default: m.FreightRateBenchmarkingModal })), 'FreightRateBenchmarkingModal');
 const DebitNoteModal = lazyWithRetry(() => import('./components/debitNote/DebitNoteModal').then(m => ({ default: m.DebitNoteModal })), 'DebitNoteModal');
 const DebitNoteManagementModal = lazyWithRetry(() => import('./components/debitNote/DebitNoteManagementModal').then(m => ({ default: m.DebitNoteManagementModal })), 'DebitNoteManagementModal');
+const StatementOfAccountModal = lazyWithRetry(() => import('./components/soa/StatementOfAccountModal').then(m => ({ default: m.StatementOfAccountModal })), 'StatementOfAccountModal');
+const MultiOptionQuoteModal = lazyWithRetry(() => import('./components/pricing/MultiOptionQuoteModal').then(m => ({ default: m.MultiOptionQuoteModal })), 'MultiOptionQuoteModal');
 import { LiveLeadToastNotifier } from './components/telemetry/LiveLeadToastNotifier';
 import { subscribeToLiveEngagements } from './services/telemetry/customerEngagementService';
 import { QuotationEngagementSession } from './types/customerEngagement';
@@ -483,6 +485,10 @@ export default function App() {
   const [debitNoteTargetQuote, setDebitNoteTargetQuote] = useState<QuoteData | null>(null);
   const [isDebitNoteManagementModalOpen, setIsDebitNoteManagementModalOpen] = useState(false);
 
+  // Statement of Account (SOA)
+  const [isSoaModalOpen, setIsSoaModalOpen] = useState(false);
+  const [soaCustomerName, setSoaCustomerName] = useState<string | undefined>(undefined);
+
   const handleOpenDebitNoteForQuote = (targetQ?: QuoteData) => {
     const q = targetQ || quote;
     setDebitNoteTargetQuote(q);
@@ -491,6 +497,39 @@ export default function App() {
 
   const handleOpenDebitNoteManagement = () => {
     setIsDebitNoteManagementModalOpen(true);
+  };
+
+  const handleOpenStatementOfAccount = (customerName?: string) => {
+    setSoaCustomerName(customerName || quote.customer?.companyName || quote.customer?.customerName);
+    setIsSoaModalOpen(true);
+  };
+
+  // Multi-Option Comparative Quotation (Good - Better - Best)
+  const [isMultiOptionQuoteModalOpen, setIsMultiOptionQuoteModalOpen] = useState(false);
+
+  const handleOpenMultiOptionQuote = () => {
+    setIsMultiOptionQuoteModalOpen(true);
+  };
+
+  const handleApplyMultiOptionToActiveQuote = (selectedOption: any, updatedItems: LineItem[]) => {
+    setQuote(prev => {
+      // Recalculate totals
+      const totalUsd = updatedItems.filter(i => (i.currency || 'USD') === 'USD').reduce((s, i) => s + (i.total || 0), 0);
+      const totalVnd = updatedItems.filter(i => (i.currency || 'VND') === 'VND').reduce((s, i) => s + (i.total || 0), 0);
+      return {
+        ...prev,
+        carrier: selectedOption.carrier || prev.carrier,
+        serviceType: selectedOption.serviceName || prev.serviceType,
+        transitTime: selectedOption.transitTimeText || prev.transitTime,
+        demurrageDetention: selectedOption.freeTimeDemDet || prev.demurrageDetention,
+        items: updatedItems,
+        subtotalUsd: totalUsd,
+        subtotalVnd: totalVnd,
+        totalUsd: totalUsd,
+        totalVnd: totalVnd,
+        remarks: `${prev.remarks || ''}\n[Đã áp dụng phương án: ${selectedOption.tierLabel} (${selectedOption.carrier}) - Free time: ${selectedOption.freeTimeDemDet}]`.trim()
+      };
+    });
   };
 
   const handleApplyBenchmarkRate = (newRate: number, strategyName: string, equipmentType?: string) => {
@@ -839,6 +878,9 @@ export default function App() {
         break;
       case 'debit_note_management':
         handleOpenDebitNoteManagement();
+        break;
+      case 'multi_option_quotation':
+        handleOpenMultiOptionQuote();
         break;
       case 'carrier_invoice_audit':
         setIsCarrierInvoiceAuditOpen(true);
@@ -2246,6 +2288,7 @@ export default function App() {
           onOpenHsCodeTariff={() => setIsHsCodeTariffOpen(true)}
           onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
           onOpenDebitNoteManagement={handleOpenDebitNoteManagement}
+          onOpenMultiOptionQuote={handleOpenMultiOptionQuote}
           onOpenEngagementRadar={() => {
             setSelectedRadarSession(null);
             setIsEngagementRadarOpen(true);
@@ -2388,6 +2431,8 @@ export default function App() {
               onOpenHsCodeTariff={() => setIsHsCodeTariffOpen(true)}
               onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
               onOpenDebitNote={() => handleOpenDebitNoteForQuote()}
+              onOpenStatementOfAccount={() => handleOpenStatementOfAccount()}
+              onOpenMultiOptionQuote={handleOpenMultiOptionQuote}
               isSaving={isAutoSaving}
               lastSavedAt={lastAutoSaveTime}
             />
@@ -3687,6 +3732,7 @@ export default function App() {
             }}
             quote={debitNoteTargetQuote || quote}
             onOpenPaymentHub={(quoteId) => handleOpenPaymentHub(quoteId)}
+            onOpenStatementOfAccount={(cust) => handleOpenStatementOfAccount(cust)}
           />
         </Suspense>
       )}
@@ -3700,6 +3746,35 @@ export default function App() {
             quotes={savedQuotes.length > 0 ? savedQuotes : [quote]}
             onOpenDebitNoteForQuote={(targetQ) => handleOpenDebitNoteForQuote(targetQ)}
             onOpenPaymentHub={(quoteId) => handleOpenPaymentHub(quoteId)}
+            onOpenStatementOfAccount={(cust) => handleOpenStatementOfAccount(cust)}
+          />
+        </Suspense>
+      )}
+
+      {/* Statement of Account (SOA) Central Ledger & Reconciliation Modal */}
+      {isSoaModalOpen && (
+        <Suspense fallback={null}>
+          <StatementOfAccountModal
+            isOpen={isSoaModalOpen}
+            onClose={() => setIsSoaModalOpen(false)}
+            initialCustomerName={soaCustomerName}
+            onOpenDebitNoteForId={() => {
+              setIsSoaModalOpen(false);
+              const foundQ = savedQuotes.find(q => q.id) || quote;
+              handleOpenDebitNoteForQuote(foundQ);
+            }}
+          />
+        </Suspense>
+      )}
+
+      {/* Multi-Option Comparative Quotation (Good - Better - Best) Modal */}
+      {isMultiOptionQuoteModalOpen && (
+        <Suspense fallback={null}>
+          <MultiOptionQuoteModal
+            isOpen={isMultiOptionQuoteModalOpen}
+            onClose={() => setIsMultiOptionQuoteModalOpen(false)}
+            quote={quote}
+            onApplyOptionToQuote={handleApplyMultiOptionToActiveQuote}
           />
         </Suspense>
       )}

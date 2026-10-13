@@ -61,6 +61,8 @@ interface QuotationWorkspaceHeaderProps {
   onOpenHsCodeTariff?: () => void;
   onOpenFreightRateBenchmarking?: () => void;
   onOpenDebitNote?: () => void;
+  onOpenStatementOfAccount?: () => void;
+  onOpenMultiOptionQuote?: () => void;
   isSaving?: boolean;
   lastSavedAt?: string | null;
 }
@@ -91,6 +93,8 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
   onOpenHsCodeTariff,
   onOpenFreightRateBenchmarking,
   onOpenDebitNote,
+  onOpenStatementOfAccount,
+  onOpenMultiOptionQuote,
   isSaving = false,
   lastSavedAt,
 }) => {
@@ -535,6 +539,46 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
                     </button>
                   )}
 
+                  {onOpenMultiOptionQuote && (
+                    <button
+                      type="button"
+                      onClick={() => { onOpenMultiOptionQuote(); setIsToolsDropdownOpen(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                        <div>
+                          <div className="font-semibold text-slate-900 flex items-center gap-1">
+                            <span>Báo Giá Đa Phương Án (Good - Better - Best)</span>
+                            <span className="text-[9px] bg-amber-500 text-white px-1.5 py-0.2 rounded font-bold">HOT</span>
+                          </div>
+                          <div className="text-[10px] text-slate-500">So sánh 3 gói cước, tăng tỷ lệ chốt đơn sales x2.4</div>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
+                    </button>
+                  )}
+
+                  {onOpenStatementOfAccount && (
+                    <button
+                      type="button"
+                      onClick={() => { onOpenStatementOfAccount(); setIsToolsDropdownOpen(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                        <div>
+                          <div className="font-semibold text-slate-900 flex items-center gap-1">
+                            <span>Bảng Đối Soát Công Nợ (SOA)</span>
+                            <span className="text-[9px] bg-indigo-600 text-white px-1.5 py-0.2 rounded font-bold">MỚI</span>
+                          </div>
+                          <div className="text-[10px] text-slate-500">Statement of Account, phân tích tuổi nợ & QR gộp</div>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => { onOpenDecisionWorkspace(); setIsToolsDropdownOpen(false); }}
@@ -630,6 +674,20 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
             <Send className="w-3.5 h-3.5 text-blue-600" />
             <span>Gửi Khách</span>
           </button>
+
+          {/* Direct Action: Multi-Option Comparative Quotation */}
+          {onOpenMultiOptionQuote && (
+            <button
+              type="button"
+              onClick={onOpenMultiOptionQuote}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg transition-colors cursor-pointer shadow-2xs"
+              title="Báo giá Đa Phương Án So Sánh (Good - Better - Best) giúp chốt sale đỉnh cao"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+              <span className="hidden sm:inline">Báo Giá 3 Phương Án</span>
+              <span className="sm:hidden">3 Options</span>
+            </button>
+          )}
 
           {/* Direct Action: Create Debit Note */}
           {onOpenDebitNote && (

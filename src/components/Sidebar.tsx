@@ -128,6 +128,7 @@ export interface SidebarProps {
   onOpenHsCodeTariff?: () => void;
   onOpenFreightRateBenchmarking?: () => void;
   onOpenDebitNoteManagement?: () => void;
+  onOpenMultiOptionQuote?: () => void;
   dormantCustomersCount?: number;
   activeEngagementsCount?: number;
   exceptionsCount?: number;
@@ -222,6 +223,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenHsCodeTariff,
   onOpenFreightRateBenchmarking,
   onOpenDebitNoteManagement,
+  onOpenMultiOptionQuote,
   dormantCustomersCount = 3,
   activeEngagementsCount = 0,
   shipmentsCount = 0,
@@ -467,6 +469,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       action: () => onOpenDebitNoteManagement && onOpenDebitNoteManagement(),
       badge: 'D/N',
       badgeTone: 'sky',
+    },
+    {
+      id: 'multi_option_quotation',
+      label: activeLang === 'vi' ? 'Báo Giá Đa Phương Án (Good-Better-Best)' : 'Multi-Option Pricing Matrix',
+      icon: Sparkles,
+      group: 'quotation',
+      action: () => onOpenMultiOptionQuote && onOpenMultiOptionQuote(),
+      badge: '3 Tiers',
+      badgeTone: 'amber',
     },
 
     // === 2. TRÍ TUỆ BÁN HÀNG & RADAR AI (SALES INTELLIGENCE & RADARS) ===

@@ -54,6 +54,7 @@ interface DebitNoteModalProps {
   onClose: () => void;
   quote: QuoteData;
   onOpenPaymentHub?: (quoteId: string) => void;
+  onOpenStatementOfAccount?: (customerName?: string) => void;
 }
 
 // Quick suggestions for incident/additional charges in logistics
@@ -81,7 +82,8 @@ export const DebitNoteModal: React.FC<DebitNoteModalProps> = ({
   isOpen,
   onClose,
   quote,
-  onOpenPaymentHub
+  onOpenPaymentHub,
+  onOpenStatementOfAccount
 }) => {
   const [activeTab, setActiveTab] = useState<'editor' | 'preview' | 'send' | 'history'>('editor');
   const [debitNote, setDebitNote] = useState<DebitNoteRecord | null>(() => {
@@ -523,6 +525,21 @@ ${debitNote.company.name}`;
               >
                 <CreditCard className="w-3.5 h-3.5" />
                 <span>Thu Công Nợ</span>
+              </button>
+            )}
+
+            {onOpenStatementOfAccount && (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenStatementOfAccount(debitNote.customer.companyName || debitNote.customer.customerName);
+                  onClose();
+                }}
+                className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-800 font-medium cursor-pointer pl-2 border-l border-slate-300"
+                title="Lập Bảng đối soát công nợ định kỳ (SOA) cho khách hàng này"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Đối Soát SOA</span>
               </button>
             )}
           </div>

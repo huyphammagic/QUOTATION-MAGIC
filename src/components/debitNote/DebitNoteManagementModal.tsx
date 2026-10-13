@@ -30,6 +30,7 @@ interface DebitNoteManagementModalProps {
   quotes: QuoteData[];
   onOpenDebitNoteForQuote: (quote: QuoteData) => void;
   onOpenPaymentHub?: (quoteId: string) => void;
+  onOpenStatementOfAccount?: (customerName?: string) => void;
 }
 
 export const DebitNoteManagementModal: React.FC<DebitNoteManagementModalProps> = ({
@@ -37,7 +38,8 @@ export const DebitNoteManagementModal: React.FC<DebitNoteManagementModalProps> =
   onClose,
   quotes,
   onOpenDebitNoteForQuote,
-  onOpenPaymentHub
+  onOpenPaymentHub,
+  onOpenStatementOfAccount
 }) => {
   const [allDebitNotes, setAllDebitNotes] = useState<DebitNoteRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -140,6 +142,18 @@ export const DebitNoteManagementModal: React.FC<DebitNoteManagementModalProps> =
               <option value="SENT">Đã gửi khách (Sent)</option>
               <option value="PAID">Đã thanh toán (Paid)</option>
             </select>
+
+            {onOpenStatementOfAccount && (
+              <button
+                type="button"
+                onClick={() => { onOpenStatementOfAccount(); onClose(); }}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer shrink-0"
+                title="Mở Bảng đối soát công nợ định kỳ (SOA)"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Bảng Đối Soát SOA</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -198,6 +212,20 @@ export const DebitNoteManagementModal: React.FC<DebitNoteManagementModalProps> =
                     </div>
 
                     <div className="flex items-center space-x-1 pl-3 border-l border-slate-100">
+                      {onOpenStatementOfAccount && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenStatementOfAccount(dn.customer.companyName || dn.customer.customerName);
+                            onClose();
+                          }}
+                          className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                          title="Lập Bảng đối soát công nợ (SOA) cho khách hàng này"
+                        >
+                          <FileText className="w-4 h-4" />
+                        </button>
+                      )}
+
                       <button
                         onClick={(e) => { e.stopPropagation(); exportDebitNotePdf(dn); }}
                         className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
