@@ -70,6 +70,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, AnalyticsPermission[]> = {
 };
 
 export type DashboardTab = 
+  | 'executive_cockpit'
   | 'overview' 
   | 'quotation' 
   | 'sales' 

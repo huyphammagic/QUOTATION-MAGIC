@@ -64,7 +64,9 @@ import {
   ShieldAlert,
   Calculator,
   BarChart3,
-  Target
+  Target,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -165,6 +167,7 @@ export interface NavItem {
   shortcut?: string;
   restricted?: boolean;
   requiredRoleDesc?: string;
+  isCore?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -239,11 +242,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenAuthModal,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => loadSavedSidebarCollapsed());
+  const [isMinimalMode, setIsMinimalMode] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('LOGISTICS_SIDEBAR_MINIMAL_MODE');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [activeRole, setActiveRole] = useState<UserRole>(currentUserRole);
   const [activeLang, setActiveLang] = useState<NavigationLanguage>(language);
   const [showRoleSelector, setShowRoleSelector] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const toggleMinimalMode = () => {
+    setIsMinimalMode(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('LOGISTICS_SIDEBAR_MINIMAL_MODE', String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   useEffect(() => {
     setActiveRole(currentUserRole);
@@ -415,6 +436,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Sparkles,
       group: 'quotation',
       action: () => onOpenSmartQuotationWorkspace && onOpenSmartQuotationWorkspace(),
+      isCore: true,
     },
     {
       id: 'quotations_all',
@@ -424,6 +446,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       action: () => onOpenSavedQuotes('ALL'),
       badge: savedQuotes.length > 0 ? savedQuotes.length : null,
       badgeTone: 'default',
+      isCore: true,
     },
     {
       id: 'quotations_draft',
@@ -433,6 +456,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       action: () => onOpenSavedQuotes('DRAFT'),
       badge: draftsCount > 0 ? draftsCount : null,
       badgeTone: 'default',
+      isCore: false,
     },
     {
       id: 'quotations_pending',
@@ -442,6 +466,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       action: () => onOpenSavedQuotes('PENDING_APPROVAL'),
       badge: pendingApprovalCount > 0 ? pendingApprovalCount : null,
       badgeTone: pendingApprovalCount > 0 ? 'amber' : 'default',
+      isCore: pendingApprovalCount > 0,
     },
     {
       id: 'quotations_sent',
@@ -451,53 +476,65 @@ export const Sidebar: React.FC<SidebarProps> = ({
       action: () => onOpenSavedQuotes('SENT'),
       badge: sentCount > 0 ? sentCount : null,
       badgeTone: 'emerald',
+      isCore: false,
     },
     {
       id: 'quotation_payments',
-      label: activeLang === 'vi' ? 'Kiểm Soát Thu Nợ & Thanh Toán' : 'Payments & Receivables',
+      label: activeLang === 'vi' ? 'Kiểm Soát Thu Nợ' : 'Payments & Receivables',
       icon: CreditCard,
       group: 'quotation',
       action: () => onOpenQuotationPayments && onOpenQuotationPayments(),
-      badge: 'Công Nợ',
-      badgeTone: 'emerald',
+      isCore: false,
     },
     {
       id: 'debit_note_management',
-      label: activeLang === 'vi' ? 'Quản Lý Debit Note (Giấy Báo Nợ)' : 'Debit Note Management',
+      label: activeLang === 'vi' ? 'Quản Lý Debit Note' : 'Debit Note Management',
       icon: Receipt,
       group: 'quotation',
       action: () => onOpenDebitNoteManagement && onOpenDebitNoteManagement(),
-      badge: 'D/N',
-      badgeTone: 'sky',
+      isCore: true,
     },
     {
       id: 'multi_option_quotation',
-      label: activeLang === 'vi' ? 'Báo Giá Đa Phương Án (Good-Better-Best)' : 'Multi-Option Pricing Matrix',
+      label: activeLang === 'vi' ? 'Báo Giá Đa Phương Án' : 'Multi-Option Pricing Matrix',
       icon: Sparkles,
       group: 'quotation',
       action: () => onOpenMultiOptionQuote && onOpenMultiOptionQuote(),
-      badge: '3 Tiers',
-      badgeTone: 'amber',
+      isCore: false,
     },
 
     // === 2. TRÍ TUỆ BÁN HÀNG & RADAR AI (SALES INTELLIGENCE & RADARS) ===
     {
+      id: 'competitor_radar',
+      label: activeLang === 'vi' ? 'Quản Lý Đối Thủ & Quét AI' : 'Competitor Radar & AI',
+      icon: Swords,
+      group: 'radar',
+      action: () => onOpenCompetitorRadar && onOpenCompetitorRadar(),
+      isCore: true,
+    },
+    {
+      id: 'rfq_inbox',
+      label: activeLang === 'vi' ? 'Hộp Thư RFQ AI' : 'Smart RFQ Inbox',
+      icon: Inbox,
+      group: 'radar',
+      action: () => onOpenRfqInbox && onOpenRfqInbox(),
+      isCore: true,
+    },
+    {
       id: 'customer_dna_power_map',
-      label: activeLang === 'vi' ? 'Giải Mã Khách Hàng (DNA & Map)' : 'Customer DNA & Power Map',
+      label: activeLang === 'vi' ? 'Giải Mã Khách Hàng (DNA)' : 'Customer DNA & Power Map',
       icon: Dna,
       group: 'radar',
       action: () => onOpenCustomerDna && onOpenCustomerDna(),
-      badge: 'KYS 360°',
-      badgeTone: 'sky',
+      isCore: false,
     },
     {
       id: 'golden_hour_radar',
-      label: activeLang === 'vi' ? 'Bắt Nhịp Giờ Vàng (Gọi Điện)' : 'Golden Hour Closer',
+      label: activeLang === 'vi' ? 'Bắt Nhịp Giờ Vàng Chốt Sale' : 'Golden Hour Closer',
       icon: Flame,
       group: 'radar',
       action: () => onOpenGoldenHourRadar && onOpenGoldenHourRadar(),
-      badge: 'Giờ Vàng 🔥',
-      badgeTone: 'rose',
+      isCore: false,
     },
     {
       id: 'enterprise_tender_engine',
@@ -505,8 +542,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Building2,
       group: 'radar',
       action: () => onOpenEnterpriseTender && onOpenEnterpriseTender(),
-      badge: 'Tender 🏭',
-      badgeTone: 'sky',
+      isCore: false,
     },
     {
       id: 'concession_guard',
@@ -514,35 +550,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Scale,
       group: 'radar',
       action: () => onOpenConcessionGuard && onOpenConcessionGuard(),
-      badge: 'Đổi Trác ⚖️',
-      badgeTone: 'emerald',
-    },
-    {
-      id: 'competitor_radar',
-      label: activeLang === 'vi' ? 'Quản Lý Đối Thủ & Quét AI FWD' : 'Competitor Radar & AI FWD',
-      icon: Swords,
-      group: 'radar',
-      action: () => onOpenCompetitorRadar && onOpenCompetitorRadar(),
-      badge: 'SWOT AI ⚔️',
-      badgeTone: 'sky',
+      isCore: false,
     },
     {
       id: 'customer_reengagement',
-      label: activeLang === 'vi' ? 'Đánh Thức Khách Cũ (Chu Kỳ)' : 'Shipper Re-engagement',
+      label: activeLang === 'vi' ? 'Đánh Thức Khách Cũ' : 'Shipper Re-engagement',
       icon: UserCheck,
       group: 'radar',
       action: () => onOpenCustomerReengagement && onOpenCustomerReengagement(),
-      badge: dormantCustomersCount > 0 ? `${dormantCustomersCount} cần gọi` : undefined,
+      badge: dormantCustomersCount > 0 ? dormantCustomersCount : undefined,
       badgeTone: 'amber',
-    },
-    {
-      id: 'rfq_inbox',
-      label: activeLang === 'vi' ? 'Hộp Thư RFQ AI (5 Giây)' : 'Smart RFQ Inbox (5s)',
-      icon: Inbox,
-      group: 'radar',
-      action: () => onOpenRfqInbox && onOpenRfqInbox(),
-      badge: '3 mới',
-      badgeTone: 'emerald',
+      isCore: false,
     },
     {
       id: 'deal_closing_accelerator',
@@ -550,17 +568,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Award,
       group: 'radar',
       action: () => onOpenDealCloser && onOpenDealCloser(),
-      badge: 'Hot Deal',
-      badgeTone: 'emerald',
+      isCore: false,
     },
     {
       id: 'engagement_radar',
-      label: activeLang === 'vi' ? 'Radar Khách Trực Tuyến (Live)' : 'Live Engagement Radar',
+      label: activeLang === 'vi' ? 'Radar Khách Trực Tuyến' : 'Live Engagement Radar',
       icon: Radar,
       group: 'radar',
       action: () => onOpenEngagementRadar && onOpenEngagementRadar(),
-      badge: activeEngagementsCount > 0 ? `${activeEngagementsCount} online` : undefined,
+      badge: activeEngagementsCount > 0 ? activeEngagementsCount : undefined,
       badgeTone: activeEngagementsCount > 0 ? 'emerald' : 'default',
+      isCore: false,
     },
     {
       id: 'opportunity_radar',
@@ -568,6 +586,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Radar,
       group: 'radar',
       action: () => onOpenOpportunityRadar && onOpenOpportunityRadar(),
+      isCore: false,
     },
 
     // === 3. VẬN HÀNH & RỦI RO CẢNG (OPERATIONS & LOGISTICS RISK) ===
@@ -577,8 +596,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Radar,
       group: 'operations',
       action: () => onOpenControlTower && onOpenControlTower(),
-      badge: exceptionsCount > 0 ? `${exceptionsCount} cảnh báo` : undefined,
+      badge: exceptionsCount > 0 ? exceptionsCount : undefined,
       badgeTone: exceptionsCount > 0 ? 'rose' : 'default',
+      isCore: true,
     },
     {
       id: 'ops_shipments',
@@ -588,15 +608,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       action: () => onOpenShipmentWorkspace && onOpenShipmentWorkspace(),
       badge: shipmentsCount > 0 ? shipmentsCount : undefined,
       badgeTone: 'sky',
+      isCore: true,
     },
     {
       id: 'carrier_invoice_audit',
-      label: activeLang === 'vi' ? 'Đối Soát Cước & Chặn Rò Rỉ' : 'Carrier Invoice Audit & Guard',
+      label: activeLang === 'vi' ? 'Đối Soát Cước Hãng Tàu' : 'Carrier Invoice Audit',
       icon: ShieldAlert,
       group: 'operations',
       action: () => onOpenCarrierInvoiceAudit && onOpenCarrierInvoiceAudit(),
-      badge: 'Chặn Lỗ AI',
-      badgeTone: 'rose',
+      isCore: false,
     },
     {
       id: 'ops_action_center',
@@ -604,29 +624,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Clock,
       group: 'operations',
       action: () => onOpenActionCenter && onOpenActionCenter(),
-      badge: deadlinesCount > 0 ? `${deadlinesCount} việc` : undefined,
+      badge: deadlinesCount > 0 ? deadlinesCount : undefined,
       badgeTone: deadlinesCount > 0 ? 'amber' : 'default',
+      isCore: false,
     },
     {
       id: 'dem_det_port_radar',
-      label: activeLang === 'vi' ? 'Bộ Tính DEM/DET & Kẹt Cảng' : 'DEM/DET & Port Risk Radar',
+      label: activeLang === 'vi' ? 'Bộ Tính DEM/DET & Cảng' : 'DEM/DET & Port Risk Radar',
       icon: Anchor,
       group: 'operations',
       action: () => onOpenDemDetPort && onOpenDemDetPort(),
-      badge: 'Free-Time AI',
-      badgeTone: 'sky',
+      isCore: false,
     },
     {
       id: 'validity_surcharge_radar',
-      label: activeLang === 'vi' ? 'Hiệu Lực Báo Giá & Phụ Phí GRI' : 'Rate Validity & GRI Radar',
+      label: activeLang === 'vi' ? 'Hiệu Lực & Phụ Phí GRI' : 'Rate Validity & GRI Radar',
       icon: Flame,
       group: 'operations',
       action: () => onOpenValiditySurcharge && onOpenValiditySurcharge(),
-      badge: 'GRI Alert',
-      badgeTone: 'rose',
+      isCore: false,
     },
 
-    // === 3. BIỂU CƯỚC & ĐỊNH GIÁ (RATES & PRICING) ===
+    // === 4. BIỂU CƯỚC & ĐỊNH GIÁ (RATES & PRICING) ===
     {
       id: 'pricing_rates',
       label: activeLang === 'vi' ? 'Biểu Cước Master Rates' : 'Master Rates Hub',
@@ -634,6 +653,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       group: 'pricing',
       action: () => onOpenMasterRateHub && onOpenMasterRateHub('RATES'),
       badge: rateMastersCount > 0 ? rateMastersCount : null,
+      isCore: true,
+    },
+    {
+      id: 'freight_rate_benchmarking',
+      label: activeLang === 'vi' ? 'Đối Soát Cước & Biên Lãi P.72' : 'Freight Benchmark P.72',
+      icon: BarChart3,
+      group: 'pricing',
+      action: () => onOpenFreightRateBenchmarking && onOpenFreightRateBenchmarking(),
+      isCore: true,
     },
     {
       id: 'pricing_contracts',
@@ -642,6 +670,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       group: 'pricing',
       action: () => onOpenContracts && onOpenContracts(),
       badge: contractsCount > 0 ? contractsCount : null,
+      isCore: false,
     },
     {
       id: 'pricing_search',
@@ -649,6 +678,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Search,
       group: 'pricing',
       action: () => onOpenRateSearch && onOpenRateSearch(),
+      isCore: false,
     },
     {
       id: 'pricing_smart',
@@ -656,26 +686,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Sparkles,
       group: 'pricing',
       action: () => onOpenSmartAssistant && onOpenSmartAssistant(),
-      badge: 'AI',
-      badgeTone: 'emerald',
+      isCore: false,
     },
     {
       id: 'customs_tariff_ai',
-      label: activeLang === 'vi' ? 'Tra Cứu Mã HS & Thuế AI' : 'AI HS Code & Tariff',
+      label: activeLang === 'vi' ? 'Tra Mã HS & Thuế AI' : 'AI HS Code & Tariff',
       icon: Calculator,
       group: 'pricing',
       action: () => onOpenHsCodeTariff && onOpenHsCodeTariff(),
-      badge: 'HS AI',
-      badgeTone: 'emerald',
-    },
-    {
-      id: 'freight_rate_benchmarking',
-      label: activeLang === 'vi' ? 'Đối Soát Cước & Biên Lãi AI' : 'Freight Benchmark & Margin AI',
-      icon: BarChart3,
-      group: 'pricing',
-      action: () => onOpenFreightRateBenchmarking && onOpenFreightRateBenchmarking(),
-      badge: 'P.72',
-      badgeTone: 'sky',
+      isCore: false,
     },
     {
       id: 'pricing_profit',
@@ -685,6 +704,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       action: () => onOpenProfitIntelligence && onOpenProfitIntelligence(),
       restricted: !canViewProfitability,
       requiredRoleDesc: 'RBAC',
+      isCore: false,
     },
     {
       id: 'pricing_policies',
@@ -694,6 +714,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       action: () => onOpenPricingPolicies && onOpenPricingPolicies(),
       restricted: !isAdminOrManager,
       requiredRoleDesc: 'Manager',
+      isCore: false,
     },
     {
       id: 'decision_workspace',
@@ -701,31 +722,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: SlidersHorizontal,
       group: 'pricing',
       action: () => onOpenDecisionWorkspace && onOpenDecisionWorkspace(),
+      isCore: false,
     },
 
-    // === 4. TÀI LIỆU & ẤN BẢN (DOCUMENTS & OUTPUT) ===
-    {
-      id: 'ai_document_parser',
-      label: activeLang === 'vi' ? 'Trích Xuất Chứng Từ AI (OCR)' : 'AI Document OCR Parser',
-      icon: Sparkles,
-      group: 'documents',
-      action: () => onOpenDocumentParser && onOpenDocumentParser(),
-      badge: 'AI OCR',
-      badgeTone: 'emerald',
-    },
+    // === 5. TÀI LIỆU & ẤN BẢN (DOCUMENTS & OUTPUT) ===
     {
       id: 'quotation_preview',
       label: activeLang === 'vi' ? 'Xem Trước Bản In (A4)' : 'Print Preview (A4)',
       icon: Printer,
       group: 'documents',
       action: () => onOpenPreview && onOpenPreview(),
+      isCore: true,
+    },
+    {
+      id: 'ai_document_parser',
+      label: activeLang === 'vi' ? 'Trích Xuất Chứng Từ AI' : 'AI Document Parser',
+      icon: Sparkles,
+      group: 'documents',
+      action: () => onOpenDocumentParser && onOpenDocumentParser(),
+      isCore: false,
     },
     {
       id: 'quotation_document_center',
-      label: activeLang === 'vi' ? 'Trung Tâm Tài Liệu & Gửi' : 'Document & Comm Hub',
+      label: activeLang === 'vi' ? 'Trung Tâm Tài Liệu' : 'Document & Comm Hub',
       icon: Layers,
       group: 'documents',
       action: () => onOpenDocumentCenter && onOpenDocumentCenter(),
+      isCore: false,
     },
     {
       id: 'quotation_snapshots',
@@ -733,6 +756,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: History,
       group: 'documents',
       action: () => onOpenDocumentHistory && onOpenDocumentHistory(),
+      isCore: false,
     },
     {
       id: 'quotation_templates',
@@ -740,6 +764,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Layout,
       group: 'documents',
       action: () => onOpenTemplateBuilder && onOpenTemplateBuilder(),
+      isCore: false,
     },
     {
       id: 'quotation_email_templates',
@@ -747,9 +772,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Mail,
       group: 'documents',
       action: () => onOpenEmailTemplates && onOpenEmailTemplates(),
+      isCore: false,
     },
 
-    // === 5. DANH MỤC & ĐỐI TÁC (MASTER DATA & CRM) ===
+    // === 6. DANH MỤC & ĐỐI TÁC (MASTER DATA & CRM) ===
     {
       id: 'master_customers',
       label: activeLang === 'vi' ? 'Danh Bạ Khách Hàng (CRM)' : 'Customer Directory',
@@ -757,6 +783,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       group: 'masterData',
       action: onOpenCustomers,
       badge: customersCount > 0 ? customersCount : null,
+      isCore: true,
     },
     {
       id: 'quotation_followup',
@@ -764,6 +791,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Calendar,
       group: 'masterData',
       action: () => onOpenFollowUps && onOpenFollowUps(),
+      isCore: false,
     },
     {
       id: 'master_suppliers',
@@ -771,6 +799,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Ship,
       group: 'masterData',
       action: () => onOpenMasterRateHub && onOpenMasterRateHub('SUPPLIERS'),
+      isCore: false,
     },
     {
       id: 'master_charges',
@@ -779,6 +808,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       group: 'masterData',
       action: () => onOpenMasterRateHub && onOpenMasterRateHub('CHARGES'),
       badge: chargeMastersCount > 0 ? chargeMastersCount : null,
+      isCore: false,
     },
     {
       id: 'master_surcharges',
@@ -787,6 +817,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       group: 'masterData',
       action: onOpenSurchargeCatalog,
       badge: surchargesCount > 0 ? surchargesCount : null,
+      isCore: false,
     },
     {
       id: 'master_ports',
@@ -794,6 +825,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Anchor,
       group: 'masterData',
       action: () => onOpenMasterDataReference && onOpenMasterDataReference('PORT'),
+      isCore: false,
     },
     {
       id: 'master_containers',
@@ -801,6 +833,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Box,
       group: 'masterData',
       action: () => onOpenMasterDataReference && onOpenMasterDataReference('CONTAINER_TYPE'),
+      isCore: false,
     },
     {
       id: 'master_incoterms',
@@ -808,6 +841,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: FileCheck2,
       group: 'masterData',
       action: () => onOpenMasterDataReference && onOpenMasterDataReference('INCOTERM'),
+      isCore: false,
     },
     {
       id: 'master_payment_terms',
@@ -815,15 +849,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: CreditCard,
       group: 'masterData',
       action: () => onOpenMasterDataReference && onOpenMasterDataReference('PAYMENT_TERM'),
+      isCore: false,
     },
 
-    // === 6. BÁO CÁO & PHÂN TÍCH (ANALYTICS & BI) ===
+    // === 7. BÁO CÁO & PHÂN TÍCH (ANALYTICS & BI) ===
     {
       id: 'analytics_overview',
       label: activeLang === 'vi' ? 'Báo Cáo Tổng Quan & KPIs' : 'Analytics & KPIs',
       icon: LayoutDashboard,
       group: 'analytics',
       action: () => onOpenDashboard && onOpenDashboard('OVERVIEW'),
+      isCore: true,
     },
     {
       id: 'analytics_funnel',
@@ -831,13 +867,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: TrendingUp,
       group: 'analytics',
       action: () => onOpenDashboard && onOpenDashboard('FUNNEL'),
+      isCore: false,
     },
     {
       id: 'analytics_sales',
-      label: activeLang === 'vi' ? 'Hiệu Suất Nhân Viên Sales' : 'Sales Performance',
+      label: activeLang === 'vi' ? 'Hiệu Suất Sales' : 'Sales Performance',
       icon: Users,
       group: 'analytics',
       action: () => onOpenDashboard && onOpenDashboard('SALES'),
+      isCore: false,
     },
     {
       id: 'analytics_lanes',
@@ -845,15 +883,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Compass,
       group: 'analytics',
       action: () => onOpenDashboard && onOpenDashboard('LANES_SERVICES'),
+      isCore: false,
     },
 
-    // === 7. HỆ THỐNG & CẤU HÌNH (SYSTEM & SETTINGS) ===
+    // === 8. HỆ THỐNG & CẤU HÌNH (SYSTEM & SETTINGS) ===
     {
       id: 'sys_profile',
       label: activeLang === 'vi' ? 'Hồ Sơ Doanh Nghiệp' : 'Company Profile',
       icon: Building2,
       group: 'system',
       action: () => onOpenCompanyProfile('profile'),
+      isCore: true,
     },
     {
       id: 'sys_financial',
@@ -861,6 +901,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Receipt,
       group: 'system',
       action: () => onOpenCompanyProfile('financial'),
+      isCore: false,
     },
     {
       id: 'sys_sales_bank',
@@ -868,13 +909,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: UserCheck,
       group: 'system',
       action: () => onOpenCompanyProfile('sales'),
+      isCore: false,
     },
     {
       id: 'sys_integrity',
-      label: activeLang === 'vi' ? 'Toàn Vẹn Dữ Liệu & Sức Khỏe' : 'Data Integrity Health',
+      label: activeLang === 'vi' ? 'Toàn Vẹn Dữ Liệu' : 'Data Integrity Health',
       icon: ShieldCheck,
       group: 'system',
       action: () => onOpenIntegrityDashboard && onOpenIntegrityDashboard(),
+      isCore: false,
     },
     {
       id: 'sys_audit',
@@ -882,6 +925,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: History,
       group: 'system',
       action: () => onOpenMasterRateHub && onOpenMasterRateHub('AUDIT'),
+      isCore: false,
     },
     {
       id: 'sys_backup',
@@ -889,6 +933,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Database,
       group: 'system',
       action: onOpenDataBackup,
+      isCore: false,
     },
   ];
 
@@ -988,6 +1033,58 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return allNavItems.filter(item => pinnedIds.includes(item.id));
   }, [allNavItems, pinnedIds]);
 
+  // Minimalist mode thematic groups (Only vital, high-frequency daily tools)
+  const minimalSections = useMemo(() => {
+    return [
+      {
+        id: 'min_quotes',
+        title: activeLang === 'vi' ? 'Báo Giá & Khách Hàng' : 'Quotations & CRM',
+        icon: FileText,
+        items: allNavItems.filter(i => 
+          ['smart_quotation_workspace', 'quotations_all', 'quotations_pending', 'master_customers', 'debit_note_management'].includes(i.id) &&
+          (i.id !== 'quotations_pending' || pendingApprovalCount > 0)
+        ),
+      },
+      {
+        id: 'min_intelligence',
+        title: activeLang === 'vi' ? 'Thị Trường & Radar AI' : 'Market & AI Radar',
+        icon: Sparkles,
+        items: allNavItems.filter(i => 
+          ['competitor_radar', 'rfq_inbox', 'freight_rate_benchmarking'].includes(i.id)
+        ),
+      },
+      {
+        id: 'min_operations',
+        title: activeLang === 'vi' ? 'Vận Hành & Cước Phí' : 'Operations & Rates',
+        icon: Ship,
+        items: allNavItems.filter(i => 
+          ['ops_control_tower', 'ops_shipments', 'pricing_rates'].includes(i.id)
+        ),
+      },
+      {
+        id: 'min_system',
+        title: activeLang === 'vi' ? 'Tài Liệu & Quản Trị' : 'Documents & System',
+        icon: Settings,
+        items: allNavItems.filter(i => 
+          ['quotation_preview', 'analytics_overview', 'sys_profile'].includes(i.id)
+        ),
+      },
+    ];
+  }, [allNavItems, activeLang, pendingApprovalCount]);
+
+  // Curated list for collapsed mode (Top 10 essential tools only, prevents 50+ icon vertical overflow)
+  const collapsedNavItems = useMemo(() => {
+    const pinned = allNavItems.filter(i => pinnedIds.includes(i.id));
+    const core = allNavItems.filter(i => i.isCore);
+    const combined = [...pinned];
+    for (const item of core) {
+      if (!combined.some(c => c.id === item.id)) {
+        combined.push(item);
+      }
+    }
+    return combined.slice(0, 10);
+  }, [allNavItems, pinnedIds]);
+
   const handleRoleSwitch = (newRole: UserRole) => {
     setActiveRole(newRole);
     if (onRoleChange) onRoleChange(newRole);
@@ -1070,7 +1167,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="button"
             onClick={() => handleAction(onNewQuote)}
             className={`w-full flex items-center ${
-              isCollapsed ? 'justify-center p-2.5' : 'justify-between px-3.5 py-2.5'
+              isCollapsed ? 'justify-center p-2.5' : 'justify-between px-3.5 py-2'
             } rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-sm shadow-indigo-600/25 btn-tactile cursor-pointer group`}
             title={isCollapsed ? (activeLang === 'vi' ? 'Tạo Báo Giá Mới (Ctrl+N)' : 'Create Quotation (Ctrl+N)') : undefined}
           >
@@ -1090,18 +1187,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        {/* Quick Search & Command Filter */}
+        {/* Quick Search & Minimalist View Mode Switch */}
         {!isCollapsed && (
-          <div className="px-2.5 pb-2 shrink-0">
-            <div className="relative">
+          <div className="px-2.5 pb-2 shrink-0 flex items-center gap-1.5">
+            <div className="relative flex-1">
               <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 ref={searchInputRef}
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={activeLang === 'vi' ? 'Tìm nhanh chức năng (Ctrl+K)...' : 'Search features (Ctrl+K)...'}
-                className="w-full pl-8 pr-7 py-2 text-xs bg-slate-900/90 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/60 focus:bg-slate-900 transition-all"
+                placeholder={activeLang === 'vi' ? 'Tìm nhanh (Ctrl+K)...' : 'Search (Ctrl+K)...'}
+                className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-900/90 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/60 focus:bg-slate-900 transition-all"
               />
               {searchQuery && (
                 <button
@@ -1113,6 +1210,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               )}
             </div>
+
+            {/* Toggle Minimalist Mode */}
+            <button
+              type="button"
+              onClick={toggleMinimalMode}
+              className={`h-7.5 px-2.5 rounded-xl border flex items-center gap-1 text-[11px] font-medium transition-all cursor-pointer shrink-0 ${
+                isMinimalMode
+                  ? 'bg-indigo-950/60 text-indigo-300 border-indigo-800/60 hover:bg-indigo-900/60 shadow-xs'
+                  : 'bg-slate-900/90 text-slate-400 border-slate-800 hover:text-slate-200 hover:bg-slate-800'
+              }`}
+              title={isMinimalMode ? (activeLang === 'vi' ? 'Đang bật Chế độ Tối giản (Click để xem đầy đủ)' : 'Minimal mode ON (Click to show full)') : (activeLang === 'vi' ? 'Đang xem Đầy đủ (Click để bật tối giản)' : 'Full mode (Click to switch to minimal)')}
+            >
+              {isMinimalMode ? <Eye className="w-3.5 h-3.5 text-indigo-400" /> : <EyeOff className="w-3.5 h-3.5 text-slate-400" />}
+              <span className="hidden sm:inline">{isMinimalMode ? (activeLang === 'vi' ? 'Tối giản' : 'Minimal') : (activeLang === 'vi' ? 'Đầy đủ' : 'Full')}</span>
+            </button>
           </div>
         )}
 
@@ -1219,9 +1331,152 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 })
               )}
             </div>
+          ) : isCollapsed ? (
+            /* COLLAPSED ICON RAIL: Show only the top 10 curated core/pinned tools */
+            <div className="space-y-1.5 py-1">
+              {collapsedNavItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeRouteId === item.id;
+                return (
+                  <div key={`collapsed-${item.id}`} className="relative group/tooltip flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (item.restricted) {
+                          if (onAccessDenied) onAccessDenied(item.label, item.requiredRoleDesc || activeRole);
+                          return;
+                        }
+                        handleAction(item.action);
+                      }}
+                      className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all cursor-pointer ${
+                        isActive 
+                          ? 'bg-indigo-600 text-white font-medium shadow-sm shadow-indigo-600/30' 
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+                      } ${item.restricted ? 'opacity-50' : ''}`}
+                      aria-label={item.label}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                    </button>
+
+                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2.5 hidden group-hover/tooltip:flex items-center gap-2 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg shadow-xl border border-slate-700/80 whitespace-nowrap z-50 pointer-events-none">
+                      <span>{item.label}</span>
+                      {item.badge && (
+                        <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-slate-800 text-slate-300">
+                          {item.badge}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : isMinimalMode ? (
+            /* MINIMALIST WORKSPACE: Pure, zero-noise, essential daily workflow */
+            <div className="space-y-3">
+              {minimalSections.map((section) => {
+                if (section.items.length === 0) return null;
+                const SectionIcon = section.icon;
+                return (
+                  <div key={section.id} className="space-y-1">
+                    <div className="px-2 pt-1 pb-0.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      <SectionIcon className="w-3 h-3 text-slate-500" />
+                      <span>{section.title}</span>
+                    </div>
+
+                    <div className="space-y-0.5">
+                      {section.items.map((item) => {
+                        const Icon = item.icon;
+                        const isPinned = pinnedIds.includes(item.id);
+                        const isActive = activeRouteId === item.id;
+                        return (
+                          <div
+                            key={item.id}
+                            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl transition-all duration-150 group btn-tactile ${
+                              isActive 
+                                ? 'bg-indigo-600/15 text-indigo-300 font-semibold border border-indigo-500/30 shadow-xs' 
+                                : 'text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent'
+                            } ${item.restricted ? 'opacity-60' : ''}`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (item.restricted) {
+                                  if (onAccessDenied) onAccessDenied(item.label, item.requiredRoleDesc || activeRole);
+                                  return;
+                                }
+                                handleAction(item.action);
+                              }}
+                              className="flex-1 flex items-center space-x-2.5 min-w-0 text-left cursor-pointer"
+                            >
+                              <Icon className={`w-3.5 h-3.5 shrink-0 transition-transform duration-150 group-hover:scale-110 ${isActive ? 'text-indigo-400' : 'text-slate-400 group-hover:text-slate-200'}`} />
+                              <span className="text-xs truncate">{item.label}</span>
+                            </button>
+
+                            <div className="flex items-center space-x-1.5 ml-2 shrink-0">
+                              {item.badge && (
+                                <span className="text-[10px] px-1.5 py-0.2 rounded font-mono font-medium border bg-slate-900 border-slate-800 text-slate-300">
+                                  {item.badge}
+                                </span>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={(e) => togglePin(e, item.id)}
+                                className={`p-0.5 rounded transition-opacity cursor-pointer ${
+                                  isPinned 
+                                    ? 'text-amber-400 opacity-100' 
+                                    : 'text-slate-600 opacity-0 group-hover:opacity-100 hover:text-amber-400'
+                                }`}
+                                title={isPinned ? 'Bỏ ghim' : 'Ghim'}
+                              >
+                                <Star className={`w-3 h-3 ${isPinned ? 'fill-amber-400 text-amber-400' : ''}`} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Minimal Mode Expander Button */}
+              <div className="pt-2 px-0.5">
+                <button
+                  type="button"
+                  onClick={toggleMinimalMode}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800/80 text-slate-400 hover:text-slate-200 transition-all text-left cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                    <div>
+                      <div className="text-[11px] font-semibold text-slate-300 group-hover:text-white">
+                        {activeLang === 'vi' ? 'Xem tất cả tính năng' : 'Show All Modules'}
+                      </div>
+                      <div className="text-[10px] text-slate-500">
+                        {activeLang === 'vi' ? 'Mở rộng 40+ nghiệp vụ nâng cao' : 'Expand 40+ advanced features'}
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-300 transition-transform group-hover:translate-x-0.5 shrink-0" />
+                </button>
+              </div>
+            </div>
           ) : (
-            /* 1. CORE QUOTATION & OPERATIONS WORKSPACE GROUPS */
+            /* FULL ADVANCED WORKSPACE (When Minimal Mode is turned OFF) */
             <>
+              {/* Return to Minimal Mode shortcut */}
+              <div className="pb-1 px-0.5">
+                <button
+                  type="button"
+                  onClick={toggleMinimalMode}
+                  className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-indigo-950/40 hover:bg-indigo-900/50 border border-indigo-800/50 text-indigo-300 text-[11px] font-medium transition-colors cursor-pointer"
+                >
+                  <Eye className="w-3 h-3 text-indigo-400" />
+                  <span>{activeLang === 'vi' ? 'Bật chế độ tối giản (Ẩn bớt)' : 'Switch to Minimalist View'}</span>
+                </button>
+              </div>
+
               {primaryWorkspaceGroups.map((group) => {
                 const groupItems = allNavItems.filter(item => item.group === group.key);
                 if (groupItems.length === 0) return null;
@@ -1233,37 +1488,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 return (
                   <div key={group.key} className="space-y-0.5">
                     {/* Category Header */}
-                    {!isCollapsed ? (
-                      <button
-                        type="button"
-                        onClick={() => toggleGroup(group.key)}
-                        className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-[11px] font-semibold transition-all text-left cursor-pointer btn-tactile ${
-                          hasActiveChild 
-                            ? 'text-indigo-300 bg-indigo-950/20' 
-                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
-                        }`}
-                        aria-expanded={isExpanded}
-                      >
-                        <div className="flex items-center space-x-2.5 min-w-0">
-                          <GroupIcon className={`w-3.5 h-3.5 shrink-0 ${hasActiveChild ? 'text-indigo-400' : 'text-slate-500'}`} />
-                          <span className="truncate">{group.title}</span>
-                        </div>
-
-                        <div className="flex items-center space-x-1.5 shrink-0 ml-2">
-                          {group.quickCount && !isExpanded && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-md font-mono text-slate-400 bg-slate-900/90 border border-slate-800">
-                              {group.quickCount}
-                            </span>
-                          )}
-                          <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
-                        </div>
-                      </button>
-                    ) : (
-                      /* Collapsed icon divider */
-                      <div className="w-full py-1.5 flex items-center justify-center border-t border-slate-800/80">
-                        <GroupIcon className={`w-3.5 h-3.5 ${hasActiveChild ? 'text-emerald-400' : 'text-slate-500'}`} />
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(group.key)}
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition-all text-left cursor-pointer btn-tactile ${
+                        hasActiveChild 
+                          ? 'text-indigo-300 bg-indigo-950/20' 
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                      }`}
+                      aria-expanded={isExpanded}
+                    >
+                      <div className="flex items-center space-x-2.5 min-w-0">
+                        <GroupIcon className={`w-3.5 h-3.5 shrink-0 ${hasActiveChild ? 'text-indigo-400' : 'text-slate-500'}`} />
+                        <span className="truncate">{group.title}</span>
                       </div>
-                    )}
+
+                      <div className="flex items-center space-x-1.5 shrink-0 ml-2">
+                        {group.quickCount && !isExpanded && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-md font-mono text-slate-400 bg-slate-900/90 border border-slate-800">
+                            {group.quickCount}
+                          </span>
+                        )}
+                        <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
+                      </div>
+                    </button>
 
                     {/* Group Items */}
                     {isExpanded && (
@@ -1273,42 +1521,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           const isPinned = pinnedIds.includes(item.id);
                           const isActive = activeRouteId === item.id;
 
-                          // Collapsed Mode Item
-                          if (isCollapsed) {
-                            return (
-                              <div key={item.id} className="relative group/tooltip">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (item.restricted) {
-                                      if (onAccessDenied) onAccessDenied(item.label, item.requiredRoleDesc || activeRole);
-                                      return;
-                                    }
-                                    handleAction(item.action);
-                                  }}
-                                  className={`w-full flex items-center justify-center p-2 rounded-lg transition-colors cursor-pointer ${
-                                    isActive 
-                                      ? 'bg-slate-800 text-white font-medium border-l-2 border-emerald-400' 
-                                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                                  } ${item.restricted ? 'opacity-50' : ''}`}
-                                  aria-label={item.label}
-                                >
-                                  <Icon className="w-4 h-4 shrink-0" />
-                                </button>
-
-                                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover/tooltip:flex items-center gap-2 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg shadow-xl border border-slate-800 whitespace-nowrap z-50 pointer-events-none">
-                                  <span>{item.label}</span>
-                                  {item.badge && (
-                                    <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-slate-800 text-slate-300">
-                                      {item.badge}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          }
-
-                          // Expanded Mode Item
                           return (
                             <div
                               key={item.id}
@@ -1341,17 +1553,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 )}
 
                                 {item.badge && (
-                                  <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-medium border ${
-                                    item.badgeTone === 'amber'
-                                      ? 'bg-amber-950/40 border-amber-800/60 text-amber-300'
-                                      : item.badgeTone === 'emerald'
-                                      ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-300'
-                                      : item.badgeTone === 'rose'
-                                      ? 'bg-rose-950/40 border-rose-800/60 text-rose-300'
-                                      : item.badgeTone === 'sky'
-                                      ? 'bg-sky-950/40 border-sky-800/60 text-sky-300'
-                                      : 'bg-slate-900 border-slate-800 text-slate-400'
-                                  }`}>
+                                  <span className="text-[10px] px-1.5 py-0.2 rounded font-mono font-medium border bg-slate-900 border-slate-800 text-slate-400">
                                     {item.badge}
                                   </span>
                                 )}
@@ -1378,30 +1580,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 );
               })}
 
-              {/* 2. DEDICATED COLLAPSIBLE SYSTEM MANAGEMENT SECTION */}
+              {/* Dedicated collapsible system management section */}
               <div className="pt-2">
-                {!isCollapsed ? (
-                  <div className="px-2 py-1.5 mb-1 flex items-center justify-between border-t border-slate-800/80 pt-2.5">
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                      <SlidersHorizontal className="w-3 h-3 text-slate-500" />
-                      <span>{activeLang === 'vi' ? 'Quản Trị Hệ Thống' : 'System Administration'}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => toggleAllSystemGroups()}
-                      className="text-[10px] font-medium text-slate-400 hover:text-indigo-300 transition-colors cursor-pointer px-1.5 py-0.5 rounded bg-slate-900/80 border border-slate-800 hover:border-slate-700"
-                      title={isAnySystemGroupExpanded ? 'Thu gọn các menu quản trị' : 'Mở rộng các menu quản trị'}
-                    >
-                      {isAnySystemGroupExpanded 
-                        ? (activeLang === 'vi' ? 'Thu gọn' : 'Collapse') 
-                        : (activeLang === 'vi' ? 'Mở rộng' : 'Expand')}
-                    </button>
+                <div className="px-2 py-1.5 mb-1 flex items-center justify-between border-t border-slate-800/80 pt-2.5">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    <SlidersHorizontal className="w-3 h-3 text-slate-500" />
+                    <span>{activeLang === 'vi' ? 'Quản Trị Hệ Thống' : 'System Administration'}</span>
                   </div>
-                ) : (
-                  <div className="my-1.5 border-t border-slate-800/80" />
-                )}
+                  <button
+                    type="button"
+                    onClick={() => toggleAllSystemGroups()}
+                    className="text-[10px] font-medium text-slate-400 hover:text-indigo-300 transition-colors cursor-pointer px-1.5 py-0.5 rounded bg-slate-900/80 border border-slate-800 hover:border-slate-700"
+                    title={isAnySystemGroupExpanded ? 'Thu gọn' : 'Mở rộng'}
+                  >
+                    {isAnySystemGroupExpanded 
+                      ? (activeLang === 'vi' ? 'Thu gọn' : 'Collapse') 
+                      : (activeLang === 'vi' ? 'Mở rộng' : 'Expand')}
+                  </button>
+                </div>
 
-                {/* System Management Groups: Master Data, Analytics, System */}
                 <div className="space-y-1">
                   {systemManagementGroups.map((group) => {
                     const groupItems = allNavItems.filter(item => item.group === group.key);
@@ -1414,52 +1611,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     return (
                       <div 
                         key={group.key} 
-                        className={`space-y-0.5 ${
-                          !isCollapsed 
-                            ? 'bg-slate-900/40 rounded-xl border border-slate-800/60 p-1 transition-colors' 
-                            : ''
-                        }`}
+                        className="space-y-0.5 bg-slate-900/40 rounded-xl border border-slate-800/60 p-1 transition-colors"
                       >
-                        {/* Collapsible Header */}
-                        {!isCollapsed ? (
-                          <button
-                            type="button"
-                            onClick={() => toggleGroup(group.key)}
-                            className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] font-semibold transition-all text-left cursor-pointer btn-tactile ${
-                              hasActiveChild 
-                                ? 'text-indigo-300 bg-indigo-950/30' 
-                                : isExpanded
-                                ? 'text-slate-200 bg-slate-800/50'
-                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-                            }`}
-                            aria-expanded={isExpanded}
-                          >
-                            <div className="flex items-center space-x-2 min-w-0">
-                              <GroupIcon className={`w-3.5 h-3.5 shrink-0 ${hasActiveChild ? 'text-indigo-400' : 'text-slate-400'}`} />
-                              <span className="truncate">{group.title}</span>
-                            </div>
-
-                            <div className="flex items-center space-x-1.5 shrink-0 ml-1.5">
-                              {group.quickCount && (
-                                <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
-                                  isExpanded 
-                                    ? 'text-slate-500 bg-slate-900/60' 
-                                    : 'text-slate-300 bg-slate-800 border border-slate-700/60'
-                                }`}>
-                                  {group.quickCount}
-                                </span>
-                              )}
-                              <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
-                            </div>
-                          </button>
-                        ) : (
-                          /* Collapsed icon divider */
-                          <div className="w-full py-1.5 flex items-center justify-center border-t border-slate-800/80">
-                            <GroupIcon className={`w-3.5 h-3.5 ${hasActiveChild ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        <button
+                          type="button"
+                          onClick={() => toggleGroup(group.key)}
+                          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] font-semibold transition-all text-left cursor-pointer btn-tactile ${
+                            hasActiveChild 
+                              ? 'text-indigo-300 bg-indigo-950/30' 
+                              : isExpanded
+                              ? 'text-slate-200 bg-slate-800/50'
+                              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                          }`}
+                          aria-expanded={isExpanded}
+                        >
+                          <div className="flex items-center space-x-2 min-w-0">
+                            <GroupIcon className={`w-3.5 h-3.5 shrink-0 ${hasActiveChild ? 'text-indigo-400' : 'text-slate-400'}`} />
+                            <span className="truncate">{group.title}</span>
                           </div>
-                        )}
 
-                        {/* Collapsible Children */}
+                          <div className="flex items-center space-x-1.5 shrink-0 ml-1.5">
+                            {group.quickCount && (
+                              <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
+                                isExpanded 
+                                  ? 'text-slate-500 bg-slate-900/60' 
+                                  : 'text-slate-300 bg-slate-800 border border-slate-700/60'
+                              }`}>
+                                {group.quickCount}
+                              </span>
+                            )}
+                            <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
+                          </div>
+                        </button>
+
                         {isExpanded && (
                           <div className="space-y-0.5 pt-0.5 border-t border-slate-800/40 mt-0.5 pl-0.5">
                             {groupItems.map((item) => {
@@ -1467,42 +1651,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                               const isPinned = pinnedIds.includes(item.id);
                               const isActive = activeRouteId === item.id;
 
-                              // Collapsed Mode Item
-                              if (isCollapsed) {
-                                return (
-                                  <div key={item.id} className="relative group/tooltip">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        if (item.restricted) {
-                                          if (onAccessDenied) onAccessDenied(item.label, item.requiredRoleDesc || activeRole);
-                                          return;
-                                        }
-                                        handleAction(item.action);
-                                      }}
-                                      className={`w-full flex items-center justify-center p-2 rounded-lg transition-colors cursor-pointer ${
-                                        isActive 
-                                          ? 'bg-slate-800 text-white font-medium border-l-2 border-emerald-400' 
-                                          : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                                      } ${item.restricted ? 'opacity-50' : ''}`}
-                                      aria-label={item.label}
-                                    >
-                                      <Icon className="w-4 h-4 shrink-0" />
-                                    </button>
-
-                                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover/tooltip:flex items-center gap-2 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg shadow-xl border border-slate-800 whitespace-nowrap z-50 pointer-events-none">
-                                      <span>{item.label}</span>
-                                      {item.badge && (
-                                        <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-slate-800 text-slate-300">
-                                          {item.badge}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              }
-
-                              // Expanded Mode Item
                               return (
                                 <div
                                   key={item.id}
@@ -1528,24 +1676,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                   </button>
 
                                   <div className="flex items-center space-x-1.5 ml-2 shrink-0">
-                                    {item.restricted && (
-                                      <span title={item.requiredRoleDesc} className="inline-flex items-center">
-                                        <Lock className="w-3 h-3 text-rose-400 shrink-0" />
-                                      </span>
-                                    )}
-
                                     {item.badge && (
-                                      <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-medium border ${
-                                        item.badgeTone === 'amber'
-                                          ? 'bg-amber-950/40 border-amber-800/60 text-amber-300'
-                                          : item.badgeTone === 'emerald'
-                                          ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-300'
-                                          : item.badgeTone === 'rose'
-                                          ? 'bg-rose-950/40 border-rose-800/60 text-rose-300'
-                                          : item.badgeTone === 'sky'
-                                          ? 'bg-sky-950/40 border-sky-800/60 text-sky-300'
-                                          : 'bg-slate-900 border-slate-800 text-slate-400'
-                                      }`}>
+                                      <span className="text-[10px] px-1.5 py-0.2 rounded font-mono font-medium border bg-slate-900 border-slate-800 text-slate-400">
                                         {item.badge}
                                       </span>
                                     )}

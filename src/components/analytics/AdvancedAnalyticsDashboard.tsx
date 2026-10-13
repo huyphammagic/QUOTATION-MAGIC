@@ -26,8 +26,10 @@ import { ProfitabilityAnalyticsView } from './ProfitabilityAnalyticsView';
 import { LaneAndServiceAnalyticsView } from './LaneAndServiceAnalyticsView';
 import { AgingAndFollowUpView } from './AgingAndFollowUpView';
 import { DataQualityView } from './DataQualityView';
+import { ExecutiveCockpitView } from './ExecutiveCockpitView';
 
 import { 
+  Compass,
   LayoutDashboard, 
   GitCommit, 
   Trophy, 
@@ -60,6 +62,7 @@ interface AdvancedAnalyticsDashboardProps {
 }
 
 type DashboardTab = 
+  | 'COCKPIT'
   | 'OVERVIEW' 
   | 'FUNNEL' 
   | 'SALES' 
@@ -81,7 +84,7 @@ export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProp
   currentSalesName,
   onSelectQuote,
   onClose,
-  initialTab = 'OVERVIEW',
+  initialTab = 'COCKPIT',
 }) => {
   // Config & State
   const [activeTab, setActiveTab] = useState<DashboardTab>(initialTab);
@@ -324,8 +327,21 @@ export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProp
             
             <button
               type="button"
+              onClick={() => setActiveTab('COCKPIT')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                activeTab === 'COCKPIT'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-indigo-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <Compass className="w-3.5 h-3.5 text-indigo-400" />
+              <span>{isVi ? 'Cockpit Ban Lãnh Đạo ⚡' : 'Executive Cockpit ⚡'}</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => setActiveTab('OVERVIEW')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                 activeTab === 'OVERVIEW'
                   ? 'bg-blue-600 text-white'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -455,6 +471,26 @@ export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProp
           transportModes={availableModes}
           language={language}
         />
+
+        {/* Tab 0: EXECUTIVE COCKPIT (C-LEVEL & SALES DIRECTORS) */}
+        {activeTab === 'COCKPIT' && (
+          <ExecutiveCockpitView
+            quotes={quotes}
+            kpis={analytics.kpis}
+            salesPerformance={analytics.salesPerformance}
+            laneAnalytics={analytics.laneAnalytics}
+            customerAnalytics={analytics.customerAnalytics}
+            profitabilityItems={analytics.profitabilityItems}
+            winLossByDimension={analytics.winLossByDimension}
+            agingBuckets={analytics.agingBuckets}
+            expiringQuotes={analytics.expiringQuotes}
+            followUpSummary={analytics.followUpAnalytics}
+            userRole={userRole}
+            language={language}
+            onSelectQuote={onSelectQuote}
+            onSwitchTab={(targetTab) => setActiveTab(targetTab)}
+          />
+        )}
 
         {/* Tab 1: OVERVIEW */}
         {activeTab === 'OVERVIEW' && (
