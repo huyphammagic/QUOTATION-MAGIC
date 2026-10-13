@@ -147,7 +147,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
     <div className="bg-white border border-slate-200/90 rounded-2xl p-3 sm:p-4 shadow-2xs space-y-3">
       
       {/* Top Row: Identity & Action Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 w-full">
         
         {/* Left: Executive Identity */}
         <div className="flex items-center flex-wrap gap-2 text-xs min-w-0">
@@ -156,7 +156,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
           <button
             type="button"
             onClick={handleCopyQuoteNumber}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-900 font-mono font-bold border border-slate-200 hover:border-slate-400 transition-colors cursor-pointer group"
+            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-slate-100 text-slate-900 font-mono font-bold border border-slate-200 hover:border-slate-400 transition-colors cursor-pointer group shrink-0"
             title="Click để sao chép mã báo giá"
           >
             <span>{quote.quoteNumber || 'LOG-DRAFT'}</span>
@@ -167,43 +167,41 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
             )}
           </button>
 
-          <span className="text-slate-300">·</span>
-
           {/* Clean status badge */}
-          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border ${statusInfo.color}`}>
+          <span className={`inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[11px] font-semibold border shrink-0 ${statusInfo.color}`}>
             <span className="w-1.5 h-1.5 rounded-full bg-current" />
             <span>{statusInfo.label}</span>
           </span>
 
           {/* Payment Status Badge */}
           {quote.paymentStatus && quote.paymentStatus !== 'UNPAID' && (
-            <PaymentStatusBadge
-              status={quote.paymentStatus}
-              outstandingBalanceUsd={quote.outstandingBalanceUsd}
-              showAmount={Boolean(quote.outstandingBalanceUsd && quote.outstandingBalanceUsd > 0)}
-              size="sm"
-              onClick={onOpenQuotationPayments}
-            />
+            <div className="shrink-0 flex items-center h-8">
+              <PaymentStatusBadge
+                status={quote.paymentStatus}
+                outstandingBalanceUsd={quote.outstandingBalanceUsd}
+                showAmount={Boolean(quote.outstandingBalanceUsd && quote.outstandingBalanceUsd > 0)}
+                size="sm"
+                onClick={onOpenQuotationPayments}
+              />
+            </div>
           )}
 
-          <span className="text-slate-300 hidden sm:inline">·</span>
-
-          {/* Route & Customer Breadcrumb */}
-          <div className="flex items-center gap-1.5 text-slate-600 min-w-0 truncate max-w-[340px] sm:max-w-[420px]">
+          {/* Route & Customer Breadcrumb Card */}
+          <div className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-600 min-w-0 max-w-full sm:max-w-[420px] shrink-0">
             <Building className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span className="font-semibold text-slate-900 truncate" title={customerName}>
+            <span className="font-semibold text-slate-900 truncate max-w-[140px] sm:max-w-[200px]" title={customerName}>
               {customerName}
             </span>
             <span className="text-slate-300">·</span>
-            <span className="font-mono text-slate-700 shrink-0">
+            <span className="font-mono text-slate-700 shrink-0 text-[11px]">
               {pol} &rarr; {pod}
             </span>
             <span className="text-slate-300 hidden md:inline">·</span>
-            <span className="text-slate-500 hidden md:inline">{modeText}</span>
+            <span className="text-slate-500 hidden md:inline text-[11px] font-medium">{modeText}</span>
           </div>
 
           {/* Auto-save status */}
-          <div className="hidden xl:flex items-center gap-1 text-[11px] text-slate-400 ml-1">
+          <div className="flex items-center gap-1 text-[11px] text-slate-400 ml-0.5 shrink-0">
             {isSaving ? (
               <>
                 <RotateCcw className="w-3 h-3 animate-spin text-indigo-600" />
@@ -212,21 +210,21 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
             ) : (
               <>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span>{lastSavedAt ? `Đã lưu ${lastSavedAt.split('T')[1]?.slice(0, 5) || 'gần đây'}` : 'Đã đồng bộ Cloud'}</span>
+                <span className="hidden sm:inline">{lastSavedAt ? `Đã lưu ${lastSavedAt.split('T')[1]?.slice(0, 5) || 'gần đây'}` : 'Đã đồng bộ Cloud'}</span>
               </>
             )}
           </div>
         </div>
 
-        {/* Right: Modern Streamlined Actions */}
-        <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap justify-between sm:justify-end">
+        {/* Right: Modern Streamlined Actions with Compact Clusters */}
+        <div className="flex items-center flex-wrap gap-1.5 justify-start xl:justify-end min-w-0">
           
           {/* Categorized Tools & Radar AI Popover */}
-          <div className="relative" ref={dropdownRef}>
+          <div className="relative shrink-0" ref={dropdownRef}>
             <button
               type="button"
               onClick={() => setIsToolsDropdownOpen(!isToolsDropdownOpen)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer shrink-0"
               title="Mở toàn bộ công cụ Radar & Phân tích chuyên sâu"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
@@ -235,7 +233,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
             </button>
 
             {isToolsDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 space-y-2">
+              <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 space-y-2 max-h-[75vh] overflow-y-auto">
                 
                 {/* Section 1: Customer Intelligence */}
                 <div className="space-y-0.5">
@@ -599,126 +597,118 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
             )}
           </div>
 
-          {/* Direct Quick Action: AI HS Code & Duty Calculator */}
+          {/* Quick AI Shortcuts */}
           {onOpenHsCodeTariff && (
             <button
               type="button"
               onClick={onOpenHsCodeTariff}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-800 bg-amber-50/90 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-semibold text-amber-800 bg-amber-50/90 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors cursor-pointer shrink-0"
               title="Tra cứu mã HS và tự động tính thuế XNK bằng AI"
             >
-              <Calculator className="w-3.5 h-3.5 text-amber-600" />
-              <span className="hidden sm:inline">Tra Mã HS & Thuế AI</span>
-              <span className="sm:hidden">Thuế AI</span>
+              <Calculator className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>Tra Thuế HS</span>
             </button>
           )}
 
-          {/* Direct Quick Action: AI OCR Document Scanner */}
           {onOpenDocumentParser && (
             <button
               type="button"
               onClick={onOpenDocumentParser}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-semibold text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors cursor-pointer shrink-0"
               title="Quét chứng từ B/L, Booking, Invoice, Tờ khai bằng AI"
             >
-              <FileText className="w-3.5 h-3.5 text-indigo-600" />
-              <span className="hidden sm:inline">Quét B/L & Booking AI</span>
-              <span className="sm:hidden">OCR AI</span>
+              <FileText className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <span>Quét B/L AI</span>
             </button>
           )}
 
-          {/* Direct Quick Action: Phase 72 Freight Rate Benchmark & Margin Optimizer */}
           {onOpenFreightRateBenchmarking && (
             <button
               type="button"
               onClick={onOpenFreightRateBenchmarking}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-800 bg-blue-50/90 hover:bg-blue-100 border border-blue-300 rounded-lg transition-colors cursor-pointer shadow-xs"
+              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-bold text-blue-800 bg-blue-50/90 hover:bg-blue-100 border border-blue-300 rounded-lg transition-colors cursor-pointer shrink-0 shadow-2xs"
               title="Đối soát cước thị trường SCFI/Drewry & tối ưu hóa biên lợi nhuận thông minh (Phase 72)"
             >
-              <BarChart3 className="w-3.5 h-3.5 text-blue-600" />
-              <span className="hidden md:inline">Đối Soát Cước & Biên Lãi (P.72)</span>
-              <span className="md:hidden">Cước AI</span>
+              <BarChart3 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <span>Đối Soát P.72</span>
             </button>
           )}
 
-          <div className="h-4 w-px bg-slate-200 hidden sm:block" />
+          {/* Quick Commercial Shortcuts */}
+          {onOpenMultiOptionQuote && (
+            <button
+              type="button"
+              onClick={onOpenMultiOptionQuote}
+              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg transition-colors cursor-pointer shrink-0 shadow-2xs"
+              title="Báo giá Đa Phương Án So Sánh (Good - Better - Best) giúp chốt sale đỉnh cao"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>3 Phương Án</span>
+            </button>
+          )}
 
-          {/* Export & Preview Group */}
-          <button
-            type="button"
-            onClick={onOpenPreview}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors cursor-pointer"
-            title="Xem trước bản in A4"
-          >
-            <Eye className="w-3.5 h-3.5 text-slate-500" />
-            <span className="hidden sm:inline">Xem Trước</span>
-          </button>
+          {onOpenDebitNote && (
+            <button
+              type="button"
+              onClick={onOpenDebitNote}
+              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-bold text-indigo-800 bg-indigo-50/90 hover:bg-indigo-100 border border-indigo-300 rounded-lg transition-colors cursor-pointer shrink-0 shadow-2xs"
+              title="Lập Debit Note (Giấy Báo Nợ) gửi khách hàng kèm mã VietQR"
+            >
+              <Receipt className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <span>Debit Note</span>
+            </button>
+          )}
 
-          <button
-            type="button"
-            onClick={onOpenGeneratePdf}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors cursor-pointer"
-            title="Xuất file PDF"
-          >
-            <FileDown className="w-3.5 h-3.5 text-indigo-600" />
-            <span className="hidden sm:inline">Xuất PDF</span>
-          </button>
+          {/* Grouped Export & Preview Cluster */}
+          <div className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-0.5 shrink-0 shadow-2xs">
+            <button
+              type="button"
+              onClick={onOpenPreview}
+              className="inline-flex items-center gap-1 h-7 px-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
+              title="Xem trước bản in A4"
+            >
+              <Eye className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+              <span>Xem Trước</span>
+            </button>
+            <div className="h-3.5 w-px bg-slate-200" />
+            <button
+              type="button"
+              onClick={onOpenGeneratePdf}
+              className="inline-flex items-center gap-1 h-7 px-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 rounded-md transition-colors cursor-pointer"
+              title="Xuất file PDF"
+            >
+              <FileDown className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <span>Xuất PDF</span>
+            </button>
+          </div>
 
           {/* Send Quote */}
           <button
             type="button"
             onClick={onOpenSendModal}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors cursor-pointer shrink-0"
             title="Gửi báo giá qua email & tạo link khách hàng"
           >
-            <Send className="w-3.5 h-3.5 text-blue-600" />
+            <Send className="w-3.5 h-3.5 text-blue-600 shrink-0" />
             <span>Gửi Khách</span>
           </button>
-
-          {/* Direct Action: Multi-Option Comparative Quotation */}
-          {onOpenMultiOptionQuote && (
-            <button
-              type="button"
-              onClick={onOpenMultiOptionQuote}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg transition-colors cursor-pointer shadow-2xs"
-              title="Báo giá Đa Phương Án So Sánh (Good - Better - Best) giúp chốt sale đỉnh cao"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-              <span className="hidden sm:inline">Báo Giá 3 Phương Án</span>
-              <span className="sm:hidden">3 Options</span>
-            </button>
-          )}
-
-          {/* Direct Action: Create Debit Note */}
-          {onOpenDebitNote && (
-            <button
-              type="button"
-              onClick={onOpenDebitNote}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-800 bg-indigo-50/90 hover:bg-indigo-100 border border-indigo-300 rounded-lg transition-colors cursor-pointer shadow-2xs"
-              title="Lập Debit Note (Giấy Báo Nợ) gửi khách hàng kèm mã VietQR"
-            >
-              <Receipt className="w-3.5 h-3.5 text-indigo-600" />
-              <span className="hidden sm:inline">Tạo Debit Note</span>
-              <span className="sm:hidden">D/N</span>
-            </button>
-          )}
 
           {/* Primary Action: Save to Cloud */}
           <button
             type="button"
             onClick={onSaveQuote}
             disabled={isSaving}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-50 rounded-lg shadow-2xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 h-8 px-3.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-50 rounded-lg shadow-2xs transition-colors cursor-pointer shrink-0"
             title="Lưu báo giá lên Firestore Cloud"
           >
             {isSaving ? (
               <>
-                <RotateCcw className="w-3.5 h-3.5 animate-spin" />
+                <RotateCcw className="w-3.5 h-3.5 animate-spin shrink-0" />
                 <span>Đang lưu...</span>
               </>
             ) : (
               <>
-                <Save className="w-3.5 h-3.5 text-emerald-400" />
+                <Save className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 <span>Lưu Báo Giá</span>
               </>
             )}
