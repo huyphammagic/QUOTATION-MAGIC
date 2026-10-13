@@ -13,7 +13,7 @@ export async function exportMultiOptionExcel(pkg: MultiOptionQuotationPackage): 
     ['CÔNG TY TNHH BOGI LOGISTICS & FORWARDING'],
     ['BẢNG SO SÁNH ĐA PHƯƠNG ÁN BÁO GIÁ CƯỚC (GOOD - BETTER - BEST COMPARATIVE QUOTATION)'],
     [`Mã gói: ${pkg.packageCode}`, `Báo giá gốc: ${pkg.quoteNumber}`, `Ngày lập: ${pkg.createdDate}`, `Hiệu lực đến: ${pkg.validUntil}`],
-    [`Khách hàng: ${pkg.customer?.companyName || pkg.customer?.name || 'Quý Doanh Nghiệp'}`, `Mã số thuế: ${pkg.customer?.taxId || 'N/A'}`],
+    [`Khách hàng: ${pkg.customer?.companyName || (pkg.customer as any)?.customerName || 'Quý Doanh Nghiệp'}`, `Mã số thuế: ${pkg.customer?.taxId || 'N/A'}`],
     [`Tuyến vận chuyển: ${pkg.shipment?.pol || 'N/A'} -> ${pkg.shipment?.pod || 'N/A'}`, `Phương thức: ${pkg.shipment?.mode || 'N/A'}`, `Hàng hóa: ${pkg.cargoSummary}`],
     [`Tỷ giá áp dụng: 1 USD = ${pkg.exchangeRate.toLocaleString()} VND`],
     []

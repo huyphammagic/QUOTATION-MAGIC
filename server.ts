@@ -656,6 +656,223 @@ Trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm backticks markd
 });
 
 
+// Phase 73: Competitor Intelligence & Market Forwarder Radar AI Endpoints
+
+// 1. Scan specific Forwarder Competitor in Vietnam with Gemini AI
+app.post("/api/gemini/scan-competitor", async (req, res) => {
+  try {
+    const { competitorName, tradeLane, headquarters } = req.body;
+    if (!competitorName || typeof competitorName !== "string") {
+      return res.status(400).json({ success: false, error: "competitorName is required" });
+    }
+
+    const ai = getGeminiClient();
+    const prompt = `Bạn là Chuyên gia Cao cấp về Phân tích Cạnh tranh Ngành Giao Nhận Vận Tải Quốc Tế & Freight Forwarding tại thị trường Việt Nam.
+Hãy phân tích toàn diện đối thủ cạnh tranh sau:
+- Tên công ty đối thủ: "${competitorName}"
+- Trụ sở / Khu vực hoạt động: ${headquarters || 'Việt Nam'}
+- Tuyến hàng trọng tâm (nếu có): ${tradeLane || 'Đường biển FCL & Hàng không xuất nhập khẩu'}
+
+Hãy dựa trên sự am hiểu thực tế về thị trường Forwarder Việt Nam để phân tích:
+1. Phân loại đối thủ (Tier): "TIER_1_GLOBAL" (Đa quốc gia như K+N, DHL, DB Schenker, DSV, Expeditors) | "TOP_LOCAL_FORWARDER" (Top nội địa như Bee Logistics, ITL, Sotrans, Gemadept, Dolphin) | "NICHE_SPECIALIST" (Chuyên tuyến/ngách như Vantage, Real Logistics, Glotrans) | "BUDGET_FORWARDER" (Đơn vị phá giá) | "DIRECT_CARRIER" (Hãng tàu bán trực tiếp Maersk/MSC/CMA CGM).
+2. Tên pháp nhân tại VN & Thương hiệu.
+3. Trụ sở chính & Mạng lưới chi nhánh tại VN.
+4. Năm thành lập ước tính & Quy mô nhân sự.
+5. Tuyến thế mạnh cốt lõi (3-5 tuyến đường biển/hàng không mạnh nhất).
+6. Định vị giá: "PREMIUM" (Cao cấp +5% đến +10%) | "STANDARD" (Mặt bằng chung) | "BUDGET_AGGRESSIVE" (Phá giá rẻ hơn 5%-8%).
+7. Đánh giá biểu phí Local Charges: "EXPENSIVE" (Đắt) | "MODERATE" (Vừa phải) | "COMPETITIVE" (Cạnh tranh).
+8. Phân tích SWOT chuyên sâu ngành Logistics:
+   - Điểm mạnh (strengths): 3-4 điểm mạnh thực tế.
+   - Điểm yếu chí mạng (weaknesses): 3-4 điểm yếu lớn nhất (Vd: Phí local charges đắt, chậm duyệt giá, không linh hoạt hải quan khó, CSKH cho SME thờ ơ, phạt hủy cont nặng...).
+   - Cơ hội vượt qua (opportunities): 2-3 cơ hội cho BOGI Logistics.
+   - Thách thức (threats): 1-2 thách thức.
+9. Liên minh hãng tàu / Airlines thân thiết.
+10. Chiến lược phản đòn của Sales BOGI Logistics (winningCounterTactics): 3 chiêu bài thực chiến.
+11. Lời thoại hạ gục (killPitchVi): Một đoạn văn ngắn gọn, sắc bén để Sales BOGI nói trực tiếp với khách hàng khi khách nhắc đến đối thủ này.
+12. Mẫu tin nhắn Zalo soạn sẵn (zaloScriptVi): Lịch sự, chuyên nghiệp, nêu rõ ưu thế và kêu gọi chốt đơn.
+13. Bộ 2-3 câu hỏi bẫy (trapQuestionsVi): Khách hàng khi được hỏi sẽ tự nhận ra nhược điểm của đối thủ này.
+
+Trả về DUY NHẤT một chuỗi JSON hợp lệ (không bọc markdown backticks):
+{
+  "competitor": {
+    "name": "string",
+    "legalName": "string",
+    "brandName": "string",
+    "tier": "TIER_1_GLOBAL" | "TOP_LOCAL_FORWARDER" | "NICHE_SPECIALIST" | "BUDGET_FORWARDER" | "DIRECT_CARRIER",
+    "headquarters": "string",
+    "establishedYear": number,
+    "employeeCount": "string",
+    "strongLanes": ["string"],
+    "typicalDiscountPercent": number,
+    "pricePositioning": "PREMIUM" | "STANDARD" | "BUDGET_AGGRESSIVE",
+    "localChargesRating": "EXPENSIVE" | "MODERATE" | "COMPETITIVE",
+    "strengths": ["string"],
+    "weaknesses": ["string"],
+    "swotAnalysis": {
+      "strengths": ["string"],
+      "weaknesses": ["string"],
+      "opportunities": ["string"],
+      "threats": ["string"]
+    },
+    "carrierAlliances": ["string"],
+    "winningCounterTactics": ["string"],
+    "killPitchVi": "string",
+    "zaloScriptVi": "string",
+    "trapQuestionsVi": ["string"]
+  },
+  "marketIntelligenceSummaryVi": "string",
+  "keyVulnerabilitiesVi": ["string"],
+  "immediateSalesActionVi": "string"
+}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.8-flash",
+      contents: prompt,
+      config: { responseMimeType: "application/json" },
+    });
+
+    const text = response.text || "{}";
+    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    const result = JSON.parse(cleanedText);
+
+    res.json({ success: true, ...result });
+  } catch (error: any) {
+    console.error("Error in AI Scan Competitor:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to scan competitor with Gemini AI"
+    });
+  }
+});
+
+// 2. Scan Market Competitors by Trade Lane
+app.post("/api/gemini/scan-market-lane", async (req, res) => {
+  try {
+    const { origin, destination, mode, commodity } = req.body;
+
+    const ai = getGeminiClient();
+    const prompt = `Bạn là Giám đốc Thương mại & Định giá Cước Logistics Việt Nam.
+Hãy quét và phân tích bản đồ đối thủ cạnh tranh trên tuyến vận chuyển:
+- Cảng/Điểm đi (Origin): ${origin || 'Cat Lai / Hai Phong, Vietnam'}
+- Cảng/Điểm đến (Destination): ${destination || 'Long Beach / Hamburg / Tokyo'}
+- Hình thức: ${mode || 'SEA_FCL'}
+- Mặt hàng: ${commodity || 'Hàng bách hóa / General Cargo'}
+
+Yêu cầu phân tích:
+1. Thị phần & Các đối thủ đang thống trị tuyến này tại Việt Nam (Top 3-5 đối thủ gồm MNC, Top Local FWD và Hãng tàu direct).
+2. Mức giá cước thị trường tham chiếu (USD).
+3. Điểm mạnh và điểm yếu nổi cộm của các đối thủ trên tuyến này.
+4. Chiến lược giúp Sales BOGI Logistics giành hợp đồng trên tuyến này (Đòn bẩy free-time, thời gian transit time, dịch vụ Door-to-Door, hoặc cam kết chỗ).
+5. Mức giá điểm ngọt (Sweet Spot Rate USD) đề xuất cho BOGI Logistics.
+
+Trả về DUY NHẤT chuỗi JSON (không bọc markdown backticks):
+{
+  "lane": "${origin} -> ${destination}",
+  "mode": "${mode || 'SEA_FCL'}",
+  "marketLeader": "string",
+  "keyCompetitors": [
+    {
+      "name": "string",
+      "tier": "TIER_1_GLOBAL" | "TOP_LOCAL_FORWARDER" | "NICHE_SPECIALIST" | "BUDGET_FORWARDER" | "DIRECT_CARRIER",
+      "estimatedShare": "string",
+      "typicalRateUsd": number,
+      "pros": "string",
+      "cons": "string"
+    }
+  ],
+  "bogiStrategyRecommendation": "string",
+  "priceSweetSpotUsd": number
+}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.8-flash",
+      contents: prompt,
+      config: { responseMimeType: "application/json" },
+    });
+
+    const text = response.text || "{}";
+    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    const result = JSON.parse(cleanedText);
+
+    res.json({ success: true, ...result });
+  } catch (error: any) {
+    console.error("Error scanning market lane:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to scan lane competitors"
+    });
+  }
+});
+
+// 3. Tear Down Competitor Quote & Generate Counter-Pitch
+app.post("/api/gemini/teardown-competitor-quote", async (req, res) => {
+  try {
+    const { rawQuoteText, competitorName, customerName } = req.body;
+    if (!rawQuoteText || typeof rawQuoteText !== "string") {
+      return res.status(400).json({ success: false, error: "rawQuoteText is required" });
+    }
+
+    const ai = getGeminiClient();
+    const prompt = `Bạn là Trưởng phòng Bán hàng (Sales Director) dày dặn kinh nghiệm trong ngành Logistics & Freight Forwarding tại Việt Nam.
+Khách hàng vừa chia sẻ lại nội dung báo giá của đối thủ cạnh tranh như sau:
+ĐỐI THỦ: "${competitorName || 'Đối thủ cạnh tranh'}"
+KHÁCH HÀNG: "${customerName || 'Quý doanh nghiệp'}"
+NỘI DUNG BÁO GIÁ ĐỐI THỦ:
+"""
+${rawQuoteText}
+"""
+
+Nhiệm vụ của bạn: Hãy bóc tách (Tear Down) báo giá này để tìm ra các kẽ hở và chi phí ẩn, sau đó soạn kịch bản phản đòn giúp Sales BOGI Logistics thuyết phục khách hàng:
+1. Phát hiện các bẫy phụ phí ẩn (Hidden fee alerts):
+   - Phụ phí cảng đích (Destination D/O, Handling, Cleaning cont...) có bị giấu không?
+   - Phí Local charges đầu Việt Nam (THC, Seal, Bill, Telex) có bị kê khống hoặc chưa báo không?
+   - Thời gian Free time DEM/DET có quá ngắn (chỉ 3-5 ngày) khiến khách dễ bị phạt không?
+   - Thời gian vận chuyển (Transit time) có bị kéo dài qua nhiều cảng chuyển tải (Transshipment) không?
+   - Điều khoản trượt giá hoặc phụ phí xăng dầu (BAF/LSS) có bị thả nổi không?
+2. Điểm yếu chí mạng của báo giá đối thủ.
+3. Ưu thế vượt trội của giải pháp BOGI Logistics đối ứng.
+4. Lời thoại phản công trực tiếp (counterPitchVi) để Sales nói chuyện điện thoại với khách.
+5. Mẫu tin nhắn Zalo (zaloMessageTemplateVi) gửi ngay cho khách hàng.
+6. Chiến lược giảm giá / giá trị gia tăng đề xuất (suggestedDiscountStrategy).
+
+Trả về DUY NHẤT chuỗi JSON (không bọc markdown backticks):
+{
+  "competitorName": "string",
+  "totalCostDetected": "string",
+  "hiddenFeeAlerts": [
+    {
+      "feeName": "string",
+      "estimatedCost": "string",
+      "descriptionVi": "string"
+    }
+  ],
+  "weaknessPoints": ["string"],
+  "bogiAdvantages": ["string"],
+  "counterPitchVi": "string",
+  "zaloMessageTemplateVi": "string",
+  "suggestedDiscountStrategy": "string"
+}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.8-flash",
+      contents: prompt,
+      config: { responseMimeType: "application/json" },
+    });
+
+    const text = response.text || "{}";
+    const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    const result = JSON.parse(cleanedText);
+
+    res.json({ success: true, ...result });
+  } catch (error: any) {
+    console.error("Error in teardown competitor quote:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to teardown competitor quote"
+    });
+  }
+});
+
 // Setup Vite Development Middleware or Static Production Serving
 async function setupServer() {
   if (process.env.NODE_ENV !== "production") {

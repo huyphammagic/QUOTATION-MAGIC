@@ -91,6 +91,7 @@ import { QuotationWorkspaceHeader, WorkspaceTab } from './components/QuotationWo
 import { QuotationCommunicationPanel } from './components/communication/QuotationCommunicationPanel';
 import type { MasterDataType } from './components/MasterDataReferenceModal';
 import { lazyWithRetry } from './utils/lazyWithRetry';
+import { MultiOptionService } from './services/multiOption/multiOptionService';
 
 // Lazy loaded modals with auto-retry and chunk failure self-healing
 const QuotePreviewModal = lazyWithRetry(() => import('./components/QuotePreviewModal').then(m => ({ default: m.QuotePreviewModal })), 'QuotePreviewModal');
@@ -511,24 +512,9 @@ export default function App() {
     setIsMultiOptionQuoteModalOpen(true);
   };
 
-  const handleApplyMultiOptionToActiveQuote = (selectedOption: any, updatedItems: LineItem[]) => {
+  const handleApplyMultiOptionToActiveQuote = (selectedOption: any) => {
     setQuote(prev => {
-      // Recalculate totals
-      const totalUsd = updatedItems.filter(i => (i.currency || 'USD') === 'USD').reduce((s, i) => s + (i.total || 0), 0);
-      const totalVnd = updatedItems.filter(i => (i.currency || 'VND') === 'VND').reduce((s, i) => s + (i.total || 0), 0);
-      return {
-        ...prev,
-        carrier: selectedOption.carrier || prev.carrier,
-        serviceType: selectedOption.serviceName || prev.serviceType,
-        transitTime: selectedOption.transitTimeText || prev.transitTime,
-        demurrageDetention: selectedOption.freeTimeDemDet || prev.demurrageDetention,
-        items: updatedItems,
-        subtotalUsd: totalUsd,
-        subtotalVnd: totalVnd,
-        totalUsd: totalUsd,
-        totalVnd: totalVnd,
-        remarks: `${prev.remarks || ''}\n[Đã áp dụng phương án: ${selectedOption.tierLabel} (${selectedOption.carrier}) - Free time: ${selectedOption.freeTimeDemDet}]`.trim()
-      };
+      return MultiOptionService.applyOptionToQuote(prev, selectedOption);
     });
   };
 
@@ -2487,6 +2473,7 @@ export default function App() {
                     outdatedRatesCount={outdatedRatesDiffs.length}
                     onResolveContractPricing={handleResolveContractPricing}
                     onOpenContracts={() => setIsContractsOpen(true)}
+                    onOpenCompetitorRadar={() => setIsCompetitorRadarOpen(true)}
                   />
                 </div>
 

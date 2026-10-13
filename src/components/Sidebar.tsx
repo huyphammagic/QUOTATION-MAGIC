@@ -519,11 +519,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'competitor_radar',
-      label: activeLang === 'vi' ? 'Radar Giá Đối Thủ & Win-Rate' : 'Competitor & Win-Rate',
+      label: activeLang === 'vi' ? 'Quản Lý Đối Thủ & Quét AI FWD' : 'Competitor Radar & AI FWD',
       icon: Swords,
       group: 'radar',
       action: () => onOpenCompetitorRadar && onOpenCompetitorRadar(),
-      badge: 'P50 Sweet',
+      badge: 'SWOT AI ⚔️',
       badgeTone: 'sky',
     },
     {

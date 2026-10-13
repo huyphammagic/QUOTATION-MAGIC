@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { LineItem, FeeCategory, ChargeLocation, ChargeBasis, PercentageBase } from '../types/logistics';
+import { LineItem, FeeCategory, ChargeLocation, ChargeBasis, Currency } from '../types/logistics';
 import { PricingWarningItem } from '../types/pricingIntelligence';
 import { PRESET_LOCAL_CHARGES } from '../data/presets';
-import { calculateLineItem, formatUSD, formatVND, formatPercent, formatNumber } from '../utils/formatters';
+import { calculateLineItem, formatUSD, formatVND, formatPercent } from '../utils/formatters';
 import { 
   Plus, 
   Trash2, 
@@ -15,14 +15,17 @@ import {
   Eye, 
   EyeOff, 
   Sparkles, 
-  RefreshCw, 
-  Edit3, 
   ShieldCheck, 
-  AlertTriangle, 
-  Clock, 
   ShieldAlert,
   ChevronDown,
-  BarChart3
+  BarChart3,
+  Copy,
+  ArrowUp,
+  ArrowDown,
+  Search,
+  Layers,
+  HelpCircle,
+  Swords
 } from 'lucide-react';
 
 interface LineItemsTableProps {
@@ -38,6 +41,7 @@ interface LineItemsTableProps {
   outdatedRatesCount?: number;
   onResolveContractPricing?: () => void;
   onOpenContracts?: () => void;
+  onOpenCompetitorRadar?: () => void;
 }
 
 export const LineItemsTable: React.FC<LineItemsTableProps> = ({ 
@@ -53,12 +57,16 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
   outdatedRatesCount = 0,
   onResolveContractPricing,
   onOpenContracts,
+  onOpenCompetitorRadar,
 }) => {
-  // Toggle Cost and Margin View
+  // Toggle Cost & Profit margin column
   const [showCostAndProfit, setShowCostAndProfit] = useState(true);
   const [isPresetDropdownOpen, setIsPresetDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'grouped' | 'flat'>('flat');
+  const [activeLegFilter, setActiveLegFilter] = useState<ChargeLocation | 'ALL'>('ALL');
 
-  // Rate traceability alerts
+  // Rate traceability & risk stats
   const rateTraceabilityAlerts = useMemo(() => {
     const now = new Date();
     let expired = 0;
@@ -83,33 +91,35 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
     return { expired, expiring, lossCount };
   }, [items]);
 
+  // Add line item
   const handleAddItem = (category: FeeCategory = 'LOCAL_CHARGE', defaultLocation: ChargeLocation = 'POL') => {
     const newItem: LineItem = {
       id: `item-${Date.now()}`,
       category,
       location: defaultLocation,
-      code: 'CHARGE',
-      description: 'Phí dịch vụ mới / Phụ phí',
+      code: defaultLocation === 'FREIGHT' ? 'O/F' : 'CHARGE',
+      description: defaultLocation === 'FREIGHT' ? 'Cước Vận Chuyển Quốc Tế (Ocean/Air Freight)' : 'Phí dịch vụ mới / Phụ phí',
       basis: 'PER_CONTAINER',
       quantity: 1,
-      unit: 'Container',
-      unitPrice: 50,
-      costPrice: 40,
+      unit: defaultLocation === 'FREIGHT' ? 'Container' : 'Bill',
+      unitPrice: defaultLocation === 'FREIGHT' ? 850 : 50,
+      costPrice: defaultLocation === 'FREIGHT' ? 750 : 40,
       currency: 'USD',
-      vatRate: 8,
-      amountUsd: 50,
-      amountVnd: Math.round(50 * exchangeRate),
-      costTotalUsd: 40,
-      costTotalVnd: Math.round(40 * exchangeRate),
-      profitUsd: 10,
-      profitVnd: Math.round(10 * exchangeRate),
-      marginPercent: 20,
+      vatRate: defaultLocation === 'FREIGHT' ? 0 : 8,
+      amountUsd: 0,
+      amountVnd: 0,
+      costTotalUsd: 0,
+      costTotalVnd: 0,
+      profitUsd: 0,
+      profitVnd: 0,
+      marginPercent: 0,
       note: '',
     };
     const calculated = calculateLineItem(newItem, exchangeRate);
     onUpdateItems([...items, calculated]);
   };
 
+  // Add preset local charges
   const handleAddPreset = (preset: typeof PRESET_LOCAL_CHARGES[0]) => {
     const price = preset.currency === 'USD' ? preset.priceUsd : preset.priceVnd;
     const cost = Math.round(price * 0.8 * 100) / 100;
@@ -136,16 +146,17 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
     setIsPresetDropdownOpen(false);
   };
 
+  // Update line item
   const handleItemChange = (id: string, field: keyof LineItem, value: any) => {
     const updated = items.map((item) => {
       if (item.id === id) {
         let itemCopy: LineItem = { ...item, [field]: value };
         if ((field === 'unitPrice' || field === 'costPrice') && item.rateId) {
-          if (!item.isOverridden) {
+          if (!itemCopy.isOverridden) {
             itemCopy.isOverridden = true;
             itemCopy.originalUnitPrice = item.unitPrice;
             itemCopy.originalCostPrice = item.costPrice;
-            itemCopy.overrideReason = 'Điều chỉnh giá bán trực tiếp bởi Sales';
+            itemCopy.overrideReason = 'Điều chỉnh giá trực tiếp trong Báo giá';
             itemCopy.overriddenAt = new Date().toISOString();
           }
         }
@@ -156,83 +167,496 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
     onUpdateItems(updated);
   };
 
+  // Duplicate item
+  const handleDuplicateItem = (itemToDup: LineItem) => {
+    const duplicated: LineItem = {
+      ...itemToDup,
+      id: `item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      description: `${itemToDup.description} (Copy)`,
+    };
+    const calculated = calculateLineItem(duplicated, exchangeRate);
+    onUpdateItems([...items, calculated]);
+  };
+
+  // Remove item
   const handleRemoveItem = (id: string) => {
     onUpdateItems(items.filter((item) => item.id !== id));
   };
 
-  // Grouped Location Breakdown
-  const polItems = items.filter(i => (i.location || 'POL') === 'POL');
-  const freightItems = items.filter(i => i.location === 'FREIGHT' || (!i.location && i.category === 'FREIGHT'));
-  const podItems = items.filter(i => i.location === 'POD');
-  const otherItems = items.filter(i => i.location === 'OTHER');
+  // Reorder items
+  const handleMoveItem = (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= items.length) return;
+    const newItems = [...items];
+    const [moved] = newItems.splice(index, 1);
+    newItems.splice(targetIndex, 0, moved);
+    onUpdateItems(newItems);
+  };
+
+  // Grouped breakdown metrics
+  const polItems = useMemo(() => items.filter(i => (i.location || 'POL') === 'POL'), [items]);
+  const freightItems = useMemo(() => items.filter(i => i.location === 'FREIGHT' || (!i.location && i.category === 'FREIGHT')), [items]);
+  const podItems = useMemo(() => items.filter(i => i.location === 'POD'), [items]);
+  const otherItems = useMemo(() => items.filter(i => i.location === 'OTHER'), [items]);
 
   const sumLocationUsd = (list: LineItem[]) => list.reduce((acc, i) => acc + (i.amountUsd || 0), 0);
+  const sumLocationVnd = (list: LineItem[]) => list.reduce((acc, i) => acc + (i.amountVnd || 0), 0);
   const sumLocationProfitUsd = (list: LineItem[]) => list.reduce((acc, i) => acc + (i.profitUsd || 0), 0);
 
-  return (
-    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
-      
-      {/* Table Action Bar */}
-      <div className="px-4 py-3 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-            <ListChecks className="w-3.5 h-3.5 text-slate-800" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-xs font-bold text-slate-900 tracking-tight">
-                Bảng Tính Giá Cước & Phụ Phí
-              </h3>
-              <span className="text-slate-300">·</span>
-              <span className="text-[11px] font-mono text-slate-500">
-                {items.length} hạng mục
-              </span>
+  // Filtered items based on search and active leg filter
+  const displayedItems = useMemo(() => {
+    return items.filter(item => {
+      // Leg filter
+      if (activeLegFilter !== 'ALL') {
+        const itemLoc = item.location || (item.category === 'FREIGHT' ? 'FREIGHT' : 'POL');
+        if (itemLoc !== activeLegFilter) return false;
+      }
+      // Search query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const desc = (item.description || '').toLowerCase();
+        const code = (item.code || '').toLowerCase();
+        const note = (item.note || '').toLowerCase();
+        return desc.includes(q) || code.includes(q) || note.includes(q);
+      }
+      return true;
+    });
+  }, [items, activeLegFilter, searchQuery]);
+
+  // Helper render for single table row
+  const renderRow = (item: LineItem, index: number, isGroupedView: boolean = false) => {
+    const isLoss = item.costPrice !== undefined && item.costPrice > 0 && item.unitPrice < item.costPrice;
+    const itemLocation = item.location || (item.category === 'FREIGHT' ? 'FREIGHT' : 'POL');
+
+    return (
+      <tr 
+        key={item.id} 
+        className={`group transition-colors border-b border-slate-100 hover:bg-slate-50/80 ${
+          isLoss ? 'bg-rose-50/20' : ''
+        }`}
+      >
+        {/* Col 1: STT & Move controls */}
+        <td className="py-2.5 px-2 text-center align-top w-12 text-slate-400">
+          <div className="flex flex-col items-center justify-center gap-0.5 pt-1">
+            <span className="font-mono text-xs font-semibold text-slate-500">
+              {index + 1}
+            </span>
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-0.5 mt-0.5">
+              <button
+                type="button"
+                onClick={() => handleMoveItem(index, 'up')}
+                disabled={index === 0}
+                className="p-0.5 text-slate-400 hover:text-slate-800 disabled:opacity-20 cursor-pointer"
+                title="Di chuyển lên"
+              >
+                <ArrowUp className="w-3 h-3" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleMoveItem(index, 'down')}
+                disabled={index === items.length - 1}
+                className="p-0.5 text-slate-400 hover:text-slate-800 disabled:opacity-20 cursor-pointer"
+                title="Di chuyển xuống"
+              >
+                <ArrowDown className="w-3 h-3" />
+              </button>
             </div>
+          </div>
+        </td>
+
+        {/* Col 2: Diễn Giải / Tên Phí & Ghi Chú (Can wrap / break lines freely) */}
+        <td className="py-2.5 px-3 align-top min-w-[280px]">
+          <div className="space-y-1.5 w-full">
+            {/* Auto-wrapping multiline description */}
+            <div className="relative">
+              <textarea
+                value={item.description}
+                onChange={(e) => handleItemChange(item.id, 'description', e.target.value)}
+                placeholder="Nhập tên phí dịch vụ / mô tả chi tiết..."
+                rows={Math.max(1, Math.min(4, Math.ceil((item.description || '').length / 42)))}
+                className="w-full px-2.5 py-1.5 text-xs font-semibold text-slate-900 bg-slate-50/70 hover:bg-slate-50 focus:bg-white rounded-lg border border-slate-200 focus:border-slate-800 focus:ring-1 focus:ring-slate-800 focus:outline-none transition-all resize-y min-h-[32px] leading-relaxed break-words"
+              />
+            </div>
+
+            {/* Sub-row: Note / Terms and Tags */}
+            <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+              <input
+                type="text"
+                value={item.note || ''}
+                onChange={(e) => handleItemChange(item.id, 'note', e.target.value)}
+                placeholder="+ Ghi chú phụ (free-time, điều kiện, tàu...)"
+                className="flex-1 min-w-[140px] px-2 py-0.5 text-[11px] text-slate-600 bg-transparent hover:bg-slate-50 focus:bg-white rounded border border-transparent hover:border-slate-200 focus:border-slate-300 focus:outline-none placeholder:text-slate-400"
+              />
+
+              {/* Code Pill */}
+              <input
+                type="text"
+                value={item.code || ''}
+                onChange={(e) => handleItemChange(item.id, 'code', e.target.value.toUpperCase())}
+                placeholder="MÃ"
+                title="Mã phụ phí (Code)"
+                className="w-16 px-1.5 py-0.5 text-[10px] font-mono font-bold text-center text-slate-700 bg-slate-100 border border-slate-200 rounded uppercase focus:outline-none focus:border-slate-400"
+              />
+
+              {item.priceSource === 'CUSTOMER_CONTRACT' && (
+                <span className="shrink-0 text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded" title="Giá chuẩn từ Hợp Đồng Khách Hàng">
+                  HĐ KH
+                </span>
+              )}
+              {item.isOverridden && (
+                <span className="shrink-0 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded" title="Giá đã được chỉnh sửa thủ công">
+                  Đã Sửa
+                </span>
+              )}
+            </div>
+          </div>
+        </td>
+
+        {/* Col 3: Chặng (Location) & Cách Tính (Basis) - Stacked to save horizontal space without overlap */}
+        <td className="py-2.5 px-2.5 align-top w-[145px]">
+          <div className="space-y-1.5">
+            {/* Chặng Selector */}
+            <select
+              value={itemLocation}
+              onChange={(e) => handleItemChange(item.id, 'location', e.target.value as ChargeLocation)}
+              className={`w-full px-2 py-1 text-[11px] font-bold rounded-lg border focus:outline-none cursor-pointer ${
+                itemLocation === 'POL' 
+                  ? 'bg-slate-100 text-slate-800 border-slate-300'
+                  : itemLocation === 'FREIGHT'
+                  ? 'bg-blue-50 text-blue-800 border-blue-200'
+                  : itemLocation === 'POD'
+                  ? 'bg-purple-50 text-purple-800 border-purple-200'
+                  : 'bg-amber-50 text-amber-800 border-amber-200'
+              }`}
+            >
+              <option value="POL">1. POL (Xuất)</option>
+              <option value="FREIGHT">2. FREIGHT (Chính)</option>
+              <option value="POD">3. POD (Nhập)</option>
+              <option value="OTHER">4. OTHER (Khác)</option>
+            </select>
+
+            {/* Cách tính (Basis) */}
+            <select
+              value={item.basis || 'PER_CONTAINER'}
+              onChange={(e) => handleItemChange(item.id, 'basis', e.target.value as ChargeBasis)}
+              className="w-full px-2 py-1 text-[11px] text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:bg-white cursor-pointer"
+            >
+              <option value="PER_CONTAINER">Cont (Container)</option>
+              <option value="PER_SHIPMENT">Set / Lô hàng</option>
+              <option value="PER_CBM">CBM (Khối)</option>
+              <option value="PER_KG">KGS / Tấn</option>
+              <option value="PER_BL">B/L (Vận đơn)</option>
+              <option value="PER_TRUCK">Chuyến xe</option>
+              <option value="PERCENTAGE">% Tỷ lệ cước</option>
+              <option value="FIXED">Trọn gói</option>
+            </select>
+          </div>
+        </td>
+
+        {/* Col 4: Số Lượng & Đơn Vị Tính (Quantity & Unit) */}
+        <td className="py-2.5 px-2.5 align-top w-[110px]">
+          <div className="space-y-1.5">
+            <input
+              type="number"
+              min="0"
+              step="any"
+              value={item.quantity}
+              onChange={(e) => handleItemChange(item.id, 'quantity', Number(e.target.value) || 0)}
+              className="w-full px-2 py-1 text-xs font-mono font-bold text-right text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-slate-800"
+            />
+            <input
+              type="text"
+              value={item.unit || 'Cont'}
+              onChange={(e) => handleItemChange(item.id, 'unit', e.target.value)}
+              placeholder="ĐVT"
+              className="w-full px-2 py-0.5 text-[10px] text-center font-medium text-slate-600 bg-white border border-slate-200 rounded focus:outline-none"
+            />
+          </div>
+        </td>
+
+        {/* Col 5: Đơn Giá Bán & Tiền Tệ & VAT */}
+        <td className={`py-2.5 px-2.5 align-top w-[170px] ${isLoss ? 'bg-rose-50/40' : 'bg-blue-50/15'}`}>
+          <div className="space-y-1.5">
+            {/* Input price + currency toggle group */}
+            <div className="flex items-center rounded-lg border border-blue-200 bg-white overflow-hidden shadow-2xs focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
+              <input
+                type="number"
+                min="0"
+                step="any"
+                value={item.unitPrice}
+                onChange={(e) => handleItemChange(item.id, 'unitPrice', Number(e.target.value) || 0)}
+                className={`w-full px-2 py-1 text-xs font-mono font-bold text-right focus:outline-none ${
+                  isLoss ? 'text-rose-700 bg-rose-50/50' : 'text-blue-900'
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => handleItemChange(item.id, 'currency', item.currency === 'USD' ? 'VND' : 'USD')}
+                className={`px-2 py-1 text-[11px] font-mono font-bold border-l shrink-0 transition-colors cursor-pointer ${
+                  item.currency === 'USD' 
+                    ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' 
+                    : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                }`}
+                title="Chuyển đổi loại tiền tệ bán (USD / VND)"
+              >
+                {item.currency}
+              </button>
+            </div>
+
+            {/* VAT selector */}
+            <div className="flex items-center justify-between gap-1 text-[11px] text-slate-500">
+              <span className="text-[10px] font-medium text-slate-500 shrink-0">Thuế VAT:</span>
+              <select
+                value={item.vatRate}
+                onChange={(e) => handleItemChange(item.id, 'vatRate', Number(e.target.value))}
+                className="px-1.5 py-0.5 text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded focus:outline-none cursor-pointer"
+              >
+                <option value={0}>0%</option>
+                <option value={5}>5%</option>
+                <option value={8}>8%</option>
+                <option value={10}>10%</option>
+              </select>
+            </div>
+          </div>
+        </td>
+
+        {/* Col 6: Giá Vốn & Lợi Nhuận Margin (When enabled) */}
+        {showCostAndProfit && (
+          <td className="py-2.5 px-2.5 align-top w-[155px] bg-amber-50/25 border-l border-r border-amber-100">
+            <div className="space-y-1.5">
+              {/* Cost input */}
+              <div className="flex items-center rounded-lg border border-amber-200 bg-white overflow-hidden shadow-2xs focus-within:border-amber-400">
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={item.costPrice !== undefined ? item.costPrice : ''}
+                  onChange={(e) => handleItemChange(item.id, 'costPrice', e.target.value === '' ? 0 : Number(e.target.value))}
+                  placeholder="0"
+                  className="w-full px-2 py-1 text-xs font-mono font-bold text-right text-amber-950 focus:outline-none"
+                />
+                <span className="px-1.5 py-1 text-[10px] font-mono text-amber-800 bg-amber-50/80 border-l border-amber-200 shrink-0">
+                  {item.currency}
+                </span>
+              </div>
+
+              {/* Profit & Margin Subtext */}
+              <div className="flex items-center justify-between text-[11px] pt-0.5 font-mono">
+                <span className={`font-semibold ${
+                  (item.profitUsd || 0) < 0 
+                    ? 'text-rose-700 font-bold' 
+                    : 'text-emerald-700'
+                }`}>
+                  Lãi: {formatUSD(item.profitUsd || 0)}
+                </span>
+                <span className={`px-1 rounded text-[10px] font-bold ${
+                  (item.marginPercent || 0) >= 15
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : (item.marginPercent || 0) > 0
+                    ? 'bg-blue-100 text-blue-800'
+                    : 'bg-rose-100 text-rose-800'
+                }`}>
+                  {formatPercent(item.marginPercent || 0, 1)}
+                </span>
+              </div>
+            </div>
+          </td>
+        )}
+
+        {/* Col 7: Thành Tiền (USD & VND Stacked cleanly without column clutter) */}
+        <td className="py-2.5 px-3 align-top text-right w-[155px]">
+          <div className="space-y-1 pt-1">
+            <div className="font-mono font-bold text-slate-900 text-sm tracking-tight">
+              {formatUSD(item.amountUsd)}
+            </div>
+            <div className="font-mono text-[11px] text-slate-500 font-normal">
+              ≈ {formatVND(item.amountVnd)}
+            </div>
+          </div>
+        </td>
+
+        {/* Col 8: Thao tác (Duplicate & Delete) */}
+        <td className="py-2.5 px-2 text-center align-top w-16">
+          <div className="flex items-center justify-center gap-1 pt-1">
+            <button
+              type="button"
+              onClick={() => handleDuplicateItem(item)}
+              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              title="Nhân bản dòng phí này"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleRemoveItem(item.id)}
+              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+              title="Xóa dòng phí"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5 overflow-hidden">
+      
+      {/* 1. Header Toolbar Bar */}
+      <div className="p-3.5 md:p-4 bg-slate-50/50 border-b border-slate-200/80 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+        {/* Left: Title & Quick Search */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-2xs shrink-0">
+              <ListChecks className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-xs md:text-sm font-bold text-slate-900 tracking-tight">
+                  Bảng Tính Giá Cước & Phụ Phí
+                </h3>
+                <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-slate-200 text-slate-800 rounded-full">
+                  {items.length} mục
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Search inside Table */}
+          <div className="relative min-w-[200px]">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tìm nhanh phụ phí, mã cước..."
+              className="w-full pl-8 pr-3 py-1 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-slate-800 placeholder:text-slate-400"
+            />
+          </div>
+
+          {/* View mode toggle: Flat vs Grouped */}
+          <div className="flex items-center rounded-lg border border-slate-200 bg-white p-0.5 text-xs">
+            <button
+              type="button"
+              onClick={() => setViewMode('flat')}
+              className={`px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer ${
+                viewMode === 'flat' 
+                  ? 'bg-slate-900 text-white shadow-2xs' 
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Danh sách phẳng
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('grouped')}
+              className={`px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer ${
+                viewMode === 'grouped' 
+                  ? 'bg-slate-900 text-white shadow-2xs' 
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Nhóm 4 Chặng
+            </button>
           </div>
         </div>
 
-        {/* Right Toolbar */}
+        {/* Right Toolbar Actions */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Toggle Cost & Profit view */}
           <button
             type="button"
             onClick={() => setShowCostAndProfit(!showCostAndProfit)}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
               showCostAndProfit
-                ? 'bg-slate-100 text-slate-900 border-slate-300 font-semibold'
-                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                ? 'bg-slate-900 text-white border-slate-900'
+                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
             }`}
             title="Bật/Tắt hiển thị cột Giá Vốn (Cost) & Lợi Nhuận Margin"
           >
-            {showCostAndProfit ? <Eye className="w-3.5 h-3.5 text-slate-700" /> : <EyeOff className="w-3.5 h-3.5 text-slate-400" />}
+            {showCostAndProfit ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
             <span>{showCostAndProfit ? 'Ẩn Giá Vốn' : 'Hiện Giá Vốn'}</span>
           </button>
+
+          {/* Presets Quick Dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsPresetDropdownOpen(!isPresetDropdownOpen)}
+              className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold text-xs px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+            >
+              <Receipt className="w-3.5 h-3.5 text-slate-500" />
+              <span>+ Mẫu Phí Chuẩn</span>
+              <ChevronDown className="w-3 h-3 text-slate-400" />
+            </button>
+
+            {isPresetDropdownOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-64 bg-white border border-slate-200 rounded-xl shadow-xl z-30 p-1.5 space-y-1">
+                <div className="px-2 py-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  Phụ phí chuẩn Forwarder VN
+                </div>
+                <div className="max-h-60 overflow-y-auto space-y-0.5">
+                  {PRESET_LOCAL_CHARGES.map((preset) => (
+                    <button
+                      key={preset.code}
+                      type="button"
+                      onClick={() => handleAddPreset(preset)}
+                      className="w-full text-left px-2.5 py-1.5 text-xs hover:bg-slate-100 rounded-lg flex items-center justify-between transition cursor-pointer"
+                    >
+                      <div>
+                        <span className="font-bold text-slate-800">{preset.code}</span>
+                        <span className="text-slate-500 text-[11px] ml-1.5 truncate block">{preset.name}</span>
+                      </div>
+                      <span className="font-mono text-xs font-semibold text-slate-700 shrink-0">
+                        {preset.currency === 'USD' ? `$${preset.priceUsd}` : `${formatVND(preset.priceVnd)}`}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Smart Assistant */}
           {onOpenSmartAssistant && (
             <button
               type="button"
               onClick={onOpenSmartAssistant}
-              className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-medium text-xs px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 bg-amber-50/80 hover:bg-amber-100 text-amber-900 border border-amber-200 font-semibold text-xs px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
               title="Trợ lý tự động tìm & ghép giá thông minh theo tuyến"
               id="btn-open-smart-assistant"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
               <span>Smart Rates</span>
             </button>
           )}
 
-          {/* Phase 72: Freight Rate Benchmark & Margin Optimizer */}
+          {/* Freight Rate Benchmark */}
           {onOpenFreightRateBenchmarking && (
             <button
               type="button"
               onClick={onOpenFreightRateBenchmarking}
-              className="inline-flex items-center gap-1.5 bg-blue-50/80 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold text-xs px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
-              title="Đối soát cước thị trường SCFI/Drewry & tối ưu tỷ lệ thắng thầu (Phase 72)"
+              className="inline-flex items-center gap-1.5 bg-blue-50/80 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold text-xs px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+              title="Đối soát cước thị trường SCFI/Drewry & tối ưu tỷ lệ thắng thầu"
               id="btn-open-freight-benchmarking"
             >
               <BarChart3 className="w-3.5 h-3.5 text-blue-600" />
-              <span>Đối Soát Cước AI (P.72)</span>
+              <span>Đối Soát Cước AI</span>
+            </button>
+          )}
+
+          {/* Competitor Radar & SWOT */}
+          {onOpenCompetitorRadar && (
+            <button
+              type="button"
+              onClick={onOpenCompetitorRadar}
+              className="inline-flex items-center gap-1.5 bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold text-xs px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+              title="Quản lý đối thủ forwarder, phân tích SWOT và kịch bản chốt đơn"
+              id="btn-open-competitor-radar"
+            >
+              <Swords className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Đối Thủ & SWOT FWD</span>
             </button>
           )}
 
@@ -241,9 +665,8 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             <button
               type="button"
               onClick={onOpenRateSearch}
-              className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-medium text-xs px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium text-xs px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
               title="Tra cứu từ Biểu Cước Master"
-              id="btn-open-rate-search-table"
             >
               <Ship className="w-3.5 h-3.5 text-slate-500" />
               <span>Biểu Cước Master</span>
@@ -255,7 +678,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             <button
               type="button"
               onClick={onOpenSurchargeCatalog}
-              className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-medium text-xs px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium text-xs px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
               title="Mở Danh Mục Phụ Phí"
             >
               <Receipt className="w-3.5 h-3.5 text-slate-500" />
@@ -268,7 +691,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             <button
               type="button"
               onClick={onResolveContractPricing}
-              className="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold text-xs px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold text-xs px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
               title="Khớp giá từ hợp đồng khách hàng đã ký"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
@@ -277,103 +700,184 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
           )}
 
           {/* Add Line Item Primary Button */}
-          <button
-            type="button"
-            onClick={() => handleAddItem('LOCAL_CHARGE', 'POL')}
-            className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-3 py-1 rounded-lg shadow-2xs transition-colors cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>+ Thêm Phí</span>
-          </button>
+          <div className="flex items-center rounded-lg bg-slate-900 text-white overflow-hidden shadow-2xs">
+            <button
+              type="button"
+              onClick={() => handleAddItem('LOCAL_CHARGE', 'POL')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 font-bold text-xs hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Thêm Phí</span>
+            </button>
+            <div className="w-[1px] h-4 bg-slate-700" />
+            <button
+              type="button"
+              onClick={() => handleAddItem('FREIGHT', 'FREIGHT')}
+              className="px-2 py-1.5 text-[11px] font-semibold text-blue-300 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
+              title="+ Thêm Cước Biển/Air (FREIGHT)"
+            >
+              + Cước Chặng Chính
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Modern 4-Leg Summary Ribbon */}
-      <div className="mx-4 grid grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+      {/* 2. Modern 4-Leg Interactive Summary Ribbon (No dead space, proportional grid) */}
+      <div className="px-4 grid grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
         {/* POL */}
-        <div className="bg-slate-50/90 border border-slate-200/80 rounded-xl p-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Anchor className="w-3.5 h-3.5 text-slate-600" />
-            <div>
-              <div className="font-semibold text-slate-800 text-[11px]">1. Đầu Xuất (POL)</div>
-              <div className="text-[10px] text-slate-500 font-mono">{polItems.length} mục</div>
+        <button
+          type="button"
+          onClick={() => setActiveLegFilter(activeLegFilter === 'POL' ? 'ALL' : 'POL')}
+          className={`text-left rounded-xl p-2.5 border transition-all cursor-pointer ${
+            activeLegFilter === 'POL'
+              ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+              : 'bg-slate-50/80 hover:bg-slate-100/80 border-slate-200/90 text-slate-800'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-1.5">
+              <Anchor className={`w-3.5 h-3.5 ${activeLegFilter === 'POL' ? 'text-slate-300' : 'text-slate-600'}`} />
+              <span className="font-bold text-[11px]">1. Đầu Xuất (POL)</span>
             </div>
+            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
+              activeLegFilter === 'POL' ? 'bg-slate-800 text-slate-200' : 'bg-slate-200/80 text-slate-700'
+            }`}>
+              {polItems.length} mục
+            </span>
           </div>
-          <div className="text-right">
-            <div className="font-mono font-bold text-slate-900 text-xs sm:text-sm">{formatUSD(sumLocationUsd(polItems))}</div>
+          <div className="flex items-baseline justify-between">
+            <div className="font-mono font-bold text-xs sm:text-sm">
+              {formatUSD(sumLocationUsd(polItems))}
+            </div>
             {showCostAndProfit && (
-              <div className="font-mono text-[10px] text-emerald-700 font-medium">Lãi: +{formatUSD(sumLocationProfitUsd(polItems))}</div>
+              <div className={`font-mono text-[10px] ${activeLegFilter === 'POL' ? 'text-emerald-300' : 'text-emerald-700 font-semibold'}`}>
+                Lãi: +{formatUSD(sumLocationProfitUsd(polItems))}
+              </div>
             )}
           </div>
-        </div>
+        </button>
 
         {/* FREIGHT */}
-        <div className="bg-slate-50/90 border border-slate-200/80 rounded-xl p-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Ship className="w-3.5 h-3.5 text-blue-600" />
-            <div>
-              <div className="font-semibold text-slate-800 text-[11px]">2. Cước Biển/Air (FREIGHT)</div>
-              <div className="text-[10px] text-slate-500 font-mono">{freightItems.length} mục</div>
+        <button
+          type="button"
+          onClick={() => setActiveLegFilter(activeLegFilter === 'FREIGHT' ? 'ALL' : 'FREIGHT')}
+          className={`text-left rounded-xl p-2.5 border transition-all cursor-pointer ${
+            activeLegFilter === 'FREIGHT'
+              ? 'bg-blue-900 text-white border-blue-900 shadow-sm'
+              : 'bg-blue-50/50 hover:bg-blue-50/80 border-blue-200/90 text-blue-950'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-1.5">
+              <Ship className={`w-3.5 h-3.5 ${activeLegFilter === 'FREIGHT' ? 'text-blue-300' : 'text-blue-600'}`} />
+              <span className="font-bold text-[11px]">2. Cước Chính (FREIGHT)</span>
             </div>
+            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
+              activeLegFilter === 'FREIGHT' ? 'bg-blue-800 text-blue-200' : 'bg-blue-200/80 text-blue-800 font-bold'
+            }`}>
+              {freightItems.length} mục
+            </span>
           </div>
-          <div className="text-right">
-            <div className="font-mono font-bold text-slate-900 text-xs sm:text-sm">{formatUSD(sumLocationUsd(freightItems))}</div>
+          <div className="flex items-baseline justify-between">
+            <div className="font-mono font-bold text-xs sm:text-sm">
+              {formatUSD(sumLocationUsd(freightItems))}
+            </div>
             {showCostAndProfit && (
-              <div className="font-mono text-[10px] text-emerald-700 font-medium">Lãi: +{formatUSD(sumLocationProfitUsd(freightItems))}</div>
+              <div className={`font-mono text-[10px] ${activeLegFilter === 'FREIGHT' ? 'text-emerald-300' : 'text-emerald-700 font-semibold'}`}>
+                Lãi: +{formatUSD(sumLocationProfitUsd(freightItems))}
+              </div>
             )}
           </div>
-        </div>
+        </button>
 
         {/* POD */}
-        <div className="bg-slate-50/90 border border-slate-200/80 rounded-xl p-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <MapPin className="w-3.5 h-3.5 text-purple-600" />
-            <div>
-              <div className="font-semibold text-slate-800 text-[11px]">3. Đầu Nhập (POD)</div>
-              <div className="text-[10px] text-slate-500 font-mono">{podItems.length} mục</div>
+        <button
+          type="button"
+          onClick={() => setActiveLegFilter(activeLegFilter === 'POD' ? 'ALL' : 'POD')}
+          className={`text-left rounded-xl p-2.5 border transition-all cursor-pointer ${
+            activeLegFilter === 'POD'
+              ? 'bg-purple-900 text-white border-purple-900 shadow-sm'
+              : 'bg-purple-50/50 hover:bg-purple-50/80 border-purple-200/90 text-purple-950'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-1.5">
+              <MapPin className={`w-3.5 h-3.5 ${activeLegFilter === 'POD' ? 'text-purple-300' : 'text-purple-600'}`} />
+              <span className="font-bold text-[11px]">3. Đầu Nhập (POD)</span>
             </div>
+            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
+              activeLegFilter === 'POD' ? 'bg-purple-800 text-purple-200' : 'bg-purple-200/80 text-purple-800 font-bold'
+            }`}>
+              {podItems.length} mục
+            </span>
           </div>
-          <div className="text-right">
-            <div className="font-mono font-bold text-slate-900 text-xs sm:text-sm">{formatUSD(sumLocationUsd(podItems))}</div>
+          <div className="flex items-baseline justify-between">
+            <div className="font-mono font-bold text-xs sm:text-sm">
+              {formatUSD(sumLocationUsd(podItems))}
+            </div>
             {showCostAndProfit && (
-              <div className="font-mono text-[10px] text-emerald-700 font-medium">Lãi: +{formatUSD(sumLocationProfitUsd(podItems))}</div>
+              <div className={`font-mono text-[10px] ${activeLegFilter === 'POD' ? 'text-emerald-300' : 'text-emerald-700 font-semibold'}`}>
+                Lãi: +{formatUSD(sumLocationProfitUsd(podItems))}
+              </div>
             )}
           </div>
-        </div>
+        </button>
 
         {/* OTHER */}
-        <div className="bg-slate-50/90 border border-slate-200/80 rounded-xl p-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Compass className="w-3.5 h-3.5 text-amber-600" />
-            <div>
-              <div className="font-semibold text-slate-800 text-[11px]">4. Dịch Vụ Khác (OTHER)</div>
-              <div className="text-[10px] text-slate-500 font-mono">{otherItems.length} mục</div>
+        <button
+          type="button"
+          onClick={() => setActiveLegFilter(activeLegFilter === 'OTHER' ? 'ALL' : 'OTHER')}
+          className={`text-left rounded-xl p-2.5 border transition-all cursor-pointer ${
+            activeLegFilter === 'OTHER'
+              ? 'bg-amber-900 text-white border-amber-900 shadow-sm'
+              : 'bg-amber-50/50 hover:bg-amber-50/80 border-amber-200/90 text-amber-950'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-1.5">
+              <Compass className={`w-3.5 h-3.5 ${activeLegFilter === 'OTHER' ? 'text-amber-300' : 'text-amber-600'}`} />
+              <span className="font-bold text-[11px]">4. Dịch Vụ Khác (OTHER)</span>
             </div>
+            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
+              activeLegFilter === 'OTHER' ? 'bg-amber-800 text-amber-200' : 'bg-amber-200/80 text-amber-800 font-bold'
+            }`}>
+              {otherItems.length} mục
+            </span>
           </div>
-          <div className="text-right">
-            <div className="font-mono font-bold text-slate-900 text-xs sm:text-sm">{formatUSD(sumLocationUsd(otherItems))}</div>
+          <div className="flex items-baseline justify-between">
+            <div className="font-mono font-bold text-xs sm:text-sm">
+              {formatUSD(sumLocationUsd(otherItems))}
+            </div>
             {showCostAndProfit && (
-              <div className="font-mono text-[10px] text-emerald-700 font-medium">Lãi: +{formatUSD(sumLocationProfitUsd(otherItems))}</div>
+              <div className={`font-mono text-[10px] ${activeLegFilter === 'OTHER' ? 'text-emerald-300' : 'text-emerald-700 font-semibold'}`}>
+                Lãi: +{formatUSD(sumLocationProfitUsd(otherItems))}
+              </div>
             )}
           </div>
-        </div>
+        </button>
       </div>
 
-      {/* Warnings & Traceability Ribbon */}
+      {/* Warnings & Traceability Alert Ribbon */}
       {(rateTraceabilityAlerts.expired > 0 || rateTraceabilityAlerts.lossCount > 0 || pricingWarnings.length > 0) && (
         <div className="mx-4 p-2.5 bg-amber-50 border border-amber-200 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0" />
             <div className="text-slate-800 font-medium">
-              <span>Cảnh báo định giá: </span>
+              <span className="font-semibold text-amber-950">Cảnh báo kiểm định cước: </span>
               {rateTraceabilityAlerts.lossCount > 0 && (
-                <span className="font-bold text-rose-700 mr-2">{rateTraceabilityAlerts.lossCount} dòng bán lỗ</span>
+                <span className="font-bold text-rose-700 mr-2 bg-rose-100 px-1.5 py-0.5 rounded">
+                  {rateTraceabilityAlerts.lossCount} dòng bán dưới giá vốn (Lỗ)
+                </span>
               )}
               {rateTraceabilityAlerts.expired > 0 && (
-                <span className="font-bold text-rose-700 mr-2">{rateTraceabilityAlerts.expired} cước hết hạn</span>
+                <span className="font-bold text-rose-700 mr-2 bg-rose-100 px-1.5 py-0.5 rounded">
+                  {rateTraceabilityAlerts.expired} cước hết hạn hiệu lực
+                </span>
               )}
               {rateTraceabilityAlerts.expiring > 0 && (
-                <span className="font-bold text-amber-800 mr-2">{rateTraceabilityAlerts.expiring} cước sắp hết hạn</span>
+                <span className="font-bold text-amber-800 mr-2 bg-amber-100 px-1.5 py-0.5 rounded">
+                  {rateTraceabilityAlerts.expiring} cước sắp hết hạn (trong 7 ngày)
+                </span>
               )}
             </div>
           </div>
@@ -390,233 +894,223 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
         </div>
       )}
 
-      {/* Table Content */}
-      <div className="overflow-x-auto border-t border-b border-slate-100">
+      {/* 3. The Redesigned Quotation Table: No overlapping, multiline wrapping, proportional full-width distribution */}
+      <div className="w-full overflow-x-auto border-t border-slate-200/80">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
-              <th className="px-2 py-2.5 w-7 text-center">#</th>
-              <th className="px-3 py-2.5 min-w-[200px]">Diễn Giải / Tên Phí</th>
-              <th className="px-2 py-2.5 min-w-[90px]">Chặng</th>
-              <th className="px-2 py-2.5 min-w-[110px]">Cách Tính (Basis)</th>
-              <th className="px-2 py-2.5 min-w-[65px] text-right">SL</th>
+            <tr className="bg-slate-100/90 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
+              {/* STT */}
+              <th className="py-3 px-2 text-center w-12 shrink-0">#</th>
               
+              {/* Diễn Giải / Tên Phí - Proportional flex-1 so there is NO blank void */}
+              <th className="py-3 px-3 min-w-[280px]">
+                Diễn Giải / Tên Phí Dịch Vụ
+              </th>
+
+              {/* Chặng & Cách Tính */}
+              <th className="py-3 px-2.5 w-[145px]">
+                Chặng & Tính (Basis)
+              </th>
+
+              {/* Số Lượng & ĐVT */}
+              <th className="py-3 px-2.5 w-[110px] text-right">
+                SL & ĐVT
+              </th>
+
+              {/* Giá Bán & Tiền Tệ & VAT */}
+              <th className="py-3 px-2.5 w-[170px] text-right bg-blue-100/60 text-blue-950">
+                Giá Bán & VAT
+              </th>
+
+              {/* Giá Vốn & Lợi Nhuận (Optional) */}
               {showCostAndProfit && (
-                <th className="px-2 py-2.5 min-w-[95px] text-right bg-amber-50/60 text-amber-900 border-l border-r border-amber-200">
-                  Giá Vốn (Cost)
+                <th className="py-3 px-2.5 w-[155px] text-right bg-amber-100/60 text-amber-950 border-l border-r border-amber-200">
+                  Giá Vốn & Lãi Margin
                 </th>
               )}
 
-              <th className="px-2 py-2.5 min-w-[100px] text-right bg-blue-50/40 text-blue-900 font-bold">
-                Giá Bán (Sell)
+              {/* Thành Tiền ($ & ₫ Stacked) */}
+              <th className="py-3 px-3 w-[155px] text-right">
+                Thành Tiền ($ / ₫)
               </th>
-              
-              <th className="px-2 py-2.5 min-w-[65px] text-center">Tiền</th>
-              <th className="px-2 py-2.5 min-w-[65px] text-center">VAT</th>
-              <th className="px-3 py-2.5 min-w-[110px] text-right">Thành Tiền ($)</th>
-              <th className="px-3 py-2.5 min-w-[120px] text-right">Thành Tiền (₫)</th>
 
-              {showCostAndProfit && (
-                <>
-                  <th className="px-2 py-2.5 min-w-[90px] text-right bg-emerald-50/60 text-emerald-950 border-l border-emerald-200">
-                    Lãi ($)
-                  </th>
-                  <th className="px-2 py-2.5 min-w-[70px] text-right bg-emerald-50/60 text-emerald-950 border-r border-emerald-200">
-                    Margin %
-                  </th>
-                </>
-              )}
-
-              <th className="px-2 py-2.5 w-8 text-center">Xóa</th>
+              {/* Thao Tác */}
+              <th className="py-3 px-2 text-center w-16">
+                Thao Tác
+              </th>
             </tr>
           </thead>
 
           <tbody className="divide-y divide-slate-100 bg-white">
-            {items.map((item, index) => (
-              <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                
-                {/* STT */}
-                <td className="px-2 py-2 text-center text-slate-400 font-mono text-[11px]">{index + 1}</td>
+            {/* Case A: Grouped by 4 Legs */}
+            {viewMode === 'grouped' ? (
+              <>
+                {(['POL', 'FREIGHT', 'POD', 'OTHER'] as ChargeLocation[]).map((loc) => {
+                  const groupItems = displayedItems.filter(i => (i.location || (i.category === 'FREIGHT' ? 'FREIGHT' : 'POL')) === loc);
+                  if (activeLegFilter !== 'ALL' && activeLegFilter !== loc) return null;
 
-                {/* Description */}
-                <td className="px-3 py-2">
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      type="text"
-                      value={item.description}
-                      onChange={(e) => handleItemChange(item.id, 'description', e.target.value)}
-                      className="w-full px-2 py-1 rounded-md border border-slate-200 font-semibold text-slate-900 bg-slate-50/60 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs"
-                      placeholder="Tên phí dịch vụ..."
-                    />
-                    {item.priceSource === 'CUSTOMER_CONTRACT' && (
-                      <span className="shrink-0 text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1 py-0.5 rounded" title="Từ hợp đồng khách hàng">
-                        HĐ KH
-                      </span>
-                    )}
-                    {item.isOverridden && (
-                      <span className="shrink-0 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded" title="Đã chỉnh sửa giá thủ công">
-                        Sửa
-                      </span>
+                  const locTitle = loc === 'POL' 
+                    ? '1. ĐẦU XUẤT (POL - Port of Loading)' 
+                    : loc === 'FREIGHT' 
+                    ? '2. CƯỚC CHẶNG CHÍNH (FREIGHT - Ocean / Air / Trucking)' 
+                    : loc === 'POD' 
+                    ? '3. ĐẦU NHẬP (POD - Port of Discharge)' 
+                    : '4. DỊCH VỤ KHÁC (OTHER - Thủ Tục, Giám Định, Kho)';
+
+                  const locBg = loc === 'POL'
+                    ? 'bg-slate-100/90 text-slate-800'
+                    : loc === 'FREIGHT'
+                    ? 'bg-blue-100/70 text-blue-900'
+                    : loc === 'POD'
+                    ? 'bg-purple-100/70 text-purple-900'
+                    : 'bg-amber-100/70 text-amber-900';
+
+                  const subtotalUsd = sumLocationUsd(groupItems);
+                  const subtotalVnd = sumLocationVnd(groupItems);
+
+                  return (
+                    <React.Fragment key={loc}>
+                      {/* Section Header Row */}
+                      <tr className={`${locBg} font-bold border-y border-slate-200`}>
+                        <td colSpan={showCostAndProfit ? 4 : 3} className="py-2 px-3 uppercase tracking-wide text-[11px]">
+                          <div className="flex items-center gap-2">
+                            <span>{locTitle}</span>
+                            <span className="font-mono text-[10px] opacity-75">({groupItems.length} mục)</span>
+                          </div>
+                        </td>
+                        <td className="py-2 px-2.5 text-right font-mono text-[11px]">
+                          <button
+                            type="button"
+                            onClick={() => handleAddItem(loc === 'FREIGHT' ? 'FREIGHT' : 'LOCAL_CHARGE', loc)}
+                            className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-white/80 hover:bg-white text-slate-800 border border-slate-300 shadow-2xs transition cursor-pointer"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Thêm vào chặng này</span>
+                          </button>
+                        </td>
+                        <td colSpan={showCostAndProfit ? 2 : 1} className="py-2 px-3 text-right font-mono font-bold text-xs">
+                          <span>{formatUSD(subtotalUsd)}</span>
+                          <span className="opacity-75 font-normal ml-2">({formatVND(subtotalVnd)})</span>
+                        </td>
+                        <td className="py-2 px-2 text-center" />
+                      </tr>
+
+                      {/* Items inside this leg */}
+                      {groupItems.map((item, idx) => renderRow(item, items.indexOf(item), true))}
+
+                      {groupItems.length === 0 && (
+                        <tr>
+                          <td colSpan={showCostAndProfit ? 8 : 7} className="py-3 px-4 text-center text-slate-400 italic text-[11px] bg-slate-50/30">
+                            Chưa có dòng cước nào trong chặng này. Nhấp "Thêm vào chặng này" để thêm.
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </>
+            ) : (
+              /* Case B: Unified Flat List with responsive multiline entries */
+              <>
+                {displayedItems.map((item, index) => renderRow(item, index, false))}
+              </>
+            )}
+
+            {/* Empty State when no items exist or search returns 0 */}
+            {displayedItems.length === 0 && (
+              <tr>
+                <td colSpan={showCostAndProfit ? 8 : 7} className="py-12 px-4 text-center">
+                  <div className="max-w-md mx-auto space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+                      <ListChecks className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-800">
+                        {searchQuery ? 'Không tìm thấy dòng cước phù hợp' : 'Chưa có dòng cước báo giá nào'}
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {searchQuery 
+                          ? `Thử xóa từ khóa "${searchQuery}" hoặc chọn Tất Cả chặng để xem đầy đủ.` 
+                          : 'Bắt đầu thêm các chi phí vận chuyển, phụ phí cảng POL, POD hoặc cước chính cho khách hàng.'}
+                      </p>
+                    </div>
+
+                    {!searchQuery && (
+                      <div className="flex items-center justify-center gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => handleAddItem('FREIGHT', 'FREIGHT')}
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs shadow-2xs transition cursor-pointer"
+                        >
+                          + Thêm Cước Biển/Air (FREIGHT)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAddItem('LOCAL_CHARGE', 'POL')}
+                          className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg text-xs shadow-2xs transition cursor-pointer"
+                        >
+                          + Thêm Phí POL
+                        </button>
+                      </div>
                     )}
                   </div>
-                </td>
-
-                {/* Location */}
-                <td className="px-2 py-2">
-                  <select
-                    value={item.location || 'POL'}
-                    onChange={(e) => handleItemChange(item.id, 'location', e.target.value as ChargeLocation)}
-                    className="w-full px-1.5 py-1 rounded-md border border-slate-200 text-slate-800 bg-slate-50/60 text-xs font-semibold focus:outline-none"
-                  >
-                    <option value="POL">1. POL (Xuất)</option>
-                    <option value="FREIGHT">2. FREIGHT (Chính)</option>
-                    <option value="POD">3. POD (Nhập)</option>
-                    <option value="OTHER">4. OTHER (Khác)</option>
-                  </select>
-                </td>
-
-                {/* Basis */}
-                <td className="px-2 py-2">
-                  <select
-                    value={item.basis}
-                    onChange={(e) => handleItemChange(item.id, 'basis', e.target.value as ChargeBasis)}
-                    className="w-full px-1.5 py-1 rounded-md border border-slate-200 text-slate-800 bg-slate-50/60 text-xs focus:outline-none"
-                  >
-                    <option value="PER_CONTAINER">Per Cont</option>
-                    <option value="PER_SHIPMENT">Per Set/Lô</option>
-                    <option value="PER_CBM">Per CBM</option>
-                    <option value="PER_TON">Per KGS/Tấn</option>
-                    <option value="PER_BL">Per B/L</option>
-                    <option value="PERCENTAGE">Phần trăm %</option>
-                  </select>
-                </td>
-
-                {/* Quantity */}
-                <td className="px-2 py-2">
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    value={item.quantity}
-                    onChange={(e) => handleItemChange(item.id, 'quantity', Number(e.target.value) || 0)}
-                    className="w-full px-1.5 py-1 rounded-md border border-slate-200 text-right font-mono font-bold text-slate-900 bg-slate-50/60 focus:bg-white focus:outline-none text-xs"
-                  />
-                </td>
-
-                {/* Cost Price */}
-                {showCostAndProfit && (
-                  <td className="px-2 py-2 bg-amber-50/30 border-l border-r border-amber-200">
-                    <input
-                      type="number"
-                      min="0"
-                      step="any"
-                      value={item.costPrice !== undefined ? item.costPrice : ''}
-                      onChange={(e) => handleItemChange(item.id, 'costPrice', e.target.value === '' ? 0 : Number(e.target.value))}
-                      placeholder="0"
-                      className="w-full px-1.5 py-1 rounded-md border border-amber-300 text-right font-mono font-bold text-amber-950 bg-white focus:outline-none text-xs"
-                    />
-                  </td>
-                )}
-
-                {/* Unit Price (Sell) */}
-                <td className={`px-2 py-2 ${item.costPrice !== undefined && item.costPrice > 0 && item.unitPrice < item.costPrice ? 'bg-rose-50/60' : 'bg-blue-50/20'}`}>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    value={item.unitPrice}
-                    onChange={(e) => handleItemChange(item.id, 'unitPrice', Number(e.target.value) || 0)}
-                    className={`w-full px-1.5 py-1 rounded-md text-right font-mono font-bold text-xs focus:outline-none border ${
-                      item.costPrice !== undefined && item.costPrice > 0 && item.unitPrice < item.costPrice
-                        ? 'border-rose-400 text-rose-900 bg-rose-50'
-                        : 'border-blue-300 text-blue-900 bg-white'
-                    }`}
-                  />
-                </td>
-
-                {/* Currency */}
-                <td className="px-2 py-2 text-center">
-                  <button
-                    type="button"
-                    onClick={() => handleItemChange(item.id, 'currency', item.currency === 'USD' ? 'VND' : 'USD')}
-                    className={`px-2 py-1 rounded-md font-mono font-bold text-[11px] border cursor-pointer ${
-                      item.currency === 'USD'
-                        ? 'bg-blue-50 text-blue-800 border-blue-200'
-                        : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                    }`}
-                  >
-                    {item.currency}
-                  </button>
-                </td>
-
-                {/* VAT */}
-                <td className="px-2 py-2">
-                  <select
-                    value={item.vatRate}
-                    onChange={(e) => handleItemChange(item.id, 'vatRate', Number(e.target.value))}
-                    className="w-full px-1 py-1 rounded-md border border-slate-200 text-center font-bold bg-slate-50/60 text-xs"
-                  >
-                    <option value={0}>0%</option>
-                    <option value={5}>5%</option>
-                    <option value={8}>8%</option>
-                    <option value={10}>10%</option>
-                  </select>
-                </td>
-
-                {/* Amount USD */}
-                <td className="px-3 py-2 text-right font-mono font-bold text-slate-900 text-xs whitespace-nowrap">
-                  {formatUSD(item.amountUsd)}
-                </td>
-
-                {/* Amount VND */}
-                <td className="px-3 py-2 text-right font-mono text-slate-600 text-xs whitespace-nowrap">
-                  {formatVND(item.amountVnd)}
-                </td>
-
-                {/* Profit & Margin */}
-                {showCostAndProfit && (
-                  <>
-                    <td className="px-2 py-2 text-right font-mono font-bold text-emerald-800 bg-emerald-50/30 border-l border-emerald-200 text-xs whitespace-nowrap">
-                      {formatUSD(item.profitUsd || 0)}
-                    </td>
-                    <td className="px-2 py-2 text-right font-mono font-bold bg-emerald-50/30 border-r border-emerald-200 text-xs whitespace-nowrap">
-                      <span className={`px-1 py-0.5 rounded text-[10px] ${
-                        (item.marginPercent || 0) >= 15
-                          ? 'text-emerald-800 font-bold'
-                          : (item.marginPercent || 0) > 0
-                          ? 'text-blue-800 font-semibold'
-                          : 'text-rose-700 font-bold'
-                      }`}>
-                        {formatPercent(item.marginPercent || 0, 1)}
-                      </span>
-                    </td>
-                  </>
-                )}
-
-                {/* Delete */}
-                <td className="px-2 py-2 text-center">
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveItem(item.id)}
-                    className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition cursor-pointer"
-                    title="Xóa dòng phí"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </td>
-
-              </tr>
-            ))}
-
-            {items.length === 0 && (
-              <tr>
-                <td colSpan={showCostAndProfit ? 14 : 11} className="py-8 text-center text-slate-400 italic">
-                  Chưa có dòng cước nào. Nhấp "+ Thêm Phí" để bắt đầu báo giá.
                 </td>
               </tr>
             )}
           </tbody>
+
+          {/* Table Footer with Clean Column Totals */}
+          {items.length > 0 && (
+            <tfoot className="bg-slate-100/90 border-t-2 border-slate-300 font-bold text-xs text-slate-800">
+              <tr>
+                <td colSpan={3} className="py-3 px-3 text-[11px] uppercase tracking-wider text-slate-600">
+                  Tổng Cộng Bảng Cước ({items.length} hạng mục)
+                </td>
+                <td className="py-3 px-2.5 text-right font-mono text-xs">
+                  {items.reduce((acc, i) => acc + (Number(i.quantity) || 0), 0)} ĐVT
+                </td>
+                <td className="py-3 px-2.5 text-right bg-blue-100/40 text-blue-950 font-mono text-xs">
+                  -
+                </td>
+                {showCostAndProfit && (
+                  <td className="py-3 px-2.5 text-right bg-amber-100/40 text-amber-950 font-mono text-xs border-l border-r border-amber-200">
+                    <div className="text-[10px] text-amber-800">Tổng vốn:</div>
+                    <div>{formatUSD(items.reduce((acc, i) => acc + (i.costTotalUsd || 0), 0))}</div>
+                  </td>
+                )}
+                <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
+                  <div className="text-sm">{formatUSD(items.reduce((acc, i) => acc + (i.amountUsd || 0), 0))}</div>
+                  <div className="text-[11px] text-slate-500 font-normal">
+                    ≈ {formatVND(items.reduce((acc, i) => acc + (i.amountVnd || 0), 0))}
+                  </div>
+                </td>
+                <td className="py-3 px-2 text-center" />
+              </tr>
+            </tfoot>
+          )}
         </table>
+      </div>
+
+      {/* Quick Footer Helper Tips */}
+      <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+        <div className="flex items-center gap-2">
+          <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+          <span>Mẹo: Tên phí hỗ trợ xuống dòng tự động; giá cước hỗ trợ đổi tức thì giữa USD và VND.</span>
+        </div>
+        <div className="flex items-center gap-3 font-medium">
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> Cước chính
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-slate-500 inline-block" /> Phí xuất (POL)
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> Phí nhập (POD)
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> Khác (OTHER)
+          </span>
+        </div>
       </div>
 
     </div>

@@ -34,7 +34,8 @@ export class MultiOptionService {
       const costTotal = (item.costPrice || (item.unitPrice ? item.unitPrice * 0.82 : 0)) * (item.quantity || 1);
 
       if (item.currency === 'USD') {
-        if (item.category === 'FREIGHT' || item.name.toLowerCase().includes('freight') || item.name.toLowerCase().includes('cước')) {
+        const descLower = (item.description || '').toLowerCase();
+        if (item.category === 'FREIGHT' || descLower.includes('freight') || descLower.includes('cước')) {
           oceanAirFreightUsd += sellTotal;
         } else {
           oceanAirFreightUsd += sellTotal;
@@ -74,24 +75,26 @@ export class MultiOptionService {
     const pol = quote.shipment?.pol || 'Cảng Cát Lái, TP.HCM (VNCLI)';
     const pod = quote.shipment?.pod || 'Singapore Port (SGSIN)';
     const mode = quote.shipment?.mode || 'Đường biển (Sea Freight FCL)';
-    const isAir = mode.toLowerCase().includes('air') || mode.toLowerCase().includes('hàng không');
+    const isAir = String(mode).toLowerCase().includes('air') || String(mode).toLowerCase().includes('hàng không');
 
-    const customerName = quote.customer?.companyName || quote.customer?.name || 'Quý Khách Hàng';
-    const cargoDesc = `${quote.shipment?.commodity || 'Hàng hóa thông thường'} (${quote.shipment?.weight || '1,500'} kg / ${quote.shipment?.volume || '5.5'} CBM)`;
+    const customerName = quote.customer?.companyName || (quote.customer as any)?.customerName || 'Quý Khách Hàng';
+    const cargoDesc = `${quote.shipment?.commodity || 'Hàng hóa thông thường'} (${quote.shipment?.grossWeightKg || '1,500'} kg / ${quote.shipment?.volumeCbm || '5.5'} CBM)`;
 
     // Tách items gốc
     const baseItems = quote.items && quote.items.length > 0 ? quote.items : [
       {
         id: 'item-freight-default',
-        name: isAir ? 'Air Freight Priority (Cước hàng không)' : 'Ocean Freight FCL (Cước biển quốc tế)',
-        description: `${pol} -> ${pod}`,
+        code: 'O/F',
+        description: isAir ? 'Air Freight Priority (Cước hàng không)' : 'Ocean Freight FCL (Cước biển quốc tế)',
         unitPrice: isAir ? 3.5 : 850,
-        currency: 'USD',
+        currency: 'USD' as const,
         unit: isAir ? 'KG' : 'CONT',
-        quantity: isAir ? 500 : 1,
+        quantity: 1,
         vatRate: 0,
-        category: 'FREIGHT',
-        costPrice: isAir ? 2.9 : 720
+        category: 'FREIGHT' as const,
+        costPrice: isAir ? 2.9 : 720,
+        amountUsd: isAir ? 3.5 : 850,
+        amountVnd: Math.round((isAir ? 3.5 : 850) * rate)
       },
       {
         id: 'item-thc-default',
@@ -243,15 +246,17 @@ export class MultiOptionService {
     // Thêm dịch vụ bảo hiểm & ưu tiên thông quan VIP
     premiumItems.push({
       id: 'prem-vip-insurance',
-      name: 'Bảo hiểm hàng hóa vận tải quốc tế (All-Risk ICC A) & Dedicated VIP Desk',
-      description: 'Bảo hiểm toàn diện 110% giá trị CIF + Quản lý đơn hàng 24/7',
+      code: 'INS',
+      description: 'Bảo hiểm hàng hóa vận tải quốc tế (All-Risk ICC A) & Dedicated VIP Desk - Bảo hiểm toàn diện 110% giá trị CIF + Quản lý đơn hàng 24/7',
       unitPrice: 50,
-      currency: 'USD',
+      currency: 'USD' as const,
       unit: 'LÔ',
       quantity: 1,
       vatRate: 0,
-      category: 'INSURANCE',
-      costPrice: 30
+      category: 'OTHER' as const,
+      costPrice: 30,
+      amountUsd: 50,
+      amountVnd: Math.round(50 * rate)
     });
     const premFin = this.calculateOptionFinancials(premiumItems, rate);
 
@@ -329,7 +334,7 @@ export class MultiOptionService {
       options,
       selectedOptionId: 'opt-balanced', // Mặc định chọn phương án Sweet Spot
       status: 'READY',
-      salesRepName: quote.company?.contactPerson || 'BOGI Logistics Sales Specialist',
+      salesRepName: quote.company?.salesRepName || quote.company?.name || 'BOGI Logistics Sales Specialist',
       salesRepPhone: quote.company?.phone || '0909 123 456',
       salesRepEmail: quote.company?.email || 'sales@bogilogistics.vn',
       notesAndTerms: 'Giá cước chưa bao gồm thuế GTGT nếu có theo quy định hiện hành. Phụ phí bến bãi có thể điều chỉnh theo biểu phí thực tế của hãng tàu tại thời điểm cập cảng.',
@@ -432,14 +437,13 @@ export class MultiOptionService {
       shipment: {
         ...quote.shipment,
         carrier: option.carrier,
-        vesselVoyage: option.vesselFlight || quote.shipment?.vesselVoyage,
         transitTime: option.transitTimeText,
-        demurrageDetention: option.freeTimeDemDet
+        freeTime: option.freeTimeDemDet
       },
       terms: {
         ...quote.terms,
-        paymentTerms: quote.terms?.paymentTerms || 'Thanh toán trước khi phát hành House B/L hoặc thả hàng telex',
-        notes: `${quote.terms?.notes || ''}\n[Đã chốt theo Phương Án: ${option.tierNameVi} - Hãng vận chuyển: ${option.carrier} - Free Time: ${option.freeTimeDemDet}]`.trim()
+        paymentTerm: quote.terms?.paymentTerm || 'Thanh toán trước khi phát hành House B/L hoặc thả hàng telex',
+        exclusionsNotes: `${quote.terms?.exclusionsNotes || ''}\n[Đã chốt theo Phương Án: ${option.tierNameVi} - Hãng vận chuyển: ${option.carrier} - Free Time: ${option.freeTimeDemDet}]`.trim()
       },
       subtotalUsd: Math.round(subtotalUsd * 100) / 100,
       subtotalVnd: Math.round(subtotalVnd),
@@ -466,6 +470,22 @@ export class MultiOptionService {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(existing));
     } catch (e) {
       console.error('Failed to save multi-option package to local storage', e);
+    }
+  }
+
+  public static updateSelectedOption(packageId: string, optionId: string): MultiOptionQuotationPackage | null {
+    try {
+      const all = this.getAllPackages();
+      const pkg = all.find(p => p.id === packageId);
+      if (pkg) {
+        pkg.selectedOptionId = optionId;
+        pkg.updatedAt = new Date().toISOString();
+        this.savePackage(pkg);
+        return pkg;
+      }
+      return null;
+    } catch {
+      return null;
     }
   }
 

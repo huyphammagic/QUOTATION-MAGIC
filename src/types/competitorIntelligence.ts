@@ -35,21 +35,87 @@ export interface LaneMarketBenchmark {
 }
 
 export type CompetitorTier = 
-  | 'TIER_1_GLOBAL'       // Hãng giao nhận đa quốc gia (Kuehne+Nagel, DHL, DSV, Schenker)
-  | 'TOP_LOCAL_FORWARDER' // Top forwarder nội địa (Sotrans, Indo-Trans, Vinafreight, Bee Logistics)
+  | 'TIER_1_GLOBAL'       // Hãng giao nhận đa quốc gia (Kuehne+Nagel, DHL, DSV, Schenker, Expeditors)
+  | 'TOP_LOCAL_FORWARDER' // Top forwarder nội địa (Bee Logistics, Sotrans, ITL, Gemadept, Dolphin)
+  | 'NICHE_SPECIALIST'    // Doanh nghiệp ngách chuyên tuyến (Vantage, Real Logistics, Glotrans)
   | 'BUDGET_FORWARDER'    // Đơn vị giá rẻ, cạnh tranh về giá gắt gao
-  | 'DIRECT_CARRIER';     // Hãng tàu bán trực tiếp (Spot web Maersk, Hapag, ONE)
+  | 'DIRECT_CARRIER';     // Hãng tàu bán trực tiếp (Spot web Maersk, Hapag, ONE, CMA CGM)
+
+export type PricePositioning = 'PREMIUM' | 'STANDARD' | 'BUDGET_AGGRESSIVE';
+export type LocalChargesRating = 'EXPENSIVE' | 'MODERATE' | 'COMPETITIVE';
+
+export interface CompetitorSwot {
+  strengths: string[];
+  weaknesses: string[];
+  opportunities: string[];
+  threats: string[];
+}
 
 export interface CompetitorProfile {
   id: string;
   name: string;
   code: string;
   tier: CompetitorTier;
-  strongLanes: string[]; // VD: ["Ho Chi Minh -> Long Beach", "Hai Phong -> Hamburg"]
-  typicalDiscountPercent: number; // Thường thấp hơn thị trường bao nhiêu % (-5% đến +10%)
+  legalName?: string;
+  brandName?: string;
+  headquarters?: string;
+  establishedYear?: number;
+  employeeCount?: string;
+  website?: string;
+  marketShareEstimate?: string;
+  strongLanes: string[]; // VD: ["Hồ Chí Minh -> Long Beach", "Hải Phòng -> Hamburg"]
+  typicalDiscountPercent: number; // Thường thấp hơn hoặc cao hơn thị trường bao nhiêu % (-5% đến +10%)
+  pricePositioning?: PricePositioning;
+  localChargesRating?: LocalChargesRating;
   strengths: string[];
   weaknesses: string[];
+  swotAnalysis?: CompetitorSwot;
+  carrierAlliances?: string[]; // VD: ["MSC", "Maersk", "Cosco", "Vietnam Airlines"]
   winningCounterTactics: string[];
+  killPitchVi?: string; // Lời thoại phản công trực tiếp của Sales BOGI Logistics
+  zaloScriptVi?: string; // Mẫu tin nhắn Zalo gửi khách hàng
+  trapQuestionsVi?: string[]; // Câu hỏi bẫy để khách tự nhận ra nhược điểm đối thủ
+  isCustomAdded?: boolean;
+  isAiGenerated?: boolean;
+  lastScannedAt?: string;
+}
+
+export interface CompetitorScanResult {
+  competitor: CompetitorProfile;
+  marketIntelligenceSummaryVi: string;
+  keyVulnerabilitiesVi: string[];
+  immediateSalesActionVi: string;
+}
+
+export interface LaneCompetitorAnalysis {
+  lane: string;
+  mode: TransportMode;
+  marketLeader: string;
+  keyCompetitors: {
+    name: string;
+    tier: CompetitorTier;
+    estimatedShare: string;
+    typicalRateUsd: number;
+    pros: string;
+    cons: string;
+  }[];
+  bogiStrategyRecommendation: string;
+  priceSweetSpotUsd: number;
+}
+
+export interface QuoteTearDownResult {
+  competitorName?: string;
+  totalCostDetected?: string;
+  hiddenFeeAlerts: {
+    feeName: string;
+    estimatedCost: string;
+    descriptionVi: string;
+  }[];
+  weaknessPoints: string[];
+  bogiAdvantages: string[];
+  counterPitchVi: string;
+  zaloMessageTemplateVi: string;
+  suggestedDiscountStrategy: string;
 }
 
 export interface WinProbabilityResult {

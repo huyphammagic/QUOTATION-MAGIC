@@ -34,6 +34,7 @@ export type AppRouteId =
   | 'customer_dna_power_map'
   | 'quotation_payments'
   | 'debit_note_management'
+  | 'multi_option_quotation'
   | 'opportunity_radar'
   | 'decision_workspace'
   // Pricing

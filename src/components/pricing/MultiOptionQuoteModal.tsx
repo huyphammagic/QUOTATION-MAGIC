@@ -118,7 +118,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
     setPkg(updated);
   };
 
-  const handleUpdateLineItemCost = (optId: string, itemIndex: number, field: 'rate' | 'total', val: number) => {
+  const handleUpdateLineItemCost = (optId: string, itemIndex: number, field: 'unitPrice' | 'amountUsd' | 'amountVnd', val: number) => {
     if (!pkg) return;
     const updated = {
       ...pkg,
@@ -126,21 +126,22 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
         if (opt.id !== optId) return opt;
         const newItems = [...opt.items];
         const target = { ...newItems[itemIndex] };
-        target[field] = val;
-        if (field === 'rate') {
-          target.total = val * (target.quantity || 1);
+        (target as any)[field] = val;
+        if (field === 'unitPrice') {
+          target.amountUsd = val * (target.quantity || 1);
+          target.amountVnd = Math.round(target.amountUsd * (pkg.exchangeRate || 25400));
         }
         newItems[itemIndex] = target;
 
         // Recalculate totals
-        const totalUsd = newItems.filter(i => (i.currency || 'USD') === 'USD').reduce((s, i) => s + (i.total || 0), 0);
-        const totalVnd = newItems.filter(i => (i.currency || 'VND') === 'VND').reduce((s, i) => s + (i.total || 0), 0);
+        const totalUsd = newItems.filter(i => (i.currency || 'USD') === 'USD').reduce((s, i) => s + (i.amountUsd || 0), 0);
+        const totalVnd = newItems.filter(i => (i.currency || 'VND') === 'VND').reduce((s, i) => s + (i.amountVnd || 0), 0);
 
         return {
           ...opt,
           items: newItems,
-          totalCostUsd: totalUsd,
-          totalCostVnd: totalVnd,
+          totalConvertedUsd: totalUsd + (totalVnd / (pkg.exchangeRate || 25400)),
+          totalConvertedVnd: (totalUsd * (pkg.exchangeRate || 25400)) + totalVnd,
         };
       }),
       updatedAt: new Date().toISOString()
@@ -153,14 +154,16 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
     if (!pkg) return;
     const newItem: LineItem = {
       id: `custom_charge_${Date.now()}`,
-      name: 'Phí Dịch Vụ Gia Tăng Bổ Sung',
-      englishName: 'Value-Added Logistics Fee',
+      code: 'EXTRA',
+      description: 'Phí Dịch Vụ Gia Tăng Bổ Sung (Value-Added Logistics Fee)',
       unit: 'SHPT',
       currency: 'USD',
       quantity: 1,
-      rate: 45,
-      total: 45,
-      scope: 'LOCAL'
+      unitPrice: 45,
+      amountUsd: 45,
+      amountVnd: Math.round(45 * (pkg.exchangeRate || 25400)),
+      category: 'OTHER',
+      vatRate: 0
     };
 
     const updated = {
@@ -168,11 +171,13 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
       options: pkg.options.map(opt => {
         if (opt.id !== optId) return opt;
         const newItems = [...opt.items, newItem];
-        const totalUsd = newItems.filter(i => (i.currency || 'USD') === 'USD').reduce((s, i) => s + (i.total || 0), 0);
+        const totalUsd = newItems.filter(i => (i.currency || 'USD') === 'USD').reduce((s, i) => s + (i.amountUsd || 0), 0);
+        const totalVnd = newItems.filter(i => (i.currency || 'VND') === 'VND').reduce((s, i) => s + (i.amountVnd || 0), 0);
         return {
           ...opt,
           items: newItems,
-          totalCostUsd: totalUsd
+          totalConvertedUsd: totalUsd + (totalVnd / (pkg.exchangeRate || 25400)),
+          totalConvertedVnd: (totalUsd * (pkg.exchangeRate || 25400)) + totalVnd,
         };
       }),
       updatedAt: new Date().toISOString()
@@ -188,19 +193,18 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
       options: pkg.options.map(opt => {
         if (opt.id !== optId) return opt;
         const newItems = opt.items.filter((_, idx) => idx !== itemIndex);
-        const totalUsd = newItems.filter(i => (i.currency || 'USD') === 'USD').reduce((s, i) => s + (i.total || 0), 0);
-        const totalVnd = newItems.filter(i => (i.currency || 'VND') === 'VND').reduce((s, i) => s + (i.total || 0), 0);
+        const totalUsd = newItems.filter(i => (i.currency || 'USD') === 'USD').reduce((s, i) => s + (i.amountUsd || 0), 0);
+        const totalVnd = newItems.filter(i => (i.currency || 'VND') === 'VND').reduce((s, i) => s + (i.amountVnd || 0), 0);
         return {
           ...opt,
           items: newItems,
-          totalCostUsd: totalUsd,
-          totalCostVnd: totalVnd
+          totalConvertedUsd: totalUsd + (totalVnd / (pkg.exchangeRate || 25400)),
+          totalConvertedVnd: (totalUsd * (pkg.exchangeRate || 25400)) + totalVnd,
         };
       }),
       updatedAt: new Date().toISOString()
     };
     MultiOptionService.savePackage(updated);
-    setPkg(updated);
   };
 
   const handleRegenerateFromQuote = () => {
@@ -247,7 +251,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
   const handleApplyToActiveQuote = (opt: MultiOptionItem) => {
     if (onApplyOptionToQuote) {
       onApplyOptionToQuote(opt, opt.items);
-      setAppliedNotification(`Đã áp dụng thành công phương án [${opt.tierLabel}] vào Bảng Tính Báo Giá!`);
+      setAppliedNotification(`Đã áp dụng thành công phương án [${opt.tierNameVi}] vào Bảng Tính Báo Giá!`);
       setTimeout(() => setAppliedNotification(null), 4000);
     }
   };
@@ -275,7 +279,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                Khách hàng: <strong className="text-white">{pkg.customerName || 'Chưa định danh'}</strong> • Tuyến: <strong className="text-white">{pkg.routeDisplay}</strong> • Hàng: <strong className="text-white">{pkg.cargoDisplay}</strong>
+                Khách hàng: <strong className="text-white">{pkg.customer?.companyName || (pkg.customer as any)?.customerName || 'Chưa định danh'}</strong> • Tuyến: <strong className="text-white">{pkg.shipment?.pol} ➔ {pkg.shipment?.pod}</strong> • Hàng: <strong className="text-white">{pkg.cargoSummary}</strong>
               </p>
             </div>
           </div>
@@ -401,7 +405,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                 <div className="hidden md:flex flex-col items-end gap-1 text-right">
                   <span className="text-[11px] text-indigo-300">Phương án được khách chọn hiện tại:</span>
                   <span className="px-3 py-1 rounded-lg text-xs font-black bg-amber-400 text-slate-900 shadow-xs">
-                    {currentOption?.tierLabel || 'Chưa chọn'}
+                    {currentOption?.tierNameVi || 'Chưa chọn'}
                   </span>
                 </div>
               </div>
@@ -447,10 +451,10 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                         <div className="flex items-start justify-between gap-2 mb-3">
                           <div>
                             <span className={`inline-block px-2.5 py-0.5 rounded-md text-[11px] font-black uppercase border mb-1.5 ${headerBadgeCls}`}>
-                              {option.tier} • {option.tierLabel}
+                              {option.tier} • {option.tierNameVi}
                             </span>
                             <h4 className="text-base font-bold text-slate-900 leading-snug">
-                              {option.serviceName}
+                              {option.serviceType}
                             </h4>
                             <p className="text-xs text-slate-500 italic mt-0.5">
                               "{option.tagline}"
@@ -476,11 +480,11 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                           <div className="text-[11px] text-slate-500 font-medium">Tổng cước phí ước tính:</div>
                           <div className="flex items-baseline gap-2 mt-0.5">
                             <span className="text-2xl font-black text-slate-900 tracking-tight">
-                              {formatUSD(option.totalCostUsd)}
+                              {formatUSD(option.totalConvertedUsd)}
                             </span>
-                            {option.totalCostVnd > 0 && (
+                            {option.totalConvertedVnd > 0 && (
                               <span className="text-xs font-semibold text-slate-600">
-                                + {formatVND(option.totalCostVnd)}
+                                + {formatVND(option.totalConvertedVnd)}
                               </span>
                             )}
                           </div>
@@ -510,7 +514,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                             <span className="text-slate-500 flex items-center gap-1.5">
                               <CalendarIcon className="w-3.5 h-3.5 text-slate-400" /> Lịch tàu / Cut-off:
                             </span>
-                            <span className="font-medium text-slate-700">{option.departureFrequency} • {option.closingCutoff}</span>
+                            <span className="font-medium text-slate-700">{option.departureSchedule} • {option.closingCutoff}</span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-slate-500 flex items-center gap-1.5">
@@ -531,27 +535,27 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                             <span className="text-slate-500">Mức độ Tiết Kiệm:</span>
                             <div className="flex items-center gap-1.5">
                               <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                <div className="h-full bg-emerald-500" style={{ width: `${option.ratings.costScore * 10}%` }} />
+                                <div className="h-full bg-emerald-500" style={{ width: `${(option.rating?.costScore || 8) * 10}%` }} />
                               </div>
-                              <span className="font-bold text-slate-700">{option.ratings.costScore}/10</span>
+                              <span className="font-bold text-slate-700">{option.rating?.costScore || 8}/10</span>
                             </div>
                           </div>
                           <div className="flex items-center justify-between text-[11px]">
                             <span className="text-slate-500">Tốc độ & Transit:</span>
                             <div className="flex items-center gap-1.5">
                               <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                <div className="h-full bg-blue-500" style={{ width: `${option.ratings.speedScore * 10}%` }} />
+                                <div className="h-full bg-blue-500" style={{ width: `${(option.rating?.speedScore || 7) * 10}%` }} />
                               </div>
-                              <span className="font-bold text-slate-700">{option.ratings.speedScore}/10</span>
+                              <span className="font-bold text-slate-700">{option.rating?.speedScore || 7}/10</span>
                             </div>
                           </div>
                           <div className="flex items-center justify-between text-[11px]">
                             <span className="text-slate-500">Độ tin cậy & Chỗ:</span>
                             <div className="flex items-center gap-1.5">
                               <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                <div className="h-full bg-indigo-500" style={{ width: `${option.ratings.reliabilityScore * 10}%` }} />
+                                <div className="h-full bg-indigo-500" style={{ width: `${(option.rating?.reliabilityScore || 9) * 10}%` }} />
                               </div>
-                              <span className="font-bold text-slate-700">{option.ratings.reliabilityScore}/10</span>
+                              <span className="font-bold text-slate-700">{option.rating?.reliabilityScore || 9}/10</span>
                             </div>
                           </div>
                         </div>
@@ -560,7 +564,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                         <div className="mb-4">
                           <div className="text-[11px] font-bold text-slate-700 mb-1.5">Lợi thế nổi bật:</div>
                           <ul className="space-y-1">
-                            {option.highlights.map((hl, i) => (
+                            {(option.valueAddHighlights || []).map((hl, i) => (
                               <li key={i} className="text-xs text-slate-600 flex items-start gap-1.5">
                                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
                                 <span>{hl}</span>
@@ -642,7 +646,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                       </span>
                       <button
                         type="button"
-                        onClick={() => handleCopyPitch(pkg.pitchDecks.emailPitch, 'zalo')}
+                        onClick={() => handleCopyPitch(pkg.pitchDecks.zaloMessage, 'zalo')}
                         className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 flex items-center gap-1 cursor-pointer"
                       >
                         {copiedPitchType === 'zalo' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
@@ -650,7 +654,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                       </button>
                     </div>
                     <pre className="text-xs text-slate-700 whitespace-pre-wrap font-sans bg-white p-3 rounded-lg border border-slate-200 max-h-40 overflow-y-auto">
-                      {pkg.pitchDecks.emailPitch}
+                      {pkg.pitchDecks.zaloMessage}
                     </pre>
                   </div>
 
@@ -662,7 +666,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                       </span>
                       <button
                         type="button"
-                        onClick={() => handleCopyPitch(pkg.pitchDecks.callScript, 'call')}
+                        onClick={() => handleCopyPitch(pkg.pitchDecks.phoneScript, 'call')}
                         className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 flex items-center gap-1 cursor-pointer"
                       >
                         {copiedPitchType === 'call' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
@@ -670,7 +674,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                       </button>
                     </div>
                     <pre className="text-xs text-slate-700 whitespace-pre-wrap font-sans bg-white p-3 rounded-lg border border-slate-200 max-h-40 overflow-y-auto">
-                      {pkg.pitchDecks.callScript}
+                      {pkg.pitchDecks.phoneScript}
                     </pre>
                   </div>
                 </div>
@@ -699,7 +703,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                   >
                     {pkg.options.map(opt => (
                       <option key={opt.id} value={opt.id}>
-                        {opt.tierLabel} ({opt.carrier}) - {formatUSD(opt.totalCostUsd)}
+                        {opt.tierNameVi} ({opt.carrier}) - {formatUSD(opt.totalConvertedUsd)}
                       </option>
                     ))}
                   </select>
@@ -717,8 +721,8 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                       </label>
                       <input
                         type="text"
-                        value={currentOption.tierLabel}
-                        onChange={(e) => handleUpdateOptionField(currentOption.id, 'tierLabel', e.target.value)}
+                        value={currentOption.tierNameVi}
+                        onChange={(e) => handleUpdateOptionField(currentOption.id, 'tierNameVi', e.target.value)}
                         className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
@@ -764,8 +768,8 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                       </label>
                       <input
                         type="text"
-                        value={currentOption.departureFrequency}
-                        onChange={(e) => handleUpdateOptionField(currentOption.id, 'departureFrequency', e.target.value)}
+                        value={currentOption.departureSchedule}
+                        onChange={(e) => handleUpdateOptionField(currentOption.id, 'departureSchedule', e.target.value)}
                         className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
@@ -797,7 +801,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-                        Chi tiết các khoản mục cước & phụ phí của gói [{currentOption.tierLabel}]
+                        Chi tiết các khoản mục cước & phụ phí của gói [{currentOption.tierNameVi}]
                       </h4>
                       <button
                         type="button"
@@ -827,23 +831,23 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                             <tr key={item.id || idx} className="hover:bg-slate-50/70">
                               <td className="p-3 text-center text-slate-400 font-medium">{idx + 1}</td>
                               <td className="p-3">
-                                <div className="font-semibold text-slate-800">{item.name}</div>
-                                {item.englishName && (
-                                  <div className="text-[11px] text-slate-400 italic">{item.englishName}</div>
+                                <div className="font-semibold text-slate-800">{item.description}</div>
+                                {item.code && (
+                                  <div className="text-[11px] text-slate-400 font-mono">[{item.code}]</div>
                                 )}
                               </td>
                               <td className="p-3 text-slate-600">{item.unit || 'CNTR'}</td>
                               <td className="p-3 text-right">
                                 <input
                                   type="number"
-                                  value={item.rate || 0}
-                                  onChange={(e) => handleUpdateLineItemCost(currentOption.id, idx, 'rate', parseFloat(e.target.value) || 0)}
+                                  value={item.unitPrice || 0}
+                                  onChange={(e) => handleUpdateLineItemCost(currentOption.id, idx, 'unitPrice', parseFloat(e.target.value) || 0)}
                                   className="w-24 text-right font-mono font-semibold px-2 py-1 border border-slate-300 rounded text-xs"
                                 />
                               </td>
                               <td className="p-3 text-center font-bold text-slate-700">{item.currency || 'USD'}</td>
                               <td className="p-3 text-right font-mono font-bold text-slate-900">
-                                {item.currency === 'VND' ? formatVND(item.total || 0) : formatUSD(item.total || 0)}
+                                {item.currency === 'VND' ? formatVND(item.amountVnd || 0) : formatUSD(item.amountUsd || 0)}
                               </td>
                               <td className="p-3 text-center">
                                 <button
@@ -862,8 +866,8 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                           <tr>
                             <td colSpan={5} className="p-3 text-right">Tổng cộng gói:</td>
                             <td className="p-3 text-right font-mono text-sm text-indigo-700">
-                              {formatUSD(currentOption.totalCostUsd)}
-                              {currentOption.totalCostVnd > 0 && ` + ${formatVND(currentOption.totalCostVnd)}`}
+                              {formatUSD(currentOption.totalConvertedUsd)}
+                              {currentOption.totalConvertedVnd > 0 && ` + ${formatVND(currentOption.totalConvertedVnd)}`}
                             </td>
                             <td></td>
                           </tr>
@@ -893,10 +897,10 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
               <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                 <div className="text-center max-w-xl mx-auto mb-8">
                   <h3 className="text-lg font-black text-slate-900">
-                    Kính gửi Quý Khách Hàng: {pkg.customerName}
+                    Kính gửi Quý Khách Hàng: {pkg.customer?.companyName || (pkg.customer as any)?.customerName || 'Quý Doanh Nghiệp'}
                   </h3>
                   <p className="text-xs text-slate-500 mt-1">
-                    BOGI Logistics trân trọng gửi 3 phương án vận chuyển tối ưu cho lô hàng {pkg.cargoDisplay} từ {pkg.routeDisplay}. Quý khách vui lòng chọn phương án phù hợp nhất:
+                    BOGI Logistics trân trọng gửi 3 phương án vận chuyển tối ưu cho lô hàng {pkg.cargoSummary} từ {pkg.shipment?.pol} ➔ {pkg.shipment?.pod}. Quý khách vui lòng chọn phương án phù hợp nhất:
                   </p>
                 </div>
 
@@ -921,10 +925,10 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
 
                         <div>
                           <div className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-                            {opt.tierLabel}
+                            {opt.tierNameVi}
                           </div>
                           <div className="text-xl font-black text-slate-900 mt-1">
-                            {formatUSD(opt.totalCostUsd)}
+                            {formatUSD(opt.totalConvertedUsd)}
                           </div>
                           <div className="text-xs text-slate-600 font-medium mt-1">
                             Hãng tàu: <strong className="text-slate-900">{opt.carrier}</strong>
@@ -937,7 +941,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                           </div>
 
                           <div className="my-4 border-t border-slate-200 pt-3 space-y-1.5">
-                            {opt.highlights.map((h, i) => (
+                            {(opt.valueAddHighlights || []).map((h, i) => (
                               <div key={i} className="text-xs text-slate-700 flex items-center gap-1.5">
                                 <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                                 <span>{h}</span>
@@ -969,10 +973,10 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                     </div>
                     <div>
                       <div className="text-xs font-bold text-slate-800">
-                        Phương án chốt hiện tại: <span className="text-indigo-600 font-black">{currentOption.tierLabel} ({currentOption.carrier})</span>
+                        Phương án chốt hiện tại: <span className="text-indigo-600 font-black">{currentOption.tierNameVi} ({currentOption.carrier})</span>
                       </div>
                       <div className="text-[11px] text-slate-500">
-                        Tổng chi phí: {formatUSD(currentOption.totalCostUsd)} • Cam kết giao trước hạn • Miễn phí DEM/DET {currentOption.freeTimeDemDet}
+                        Tổng chi phí: {formatUSD(currentOption.totalConvertedUsd)} • Cam kết giao trước hạn • Miễn phí DEM/DET {currentOption.freeTimeDemDet}
                       </div>
                     </div>
                   </div>
@@ -1049,7 +1053,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                         Mã: {pkg.packageCode}
                       </div>
                       <div className="text-[10px] text-slate-400">
-                        Ngày phát hành: {pkg.packageDate}
+                        Ngày phát hành: {pkg.createdDate}
                       </div>
                     </div>
                   </div>
@@ -1057,13 +1061,13 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                   {/* Customer Meta Table */}
                   <div className="grid grid-cols-2 gap-4 text-xs bg-white p-3.5 rounded-lg border border-slate-200">
                     <div>
-                      <span className="text-slate-400">Khách hàng:</span> <strong className="text-slate-800">{pkg.customerName}</strong>
+                      <span className="text-slate-400">Khách hàng:</span> <strong className="text-slate-800">{pkg.customer?.companyName || (pkg.customer as any)?.customerName || 'Quý Doanh Nghiệp'}</strong>
                     </div>
                     <div>
-                      <span className="text-slate-400">Tuyến vận tải:</span> <strong className="text-slate-800">{pkg.routeDisplay}</strong>
+                      <span className="text-slate-400">Tuyến vận tải:</span> <strong className="text-slate-800">{pkg.shipment?.pol} ➔ {pkg.shipment?.pod}</strong>
                     </div>
                     <div>
-                      <span className="text-slate-400">Chi tiết hàng:</span> <strong className="text-slate-800">{pkg.cargoDisplay}</strong>
+                      <span className="text-slate-400">Chi tiết hàng:</span> <strong className="text-slate-800">{pkg.cargoSummary}</strong>
                     </div>
                     <div>
                       <span className="text-slate-400">Chuyên viên phụ trách:</span> <strong className="text-slate-800">{pkg.salesRepName} ({pkg.salesRepPhone})</strong>
@@ -1076,10 +1080,10 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                       <div key={opt.id} className="border border-slate-300 rounded-xl p-3.5 bg-white flex flex-col justify-between">
                         <div>
                           <div className="text-[11px] font-black uppercase text-indigo-700 border-b border-slate-100 pb-1">
-                            {opt.tierLabel}
+                            {opt.tierNameVi}
                           </div>
                           <div className="text-base font-black text-slate-900 my-1">
-                            {formatUSD(opt.totalCostUsd)}
+                            {formatUSD(opt.totalConvertedUsd)}
                           </div>
                           <div className="text-[11px] text-slate-600">
                             Hãng tàu: <strong>{opt.carrier}</strong>
@@ -1095,7 +1099,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                         <div className="mt-3 pt-2 border-t border-slate-100">
                           <div className="text-[10px] font-bold text-slate-500 uppercase">Ưu điểm:</div>
                           <div className="text-[10px] text-slate-600 mt-0.5">
-                            {opt.highlights.join(' • ')}
+                            {(opt.valueAddHighlights || []).join(' • ')}
                           </div>
                         </div>
                       </div>
@@ -1117,7 +1121,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
         <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
           <div className="text-slate-500 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Đang kích hoạt gói: <strong className="text-slate-800">{currentOption?.tierLabel}</strong> ({formatUSD(currentOption?.totalCostUsd || 0)})</span>
+            <span>Đang kích hoạt gói: <strong className="text-slate-800">{currentOption?.tierNameVi}</strong> ({formatUSD(currentOption?.totalConvertedUsd || 0)})</span>
           </div>
 
           <div className="flex items-center gap-2">

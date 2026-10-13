@@ -331,9 +331,9 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({
                       {locItems.map((item, index) => (
                         <tr key={item.id} className="hover:bg-slate-50">
                           <td className="p-2 border border-slate-200 text-center font-mono">{index + 1}</td>
-                          <td className="p-2 border border-slate-200">
-                            <div className="font-semibold text-slate-900">{item.description}</div>
-                            {item.note && <div className="text-[10px] text-slate-500 italic">{item.note}</div>}
+                          <td className="p-2 border border-slate-200 min-w-[200px]">
+                            <div className="font-semibold text-slate-900 break-words whitespace-pre-wrap">{item.description}</div>
+                            {item.note && <div className="text-[10px] text-slate-500 italic break-words whitespace-pre-wrap mt-0.5">{item.note}</div>}
                           </td>
                           <td className="p-2 border border-slate-200 text-center font-mono font-bold text-cyan-800">{item.code}</td>
                           <td className="p-2 border border-slate-200 text-right font-bold">{item.quantity}</td>

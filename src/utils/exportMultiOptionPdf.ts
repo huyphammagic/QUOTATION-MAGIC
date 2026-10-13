@@ -98,7 +98,7 @@ export async function exportMultiOptionPdf(pkg: MultiOptionQuotationPackage): Pr
   doc.setFont('Roboto', 'bold');
   doc.setFontSize(7.5);
   doc.setTextColor(15, 23, 42);
-  doc.text(normalizeUnicode(`Khách Hàng (Customer): ${pkg.customer?.companyName || pkg.customer?.name || 'Quý Doanh Nghiệp'}`), margin + 3, curY + 4.5);
+  doc.text(normalizeUnicode(`Khách Hàng (Customer): ${pkg.customer?.companyName || (pkg.customer as any)?.customerName || 'Quý Doanh Nghiệp'}`), margin + 3, curY + 4.5);
   doc.setFont('Roboto', 'normal');
   doc.setFontSize(7);
   doc.setTextColor(71, 85, 105);
@@ -114,8 +114,8 @@ export async function exportMultiOptionPdf(pkg: MultiOptionQuotationPackage): Pr
   doc.setFont('Roboto', 'normal');
   doc.setFontSize(7);
   doc.setTextColor(71, 85, 105);
-  doc.text(normalizeUnicode(`Phương thức: ${pkg.shipment?.mode || 'Đường biển (Sea Freight)'} | Điều kiện: ${pkg.shipment?.incoterms || 'FOB/CIF'}`), midX, curY + 8.5);
-  doc.text(normalizeUnicode(`Hàng hóa: ${pkg.cargoSummary || 'Hàng bách hóa tiêu chuẩn'} | Tỷ giá: 1 USD = ${formatNumberVND(pkg.exchangeRate)} VND`), midX, curY + 12);
+  doc.text(normalizeUnicode(`Phương thức: ${pkg.shipment?.mode || 'Đường biển (Sea Freight)'} | Hàng: ${pkg.cargoSummary || 'Hàng tiêu chuẩn'}`), midX, curY + 8.5);
+  doc.text(normalizeUnicode(`Tỷ giá áp dụng: 1 USD = ${formatNumberVND(pkg.exchangeRate)} VND`), midX, curY + 12);
 
   // =========================================================================
   // 3 COMPARISON CARDS / COLUMNS

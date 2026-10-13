@@ -315,6 +315,16 @@ export const APP_ROUTES: Record<AppRouteId, RouteDefinition> = {
     descriptionVi: 'Lập và quản lý Debit Note theo từng báo giá, tự động tính cước, phí phát sinh, xuất PDF A4 song ngữ và tích hợp mã thanh toán VietQR 24/7',
     descriptionEn: 'Generate and manage customer debit notes for quotations with multi-currency VAT calculation, Unicode A4 PDF export, and dynamic VietQR banking integration',
   },
+  multi_option_quotation: {
+    id: 'multi_option_quotation',
+    path: '/quotations/multi-option',
+    hash: '#quotations/multi-option',
+    titleVi: 'Báo Giá Đa Phương Án So Sánh (Good - Better - Best)',
+    titleEn: 'Multi-Option Comparative Quotation',
+    group: 'quotation',
+    descriptionVi: 'Ma trận so sánh 3 phương án cước Tiết kiệm - Khuyên dùng - Hỏa tốc giúp tăng tỷ lệ chốt đơn và bảo vệ lợi nhuận biên',
+    descriptionEn: 'Multi-tier Good-Better-Best quotation comparison engine to increase win-rate and upsell premium logistics services',
+  },
   opportunity_radar: {
     id: 'opportunity_radar',
     path: '/radar/opportunities',
