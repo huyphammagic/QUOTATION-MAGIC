@@ -64,6 +64,7 @@ export type AppRouteId =
   | 'ops_trucking'
   | 'ops_customs'
   // Analytics
+  | 'executive_cockpit'
   | 'analytics_overview'
   | 'analytics_funnel'
   | 'analytics_sales'

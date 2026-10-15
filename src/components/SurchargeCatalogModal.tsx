@@ -5,6 +5,8 @@ import {
   Ship, Plane, Truck, FileCheck, Layers, MapPin, Anchor, Compass
 } from 'lucide-react';
 
+import { TableFullscreenHeader } from './tables/TableFullscreenHeader';
+
 interface SurchargeCatalogModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -13,6 +15,9 @@ interface SurchargeCatalogModalProps {
   onSaveSurcharge: (item: SurchargeItem) => void;
   onDeleteSurcharge: (id: string) => void;
   onAddSurchargeToQuote?: (surcharge: SurchargeItem) => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+  onNavigateToTable?: (targetTableId: string) => void;
 }
 
 export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
@@ -22,8 +27,15 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
   exchangeRate,
   onSaveSurcharge,
   onDeleteSurcharge,
-  onAddSurchargeToQuote
+  onAddSurchargeToQuote,
+  isFullscreen,
+  onToggleFullscreen,
+  onNavigateToTable,
 }) => {
+  const [localFullscreen, setLocalFullscreen] = useState(true);
+  const effectiveFullscreen = isFullscreen !== undefined ? isFullscreen : localFullscreen;
+  const handleToggleFs = onToggleFullscreen || (() => setLocalFullscreen(!localFullscreen));
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTransportMode, setSelectedTransportMode] = useState<string>('ALL');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
@@ -165,32 +177,27 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-5xl my-8 overflow-hidden flex flex-col max-h-[90vh]">
+    <div className={effectiveFullscreen
+      ? "fixed inset-0 z-50 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden bg-slate-900"
+      : "fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-xs p-4 overflow-y-auto"
+    }>
+      <div className={effectiveFullscreen
+        ? "bg-white w-screen h-screen max-w-none max-h-none rounded-none flex flex-col overflow-hidden border-0"
+        : "bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-5xl my-8 overflow-hidden flex flex-col max-h-[90vh]"
+      }>
         
-        {/* Modal Header */}
-        <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-slate-800">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-700 rounded-lg">
-              <Receipt className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold uppercase tracking-widest text-white">
-                DANH MỤC PHỤ PHÍ MASTER THEO POL / FREIGHT / POD
-              </h2>
-              <p className="text-xs text-slate-400">
-                Phân loại phụ phí theo Vị trí (Cảng đi POL, Chặng chính FREIGHT, Cảng đến POD) & Hình thức vận chuyển
-              </p>
-            </div>
-          </div>
-          
-          <button 
-            onClick={onClose} 
-            className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        {/* Fullscreen Folder Navigation & URL Header */}
+        <TableFullscreenHeader
+          folderName="Thư Mục Danh Mục Phụ Phí"
+          folderCategory="Biểu Cước & Phí"
+          recordCount={surcharges.length}
+          folderId="surcharges"
+          routeId="master_surcharges"
+          isFullscreen={effectiveFullscreen}
+          onToggleFullscreen={handleToggleFs}
+          onClose={onClose}
+          onNavigateToFolder={onNavigateToTable}
+        />
 
         {/* Action & Filter Toolbar */}
         <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row gap-3 items-center justify-between">

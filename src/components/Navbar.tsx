@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ship, RefreshCw, Menu, Plus, LayoutDashboard, ShieldCheck, LogIn, FileText, Anchor, Radio } from 'lucide-react';
+import { Ship, RefreshCw, Menu, Plus, LayoutDashboard, ShieldCheck, LogIn, FileText, Anchor, Radio, Compass, LayoutGrid } from 'lucide-react';
 import { CompanyProfile } from '../types/logistics';
 import { CloudSyncStatusBadge } from './CloudSyncStatusBadge';
 import { CompanySwitcher } from './company/CompanySwitcher';
@@ -134,14 +134,28 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         )}
 
+
+
         {onOpenDashboard && (
-          <button
-            type="button"
-            onClick={() => onOpenDashboard('OVERVIEW')}
-            className="hover:text-slate-900 transition-colors cursor-pointer"
-          >
-            Báo Cáo & BI
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => onOpenDashboard('COCKPIT')}
+              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800 border border-indigo-200/80 transition-colors cursor-pointer shadow-2xs"
+              title="Mở Bảng Điều Hành Cockpit Dành Cho Ban Lãnh Đạo & Trưởng Phòng Sales"
+            >
+              <Compass className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Cockpit Lãnh Đạo</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onOpenDashboard('OVERVIEW')}
+              className="hover:text-slate-900 transition-colors cursor-pointer"
+            >
+              Báo Cáo & BI
+            </button>
+          </>
         )}
 
         {onOpenEngagementRadar && (

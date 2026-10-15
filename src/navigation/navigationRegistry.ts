@@ -586,6 +586,16 @@ export const APP_ROUTES: Record<AppRouteId, RouteDefinition> = {
   },
 
   // Analytics
+  executive_cockpit: {
+    id: 'executive_cockpit',
+    path: '/analytics/cockpit',
+    hash: '#analytics/cockpit',
+    titleVi: 'Cockpit Ban Lãnh Đạo & Sales (Executive BI)',
+    titleEn: 'Executive Cockpit Dashboard',
+    group: 'analytics',
+    descriptionVi: 'Bảng điều hành cockpit tối cao: Dự báo quota, ma trận BCG tuyến hàng, radar khách hàng VIP và bộ giả lập What-If',
+    descriptionEn: 'C-Level & Sales Director cockpit with pipeline forecast, lane matrix, VIP radar and what-if simulator',
+  },
   analytics_overview: {
     id: 'analytics_overview',
     path: '/analytics/overview',
@@ -730,87 +740,178 @@ export function parseRouteFromUrl(pathname: string, hash: string): {
   routeId: AppRouteId | null; 
   param?: string; 
   isNotFound?: boolean;
+  isFullscreen?: boolean;
 } {
   const cleanPath = pathname.toLowerCase().replace(/\/$/, '') || '/';
-  const cleanHash = hash.toLowerCase().replace(/\/$/, '');
+  
+  // Extract query string either from hash (#tables/quotations?fullscreen=true) or standard URL search
+  const rawHash = hash || '';
+  const hashQuestionIndex = rawHash.indexOf('?');
+  const cleanHash = (hashQuestionIndex >= 0 ? rawHash.slice(0, hashQuestionIndex) : rawHash)
+    .toLowerCase().replace(/\/$/, '');
+  
+  const queryString = hashQuestionIndex >= 0 
+    ? rawHash.slice(hashQuestionIndex + 1) 
+    : (typeof window !== 'undefined' ? window.location.search.replace(/^\?/, '') : '');
+  const searchParams = new URLSearchParams(queryString);
+  // Default to full-screen mode for folder navigation unless explicitly disabled
+  const hasExplicitFullscreenParam = searchParams.has('fullscreen') || searchParams.has('view') || searchParams.has('mode');
+  const isFullscreen = hasExplicitFullscreenParam 
+    ? (searchParams.get('fullscreen') === 'true' || searchParams.get('view') === 'fullscreen' || searchParams.get('mode') === 'fullscreen')
+    : true;
 
   // 1. Check for Customer Secure Quote Link (/q/:token, #/q/:token, /portal/:token, #/portal/:token)
   if (cleanPath.startsWith('/q/')) {
     const token = pathname.replace(/^\/q\//i, '').split(/[?#]/)[0].trim();
-    if (token) return { routeId: 'secure_quote_portal', param: token };
+    if (token) return { routeId: 'secure_quote_portal', param: token, isFullscreen };
   }
   if (cleanHash.startsWith('#/q/') || cleanHash.startsWith('#q/')) {
-    const token = hash.replace(/^#(?:|\/)q\//i, '').split(/[?#]/)[0].trim();
-    if (token) return { routeId: 'secure_quote_portal', param: token };
+    const token = cleanHash.replace(/^#(?:|\/)q\//i, '').split(/[?#]/)[0].trim();
+    if (token) return { routeId: 'secure_quote_portal', param: token, isFullscreen };
   }
   if (cleanPath.startsWith('/portal/')) {
     const token = pathname.replace(/^\/portal\//i, '').split(/[?#]/)[0].trim();
-    if (token) return { routeId: 'secure_quote_portal', param: token };
+    if (token) return { routeId: 'secure_quote_portal', param: token, isFullscreen };
   }
   if (cleanHash.startsWith('#/portal/') || cleanHash.startsWith('#portal/')) {
-    const token = hash.replace(/^#(?:|\/)portal\//i, '').split(/[?#]/)[0].trim();
-    if (token) return { routeId: 'secure_quote_portal', param: token };
+    const token = cleanHash.replace(/^#(?:|\/)portal\//i, '').split(/[?#]/)[0].trim();
+    if (token) return { routeId: 'secure_quote_portal', param: token, isFullscreen };
   }
 
   // Check for Shipment Detail deep links (/operations/shipments/:id or #operations/shipments/:id)
   if (cleanPath.startsWith('/operations/shipments/')) {
     const shipId = pathname.replace(/^\/operations\/shipments\//i, '').split(/[?#]/)[0].trim();
-    if (shipId) return { routeId: 'ops_shipment_detail', param: shipId };
+    if (shipId) return { routeId: 'ops_shipment_detail', param: shipId, isFullscreen };
   }
   if (cleanHash.startsWith('#/operations/shipments/') || cleanHash.startsWith('#operations/shipments/')) {
-    const shipId = hash.replace(/^#(?:|\/)operations\/shipments\//i, '').split(/[?#]/)[0].trim();
-    if (shipId) return { routeId: 'ops_shipment_detail', param: shipId };
+    const shipId = cleanHash.replace(/^#(?:|\/)operations\/shipments\//i, '').split(/[?#]/)[0].trim();
+    if (shipId) return { routeId: 'ops_shipment_detail', param: shipId, isFullscreen };
   }
 
   // 2. Exact match on path or hash
   const routes = Object.values(APP_ROUTES);
   for (const route of routes) {
     if (cleanPath === route.path.toLowerCase()) {
-      return { routeId: route.id };
+      return { routeId: route.id, isFullscreen };
     }
     if (cleanHash === route.hash.toLowerCase() || cleanHash === `#/${route.path.replace(/^\//, '').toLowerCase()}`) {
-      return { routeId: route.id };
+      return { routeId: route.id, isFullscreen };
     }
   }
 
-  // 3. Fallback aliases
+  // 3. Dedicated Folder Deep Links & Direct Aliases (#quotations, #customers, #rates, etc.)
+  if (
+    cleanHash === '#tables' || cleanHash === '#/tables' || cleanPath === '/tables' ||
+    cleanHash === '#tables/all' || cleanHash === '#tables/directory' ||
+    cleanHash === '#folders' || cleanHash === '#folders/all' ||
+    cleanHash === '#quotations' || cleanHash === '#quotes' || cleanPath === '/quotations' ||
+    cleanHash === '#tables/quotations' || cleanHash === '#tables/quotes' || 
+    cleanPath === '/tables/quotations' || cleanPath === '/tables/quotes'
+  ) {
+    return { routeId: 'quotations_all', isFullscreen };
+  }
+  if (cleanHash === '#tables/rates' || cleanHash === '#tables/tariffs' || cleanPath === '/tables/rates' || cleanPath === '/tables/tariffs') {
+    return { routeId: 'pricing_rates', isFullscreen };
+  }
+  if (cleanHash === '#tables/customers' || cleanHash === '#tables/crm' || cleanPath === '/tables/customers' || cleanPath === '/tables/crm') {
+    return { routeId: 'master_customers', isFullscreen };
+  }
+  if (cleanHash === '#tables/surcharges' || cleanPath === '/tables/surcharges') {
+    return { routeId: 'master_surcharges', isFullscreen };
+  }
+  if (cleanHash === '#tables/contracts' || cleanPath === '/tables/contracts') {
+    return { routeId: 'pricing_contracts', isFullscreen };
+  }
+  if (cleanHash === '#tables/shipments' || cleanPath === '/tables/shipments') {
+    return { routeId: 'ops_shipments', isFullscreen };
+  }
+  if (cleanHash === '#tables/control-tower' || cleanPath === '/tables/control-tower') {
+    return { routeId: 'ops_control_tower', isFullscreen };
+  }
+  if (cleanHash === '#tables/payments' || cleanPath === '/tables/payments') {
+    return { routeId: 'quotation_payments', isFullscreen };
+  }
+  if (cleanHash === '#tables/debit-notes' || cleanPath === '/tables/debit-notes') {
+    return { routeId: 'debit_note_management', isFullscreen };
+  }
+  if (cleanHash === '#tables/carrier-invoices' || cleanPath === '/tables/carrier-invoices') {
+    return { routeId: 'carrier_invoice_audit', isFullscreen };
+  }
+  if (cleanHash === '#tables/tenders' || cleanPath === '/tables/tenders') {
+    return { routeId: 'enterprise_tender_engine', isFullscreen };
+  }
+  if (cleanHash === '#tables/cockpit' || cleanPath === '/tables/cockpit') {
+    return { routeId: 'executive_cockpit', isFullscreen };
+  }
+  if (cleanHash === '#tables/ports' || cleanPath === '/tables/ports') {
+    return { routeId: 'master_ports', isFullscreen };
+  }
+  if (cleanHash === '#tables/audit' || cleanPath === '/tables/audit') {
+    return { routeId: 'sys_audit', isFullscreen };
+  }
+
+  // 4. Fallback aliases
   if (cleanHash === '#dashboard' || cleanPath === '/dashboard' || cleanHash === '#analytics' || cleanPath === '/analytics') {
-    return { routeId: 'main_dashboard' };
+    return { routeId: 'main_dashboard', isFullscreen };
+  }
+  if (cleanHash === '#cockpit' || cleanPath === '/cockpit') {
+    return { routeId: 'executive_cockpit', isFullscreen };
   }
   if (cleanHash === '#customers' || cleanPath === '/customers') {
-    return { routeId: 'master_customers' };
+    return { routeId: 'master_customers', isFullscreen };
   }
   if (cleanHash === '#rates' || cleanPath === '/rates') {
-    return { routeId: 'pricing_rates' };
+    return { routeId: 'pricing_rates', isFullscreen };
+  }
+  if (cleanHash === '#surcharges' || cleanPath === '/surcharges') {
+    return { routeId: 'master_surcharges', isFullscreen };
   }
   if (cleanHash === '#contracts' || cleanPath === '/contracts') {
-    return { routeId: 'pricing_contracts' };
+    return { routeId: 'pricing_contracts', isFullscreen };
   }
   if (cleanHash === '#backup' || cleanPath === '/backup') {
-    return { routeId: 'sys_backup' };
+    return { routeId: 'sys_backup', isFullscreen };
   }
   if (cleanHash === '#integrity' || cleanPath === '/integrity') {
-    return { routeId: 'sys_integrity' };
+    return { routeId: 'sys_integrity', isFullscreen };
   }
   if (cleanHash === '#smart-workspace' || cleanPath === '/smart-workspace') {
-    return { routeId: 'smart_quotation_workspace' };
+    return { routeId: 'smart_quotation_workspace', isFullscreen };
   }
   if (cleanHash === '#shipments' || cleanPath === '/shipments' || cleanHash === '#operations/shipments') {
-    return { routeId: 'ops_shipments' };
+    return { routeId: 'ops_shipments', isFullscreen };
+  }
+  if (cleanHash === '#payments' || cleanPath === '/payments') {
+    return { routeId: 'quotation_payments', isFullscreen };
+  }
+  if (cleanHash === '#debit-notes' || cleanPath === '/debit-notes') {
+    return { routeId: 'debit_note_management', isFullscreen };
+  }
+  if (cleanHash === '#carrier-invoices' || cleanPath === '/carrier-invoices') {
+    return { routeId: 'carrier_invoice_audit', isFullscreen };
+  }
+  if (cleanHash === '#tenders' || cleanPath === '/tenders') {
+    return { routeId: 'enterprise_tender_engine', isFullscreen };
+  }
+  if (cleanHash === '#ports' || cleanPath === '/ports') {
+    return { routeId: 'master_ports', isFullscreen };
+  }
+  if (cleanHash === '#audit' || cleanPath === '/audit') {
+    return { routeId: 'sys_audit', isFullscreen };
   }
 
-  // 4. If root '/' or '/index.html' and empty hash -> Main Quotation Workbench
+  // 5. If root '/' or '/index.html' and empty hash -> Main Quotation Workbench
   if ((cleanPath === '/' || cleanPath === '/index.html' || !cleanPath) && (!cleanHash || cleanHash === '#' || cleanHash === '#/')) {
-    return { routeId: null };
+    return { routeId: null, isFullscreen: false };
   }
 
-  // 5. If no explicit hash is provided, default to main workbench instead of false-positive 404
+  // 6. If no explicit hash is provided, default to main workbench instead of false-positive 404
   if (!cleanHash || cleanHash === '#' || cleanHash === '#/') {
-    return { routeId: null };
+    return { routeId: null, isFullscreen: false };
   }
 
-  // 6. Unknown hash or unknown deep route requested directly
-  return { routeId: null, isNotFound: true };
+  // 7. Unknown hash or unknown deep route requested directly
+  return { routeId: null, isNotFound: true, isFullscreen: false };
 }
 
 /**

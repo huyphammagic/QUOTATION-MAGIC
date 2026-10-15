@@ -114,7 +114,7 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
   // 2. Executive Quota Tracking & Pipeline Projections
   const quotaAnalytics = useMemo(() => {
     const currentActual = wonUsd;
-    const pendingQuotes = quotes.filter(q => q.status === 'PENDING' || q.status === 'SENT');
+    const pendingQuotes = quotes.filter(q => q.status === 'PENDING_APPROVAL' || q.status === 'SENT' || q.status === 'VIEWED');
     const pendingPipelineUsd = pendingQuotes.reduce((sum, q) => sum + (q.grandTotalUsd || 0), 0);
     // Weighted forecast: 35% probability of closing pending deals
     const weightedForecastUsd = currentActual + (pendingPipelineUsd * 0.35);
@@ -251,7 +251,7 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
         const avgTatMinutes = rep.avgResponseTimeHours ? Math.round(rep.avgResponseTimeHours * 60) : (idx % 2 === 0 ? 25 : 95);
         const pendingQuotes = quotes.filter(q => {
           const rName = (q as any).salesRepName || q.company?.salesRepName || (q as any).salesRep;
-          return rName === rep.salesRep && (q.status === 'PENDING' || q.status === 'SENT');
+          return rName === rep.salesRep && (q.status === 'PENDING_APPROVAL' || q.status === 'SENT' || q.status === 'VIEWED');
         });
         
         return {
@@ -269,7 +269,7 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
   // 6. High-Stakes Quotes At Risk (Value > $2,000 or Expiring in 48h)
   const highStakesAtRiskQuotes = useMemo(() => {
     return quotes.filter(q => {
-      const isPending = q.status === 'PENDING' || q.status === 'SENT' || q.status === 'DRAFT';
+      const isPending = q.status === 'PENDING_APPROVAL' || q.status === 'SENT' || q.status === 'VIEWED' || q.status === 'DRAFT';
       const isHighValue = (q.grandTotalUsd || 0) >= 1500 || (q.grandTotalVnd || 0) >= 40000000;
       return isPending && isHighValue;
     }).slice(0, 5);

@@ -12,6 +12,8 @@ import { SalesFollowUpWorkspace } from './crm/SalesFollowUpWorkspace';
 import { RateReviewWorkspace } from './crm/RateReviewWorkspace';
 import { BusinessOpportunityRadarWorkspace } from './opportunity/BusinessOpportunityRadarWorkspace';
 
+import { TableFullscreenHeader } from './tables/TableFullscreenHeader';
+
 interface CustomerManagerModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -28,6 +30,9 @@ interface CustomerManagerModalProps {
   companyId?: string;
   initialTab?: 'CUSTOMERS' | 'FOLLOW_UPS' | 'RATE_REVIEWS' | 'OPPORTUNITY_RADAR';
   onOpenDecisionWorkspace?: (prefill: any) => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+  onNavigateToTable?: (targetTableId: string) => void;
 }
 
 export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
@@ -45,8 +50,15 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
   user,
   companyId = 'company_profile',
   initialTab = 'CUSTOMERS',
-  onOpenDecisionWorkspace
+  onOpenDecisionWorkspace,
+  isFullscreen,
+  onToggleFullscreen,
+  onNavigateToTable,
 }) => {
+  const [localFullscreen, setLocalFullscreen] = useState(true);
+  const effectiveFullscreen = isFullscreen !== undefined ? isFullscreen : localFullscreen;
+  const handleToggleFs = onToggleFullscreen || (() => setLocalFullscreen(!localFullscreen));
+
   const [activeCrmTab, setActiveCrmTab] = useState<'CUSTOMERS' | 'FOLLOW_UPS' | 'RATE_REVIEWS' | 'OPPORTUNITY_RADAR'>(initialTab);
   const [selectedCustomerFor360, setSelectedCustomerFor360] = useState<CustomerRecord | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -160,32 +172,27 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-5xl my-8 overflow-hidden flex flex-col max-h-[90vh]">
+    <div className={effectiveFullscreen
+      ? "fixed inset-0 z-50 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden bg-slate-900"
+      : "fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-xs p-4 overflow-y-auto"
+    }>
+      <div className={effectiveFullscreen
+        ? "bg-white w-screen h-screen max-w-none max-h-none rounded-none flex flex-col overflow-hidden border-0"
+        : "bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-5xl my-8 overflow-hidden flex flex-col max-h-[90vh]"
+      }>
         
-        {/* Modal Header */}
-        <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-slate-800">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-700 rounded-lg">
-              <Building2 className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold uppercase tracking-widest text-white">
-                QUẢN LÝ QUAN HỆ KHÁCH HÀNG & GIÁ CƯỚC (CRM & RATE REVIEWS)
-              </h2>
-              <p className="text-xs text-slate-400">
-                Hồ sơ 360, lịch chăm sóc khách hàng, rà soát cước định kỳ & pipeline cơ hội
-              </p>
-            </div>
-          </div>
-          
-          <button 
-            onClick={onClose} 
-            className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        {/* Fullscreen Folder Navigation & URL Header */}
+        <TableFullscreenHeader
+          folderName="Thư Mục Khách Hàng & CRM 360°"
+          folderCategory="Báo Giá & CRM"
+          recordCount={customers.length}
+          folderId="customers"
+          routeId="master_customers"
+          isFullscreen={effectiveFullscreen}
+          onToggleFullscreen={handleToggleFs}
+          onClose={onClose}
+          onNavigateToFolder={onNavigateToTable}
+        />
 
         {/* CRM Module Navigation Tabs */}
         <div className="bg-slate-800 px-6 flex items-center gap-2 border-b border-slate-700">

@@ -62,6 +62,8 @@ import { RateBulkImportModal } from './rateEngine/RateBulkImportModal';
 import { RateComparisonTab } from './rateEngine/RateComparisonTab';
 import { RateMatchingPlayground } from './rateEngine/RateMatchingPlayground';
 
+import { TableFullscreenHeader } from './tables/TableFullscreenHeader';
+
 interface MasterRateHubModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -79,6 +81,9 @@ interface MasterRateHubModalProps {
   onDeleteCharge: (id: string) => Promise<void>;
   onBulkImportRates: (rates: RateMasterItem[]) => Promise<void>;
   initialTab?: 'RATES' | 'COMPARISON' | 'MATCHING' | 'EXPIRING' | 'APPROVALS' | 'REQUESTS' | 'ENTITIES' | 'CHARGES' | 'AUDIT';
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+  onNavigateToTable?: (targetTableId: string) => void;
 }
 
 export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
@@ -98,7 +103,14 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
   onDeleteCharge,
   onBulkImportRates,
   initialTab = 'RATES',
+  isFullscreen,
+  onToggleFullscreen,
+  onNavigateToTable,
 }) => {
+  const [localFullscreen, setLocalFullscreen] = useState(true);
+  const effectiveFullscreen = isFullscreen !== undefined ? isFullscreen : localFullscreen;
+  const handleToggleFs = onToggleFullscreen || (() => setLocalFullscreen(!localFullscreen));
+
   const chargeMasters = propChargeMasters || propCharges || [];
   const rateHistories = propRateHistories || propHistories || [];
   const [activeTab, setActiveTab] = useState<
@@ -309,61 +321,53 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
   const pendingApprovalsCount = approvals.filter(a => a.status === 'PENDING').length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/80 backdrop-blur-xs overflow-hidden">
+    <div className={effectiveFullscreen
+      ? "fixed inset-0 z-50 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden bg-slate-900"
+      : "fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/80 backdrop-blur-xs overflow-hidden"
+    }>
       <div 
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl h-[92vh] flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200"
+        className={effectiveFullscreen
+          ? "bg-white w-screen h-screen max-w-none max-h-none rounded-none flex flex-col overflow-hidden border-0"
+          : "bg-white rounded-2xl shadow-2xl w-full max-w-7xl h-[92vh] flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200"
+        }
         id="master-rate-hub-container"
       >
-        {/* Top Header */}
-        <div className="px-6 py-4 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white flex items-center justify-between border-b border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-blue-600/30 border border-blue-400/40 rounded-xl">
-              <Database className="w-6 h-6 text-blue-400" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold tracking-tight">
-                  Rate Intelligence & Advanced Cost Hub
-                </h2>
-                <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded border border-blue-400/30">
-                  Firebase Source of Truth
-                </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded border border-emerald-400/30">
-                  Phase 13 Performance-First
-                </span>
-              </div>
-              <p className="text-xs text-slate-300 mt-0.5">
-                Định vị giá cước đa tầng, bộ lọc thông minh, streaming bulk import và bảo toàn dữ liệu
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleExportCsv}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-colors"
-              title="Xuất bảng giá ra file CSV chuẩn UTF-8"
-              id="btn-header-export-csv"
-            >
-              <Download className="w-3.5 h-3.5 text-emerald-400" /> Xuất Excel CSV
-            </button>
-            <button
-              onClick={() => setIsBulkImportOpen(true)}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors"
-              title="Nạp bảng giá hàng loạt từ Excel hoặc CSV (Streaming)"
-              id="btn-header-import-csv"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5" /> Nạp Excel/CSV Hàng Loạt
-            </button>
-            <button 
-              onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors ml-2"
-              id="btn-close-master-hub"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
+        {/* Fullscreen Folder Navigation & URL Header */}
+        <TableFullscreenHeader
+          folderName="Thư Mục Biểu Cước Vận Tải & Phí"
+          folderCategory="Biểu Cước & Phí"
+          recordCount={rates.length}
+          folderId="rates"
+          routeId="pricing_rates"
+          isFullscreen={effectiveFullscreen}
+          onToggleFullscreen={handleToggleFs}
+          onClose={onClose}
+          onNavigateToTable={onNavigateToTable}
+          actions={
+            <>
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-colors cursor-pointer"
+                title="Xuất bảng giá ra file CSV chuẩn UTF-8"
+                id="btn-header-export-csv"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Xuất CSV</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsBulkImportOpen(true)}
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
+                title="Nạp bảng giá hàng loạt từ Excel hoặc CSV (Streaming)"
+                id="btn-header-import-csv"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Nạp Excel/CSV</span>
+              </button>
+            </>
+          }
+        />
 
         {/* Navigation Tabs Bar */}
         <div className="px-6 bg-slate-900 border-b border-slate-700 flex items-center justify-between overflow-x-auto">

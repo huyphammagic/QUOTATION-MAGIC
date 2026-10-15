@@ -66,7 +66,8 @@ import {
   BarChart3,
   Target,
   Eye,
-  EyeOff
+  EyeOff,
+  LayoutGrid
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -854,12 +855,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     // === 7. BÁO CÁO & PHÂN TÍCH (ANALYTICS & BI) ===
     {
+      id: 'executive_cockpit',
+      label: activeLang === 'vi' ? 'Bảng Điều Hành Cockpit (BI)' : 'Executive Cockpit BI',
+      icon: Compass,
+      group: 'analytics',
+      action: () => onOpenDashboard && onOpenDashboard('COCKPIT'),
+      badge: 'C-Level',
+      badgeTone: 'sky',
+      isCore: true,
+    },
+    {
       id: 'analytics_overview',
       label: activeLang === 'vi' ? 'Báo Cáo Tổng Quan & KPIs' : 'Analytics & KPIs',
       icon: LayoutDashboard,
       group: 'analytics',
       action: () => onOpenDashboard && onOpenDashboard('OVERVIEW'),
-      isCore: true,
+      isCore: false,
     },
     {
       id: 'analytics_funnel',
@@ -1063,10 +1074,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       },
       {
         id: 'min_system',
-        title: activeLang === 'vi' ? 'Tài Liệu & Quản Trị' : 'Documents & System',
-        icon: Settings,
+        title: activeLang === 'vi' ? 'Điều Hành & Quản Trị' : 'Cockpit & System',
+        icon: Compass,
         items: allNavItems.filter(i => 
-          ['quotation_preview', 'analytics_overview', 'sys_profile'].includes(i.id)
+          ['executive_cockpit', 'quotation_preview', 'sys_profile'].includes(i.id)
         ),
       },
     ];

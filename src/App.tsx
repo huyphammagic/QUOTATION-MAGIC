@@ -201,8 +201,9 @@ import { AuthModal } from './components/auth/AuthModal';
 import { useFinancialConfig } from './context/FinancialConfigContext';
 import { MultiCompanyManagementModal } from './components/company/MultiCompanyManagementModal';
 import { createQuotationCompanySnapshot } from './types/multiCompany';
+import { SYSTEM_FOLDERS, getFolderById, getTableById } from './navigation/tableNavigationRegistry';
 
-import { Check, Ship, ShieldCheck, Sparkles, SlidersHorizontal } from 'lucide-react';
+import { Check, Ship, ShieldCheck, Sparkles, SlidersHorizontal, LayoutGrid } from 'lucide-react';
 
 export default function App() {
   // Phase 50: Firebase Authentication & RBAC Context
@@ -427,6 +428,36 @@ export default function App() {
   const [notFoundPath, setNotFoundPath] = useState<string | null>(null);
   const [contractSuppliers, setContractSuppliers] = useState<SupplierItem[]>([]);
   const [contractCarriers, setContractCarriers] = useState<CarrierItem[]>([]);
+
+  // Dedicated System Folder Fullscreen Navigation Engine (defaults to full screen)
+  const [isFullscreenTable, setIsFullscreenTable] = useState(true);
+
+  const handleToggleFullscreenTable = () => {
+    setIsFullscreenTable(prev => {
+      const next = !prev;
+      const currentHash = window.location.hash || '';
+      if (next) {
+        if (!currentHash.includes('fullscreen=true')) {
+          const delimiter = currentHash.includes('?') ? '&' : '?';
+          window.history.replaceState(null, '', `${currentHash || '#quotations'}${delimiter}fullscreen=true`);
+        }
+      } else {
+        const clean = currentHash.replace(/([?&])fullscreen=true(&|$)/, '$1').replace(/[?&]$/, '');
+        window.history.replaceState(null, '', clean || window.location.pathname);
+      }
+      return next;
+    });
+  };
+
+  const handleOpenTableDirectly = (folderOrTableId: string, fullscreen: boolean = true) => {
+    setIsFullscreenTable(fullscreen);
+    const def = getFolderById(folderOrTableId) || getTableById(folderOrTableId);
+    if (def) {
+      navigateToRoute(def.routeId, undefined, { isFullscreen: fullscreen });
+    } else {
+      navigateToRoute('quotations_all', undefined, { isFullscreen: fullscreen });
+    }
+  };
 
   // Phase 54: Real-time Customer Engagement Radar & Hot Leads
   const [liveEngagementSessions, setLiveEngagementSessions] = useState<QuotationEngagementSession[]>([]);
@@ -661,6 +692,7 @@ export default function App() {
 
   const handleModalClose = () => {
     closeAllModals();
+    setIsFullscreenTable(false);
     setActiveRouteId('quotation_workbench');
     if (window.location.hash) {
       window.history.pushState(null, '', window.location.pathname);
@@ -714,8 +746,12 @@ export default function App() {
     loadOperationsCounts();
   }, [activeCompanyId, activeCompanyRecord?.companyId, isControlTowerOpen, isActionCenterOpen, isShipmentWorkspaceOpen]);
 
-  // Unified Route Navigation Function (Phase 30)
-  const navigateToRoute = (routeId: AppRouteId | 'workbench', param?: string, options?: { skipHistory?: boolean }) => {
+  // Unified Route Navigation Function (Phase 30 & Phase 80)
+  const navigateToRoute = (
+    routeId: AppRouteId | 'workbench', 
+    param?: string, 
+    options?: { skipHistory?: boolean; isFullscreen?: boolean }
+  ) => {
     // 1. Strict RBAC Permission Check
     if (routeId !== 'workbench') {
       const perm = checkRoutePermission(routeId, appUserRole);
@@ -729,29 +765,39 @@ export default function App() {
       }
     }
 
+    if (options?.isFullscreen !== undefined) {
+      setIsFullscreenTable(options.isFullscreen);
+    }
+
     // 2. Clear open modals
     closeAllModals();
 
     // 3. Return to Quotation Workbench
     if (routeId === 'workbench') {
       setActiveRouteId('quotation_workbench');
+      setIsFullscreenTable(false);
       if (!options?.skipHistory && window.location.hash) {
         window.history.pushState(null, '', window.location.pathname);
       }
       return;
     }
 
-    // 4. Update route state and URL hash
+    // 4. Update route state and URL hash (preserve ?fullscreen=true if in full-screen table mode)
     setActiveRouteId(routeId);
     const routeDef = APP_ROUTES[routeId];
-    if (!options?.skipHistory && routeDef?.hash && window.location.hash !== routeDef.hash) {
-      window.history.pushState(null, '', routeDef.hash);
+    if (routeDef?.hash) {
+      const shouldBeFullscreen = options?.isFullscreen !== undefined ? options.isFullscreen : isFullscreenTable;
+      const targetHash = shouldBeFullscreen ? `${routeDef.hash}?fullscreen=true` : routeDef.hash;
+      if (!options?.skipHistory && window.location.hash !== targetHash) {
+        window.history.pushState(null, '', targetHash);
+      }
     }
 
     // 5. Dispatch to corresponding module
     switch (routeId) {
+      case 'executive_cockpit':
       case 'main_dashboard':
-        handleOpenDashboard('OVERVIEW');
+        handleOpenDashboard('COCKPIT');
         break;
       case 'analytics_overview':
         handleOpenDashboard('OVERVIEW');
@@ -975,12 +1021,19 @@ export default function App() {
   useEffect(() => {
     const handleUrlRouteSync = () => {
       const parsed = parseRouteFromUrl(window.location.pathname, window.location.hash);
+      if (parsed.isFullscreen !== undefined) {
+        setIsFullscreenTable(parsed.isFullscreen);
+      }
       if (parsed.isNotFound) {
         setNotFoundPath(window.location.hash || window.location.pathname);
       } else if (parsed.routeId) {
-        navigateToRoute(parsed.routeId, parsed.param, { skipHistory: true });
+        navigateToRoute(parsed.routeId, parsed.param, { 
+          skipHistory: true, 
+          isFullscreen: parsed.isFullscreen 
+        });
       } else {
         closeAllModals();
+        setIsFullscreenTable(false);
         setActiveRouteId('quotation_workbench');
       }
     };
@@ -2626,6 +2679,9 @@ export default function App() {
               setDecisionWorkspacePrefill(prefill);
               setIsDecisionWorkspaceOpen(true);
             }}
+            isFullscreen={isFullscreenTable}
+            onToggleFullscreen={handleToggleFullscreenTable}
+            onNavigateToTable={handleOpenTableDirectly}
           />
         </RouteErrorBoundary>
       )}
@@ -2640,6 +2696,9 @@ export default function App() {
             onSaveSurcharge={handleSaveSurcharge}
             onDeleteSurcharge={handleDeleteSurcharge}
             onAddSurchargeToQuote={handleAddSurchargeToQuote}
+            isFullscreen={isFullscreenTable}
+            onToggleFullscreen={handleToggleFullscreenTable}
+            onNavigateToTable={handleOpenTableDirectly}
           />
         </RouteErrorBoundary>
       )}
@@ -2661,6 +2720,9 @@ export default function App() {
             onDeleteCharge={handleDeleteCharge}
             onBulkImportRates={handleBulkImportRates}
             onSelectRateForQuote={handleSelectRateForQuote}
+            isFullscreen={isFullscreenTable}
+            onToggleFullscreen={handleToggleFullscreenTable}
+            onNavigateToTable={handleOpenTableDirectly}
           />
         </RouteErrorBoundary>
       )}
@@ -2726,9 +2788,14 @@ export default function App() {
             onOpenDealCloser={handleOpenDealCloser}
             onOpenQuotationPayments={(qId) => handleOpenPaymentHub(qId)}
             onOpenDebitNote={(targetQ) => handleOpenDebitNoteForQuote(targetQ)}
+            isFullscreen={isFullscreenTable}
+            onToggleFullscreen={handleToggleFullscreenTable}
+            onNavigateToTable={handleOpenTableDirectly}
           />
         </RouteErrorBoundary>
       )}
+
+
 
       {isCompanyOpen && (
         <RouteErrorBoundary routeName="Hồ Sơ Doanh Nghiệp & Multi-Entity" onReset={handleModalClose} onNavigateHome={handleModalClose}>
