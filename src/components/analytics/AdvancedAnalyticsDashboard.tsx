@@ -310,10 +310,10 @@ export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProp
                 id="btn-close-analytics-dashboard"
                 onClick={onClose}
                 className="flex items-center space-x-1 px-3 py-1.5 text-white bg-rose-600 hover:bg-rose-700 font-bold rounded-lg transition-colors cursor-pointer shadow-xs"
-                title={isVi ? 'Đóng Dashboard (Esc)' : 'Close Dashboard (Esc)'}
+                title={isVi ? 'Đóng Dashboard' : 'Close Dashboard'}
               >
                 <X className="w-4 h-4" />
-                <span>{isVi ? 'Đóng (Esc)' : 'Close (Esc)'}</span>
+                <span>{isVi ? 'Đóng' : 'Close'}</span>
               </button>
             )}
 

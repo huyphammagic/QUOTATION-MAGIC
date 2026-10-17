@@ -686,7 +686,22 @@ export default function App() {
     setIsDocumentParserOpen(false);
     setIsHsCodeTariffOpen(false);
     setIsFreightRateBenchmarkingOpen(false);
+    setIsDealCloserOpen(false);
+    setIsRfqInboxOpen(false);
+    setIsCompetitorRadarOpen(false);
+    setIsReengagementRadarOpen(false);
+    setIsValiditySurchargeOpen(false);
+    setIsDemDetPortOpen(false);
+    setIsGoldenHourRadarOpen(false);
+    setIsConcessionGuardOpen(false);
+    setIsDebitNoteModalOpen(false);
+    setIsDebitNoteManagementModalOpen(false);
+    setIsSoaModalOpen(false);
+    setIsMultiOptionQuoteModalOpen(false);
+    setIsAuthModalOpen(false);
     setSelectedPaymentQuoteId(undefined);
+    setSelectedClosingQuote(null);
+    setSelectedRadarSession(null);
     setIsShipmentWorkspaceOpen(false);
     setIsCreateShipmentModalOpen(false);
     setCreateShipmentFromQuote(null);
@@ -702,6 +717,17 @@ export default function App() {
       window.history.pushState(null, '', window.location.pathname);
     }
   };
+
+  // Global ESC Key Listener to cleanly close any open window/workspace
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleModalClose();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   const loadPricingPoliciesData = async () => {
     try {

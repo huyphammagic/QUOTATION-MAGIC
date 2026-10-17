@@ -453,7 +453,7 @@ ${debitNote.company.name}`;
             <button
               onClick={onClose}
               className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer ml-2"
-              title="Đóng (Esc)"
+              title="Đóng"
             >
               <X className="w-5 h-5" />
             </button>

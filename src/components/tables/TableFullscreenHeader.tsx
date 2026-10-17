@@ -215,7 +215,7 @@ export const TableFullscreenHeader: React.FC<FolderFullscreenHeaderProps> = ({
           type="button"
           onClick={onClose}
           className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors ml-1 cursor-pointer"
-          title="Đóng thư mục và quay lại Bàn làm việc (Esc)"
+          title="Đóng thư mục và quay lại Bàn làm việc"
         >
           <X className="w-5 h-5" />
         </button>

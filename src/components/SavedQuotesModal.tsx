@@ -641,7 +641,7 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                   onClick={onClose}
                   className="ml-3 px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-lg transition-colors cursor-pointer"
                 >
-                  Đóng (Esc)
+                  Đóng
                 </button>
               </div>
             </>
@@ -653,7 +653,7 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                 onClick={onClose}
                 className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-lg transition-colors cursor-pointer"
               >
-                Đóng (Esc)
+                Đóng
               </button>
             </div>
           )}
