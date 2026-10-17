@@ -38,6 +38,8 @@ import { QuotationPaymentService } from '../../services/payment/quotationPayment
 import { PaymentStatusBadge } from './PaymentStatusBadge';
 import { QuoteData } from '../../types/logistics';
 
+import { FolderFullscreenHeader } from '../tables/TableFullscreenHeader';
+
 interface QuotationPaymentHubModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -46,6 +48,9 @@ interface QuotationPaymentHubModalProps {
   onPaymentUpdated?: (updatedRecord: QuotationPaymentRecord) => void;
   companyName?: string;
   companyBankInfo?: string;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+  onNavigateToTable?: (id: string) => void;
 }
 
 export const QuotationPaymentHubModal: React.FC<QuotationPaymentHubModalProps> = ({
@@ -55,8 +60,14 @@ export const QuotationPaymentHubModal: React.FC<QuotationPaymentHubModalProps> =
   currentQuote,
   onPaymentUpdated,
   companyName = 'BOGI LOGISTICS & FORWARDING',
-  companyBankInfo = 'VIETCOMBANK - STK: 0071001234567 - CTK: CTY TNHH LOGISTICS & FORWARDING'
+  companyBankInfo = 'VIETCOMBANK - STK: 0071001234567 - CTK: CTY TNHH LOGISTICS & FORWARDING',
+  isFullscreen,
+  onToggleFullscreen,
+  onNavigateToTable,
 }) => {
+  const [localFullscreen, setLocalFullscreen] = useState(true);
+  const effectiveFullscreen = isFullscreen !== undefined ? isFullscreen : localFullscreen;
+  const handleToggleFs = onToggleFullscreen || (() => setLocalFullscreen(!localFullscreen));
   const [records, setRecords] = useState<QuotationPaymentRecord[]>(() => {
     const list = QuotationPaymentService.getPaymentRecords();
     // Đồng bộ báo giá hiện tại nếu có
@@ -172,40 +183,53 @@ export const QuotationPaymentHubModal: React.FC<QuotationPaymentHubModalProps> =
     : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
+    <div 
+      className={effectiveFullscreen
+        ? "fixed inset-0 z-50 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden bg-slate-950"
+        : "fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200"
+      }
+    >
       <div 
-        className="w-full max-w-6xl max-h-[92vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-800 dark:text-slate-100"
+        className={effectiveFullscreen
+          ? "w-screen h-screen max-w-none max-h-none rounded-none bg-white dark:bg-slate-900 flex flex-col overflow-hidden text-slate-800 dark:text-slate-100 border-0"
+          : "w-full max-w-6xl max-h-[92vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-800 dark:text-slate-100"
+        }
         role="dialog"
         aria-modal="true"
       >
-        {/* HEADER */}
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 flex items-center justify-between shrink-0">
+        {/* Fullscreen Folder Navigation & URL Header */}
+        <FolderFullscreenHeader
+          folderName="Thư Mục Thu Tiền & Thanh Toán Báo Giá"
+          folderCategory="Kế Toán & Thu Tiền"
+          folderId="payments"
+          routeId="quotation_payments"
+          recordCount={records.length}
+          isFullscreen={effectiveFullscreen}
+          onToggleFullscreen={handleToggleFs}
+          onClose={onClose}
+          onNavigateToFolder={onNavigateToTable}
+        />
+
+        {/* HEADER BANNER */}
+        <div className="px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-              <Receipt className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+              <Receipt className="w-4.5 h-4.5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
                   Trung Tâm Kiểm Soát Thanh Toán & Thu Hồi Công Nợ Báo Giá
                 </h3>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-300/40">
-                  Phase 66 • Receivable Hub
+                  Receivable Hub
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 Theo dõi thanh toán nhiều đợt, tự động phát hiện nợ quá hạn và xuất thư nhắc nợ 1-click
               </p>
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
         {/* METRICS KPI SUMMARY BANNER */}

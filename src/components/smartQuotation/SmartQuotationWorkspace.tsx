@@ -430,8 +430,8 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
   const currentStepIdx = STEPS.findIndex(s => s.id === currentStep);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
-      <div className="relative w-full max-w-7xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[96vh]">
+    <div className="fixed inset-0 z-50 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden bg-slate-950">
+      <div className="relative w-screen h-screen max-w-none max-h-none bg-white rounded-none border-0 overflow-hidden flex flex-col">
         
         {/* ================================================================= */}
         {/* WORKSPACE HEADER                                                  */}

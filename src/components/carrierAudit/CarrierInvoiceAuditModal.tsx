@@ -31,17 +31,29 @@ import {
 } from '../../types/carrierInvoiceAudit';
 import { CarrierInvoiceAuditService } from '../../services/carrierAudit/carrierInvoiceAuditService';
 
+import { FolderFullscreenHeader } from '../tables/TableFullscreenHeader';
+
 interface CarrierInvoiceAuditModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialShipmentId?: string;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+  onNavigateToTable?: (id: string) => void;
 }
 
 export const CarrierInvoiceAuditModal: React.FC<CarrierInvoiceAuditModalProps> = ({
   isOpen,
   onClose,
-  initialShipmentId
+  initialShipmentId,
+  isFullscreen,
+  onToggleFullscreen,
+  onNavigateToTable,
 }) => {
+  const [localFullscreen, setLocalFullscreen] = useState(true);
+  const effectiveFullscreen = isFullscreen !== undefined ? isFullscreen : localFullscreen;
+  const handleToggleFs = onToggleFullscreen || (() => setLocalFullscreen(!localFullscreen));
+
   const [records, setRecords] = useState<CarrierInvoiceAuditRecord[]>(() =>
     CarrierInvoiceAuditService.getAuditRecords()
   );
@@ -138,25 +150,47 @@ export const CarrierInvoiceAuditModal: React.FC<CarrierInvoiceAuditModalProps> =
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        
+    <div 
+      className={effectiveFullscreen
+        ? "fixed inset-0 z-50 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden bg-slate-950"
+        : "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto"
+      }
+    >
+      <div 
+        className={effectiveFullscreen
+          ? "w-screen h-screen max-w-none max-h-none rounded-none bg-white dark:bg-slate-900 flex flex-col overflow-hidden border-0"
+          : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden"
+        }
+      >
+        {/* Fullscreen Folder Navigation & URL Header */}
+        <FolderFullscreenHeader
+          folderName="Thư Mục Kiểm Toán Hóa Đơn Hãng Tàu"
+          folderCategory="Kế Toán & Thu Tiền"
+          folderId="carrier-invoices"
+          routeId="carrier_invoice_audit"
+          recordCount={records.length}
+          isFullscreen={effectiveFullscreen}
+          onToggleFullscreen={handleToggleFs}
+          onClose={onClose}
+          onNavigateToFolder={onNavigateToTable}
+        />
+
         {/* Header Bar */}
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-rose-50/70 via-white to-amber-50/70 dark:from-slate-900 dark:via-slate-900 dark:to-rose-950/30">
+        <div className="px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-rose-50/70 via-white to-amber-50/70 dark:from-slate-900 dark:via-slate-900 dark:to-rose-950/30 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-rose-600 to-amber-600 text-white flex items-center justify-center shadow-md shadow-rose-500/20">
-              <ShieldAlert className="w-6 h-6 animate-pulse" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-600 to-amber-600 text-white flex items-center justify-center shadow-md shadow-rose-500/20">
+              <ShieldAlert className="w-5 h-5 animate-pulse" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                   Cỗ Máy Tự Động Đối Soát Chi Phí Hãng Tàu
                 </h2>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
                   Carrier Invoice Audit & Margin Guard
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                 Đối soát 3 chiều (Báo Giá - Cam Kết Mua - Hóa Đơn Hãng Tàu), bắt bẫy phụ phí ngầm & tự động xuất công văn khiếu nại
               </p>
             </div>

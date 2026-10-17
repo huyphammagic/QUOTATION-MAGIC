@@ -45,6 +45,7 @@ interface MultiCompanyManagementModalProps {
   onClose: () => void;
   initialTab?: 'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview' | 'financial' | 'members';
   startCreateNew?: boolean;
+  isFullscreen?: boolean;
 }
 
 export const MultiCompanyManagementModal: React.FC<MultiCompanyManagementModalProps> = ({
@@ -52,6 +53,7 @@ export const MultiCompanyManagementModal: React.FC<MultiCompanyManagementModalPr
   onClose,
   initialTab = 'profile',
   startCreateNew = false,
+  isFullscreen = true,
 }) => {
   const {
     activeCompanyId,
@@ -218,10 +220,18 @@ export const MultiCompanyManagementModal: React.FC<MultiCompanyManagementModalPr
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-xs animate-in fade-in duration-150">
+    <div 
+      className={isFullscreen
+        ? "fixed inset-0 z-50 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden bg-slate-900"
+        : "fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-xs animate-in fade-in duration-150"
+      }
+    >
       <div 
         id="multi-company-management-modal"
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden border border-slate-200"
+        className={isFullscreen
+          ? "bg-white w-screen h-screen max-w-none max-h-none rounded-none flex flex-col overflow-hidden border-0"
+          : "bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden border border-slate-200"
+        }
       >
         {/* Header Bar */}
         <div className="p-4 sm:p-5 bg-slate-950 text-white flex items-center justify-between border-b border-slate-800">

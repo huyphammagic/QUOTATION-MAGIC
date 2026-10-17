@@ -13,6 +13,16 @@ export const APP_ROUTES: Record<AppRouteId, RouteDefinition> = {
     descriptionVi: 'Chỉ số KPI, doanh thu, lợi nhuận và hiệu suất tổng thể',
     descriptionEn: 'KPI metrics, revenue, profit and overall performance',
   },
+  quotation_workbench: {
+    id: 'quotation_workbench',
+    path: '/',
+    hash: '#workbench',
+    titleVi: 'Bàn Làm Việc Báo Giá Chính',
+    titleEn: 'Quotation Workbench',
+    group: 'main',
+    descriptionVi: 'Bàn làm việc tính giá và lập báo giá logistics',
+    descriptionEn: 'Main quotation calculation and operational workspace',
+  },
 
   // Quotation
   smart_quotation_workspace: {

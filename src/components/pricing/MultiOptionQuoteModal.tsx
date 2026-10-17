@@ -39,12 +39,16 @@ import { MultiOptionService } from '../../services/multiOption/multiOptionServic
 import { exportMultiOptionPdf } from '../../utils/exportMultiOptionPdf';
 import { exportMultiOptionExcel } from '../../utils/exportMultiOptionExcel';
 import { formatUSD, formatVND } from '../../utils/formatters';
+import { FolderFullscreenHeader } from '../tables/TableFullscreenHeader';
 
 interface MultiOptionQuoteModalProps {
   isOpen: boolean;
   onClose: () => void;
   quote: QuoteData;
   onApplyOptionToQuote?: (selectedOption: MultiOptionItem, updatedItems: LineItem[]) => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+  onNavigateToTable?: (targetId: string) => void;
 }
 
 export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
@@ -52,7 +56,14 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
   onClose,
   quote,
   onApplyOptionToQuote,
+  isFullscreen,
+  onToggleFullscreen,
+  onNavigateToTable,
 }) => {
+  const [localFullscreen, setLocalFullscreen] = useState(true);
+  const effectiveFullscreen = isFullscreen !== undefined ? isFullscreen : localFullscreen;
+  const handleToggleFs = onToggleFullscreen || (() => setLocalFullscreen(!localFullscreen));
+
   const [activeTab, setActiveTab] = useState<'matrix' | 'customizer' | 'client_sim' | 'export_print'>('matrix');
   const [pkg, setPkg] = useState<MultiOptionQuotationPackage | null>(null);
   const [selectedOptionId, setSelectedOptionId] = useState<string>('');
@@ -257,11 +268,33 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-7xl max-h-[92vh] flex flex-col overflow-hidden">
+    <div 
+      className={effectiveFullscreen
+        ? "fixed inset-0 z-50 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden bg-slate-950"
+        : "fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-200"
+      }
+    >
+      <div 
+        className={effectiveFullscreen
+          ? "bg-white w-screen h-screen max-w-none max-h-none rounded-none flex flex-col overflow-hidden border-0"
+          : "bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-7xl max-h-[92vh] flex flex-col overflow-hidden"
+        }
+      >
+        {/* Fullscreen Folder Navigation & URL Header */}
+        <FolderFullscreenHeader
+          folderName="Thư Mục Báo Giá Đa Phương Án (Good - Better - Best)"
+          folderCategory="Báo Giá & CRM"
+          folderId="multi-option"
+          routeId="multi_option_quotation"
+          recordCount={pkg.options.length}
+          isFullscreen={effectiveFullscreen}
+          onToggleFullscreen={handleToggleFs}
+          onClose={onClose}
+          onNavigateToFolder={onNavigateToTable}
+        />
         
         {/* Modal Header */}
-        <div className="px-6 py-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+        <div className="px-6 py-3.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center shadow-inner">
               <Sparkles className="w-5 h-5 text-indigo-300" />

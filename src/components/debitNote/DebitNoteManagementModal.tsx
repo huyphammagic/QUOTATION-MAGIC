@@ -24,6 +24,8 @@ import { exportDebitNotePdf } from '../../utils/exportDebitNotePdf';
 import { exportDebitNoteExcel } from '../../utils/exportDebitNoteExcel';
 import { formatUSD, formatVND } from '../../utils/formatters';
 
+import { FolderFullscreenHeader } from '../tables/TableFullscreenHeader';
+
 interface DebitNoteManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -31,6 +33,9 @@ interface DebitNoteManagementModalProps {
   onOpenDebitNoteForQuote: (quote: QuoteData) => void;
   onOpenPaymentHub?: (quoteId: string) => void;
   onOpenStatementOfAccount?: (customerName?: string) => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+  onNavigateToTable?: (id: string) => void;
 }
 
 export const DebitNoteManagementModal: React.FC<DebitNoteManagementModalProps> = ({
@@ -39,8 +44,15 @@ export const DebitNoteManagementModal: React.FC<DebitNoteManagementModalProps> =
   quotes,
   onOpenDebitNoteForQuote,
   onOpenPaymentHub,
-  onOpenStatementOfAccount
+  onOpenStatementOfAccount,
+  isFullscreen,
+  onToggleFullscreen,
+  onNavigateToTable,
 }) => {
+  const [localFullscreen, setLocalFullscreen] = useState(true);
+  const effectiveFullscreen = isFullscreen !== undefined ? isFullscreen : localFullscreen;
+  const handleToggleFs = onToggleFullscreen || (() => setLocalFullscreen(!localFullscreen));
+
   const [allDebitNotes, setAllDebitNotes] = useState<DebitNoteRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | DebitNoteStatus>('ALL');
@@ -89,31 +101,46 @@ export const DebitNoteManagementModal: React.FC<DebitNoteManagementModalProps> =
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/80 backdrop-blur-xs">
-      <div className="relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh] overflow-hidden">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-900 text-white">
+    <div 
+      className={effectiveFullscreen
+        ? "fixed inset-0 z-50 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden bg-slate-950"
+        : "fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/80 backdrop-blur-xs"
+      }
+    >
+      <div 
+        className={effectiveFullscreen
+          ? "bg-white w-screen h-screen max-w-none max-h-none rounded-none flex flex-col overflow-hidden border-0"
+          : "relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh] overflow-hidden"
+        }
+      >
+        {/* Fullscreen Folder Navigation & URL Header */}
+        <FolderFullscreenHeader
+          folderName="Thư Mục Quản Lý Giấy Báo Nợ (Debit Notes)"
+          folderCategory="Kế Toán & Thu Tiền"
+          folderId="debit-notes"
+          routeId="debit_note_management"
+          recordCount={allDebitNotes.length}
+          isFullscreen={effectiveFullscreen}
+          onToggleFullscreen={handleToggleFs}
+          onClose={onClose}
+          onNavigateToFolder={onNavigateToTable}
+        />
+
+        {/* Sub Header */}
+        <div className="flex items-center justify-between px-6 py-3.5 border-b border-slate-200 bg-slate-900 text-white shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-400">
-              <FileText className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-400">
+              <FileText className="w-4.5 h-4.5" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-white tracking-wide">
+              <h2 className="text-sm sm:text-base font-bold text-white tracking-wide">
                 TRUNG TÂM QUẢN LÝ DEBIT NOTE (GIẤY BÁO NỢ)
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-[11px] text-slate-400">
                 Theo dõi tất cả Debit Note phát hành theo từng báo giá khách hàng
               </p>
             </div>
           </div>
-
-          <button
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
         {/* Toolbar */}

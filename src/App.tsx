@@ -87,6 +87,7 @@ import { LineItemsTable } from './components/LineItemsTable';
 import { TermsForm } from './components/TermsForm';
 import { SummaryCard } from './components/SummaryCard';
 import { QuotationWorkspaceHeader, WorkspaceTab } from './components/QuotationWorkspaceHeader';
+import { FolderFullscreenHeader } from './components/tables/TableFullscreenHeader';
 
 import { QuotationCommunicationPanel } from './components/communication/QuotationCommunicationPanel';
 import type { MasterDataType } from './components/MasterDataReferenceModal';
@@ -528,6 +529,7 @@ export default function App() {
   };
 
   const handleOpenDebitNoteManagement = () => {
+    setIsFullscreenTable(true);
     setIsDebitNoteManagementModalOpen(true);
   };
 
@@ -540,6 +542,7 @@ export default function App() {
   const [isMultiOptionQuoteModalOpen, setIsMultiOptionQuoteModalOpen] = useState(false);
 
   const handleOpenMultiOptionQuote = () => {
+    setIsFullscreenTable(true);
     setIsMultiOptionQuoteModalOpen(true);
   };
 
@@ -606,6 +609,7 @@ export default function App() {
 
   const handleOpenPaymentHub = (quoteId?: string) => {
     setSelectedPaymentQuoteId(quoteId || quote?.id || quote?.quoteNumber);
+    setIsFullscreenTable(true);
     setIsQuotationPaymentHubOpen(true);
   };
 
@@ -692,7 +696,7 @@ export default function App() {
 
   const handleModalClose = () => {
     closeAllModals();
-    setIsFullscreenTable(false);
+    setIsFullscreenTable(true);
     setActiveRouteId('quotation_workbench');
     if (window.location.hash) {
       window.history.pushState(null, '', window.location.pathname);
@@ -782,11 +786,14 @@ export default function App() {
       return;
     }
 
-    // 4. Update route state and URL hash (preserve ?fullscreen=true if in full-screen table mode)
+    // 4. Update route state and URL hash (automatically full-screen for modules)
     setActiveRouteId(routeId);
+    const isSpecialWorkbench = routeId === 'quotation_workbench' || routeId === 'quotation_new';
+    const shouldBeFullscreen = isSpecialWorkbench ? false : (options?.isFullscreen !== undefined ? options.isFullscreen : true);
+    setIsFullscreenTable(shouldBeFullscreen);
+
     const routeDef = APP_ROUTES[routeId];
     if (routeDef?.hash) {
-      const shouldBeFullscreen = options?.isFullscreen !== undefined ? options.isFullscreen : isFullscreenTable;
       const targetHash = shouldBeFullscreen ? `${routeDef.hash}?fullscreen=true` : routeDef.hash;
       if (!options?.skipHistory && window.location.hash !== targetHash) {
         window.history.pushState(null, '', targetHash);
@@ -1182,6 +1189,7 @@ export default function App() {
   }, [quote.items, rates]);
 
   const handleOpenCompanyProfile = (tab: 'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview' | 'financial' = 'profile') => {
+    setIsFullscreenTable(true);
     setIsCreateCompanyOpen(false);
     setCompanyModalTab(tab);
     setIsCompanyOpen(true);
@@ -1190,16 +1198,19 @@ export default function App() {
   const handleOpenMasterRateHub = (tab: 'RATES' | 'CHARGES' | 'SUPPLIERS' | 'APPROVAL' | 'REQUESTS' | 'EXPIRING' | 'AUDIT' = 'RATES') => {
     const mappedTab = tab === 'SUPPLIERS' ? 'ENTITIES' : tab === 'APPROVAL' ? 'APPROVALS' : tab;
     setMasterRateHubTab(mappedTab as any);
+    setIsFullscreenTable(true);
     setIsMasterRateHubOpen(true);
   };
 
   const handleOpenSavedQuotes = (filter: string = 'ALL') => {
     setSavedQuotesInitialFilter(filter);
+    setIsFullscreenTable(true);
     setIsSavedOpen(true);
   };
 
   const handleOpenDashboard = (tab: string = 'OVERVIEW') => {
     setDashboardInitialTab(tab);
+    setIsFullscreenTable(true);
     setIsDashboardOpen(true);
   };
 
@@ -2323,27 +2334,24 @@ export default function App() {
           onOpenSmartQuotationWorkspace={() => navigateToRoute('smart_quotation_workspace')}
           onOpenEmailTemplates={() => navigateToRoute('quotation_email_templates')}
           onOpenFollowUps={() => navigateToRoute('quotation_followup')}
-          onOpenDocumentParser={() => setIsDocumentParserOpen(true)}
-          onOpenHsCodeTariff={() => setIsHsCodeTariffOpen(true)}
-          onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
-          onOpenDebitNoteManagement={handleOpenDebitNoteManagement}
-          onOpenMultiOptionQuote={handleOpenMultiOptionQuote}
-          onOpenEngagementRadar={() => {
-            setSelectedRadarSession(null);
-            setIsEngagementRadarOpen(true);
-          }}
-          onOpenDealCloser={() => handleOpenDealCloser()}
-          onOpenRfqInbox={() => setIsRfqInboxOpen(true)}
-          onOpenCompetitorRadar={() => setIsCompetitorRadarOpen(true)}
-          onOpenCustomerReengagement={() => setIsReengagementRadarOpen(true)}
-          onOpenValiditySurcharge={() => setIsValiditySurchargeOpen(true)}
-          onOpenDemDetPort={() => setIsDemDetPortOpen(true)}
-          onOpenGoldenHourRadar={() => setIsGoldenHourRadarOpen(true)}
-          onOpenConcessionGuard={() => setIsConcessionGuardOpen(true)}
-          onOpenEnterpriseTender={() => setIsEnterpriseTenderOpen(true)}
-          onOpenCustomerDna={() => setIsCustomerDnaOpen(true)}
-          onOpenCarrierInvoiceAudit={() => setIsCarrierInvoiceAuditOpen(true)}
-          onOpenQuotationPayments={handleOpenPaymentHub}
+          onOpenDocumentParser={() => navigateToRoute('ai_document_parser')}
+          onOpenHsCodeTariff={() => navigateToRoute('customs_tariff_ai')}
+          onOpenFreightRateBenchmarking={() => navigateToRoute('freight_rate_benchmarking')}
+          onOpenDebitNoteManagement={() => navigateToRoute('debit_note_management')}
+          onOpenMultiOptionQuote={() => navigateToRoute('multi_option_quotation')}
+          onOpenEngagementRadar={() => navigateToRoute('engagement_radar')}
+          onOpenDealCloser={() => navigateToRoute('deal_closing_accelerator')}
+          onOpenRfqInbox={() => navigateToRoute('rfq_inbox')}
+          onOpenCompetitorRadar={() => navigateToRoute('competitor_radar')}
+          onOpenCustomerReengagement={() => navigateToRoute('customer_reengagement')}
+          onOpenValiditySurcharge={() => navigateToRoute('validity_surcharge_radar')}
+          onOpenDemDetPort={() => navigateToRoute('dem_det_port_radar')}
+          onOpenGoldenHourRadar={() => navigateToRoute('golden_hour_radar')}
+          onOpenConcessionGuard={() => navigateToRoute('concession_guard')}
+          onOpenEnterpriseTender={() => navigateToRoute('enterprise_tender_engine')}
+          onOpenCustomerDna={() => navigateToRoute('customer_dna_power_map')}
+          onOpenCarrierInvoiceAudit={() => navigateToRoute('carrier_invoice_audit')}
+          onOpenQuotationPayments={(quoteId) => navigateToRoute('quotation_payments', typeof quoteId === 'string' ? quoteId : undefined)}
           dormantCustomersCount={3}
           activeEngagementsCount={liveEngagementSessions.filter(s => s.isCurrentlyActive).length}
           onOpenOpportunityRadar={() => navigateToRoute('opportunity_radar')}
@@ -2804,6 +2812,7 @@ export default function App() {
             initialTab={companyModalTab}
             startCreateNew={isCreateCompanyOpen}
             onClose={handleModalClose}
+            isFullscreen={isFullscreenTable}
           />
         </RouteErrorBoundary>
       )}
@@ -3122,6 +3131,9 @@ export default function App() {
             customers={customers}
             suppliers={contractSuppliers}
             carriers={contractCarriers}
+            isFullscreen={isFullscreenTable}
+            onToggleFullscreen={handleToggleFullscreenTable}
+            onNavigateToTable={handleOpenTableDirectly}
           />
         </RouteErrorBoundary>
       )}
@@ -3221,17 +3233,19 @@ export default function App() {
       {/* Phase 41: Smart Shipment & Logistics Operational Workspace */}
       {isShipmentWorkspaceOpen && (
         <RouteErrorBoundary routeName="Không Gian Điều Hành Lô Hàng (Shipments)" onReset={handleModalClose} onNavigateHome={handleModalClose}>
-          <div className="fixed inset-0 z-40 bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur-xs overflow-y-auto pt-16 pb-12 px-2 sm:px-6">
-            <div className="max-w-7xl mx-auto">
-              <div className="flex justify-end mb-2">
-                <button
-                  type="button"
-                  onClick={handleModalClose}
-                  className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-2xs transition-colors"
-                >
-                  ✕ {appLanguage === 'vi' ? 'Đóng Điều Hành' : 'Close Workspace'}
-                </button>
-              </div>
+          <div className="fixed inset-0 z-50 bg-slate-900 flex flex-col w-screen h-screen overflow-hidden">
+            <FolderFullscreenHeader
+              folderName="Thư Mục Điều Hành & Lô Hàng (Shipments)"
+              folderCategory="Vận Hành & Lô Hàng"
+              folderId="shipments"
+              routeId="ops_shipments"
+              recordCount={shipmentsCount}
+              isFullscreen={isFullscreenTable}
+              onToggleFullscreen={handleToggleFullscreenTable}
+              onClose={handleModalClose}
+              onNavigateToFolder={handleOpenTableDirectly}
+            />
+            <div className="flex-1 overflow-y-auto bg-slate-100 dark:bg-slate-950 p-3 sm:p-6 w-full">
               <ShipmentOperationalWorkspace
                 companyId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'company_profile'}
                 customers={customers}
@@ -3262,17 +3276,19 @@ export default function App() {
       {/* Phase 42: Logistics Control Tower & Exception Surveillance */}
       {isControlTowerOpen && (
         <RouteErrorBoundary routeName="Tháp Điều Hành Logistics (Control Tower)" onReset={handleModalClose} onNavigateHome={handleModalClose}>
-          <div className="fixed inset-0 z-40 bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur-xs overflow-y-auto pt-16 pb-12 px-2 sm:px-6">
-            <div className="max-w-7xl mx-auto">
-              <div className="flex justify-end mb-2">
-                <button
-                  type="button"
-                  onClick={handleModalClose}
-                  className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-2xs transition-colors"
-                >
-                  ✕ {appLanguage === 'vi' ? 'Đóng Tháp Điều Hành' : 'Close Control Tower'}
-                </button>
-              </div>
+          <div className="fixed inset-0 z-50 bg-slate-900 flex flex-col w-screen h-screen overflow-hidden">
+            <FolderFullscreenHeader
+              folderName="Tháp Điều Hành Logistics (Control Tower)"
+              folderCategory="Vận Hành & Lô Hàng"
+              folderId="control-tower"
+              routeId="ops_control_tower"
+              recordCount={exceptionsCount}
+              isFullscreen={isFullscreenTable}
+              onToggleFullscreen={handleToggleFullscreenTable}
+              onClose={handleModalClose}
+              onNavigateToFolder={handleOpenTableDirectly}
+            />
+            <div className="flex-1 overflow-y-auto bg-slate-100 dark:bg-slate-950 p-3 sm:p-6 w-full">
               <ControlTowerWorkspace
                 companyId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'company_profile'}
                 onOpenShipmentDetail={(shipmentId) => {
@@ -3298,17 +3314,19 @@ export default function App() {
       {/* Phase 44: Smart Logistics Deadline & Action Intelligence Engine */}
       {isActionCenterOpen && (
         <RouteErrorBoundary routeName="Trung Tâm Hạn Chót & Hành Động (Action Center)" onReset={handleModalClose} onNavigateHome={handleModalClose}>
-          <div className="fixed inset-0 z-40 bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur-xs overflow-y-auto pt-16 pb-12 px-2 sm:px-6">
-            <div className="max-w-7xl mx-auto">
-              <div className="flex justify-end mb-2">
-                <button
-                  type="button"
-                  onClick={handleModalClose}
-                  className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-2xs transition-colors"
-                >
-                  ✕ {appLanguage === 'vi' ? 'Đóng Action Center' : 'Close Action Center'}
-                </button>
-              </div>
+          <div className="fixed inset-0 z-50 bg-slate-900 flex flex-col w-screen h-screen overflow-hidden">
+            <FolderFullscreenHeader
+              folderName="Hạn Chót & Hành Động (Action Center)"
+              folderCategory="Vận Hành & Lô Hàng"
+              folderId="action-center"
+              routeId="ops_action_center"
+              recordCount={deadlinesCount}
+              isFullscreen={isFullscreenTable}
+              onToggleFullscreen={handleToggleFullscreenTable}
+              onClose={handleModalClose}
+              onNavigateToFolder={handleOpenTableDirectly}
+            />
+            <div className="flex-1 overflow-y-auto bg-slate-100 dark:bg-slate-950 p-3 sm:p-6 w-full">
               <SmartDeadlineWorkspace
                 companyId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'company_profile'}
                 companyName={company.name || 'Logistics Company'}
@@ -3690,6 +3708,9 @@ export default function App() {
               setCarrierInvoiceAuditInitialShipmentId(undefined);
             }}
             initialShipmentId={carrierInvoiceAuditInitialShipmentId}
+            isFullscreen={isFullscreenTable}
+            onToggleFullscreen={handleToggleFullscreenTable}
+            onNavigateToTable={handleOpenTableDirectly}
           />
         </Suspense>
       )}
@@ -3707,6 +3728,9 @@ export default function App() {
             onPaymentUpdated={(updatedRecord) => {
               showToast(`💳 Đã cập nhật thanh toán cho báo giá ${updatedRecord.quoteNumber}: ${updatedRecord.paymentStatus}!`);
             }}
+            isFullscreen={isFullscreenTable}
+            onToggleFullscreen={handleToggleFullscreenTable}
+            onNavigateToTable={handleOpenTableDirectly}
           />
         </Suspense>
       )}
@@ -3801,6 +3825,9 @@ export default function App() {
             onOpenDebitNoteForQuote={(targetQ) => handleOpenDebitNoteForQuote(targetQ)}
             onOpenPaymentHub={(quoteId) => handleOpenPaymentHub(quoteId)}
             onOpenStatementOfAccount={(cust) => handleOpenStatementOfAccount(cust)}
+            isFullscreen={isFullscreenTable}
+            onToggleFullscreen={handleToggleFullscreenTable}
+            onNavigateToTable={handleOpenTableDirectly}
           />
         </Suspense>
       )}
@@ -3829,6 +3856,9 @@ export default function App() {
             onClose={() => setIsMultiOptionQuoteModalOpen(false)}
             quote={quote}
             onApplyOptionToQuote={handleApplyMultiOptionToActiveQuote}
+            isFullscreen={isFullscreenTable}
+            onToggleFullscreen={handleToggleFullscreenTable}
+            onNavigateToTable={handleOpenTableDirectly}
           />
         </Suspense>
       )}

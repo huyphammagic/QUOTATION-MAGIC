@@ -3,6 +3,7 @@ import { UserRole } from '../types/analytics';
 export type AppRouteId =
   // Main
   | 'main_dashboard'
+  | 'quotation_workbench'
   // Quotation
   | 'smart_quotation_workspace'
   | 'quotation_new'
