@@ -33,6 +33,7 @@ interface SummaryCardProps {
   onOpenProfitIntelligence?: () => void;
   onOpenFreightRateBenchmarking?: () => void;
   onOpenDebitNote?: () => void;
+  onOpenExchangeRateModal?: () => void;
 }
 
 export const SummaryCard: React.FC<SummaryCardProps> = ({
@@ -48,6 +49,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
   onOpenProfitIntelligence,
   onOpenFreightRateBenchmarking,
   onOpenDebitNote,
+  onOpenExchangeRateModal,
 }) => {
   const margin = quote.overallMarginPercent || 0;
   const markup = quote.markupPercent || 0;
@@ -161,15 +163,35 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
           </div>
 
           <div className="flex items-center space-x-1.5 text-xs text-slate-400 bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800">
-            <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+            <button
+              type="button"
+              onClick={onOpenExchangeRateModal}
+              className="flex items-center gap-1 text-[10px] text-emerald-400 hover:text-emerald-300 font-semibold cursor-pointer"
+              title="Xem chi tiết tỷ giá USD realtime từ Vietcombank & cài đặt tự động đồng bộ"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block"></span>
+              Live VCB
+            </button>
+            <span className="text-[11px] text-slate-500">·</span>
             <span className="text-[11px]">Tỷ giá:</span>
             <input
               type="number"
               value={quote.exchangeRate}
               onChange={(e) => onExchangeRateChange(Number(e.target.value) || 25400)}
-              className="w-16 bg-slate-900 text-slate-200 font-mono font-bold text-right px-1 py-0.5 rounded border border-slate-700 text-xs focus:outline-none"
+              className="w-16 bg-slate-900 text-slate-200 font-mono font-bold text-right px-1 py-0.5 rounded border border-slate-700 text-xs focus:outline-none focus:border-blue-500"
+              title="Tỷ giá USD/VND đang áp dụng cho báo giá này"
             />
             <span className="text-[10px] text-slate-500">₫</span>
+            {onOpenExchangeRateModal && (
+              <button
+                type="button"
+                onClick={onOpenExchangeRateModal}
+                className="p-0.5 text-slate-400 hover:text-blue-400 transition-colors cursor-pointer"
+                title="Mở Trung tâm Quản lý Tỷ giá USD Realtime"
+              >
+                <RefreshCw className="w-3 h-3" />
+              </button>
+            )}
           </div>
         </div>
       </div>

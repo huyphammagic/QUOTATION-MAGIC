@@ -67,7 +67,8 @@ import {
   Target,
   Eye,
   EyeOff,
-  LayoutGrid
+  LayoutGrid,
+  Zap
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -132,6 +133,7 @@ export interface SidebarProps {
   onOpenFreightRateBenchmarking?: () => void;
   onOpenDebitNoteManagement?: () => void;
   onOpenMultiOptionQuote?: () => void;
+  onOpenExchangeRateHub?: () => void;
   dormantCustomersCount?: number;
   activeEngagementsCount?: number;
   exceptionsCount?: number;
@@ -228,6 +230,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenFreightRateBenchmarking,
   onOpenDebitNoteManagement,
   onOpenMultiOptionQuote,
+  onOpenExchangeRateHub,
   dormantCustomersCount = 3,
   activeEngagementsCount = 0,
   shipmentsCount = 0,
@@ -654,6 +657,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       group: 'pricing',
       action: () => onOpenMasterRateHub && onOpenMasterRateHub('RATES'),
       badge: rateMastersCount > 0 ? rateMastersCount : null,
+      isCore: true,
+    },
+    {
+      id: 'exchange_rate_hub',
+      label: activeLang === 'vi' ? 'Tỷ Giá USD Realtime' : 'Live USD Exchange Rate',
+      icon: Zap,
+      group: 'pricing',
+      action: () => onOpenExchangeRateHub && onOpenExchangeRateHub(),
+      badge: 'Live VCB',
       isCore: true,
     },
     {

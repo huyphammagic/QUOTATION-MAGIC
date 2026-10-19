@@ -45,6 +45,7 @@ export type AppRouteId =
   | 'pricing_profit'
   | 'pricing_smart'
   | 'pricing_search'
+  | 'exchange_rate_hub'
   // Master Data
   | 'master_customers'
   | 'master_suppliers'

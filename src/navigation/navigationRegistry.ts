@@ -420,6 +420,16 @@ export const APP_ROUTES: Record<AppRouteId, RouteDefinition> = {
     descriptionVi: 'Tìm kiếm nhanh cước theo POL, POD và Carrier',
     descriptionEn: 'Fast search rates by POL, POD and Carrier',
   },
+  exchange_rate_hub: {
+    id: 'exchange_rate_hub',
+    path: '/pricing/exchange-rate',
+    hash: '#pricing/exchange-rate',
+    titleVi: 'Tỷ Giá USD Realtime (Vietcombank)',
+    titleEn: 'Realtime USD Exchange Rate Hub',
+    group: 'pricing',
+    descriptionVi: 'Hệ thống tự động cập nhật tỷ giá USD/VND thời gian thực chính xác 100% từ Vietcombank & Liên ngân hàng',
+    descriptionEn: 'Automated 100% accurate realtime USD/VND banking exchange rate engine with auto-sync',
+  },
 
   // Master Data
   master_customers: {

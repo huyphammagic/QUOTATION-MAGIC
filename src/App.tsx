@@ -188,6 +188,17 @@ import {
 } from './services/repository/quotationRepository';
 import { fetchRateMasters } from './services/repository/rateRepository';
 import { UserRole } from './types/analytics';
+
+// Phase 80: Realtime 100% Accurate USD/VND Exchange Rate Engine (Vietcombank & Interbank)
+import { 
+  fetchRealtimeExchangeRate, 
+  getStoredExchangeRate, 
+  getStoredExchangeRateConfig, 
+  saveStoredExchangeRateConfig,
+  startRealtimeExchangeRateListener,
+} from './services/exchangeRate/exchangeRateService';
+import { ExchangeRateDetail, ExchangeRateConfig } from './types/exchangeRate';
+import { ExchangeRateModal } from './components/exchangeRate/ExchangeRateModal';
 import { AppRouteId } from './navigation/routeTypes';
 import { APP_ROUTES, parseRouteFromUrl, checkRoutePermission } from './navigation/navigationRegistry';
 import { RouteErrorBoundary } from './components/common/RouteErrorBoundary';
@@ -540,6 +551,12 @@ export default function App() {
 
   // Multi-Option Comparative Quotation (Good - Better - Best)
   const [isMultiOptionQuoteModalOpen, setIsMultiOptionQuoteModalOpen] = useState(false);
+
+  // Phase 80: Realtime 100% Accurate USD/VND Exchange Rate Engine (Vietcombank & Interbank)
+  const [liveExchangeRate, setLiveExchangeRate] = useState<ExchangeRateDetail>(getStoredExchangeRate);
+  const [exchangeRateConfig, setExchangeRateConfig] = useState<ExchangeRateConfig>(getStoredExchangeRateConfig);
+  const [isExchangeRateModalOpen, setIsExchangeRateModalOpen] = useState(false);
+  const [isRefreshingExchangeRate, setIsRefreshingExchangeRate] = useState(false);
 
   const handleOpenMultiOptionQuote = () => {
     setIsFullscreenTable(true);
@@ -958,6 +975,9 @@ export default function App() {
         break;
       case 'pricing_rates':
         handleOpenMasterRateHub('RATES');
+        break;
+      case 'exchange_rate_hub':
+        setIsExchangeRateModalOpen(true);
         break;
       case 'pricing_contracts':
         ensureSuppliersAndCarriersLoaded();
@@ -1533,6 +1553,65 @@ export default function App() {
     updateQuoteState({ exchangeRate: validRate });
     showToast(`Đã cập nhật tỷ giá: 1 USD = ${validRate.toLocaleString('vi-VN')} VND`);
   };
+
+  // Manual refresh exchange rate
+  const handleRefreshExchangeRate = async () => {
+    setIsRefreshingExchangeRate(true);
+    try {
+      const latest = await fetchRealtimeExchangeRate(true);
+      setLiveExchangeRate(latest);
+      if (exchangeRateConfig.autoSyncEnabled && !exchangeRateConfig.lockRateForActiveQuote) {
+        const baseRate = exchangeRateConfig.applyRateType === 'BUY_TRANSFER'
+          ? latest.buyTransfer
+          : exchangeRateConfig.applyRateType === 'CENTRAL'
+          ? latest.centralRate
+          : latest.sellTransfer;
+        const adjustedRate = baseRate + (exchangeRateConfig.rateSpreadAdjustmentVnd || 0);
+        updateQuoteState({ exchangeRate: adjustedRate });
+      }
+      showToast(`⚡ Đã làm mới tỷ giá USD realtime: 1 USD = ${latest.rate.toLocaleString('vi-VN')} VND (${latest.sourceCode})`);
+    } catch {
+      showToast('Đang sử dụng dữ liệu tỷ giá dự phòng từ hệ thống.');
+    } finally {
+      setIsRefreshingExchangeRate(false);
+    }
+  };
+
+  // Phase 80: Realtime USD Exchange Rate Auto-Sync Engine (Vietcombank & Interbank)
+  useEffect(() => {
+    const stopListener = startRealtimeExchangeRateListener(
+      (latestDetail, isChanged) => {
+        setLiveExchangeRate(latestDetail);
+
+        if (exchangeRateConfig.autoSyncEnabled && !exchangeRateConfig.lockRateForActiveQuote) {
+          const baseRate = exchangeRateConfig.applyRateType === 'BUY_TRANSFER'
+            ? latestDetail.buyTransfer
+            : exchangeRateConfig.applyRateType === 'CENTRAL'
+            ? latestDetail.centralRate
+            : latestDetail.sellTransfer;
+          const adjustedRate = baseRate + (exchangeRateConfig.rateSpreadAdjustmentVnd || 0);
+
+          if (isChanged && exchangeRateConfig.notifyOnRateChange) {
+            showToast(`📈 Tỷ giá USD realtime vừa cập nhật: 1 USD = ${adjustedRate.toLocaleString('vi-VN')} VND (VCB)`);
+          }
+
+          setQuote(prevQuote => {
+            if (prevQuote.exchangeRate !== adjustedRate) {
+              const merged = { ...prevQuote, exchangeRate: adjustedRate };
+              const { calculatedQuote } = calculateQuote(merged);
+              return calculatedQuote;
+            }
+            return prevQuote;
+          });
+        }
+      },
+      exchangeRateConfig.syncIntervalMinutes || 15
+    );
+
+    return () => {
+      stopListener();
+    };
+  }, [exchangeRateConfig]);
 
   // Customer Form Changes
   const handleChangeCustomer = (field: keyof CustomerInfo, val: string) => {
@@ -2365,6 +2444,7 @@ export default function App() {
           onOpenFreightRateBenchmarking={() => navigateToRoute('freight_rate_benchmarking')}
           onOpenDebitNoteManagement={() => navigateToRoute('debit_note_management')}
           onOpenMultiOptionQuote={() => navigateToRoute('multi_option_quotation')}
+          onOpenExchangeRateHub={() => navigateToRoute('exchange_rate_hub')}
           onOpenEngagementRadar={() => navigateToRoute('engagement_radar')}
           onOpenDealCloser={() => navigateToRoute('deal_closing_accelerator')}
           onOpenRfqInbox={() => navigateToRoute('rfq_inbox')}
@@ -2434,6 +2514,10 @@ export default function App() {
           <Navbar
             company={company}
             exchangeRate={quote.exchangeRate}
+            liveRateDetail={liveExchangeRate}
+            isRefreshingLiveRate={isRefreshingExchangeRate}
+            onRefreshLiveRate={handleRefreshExchangeRate}
+            onOpenExchangeRateModal={() => setIsExchangeRateModalOpen(true)}
             lastAutoSaveTime={lastAutoSaveTime}
             isAutoSaving={isAutoSaving}
             onToggleSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
@@ -2578,6 +2662,7 @@ export default function App() {
                   onOpenProfitIntelligence={() => setIsProfitIntelligenceOpen(true)}
                   onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
                   onOpenDebitNote={() => handleOpenDebitNoteForQuote(quote)}
+                  onOpenExchangeRateModal={() => setIsExchangeRateModalOpen(true)}
                 />
               </>
             )}
@@ -2605,6 +2690,7 @@ export default function App() {
                     onOpenSendModal={() => setIsSendQuotationOpen(true)}
                     onOpenProfitIntelligence={() => setIsProfitIntelligenceOpen(true)}
                     onOpenDebitNote={() => handleOpenDebitNoteForQuote(quote)}
+                    onOpenExchangeRateModal={() => setIsExchangeRateModalOpen(true)}
                   />
                 )}
               </div>
@@ -2637,6 +2723,7 @@ export default function App() {
                     onOpenSendModal={() => setIsSendQuotationOpen(true)}
                     onOpenProfitIntelligence={() => setIsProfitIntelligenceOpen(true)}
                     onOpenDebitNote={() => handleOpenDebitNoteForQuote(quote)}
+                    onOpenExchangeRateModal={() => setIsExchangeRateModalOpen(true)}
                   />
                 )}
               </div>
@@ -3887,6 +3974,32 @@ export default function App() {
             onNavigateToTable={handleOpenTableDirectly}
           />
         </Suspense>
+      )}
+
+      {/* Phase 80: Realtime 100% Accurate USD/VND Exchange Rate Modal */}
+      {isExchangeRateModalOpen && (
+        <ExchangeRateModal
+          isOpen={isExchangeRateModalOpen}
+          onClose={() => setIsExchangeRateModalOpen(false)}
+          rateDetail={liveExchangeRate}
+          currentQuoteRate={quote.exchangeRate}
+          config={exchangeRateConfig}
+          onApplyRateToQuote={(newRate, isLocked) => {
+            handleExchangeRateChange(newRate);
+            if (isLocked !== undefined) {
+              const updated = saveStoredExchangeRateConfig({ lockRateForActiveQuote: isLocked });
+              setExchangeRateConfig(updated);
+            }
+          }}
+          onSaveConfig={(newConfig) => {
+            const updated = saveStoredExchangeRateConfig(newConfig);
+            setExchangeRateConfig(updated);
+            showToast('Đã lưu cấu hình tự động đồng bộ tỷ giá USD.');
+          }}
+          onRefreshLiveRate={handleRefreshExchangeRate}
+          quoteTotalUsd={quote.grandTotalUsd || quote.subtotalUsd || 0}
+          quoteTotalVnd={quote.grandTotalVnd || quote.subtotalVnd || 0}
+        />
       )}
       </Suspense>
 

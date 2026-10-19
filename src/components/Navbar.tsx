@@ -1,6 +1,8 @@
 import React from 'react';
 import { Ship, RefreshCw, Menu, Plus, LayoutDashboard, ShieldCheck, LogIn, FileText, Anchor, Radio, Compass, LayoutGrid } from 'lucide-react';
 import { CompanyProfile } from '../types/logistics';
+import { ExchangeRateDetail } from '../types/exchangeRate';
+import { ExchangeRateBadge } from './exchangeRate/ExchangeRateBadge';
 import { CloudSyncStatusBadge } from './CloudSyncStatusBadge';
 import { CompanySwitcher } from './company/CompanySwitcher';
 import { useAuth } from '../context/AuthContext';
@@ -29,6 +31,10 @@ interface NavbarProps {
   onOpenControlTower?: () => void;
   onOpenEngagementRadar?: () => void;
   activeEngagementsCount?: number;
+  liveRateDetail?: ExchangeRateDetail;
+  isRefreshingLiveRate?: boolean;
+  onRefreshLiveRate?: () => Promise<void>;
+  onOpenExchangeRateModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -55,6 +61,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenControlTower,
   onOpenEngagementRadar,
   activeEngagementsCount = 0,
+  liveRateDetail,
+  isRefreshingLiveRate,
+  onRefreshLiveRate,
+  onOpenExchangeRateModal,
 }) => {
   const { user, isAuthenticated } = useAuth();
 
@@ -195,20 +205,30 @@ export const Navbar: React.FC<NavbarProps> = ({
           onOpenIntegrityDashboard={onOpenIntegrityDashboard}
         />
 
-        {/* Exchange Rate Quick Adjuster */}
-        <div className="hidden sm:flex items-center bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs text-slate-600 space-x-1.5">
-          <span className="text-[11px] font-medium text-slate-500">
-            USD:
-          </span>
-          <input 
-            type="number"
-            value={exchangeRate}
-            onChange={(e) => onExchangeRateChange(Number(e.target.value) || 25400)}
-            className="w-16 bg-white text-slate-900 font-mono font-semibold text-right px-1.5 py-0.5 rounded border border-slate-300 text-xs focus:outline-none focus:ring-1 focus:ring-slate-900"
-            title="Chỉnh sửa tỷ giá USD/VND"
+        {/* Real-time USD Exchange Rate Live Badge */}
+        {liveRateDetail ? (
+          <ExchangeRateBadge
+            rateDetail={liveRateDetail}
+            isUpdating={isRefreshingLiveRate}
+            onRefresh={onRefreshLiveRate}
+            onClick={onOpenExchangeRateModal}
+            className="hidden sm:flex"
           />
-          <span className="text-[10px] text-slate-400">₫</span>
-        </div>
+        ) : (
+          <div 
+            onClick={onOpenExchangeRateModal}
+            className="hidden sm:flex items-center bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs text-slate-600 space-x-1.5 cursor-pointer hover:border-blue-400 hover:bg-white transition-colors"
+            title="Bấm để mở Trung tâm Tỷ giá USD Realtime Vietcombank"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+            </span>
+            <span className="text-[11px] font-semibold text-slate-500">USD:</span>
+            <span className="font-mono font-bold text-slate-900">{exchangeRate.toLocaleString()}</span>
+            <span className="text-[10px] text-slate-400">₫</span>
+          </div>
+        )}
 
         {/* Unrestricted System Status (No login required) */}
         <div 

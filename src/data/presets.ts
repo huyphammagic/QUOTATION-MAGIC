@@ -151,6 +151,21 @@ export const INCOTERMS_LIST: {
   }
 ];
 
+const getLiveExchangeRateOrDefault = (): number => {
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('bogi_usd_live_exchange_rate');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed.rate === 'number' && parsed.rate > 0) {
+          return parsed.rate;
+        }
+      }
+    } catch {}
+  }
+  return DEFAULT_EXCHANGE_RATE;
+};
+
 export function createEmptyQuote(company?: CompanyProfile): QuoteData {
   const currentYear = new Date().getFullYear();
   const randomSuffix = Math.floor(1000 + Math.random() * 9000);
@@ -174,7 +189,7 @@ export function createEmptyQuote(company?: CompanyProfile): QuoteData {
     updatedDate: new Date().toISOString().slice(0, 10),
     status: "DRAFT",
     quoteCurrency: "USD",
-    exchangeRate: DEFAULT_EXCHANGE_RATE,
+    exchangeRate: getLiveExchangeRateOrDefault(),
     company: activeCompany,
     customer: {
       customerName: "",
