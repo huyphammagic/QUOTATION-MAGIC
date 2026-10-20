@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ship, RefreshCw, Menu, Plus, LayoutDashboard, ShieldCheck, LogIn, FileText, Anchor, Radio, Compass, LayoutGrid } from 'lucide-react';
+import { Ship, RefreshCw, Menu, Plus, LayoutDashboard, ShieldCheck, LogIn, FileText, Anchor, Radio, Compass, LayoutGrid, Zap } from 'lucide-react';
 import { CompanyProfile } from '../types/logistics';
 import { ExchangeRateDetail } from '../types/exchangeRate';
 import { ExchangeRateBadge } from './exchangeRate/ExchangeRateBadge';
@@ -35,6 +35,7 @@ interface NavbarProps {
   isRefreshingLiveRate?: boolean;
   onRefreshLiveRate?: () => Promise<void>;
   onOpenExchangeRateModal?: () => void;
+  onOpenRoutePresets?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -65,6 +66,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   isRefreshingLiveRate,
   onRefreshLiveRate,
   onOpenExchangeRateModal,
+  onOpenRoutePresets,
 }) => {
   const { user, isAuthenticated } = useAuth();
 
@@ -239,13 +241,26 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="hidden sm:inline">Toàn Quyền Quản Trị</span>
         </div>
 
+        {/* 1-Click Route Presets Action */}
+        {onOpenRoutePresets && (
+          <button
+            type="button"
+            onClick={onOpenRoutePresets}
+            className="flex items-center space-x-1.5 bg-linear-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold text-xs px-3 py-1.5 rounded-lg shadow-xs hover:shadow transition-all cursor-pointer"
+            title="Bộ Mẫu Báo Giá Trọn Gói Theo Tuyến (1-Click Route & Service Presets)"
+          >
+            <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
+            <span className="hidden sm:inline">Gói Mẫu Tuyến 1-Click</span>
+          </button>
+        )}
+
         {/* New Quote Quick Action */}
         {onNewQuote && (
           <button
             type="button"
             onClick={onNewQuote}
             className="flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
-            title="Tạo báo giá mới"
+            title="Tạo báo giá mới sạch"
           >
             <Plus className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Tạo Báo Giá</span>

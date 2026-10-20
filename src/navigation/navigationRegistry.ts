@@ -335,6 +335,16 @@ export const APP_ROUTES: Record<AppRouteId, RouteDefinition> = {
     descriptionVi: 'Ma trận so sánh 3 phương án cước Tiết kiệm - Khuyên dùng - Hỏa tốc giúp tăng tỷ lệ chốt đơn và bảo vệ lợi nhuận biên',
     descriptionEn: 'Multi-tier Good-Better-Best quotation comparison engine to increase win-rate and upsell premium logistics services',
   },
+  route_presets_hub: {
+    id: 'route_presets_hub',
+    path: '/quotations/route-presets',
+    hash: '#quotations/route-presets',
+    titleVi: 'Bộ Mẫu Báo Giá Trọn Gói Theo Tuyến',
+    titleEn: 'Route & Service Presets Library',
+    group: 'quotation',
+    descriptionVi: 'Khởi tạo nhanh báo giá hoàn chỉnh chỉ với 1 chạm: Tự động điền cước chính, trọn bộ Local charges cảng đi (POL), cảng đến (POD), phụ phí an ninh và điều khoản chuẩn quốc tế',
+    descriptionEn: 'Instant 1-click comprehensive quotation builder with preconfigured freight, POL/POD local charges, security surcharges, and international terms',
+  },
   opportunity_radar: {
     id: 'opportunity_radar',
     path: '/radar/opportunities',

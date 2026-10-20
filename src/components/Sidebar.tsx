@@ -134,6 +134,7 @@ export interface SidebarProps {
   onOpenDebitNoteManagement?: () => void;
   onOpenMultiOptionQuote?: () => void;
   onOpenExchangeRateHub?: () => void;
+  onOpenRoutePresets?: () => void;
   dormantCustomersCount?: number;
   activeEngagementsCount?: number;
   exceptionsCount?: number;
@@ -231,6 +232,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenDebitNoteManagement,
   onOpenMultiOptionQuote,
   onOpenExchangeRateHub,
+  onOpenRoutePresets,
   dormantCustomersCount = 3,
   activeEngagementsCount = 0,
   shipmentsCount = 0,
@@ -505,6 +507,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       group: 'quotation',
       action: () => onOpenMultiOptionQuote && onOpenMultiOptionQuote(),
       isCore: false,
+    },
+    {
+      id: 'route_presets_hub',
+      label: activeLang === 'vi' ? 'Gói Mẫu Tuyến Trọn Gói' : 'Route & Service Presets',
+      icon: Zap,
+      group: 'quotation',
+      action: () => onOpenRoutePresets && onOpenRoutePresets(),
+      badge: '1-Click',
+      badgeTone: 'emerald',
+      isCore: true,
     },
 
     // === 2. TRÍ TUỆ BÁN HÀNG & RADAR AI (SALES INTELLIGENCE & RADARS) ===

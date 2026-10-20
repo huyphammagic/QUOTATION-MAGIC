@@ -147,6 +147,7 @@ const DebitNoteModal = lazyWithRetry(() => import('./components/debitNote/DebitN
 const DebitNoteManagementModal = lazyWithRetry(() => import('./components/debitNote/DebitNoteManagementModal').then(m => ({ default: m.DebitNoteManagementModal })), 'DebitNoteManagementModal');
 const StatementOfAccountModal = lazyWithRetry(() => import('./components/soa/StatementOfAccountModal').then(m => ({ default: m.StatementOfAccountModal })), 'StatementOfAccountModal');
 const MultiOptionQuoteModal = lazyWithRetry(() => import('./components/pricing/MultiOptionQuoteModal').then(m => ({ default: m.MultiOptionQuoteModal })), 'MultiOptionQuoteModal');
+const RoutePresetModal = lazyWithRetry(() => import('./components/routePreset/RoutePresetModal').then(m => ({ default: m.RoutePresetModal })), 'RoutePresetModal');
 import { LiveLeadToastNotifier } from './components/telemetry/LiveLeadToastNotifier';
 import { subscribeToLiveEngagements } from './services/telemetry/customerEngagementService';
 import { QuotationEngagementSession } from './types/customerEngagement';
@@ -561,6 +562,15 @@ export default function App() {
   const handleOpenMultiOptionQuote = () => {
     setIsFullscreenTable(true);
     setIsMultiOptionQuoteModalOpen(true);
+  };
+
+  // Phase 81: 1-Click Route & Service Presets Library
+  const [isRoutePresetModalOpen, setIsRoutePresetModalOpen] = useState(false);
+
+  const handleApplyRoutePreset = (updatedQuote: QuoteData, message: string) => {
+    setQuote(updatedQuote);
+    showToast(message);
+    setActiveRouteId('quotation_workbench');
   };
 
   const handleApplyMultiOptionToActiveQuote = (selectedOption: any) => {
@@ -978,6 +988,9 @@ export default function App() {
         break;
       case 'exchange_rate_hub':
         setIsExchangeRateModalOpen(true);
+        break;
+      case 'route_presets_hub':
+        setIsRoutePresetModalOpen(true);
         break;
       case 'pricing_contracts':
         ensureSuppliersAndCarriersLoaded();
@@ -2445,6 +2458,7 @@ export default function App() {
           onOpenDebitNoteManagement={() => navigateToRoute('debit_note_management')}
           onOpenMultiOptionQuote={() => navigateToRoute('multi_option_quotation')}
           onOpenExchangeRateHub={() => navigateToRoute('exchange_rate_hub')}
+          onOpenRoutePresets={() => navigateToRoute('route_presets_hub')}
           onOpenEngagementRadar={() => navigateToRoute('engagement_radar')}
           onOpenDealCloser={() => navigateToRoute('deal_closing_accelerator')}
           onOpenRfqInbox={() => navigateToRoute('rfq_inbox')}
@@ -2518,6 +2532,7 @@ export default function App() {
             isRefreshingLiveRate={isRefreshingExchangeRate}
             onRefreshLiveRate={handleRefreshExchangeRate}
             onOpenExchangeRateModal={() => setIsExchangeRateModalOpen(true)}
+            onOpenRoutePresets={() => setIsRoutePresetModalOpen(true)}
             lastAutoSaveTime={lastAutoSaveTime}
             isAutoSaving={isAutoSaving}
             onToggleSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
@@ -2590,6 +2605,7 @@ export default function App() {
               onOpenDebitNote={() => handleOpenDebitNoteForQuote()}
               onOpenStatementOfAccount={() => handleOpenStatementOfAccount()}
               onOpenMultiOptionQuote={handleOpenMultiOptionQuote}
+              onOpenRoutePresets={() => setIsRoutePresetModalOpen(true)}
               isSaving={isAutoSaving}
               lastSavedAt={lastAutoSaveTime}
             />
@@ -2645,6 +2661,7 @@ export default function App() {
                     onResolveContractPricing={handleResolveContractPricing}
                     onOpenContracts={() => setIsContractsOpen(true)}
                     onOpenCompetitorRadar={() => setIsCompetitorRadarOpen(true)}
+                    onOpenRoutePresets={() => setIsRoutePresetModalOpen(true)}
                   />
                 </div>
 
@@ -4000,6 +4017,19 @@ export default function App() {
           quoteTotalUsd={quote.grandTotalUsd || quote.subtotalUsd || 0}
           quoteTotalVnd={quote.grandTotalVnd || quote.subtotalVnd || 0}
         />
+      )}
+
+      {/* Phase 81: 1-Click Route & Service Presets Modal */}
+      {isRoutePresetModalOpen && (
+        <Suspense fallback={null}>
+          <RoutePresetModal
+            isOpen={isRoutePresetModalOpen}
+            onClose={() => setIsRoutePresetModalOpen(false)}
+            currentQuote={quote}
+            onApplyPreset={handleApplyRoutePreset}
+            exchangeRate={quote.exchangeRate}
+          />
+        </Suspense>
       )}
       </Suspense>
 

@@ -29,7 +29,8 @@ import {
   X,
   GripVertical,
   ChevronsUp,
-  ChevronsDown
+  ChevronsDown,
+  Zap
 } from 'lucide-react';
 
 interface LineItemsTableProps {
@@ -46,6 +47,7 @@ interface LineItemsTableProps {
   onResolveContractPricing?: () => void;
   onOpenContracts?: () => void;
   onOpenCompetitorRadar?: () => void;
+  onOpenRoutePresets?: () => void;
 }
 
 export const LineItemsTable: React.FC<LineItemsTableProps> = ({ 
@@ -62,6 +64,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
   onResolveContractPricing,
   onOpenContracts,
   onOpenCompetitorRadar,
+  onOpenRoutePresets,
 }) => {
   // Toggle Cost & Profit margin column
   const [showCostAndProfit, setShowCostAndProfit] = useState(true);
@@ -719,6 +722,19 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                 </button>
               )}
             </div>
+
+            {/* 1-Click Route & Service Presets */}
+            {onOpenRoutePresets && (
+              <button
+                type="button"
+                onClick={onOpenRoutePresets}
+                className="inline-flex items-center gap-1.5 bg-linear-to-r from-indigo-50 to-indigo-100/90 hover:from-indigo-100 hover:to-indigo-200 text-indigo-900 border border-indigo-300 font-bold text-xs px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                title="Áp dụng gói mẫu cước & trọn bộ phụ phí theo tuyến (1-Click Route & Service Presets)"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                <span>Gói Tuyến 1-Click</span>
+              </button>
+            )}
 
             {/* Presets Quick Dropdown */}
             <div className="relative" ref={presetDropdownRef}>
