@@ -87,11 +87,16 @@ export const Navbar: React.FC<NavbarProps> = ({
         )}
 
         <div className="flex items-center space-x-2.5 shrink-0">
-          <div className="w-7 h-7 bg-slate-900 rounded-lg flex items-center justify-center text-white shadow-2xs">
-            <Ship className="w-4 h-4 text-white" />
+          <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shadow-2xs border border-slate-200/90 bg-white">
+            <img 
+              src="/logo.png" 
+              alt="LogiQuote Logo" 
+              className="w-full h-full object-contain p-0.5"
+            />
           </div>
-          <span className="text-sm font-bold tracking-tight text-slate-900">
+          <span className="text-sm font-bold tracking-tight text-slate-900 flex items-center gap-1.5">
             LogiQuote
+            <span className="text-[10px] uppercase font-extrabold px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">TMS</span>
           </span>
         </div>
 

@@ -1154,14 +1154,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Top Header & Branding */}
         <div className="h-14 px-3.5 border-b border-slate-800/80 flex items-center justify-between shrink-0 bg-[#0d1527]">
           <div className="flex items-center space-x-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-              <Ship className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-white/10 border border-slate-700/80 p-0.5 shrink-0 shadow-inner">
+              <img 
+                src="/logo.png" 
+                alt="LogiQuote Logo" 
+                className="w-full h-full object-contain"
+              />
             </div>
             
             {!isCollapsed && (
               <div className="min-w-0">
-                <span className="font-semibold text-xs text-white tracking-tight block truncate">
+                <span className="font-semibold text-xs text-white tracking-tight block truncate flex items-center gap-1.5">
                   LogiQuote Studio
+                  <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-indigo-500/30 text-indigo-300 border border-indigo-400/30">PRO</span>
                 </span>
                 <span className="text-[11px] text-slate-400 font-normal truncate block">
                   {company.shortName || company.name || 'TMS Logistics'}

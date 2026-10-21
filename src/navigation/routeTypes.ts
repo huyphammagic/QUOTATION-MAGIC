@@ -37,6 +37,7 @@ export type AppRouteId =
   | 'debit_note_management'
   | 'multi_option_quotation'
   | 'route_presets_hub'
+  | 'historical_rate_advisor'
   | 'opportunity_radar'
   | 'decision_workspace'
   // Pricing

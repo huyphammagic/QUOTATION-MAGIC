@@ -25,8 +25,12 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({ company, onOpenCompany
               />
             </div>
           ) : (
-            <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white shrink-0 shadow-xs">
-              <Building2 className="w-5 h-5" />
+            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1 shrink-0 shadow-xs border border-slate-700 overflow-hidden">
+              <img 
+                src="/logo.png" 
+                alt="Logistics Logo" 
+                className="max-h-full max-w-full object-contain"
+              />
             </div>
           )}
           <div className="min-w-0">

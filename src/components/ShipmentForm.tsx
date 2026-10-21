@@ -18,11 +18,17 @@ import {
   BarChart3
 } from 'lucide-react';
 
+import { QuoteData } from '../types/logistics';
+import { HistoricalRateBadge } from './pricing/HistoricalRateBadge';
+
 interface ShipmentFormProps {
   shipment: ShipmentDetails;
   onChangeShipment: (updated: Partial<ShipmentDetails>) => void;
   onOpenHsCodeTariff?: () => void;
   onOpenFreightRateBenchmarking?: () => void;
+  savedQuotes?: QuoteData[];
+  currentQuoteId?: string;
+  onOpenHistoricalRateAdvisor?: () => void;
 }
 
 export const ShipmentForm: React.FC<ShipmentFormProps> = ({ 
@@ -30,6 +36,9 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
   onChangeShipment,
   onOpenHsCodeTariff,
   onOpenFreightRateBenchmarking,
+  savedQuotes = [],
+  currentQuoteId,
+  onOpenHistoricalRateAdvisor,
 }) => {
   const [showTransitDetails, setShowTransitDetails] = useState(false);
 
@@ -209,6 +218,18 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
           </div>
 
         </div>
+
+        {/* 3-Month Historical Rate Suggestion Ribbon */}
+        {shipment.pol && shipment.pod && onOpenHistoricalRateAdvisor && (
+          <HistoricalRateBadge
+            pol={shipment.pol}
+            pod={shipment.pod}
+            savedQuotes={savedQuotes}
+            currentQuoteId={currentQuoteId}
+            onOpenAdvisor={onOpenHistoricalRateAdvisor}
+            className="w-full"
+          />
+        )}
 
         {/* Ports Auto-complete datalist */}
         <datalist id="ports-list">

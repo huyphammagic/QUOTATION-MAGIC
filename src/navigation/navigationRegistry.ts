@@ -345,6 +345,16 @@ export const APP_ROUTES: Record<AppRouteId, RouteDefinition> = {
     descriptionVi: 'Khởi tạo nhanh báo giá hoàn chỉnh chỉ với 1 chạm: Tự động điền cước chính, trọn bộ Local charges cảng đi (POL), cảng đến (POD), phụ phí an ninh và điều khoản chuẩn quốc tế',
     descriptionEn: 'Instant 1-click comprehensive quotation builder with preconfigured freight, POL/POD local charges, security surcharges, and international terms',
   },
+  historical_rate_advisor: {
+    id: 'historical_rate_advisor',
+    path: '/quotations/historical-rates',
+    hash: '#quotations/historical-rates',
+    titleVi: 'Gợi Ý Giá Cước Lịch Sử Tuyến (3 Tháng)',
+    titleEn: 'Historical POL-POD Rate Advisor',
+    group: 'quotation',
+    descriptionVi: 'Gợi ý giá cước vận tải dựa trên dữ liệu lịch sử các báo giá đã thực hiện cho cùng cặp cảng (POL-POD) trong 3 tháng gần nhất để hỗ trợ người dùng đưa ra con số báo giá cạnh tranh hơn',
+    descriptionEn: 'Freight rate recommendation engine based on 90-day historical quotations for the same POL-POD pair with win-rate boosting tiers',
+  },
   opportunity_radar: {
     id: 'opportunity_radar',
     path: '/radar/opportunities',

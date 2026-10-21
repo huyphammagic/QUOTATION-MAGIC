@@ -30,7 +30,8 @@ import {
   GripVertical,
   ChevronsUp,
   ChevronsDown,
-  Zap
+  Zap,
+  History
 } from 'lucide-react';
 
 interface LineItemsTableProps {
@@ -48,6 +49,7 @@ interface LineItemsTableProps {
   onOpenContracts?: () => void;
   onOpenCompetitorRadar?: () => void;
   onOpenRoutePresets?: () => void;
+  onOpenHistoricalRateAdvisor?: () => void;
 }
 
 export const LineItemsTable: React.FC<LineItemsTableProps> = ({ 
@@ -65,6 +67,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
   onOpenContracts,
   onOpenCompetitorRadar,
   onOpenRoutePresets,
+  onOpenHistoricalRateAdvisor,
 }) => {
   // Toggle Cost & Profit margin column
   const [showCostAndProfit, setShowCostAndProfit] = useState(true);
@@ -836,6 +839,19 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
               >
                 <BarChart3 className="w-3.5 h-3.5 text-blue-600" />
                 <span>Đối Soát Cước AI</span>
+              </button>
+            )}
+
+            {onOpenHistoricalRateAdvisor && (
+              <button
+                type="button"
+                onClick={onOpenHistoricalRateAdvisor}
+                className="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200/90 font-bold text-xs px-2.5 py-1 rounded-md transition-colors cursor-pointer shadow-2xs"
+                title="Gợi ý giá cước cạnh tranh dựa trên lịch sử báo giá POL-POD trong 3 tháng qua"
+                id="btn-open-historical-rate-advisor"
+              >
+                <History className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Gợi Ý Giá Lịch Sử (3 Tháng)</span>
               </button>
             )}
 

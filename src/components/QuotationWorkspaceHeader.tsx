@@ -29,7 +29,8 @@ import {
   CreditCard,
   Calculator,
   BarChart3,
-  Receipt
+  Receipt,
+  History
 } from 'lucide-react';
 import { PaymentStatusBadge } from './payment/PaymentStatusBadge';
 
@@ -64,6 +65,7 @@ interface QuotationWorkspaceHeaderProps {
   onOpenStatementOfAccount?: () => void;
   onOpenMultiOptionQuote?: () => void;
   onOpenRoutePresets?: () => void;
+  onOpenHistoricalRateAdvisor?: () => void;
   isSaving?: boolean;
   lastSavedAt?: string | null;
 }
@@ -97,6 +99,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
   onOpenStatementOfAccount,
   onOpenMultiOptionQuote,
   onOpenRoutePresets,
+  onOpenHistoricalRateAdvisor,
   isSaving = false,
   lastSavedAt,
 }) => {
@@ -666,6 +669,18 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
             >
               <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
               <span>Gói Mẫu Tuyến</span>
+            </button>
+          )}
+
+          {onOpenHistoricalRateAdvisor && (
+            <button
+              type="button"
+              onClick={onOpenHistoricalRateAdvisor}
+              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-bold text-emerald-950 bg-linear-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 border border-emerald-300 rounded-lg transition-colors cursor-pointer shrink-0 shadow-2xs"
+              title="Gợi ý giá cước vận tải dựa trên dữ liệu lịch sử các báo giá cùng cặp cảng (POL-POD) trong 3 tháng gần nhất"
+            >
+              <History className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>Giá Cước Lịch Sử</span>
             </button>
           )}
 

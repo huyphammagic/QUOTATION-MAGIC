@@ -148,6 +148,7 @@ const DebitNoteManagementModal = lazyWithRetry(() => import('./components/debitN
 const StatementOfAccountModal = lazyWithRetry(() => import('./components/soa/StatementOfAccountModal').then(m => ({ default: m.StatementOfAccountModal })), 'StatementOfAccountModal');
 const MultiOptionQuoteModal = lazyWithRetry(() => import('./components/pricing/MultiOptionQuoteModal').then(m => ({ default: m.MultiOptionQuoteModal })), 'MultiOptionQuoteModal');
 const RoutePresetModal = lazyWithRetry(() => import('./components/routePreset/RoutePresetModal').then(m => ({ default: m.RoutePresetModal })), 'RoutePresetModal');
+const HistoricalRateAdvisorModal = lazyWithRetry(() => import('./components/pricing/HistoricalRateAdvisorModal').then(m => ({ default: m.HistoricalRateAdvisorModal })), 'HistoricalRateAdvisorModal');
 import { LiveLeadToastNotifier } from './components/telemetry/LiveLeadToastNotifier';
 import { subscribeToLiveEngagements } from './services/telemetry/customerEngagementService';
 import { QuotationEngagementSession } from './types/customerEngagement';
@@ -572,7 +573,13 @@ export default function App() {
     showToast(message);
     setActiveRouteId('quotation_workbench');
   };
+  // Phase 82: Historical Rate Advisor (3-month POL-POD quote history)
+  const [isHistoricalRateAdvisorOpen, setIsHistoricalRateAdvisorOpen] = useState(false);
 
+  const handleApplyHistoricalRate = (updatedQuote: QuoteData, message: string) => {
+    setQuote(updatedQuote);
+    showToast(message);
+  };
   const handleApplyMultiOptionToActiveQuote = (selectedOption: any) => {
     setQuote(prev => {
       return MultiOptionService.applyOptionToQuote(prev, selectedOption);
@@ -991,6 +998,9 @@ export default function App() {
         break;
       case 'route_presets_hub':
         setIsRoutePresetModalOpen(true);
+        break;
+      case 'historical_rate_advisor':
+        setIsHistoricalRateAdvisorOpen(true);
         break;
       case 'pricing_contracts':
         ensureSuppliersAndCarriersLoaded();
@@ -2606,6 +2616,7 @@ export default function App() {
               onOpenStatementOfAccount={() => handleOpenStatementOfAccount()}
               onOpenMultiOptionQuote={handleOpenMultiOptionQuote}
               onOpenRoutePresets={() => setIsRoutePresetModalOpen(true)}
+              onOpenHistoricalRateAdvisor={() => setIsHistoricalRateAdvisorOpen(true)}
               isSaving={isAutoSaving}
               lastSavedAt={lastAutoSaveTime}
             />
@@ -2642,6 +2653,9 @@ export default function App() {
                     onChangeShipment={handleChangeShipment}
                     onOpenHsCodeTariff={() => setIsHsCodeTariffOpen(true)}
                     onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
+                    savedQuotes={savedQuotes}
+                    currentQuoteId={quote.id}
+                    onOpenHistoricalRateAdvisor={() => setIsHistoricalRateAdvisorOpen(true)}
                   />
                 </div>
 
@@ -2662,6 +2676,7 @@ export default function App() {
                     onOpenContracts={() => setIsContractsOpen(true)}
                     onOpenCompetitorRadar={() => setIsCompetitorRadarOpen(true)}
                     onOpenRoutePresets={() => setIsRoutePresetModalOpen(true)}
+                    onOpenHistoricalRateAdvisor={() => setIsHistoricalRateAdvisorOpen(true)}
                   />
                 </div>
 
@@ -4028,6 +4043,19 @@ export default function App() {
             currentQuote={quote}
             onApplyPreset={handleApplyRoutePreset}
             exchangeRate={quote.exchangeRate}
+          />
+        </Suspense>
+      )}
+
+      {/* Phase 82: Historical POL-POD Rate Advisor Modal (3-Month Quote History) */}
+      {isHistoricalRateAdvisorOpen && (
+        <Suspense fallback={null}>
+          <HistoricalRateAdvisorModal
+            isOpen={isHistoricalRateAdvisorOpen}
+            onClose={() => setIsHistoricalRateAdvisorOpen(false)}
+            currentQuote={quote}
+            savedQuotes={savedQuotes}
+            onApplyRate={handleApplyHistoricalRate}
           />
         </Suspense>
       )}
