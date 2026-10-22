@@ -11,10 +11,34 @@
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
     @apply bg-slate-50 text-slate-800 antialiased selection:bg-indigo-500/20 selection:text-indigo-900;
+    overflow-x: hidden;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    touch-action: manipulation;
+  }
+
+  /* Prevent iOS automatic input zoom */
+  @media screen and (max-width: 767px) {
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="date"],
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+
+  button, a {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 
   /* Custom Slim Minimal Scrollbar */

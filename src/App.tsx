@@ -88,6 +88,7 @@ import { TermsForm } from './components/TermsForm';
 import { SummaryCard } from './components/SummaryCard';
 import { QuotationWorkspaceHeader, WorkspaceTab } from './components/QuotationWorkspaceHeader';
 import { FolderFullscreenHeader } from './components/tables/TableFullscreenHeader';
+import { MobileBottomBar } from './components/navigation/MobileBottomBar';
 
 import { QuotationCommunicationPanel } from './components/communication/QuotationCommunicationPanel';
 import type { MasterDataType } from './components/MasterDataReferenceModal';
@@ -138,6 +139,7 @@ const GoldenHourFollowUpModal = lazyWithRetry(() => import('./components/goldenH
 const SmartConcessionModal = lazyWithRetry(() => import('./components/concession/SmartConcessionModal').then(m => ({ default: m.SmartConcessionModal })), 'SmartConcessionModal');
 const EnterpriseTenderModal = lazyWithRetry(() => import('./components/tender/EnterpriseTenderModal').then(m => ({ default: m.EnterpriseTenderModal })), 'EnterpriseTenderModal');
 const CustomerDnaPowerMapModal = lazyWithRetry(() => import('./components/crm/CustomerDnaPowerMapModal').then(m => ({ default: m.CustomerDnaPowerMapModal })), 'CustomerDnaPowerMapModal');
+const Customer360Modal = lazyWithRetry(() => import('./components/crm/Customer360Modal').then(m => ({ default: m.Customer360Modal })), 'Customer360Modal');
 const CarrierInvoiceAuditModal = lazyWithRetry(() => import('./components/carrierAudit/CarrierInvoiceAuditModal').then(m => ({ default: m.CarrierInvoiceAuditModal })), 'CarrierInvoiceAuditModal');
 const QuotationPaymentHubModal = lazyWithRetry(() => import('./components/payment/QuotationPaymentHubModal').then(m => ({ default: m.QuotationPaymentHubModal })), 'QuotationPaymentHubModal');
 const AiDocumentParserModal = lazyWithRetry(() => import('./components/documentParser/AiDocumentParserModal').then(m => ({ default: m.AiDocumentParserModal })), 'AiDocumentParserModal');
@@ -580,6 +582,33 @@ export default function App() {
     setQuote(updatedQuote);
     showToast(message);
   };
+
+  // Customer 360° Hub
+  const [isCustomer360Open, setIsCustomer360Open] = useState(false);
+  const [customerFor360, setCustomerFor360] = useState<CustomerRecord | null>(null);
+
+  const handleOpenCustomer360 = (cust?: CustomerRecord) => {
+    const target = cust || (quote.customer?.companyName ? (customers.find(c => c.companyName === quote.customer.companyName || (quote.customer.taxId && c.taxId === quote.customer.taxId)) || {
+      id: quote.customer.id || 'current_customer',
+      code: quote.customer.code || 'KH-CURRENT',
+      customerName: quote.customer.customerName,
+      companyName: quote.customer.companyName,
+      taxId: quote.customer.taxId,
+      address: quote.customer.address,
+      email: quote.customer.email,
+      phone: quote.customer.phone,
+      contactPerson: quote.customer.contactPerson,
+      salesPerson: quote.customer.salesPerson,
+      group: 'Khách Thương Mại',
+      creditLimitVnd: quote.customer.creditLimitVnd || 200000000,
+      creditTermDays: quote.customer.creditTermDays || 30,
+    }) : customers[0]);
+
+    if (target) {
+      setCustomerFor360(target as CustomerRecord);
+    }
+    setIsCustomer360Open(true);
+  };
   const handleApplyMultiOptionToActiveQuote = (selectedOption: any) => {
     setQuote(prev => {
       return MultiOptionService.applyOptionToQuote(prev, selectedOption);
@@ -732,6 +761,7 @@ export default function App() {
     setIsDebitNoteManagementModalOpen(false);
     setIsSoaModalOpen(false);
     setIsMultiOptionQuoteModalOpen(false);
+    setIsCustomer360Open(false);
     setIsAuthModalOpen(false);
     setSelectedPaymentQuoteId(undefined);
     setSelectedClosingQuote(null);
@@ -1020,6 +1050,9 @@ export default function App() {
         break;
       case 'master_customers':
         setIsCustomersOpen(true);
+        break;
+      case 'customer_360_hub':
+        handleOpenCustomer360();
         break;
       case 'master_suppliers':
         ensureSuppliersAndCarriersLoaded();
@@ -2442,6 +2475,7 @@ export default function App() {
             else navigateToRoute('sys_profile');
           }}
           onOpenCustomers={() => navigateToRoute('master_customers')}
+          onOpenCustomer360={() => navigateToRoute('customer_360_hub')}
           onOpenSurchargeCatalog={() => navigateToRoute('master_surcharges')}
           onOpenMasterRateHub={(tab) => {
             if (tab === 'SUPPLIERS') navigateToRoute('master_suppliers');
@@ -2574,7 +2608,7 @@ export default function App() {
           />
 
           {/* Main Content Area */}
-          <main className="flex-1 w-full max-w-[1720px] mx-auto p-3 sm:p-5 lg:p-6 space-y-4">
+          <main className="flex-1 w-full max-w-[1720px] mx-auto p-3 sm:p-5 lg:p-6 pb-24 lg:pb-6 space-y-4">
             
             {/* Toast Alert */}
             {toastMessage && (
@@ -2643,6 +2677,7 @@ export default function App() {
                     onChangeCustomer={handleChangeCustomer}
                     onChangeQuoteMeta={handleChangeQuoteMeta}
                     onOpenCustomerManager={() => setIsCustomersOpen(true)}
+                    onOpenCustomer360={() => handleOpenCustomer360()}
                     onSaveToCrm={handleSaveCurrentCustomerToCrm}
                     onSelectCustomer={handleSelectCustomerForQuote}
                     isSavingToCrm={isSavingCustomerToCrm}
@@ -2764,7 +2799,7 @@ export default function App() {
           </main>
 
           {/* Minimalist Professional Footer */}
-          <footer className="py-4 px-6 border-t border-slate-200/80 bg-white text-slate-500 flex flex-col sm:flex-row items-center justify-between text-xs gap-2 shrink-0">
+          <footer className="py-4 px-6 mb-14 lg:mb-0 border-t border-slate-200/80 bg-white text-slate-500 flex flex-col sm:flex-row items-center justify-between text-xs gap-2 shrink-0">
             <div className="flex items-center space-x-3 text-slate-600 font-mono">
               <span>1 USD = {quote.exchangeRate.toLocaleString()} VND</span>
               <span className="text-slate-300">·</span>
@@ -2780,6 +2815,30 @@ export default function App() {
         </div>
 
       </div>
+
+      {/* Mobile Fixed Bottom Navigation Bar (Smartphones & Tablets) */}
+      <MobileBottomBar
+        quote={quote}
+        isSaving={Boolean(isAutoSaving || isCloudSyncing)}
+        onOpenSidebar={() => setIsMobileSidebarOpen(true)}
+        onOpenAddFee={() => {
+          window.dispatchEvent(new CustomEvent('OPEN_ADD_FEE_MODAL', {
+            detail: { location: 'POL', category: 'LOCAL_CHARGE' }
+          }));
+        }}
+        onOpenPreview={() => setIsPreviewOpen(true)}
+        onSaveQuote={handleSaveQuoteAction}
+        onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
+        onOpenSendModal={() => setIsSendQuotationOpen(true)}
+        onOpenRoutePresets={() => setIsRoutePresetModalOpen(true)}
+        onOpenCustomer360={() => handleOpenCustomer360()}
+        onOpenMultiOption={handleOpenMultiOptionQuote}
+        onOpenDebitNote={() => handleOpenDebitNoteForQuote(quote)}
+        onOpenSavedQuotes={() => {
+          setSavedQuotesInitialFilter('ALL');
+          setIsSavedOpen(true);
+        }}
+      />
 
       {/* Modals */}
       <Suspense fallback={
@@ -4056,6 +4115,45 @@ export default function App() {
             currentQuote={quote}
             savedQuotes={savedQuotes}
             onApplyRate={handleApplyHistoricalRate}
+          />
+        </Suspense>
+      )}
+
+      {/* Customer 360° Hub Modal */}
+      {isCustomer360Open && customerFor360 && (
+        <Suspense fallback={null}>
+          <Customer360Modal
+            isOpen={isCustomer360Open}
+            onClose={() => setIsCustomer360Open(false)}
+            customer={customerFor360}
+            customers={customers}
+            companyId={activeCompanyId || 'company_profile'}
+            user={{
+              name: company.salesRepName || 'Sales Logistics',
+              email: company.salesRepEmail || 'sales@logistics.vn'
+            }}
+            quotes={savedQuotes}
+            shipments={decisionShipments}
+            contracts={decisionContracts}
+            onSelectCustomerForQuote={(selectedCust) => {
+              handleSelectCustomerForQuote(selectedCust);
+              setIsCustomer360Open(false);
+              showToast(`⚡ Đã chọn khách hàng ${selectedCust.companyName || selectedCust.customerName} cho báo giá!`);
+            }}
+            onSaveCustomer={handleSaveCustomer}
+            onOpenDecisionWorkspace={(prefill) => {
+              setIsCustomer360Open(false);
+              setDecisionWorkspacePrefill(prefill);
+              setIsDecisionWorkspaceOpen(true);
+            }}
+            onOpenStatementOfAccount={(custName) => handleOpenStatementOfAccount(custName)}
+            onOpenDebitNoteForQuote={(targetQ) => handleOpenDebitNoteForQuote(targetQ)}
+            onOpenQuoteDetail={(targetQ) => {
+              setQuote(targetQ);
+              setIsCustomer360Open(false);
+              setActiveRouteId('quotation_workbench');
+              showToast(`⚡ Đã nạp báo giá ${targetQ.quoteNumber} lên bàn làm việc!`);
+            }}
           />
         </Suspense>
       )}

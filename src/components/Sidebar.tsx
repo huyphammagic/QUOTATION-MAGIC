@@ -135,6 +135,7 @@ export interface SidebarProps {
   onOpenMultiOptionQuote?: () => void;
   onOpenExchangeRateHub?: () => void;
   onOpenRoutePresets?: () => void;
+  onOpenCustomer360?: () => void;
   dormantCustomersCount?: number;
   activeEngagementsCount?: number;
   exceptionsCount?: number;
@@ -233,6 +234,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenMultiOptionQuote,
   onOpenExchangeRateHub,
   onOpenRoutePresets,
+  onOpenCustomer360,
   dormantCustomersCount = 3,
   activeEngagementsCount = 0,
   shipmentsCount = 0,
@@ -808,6 +810,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       group: 'masterData',
       action: onOpenCustomers,
       badge: customersCount > 0 ? customersCount : null,
+      isCore: true,
+    },
+    {
+      id: 'customer_360_hub',
+      label: activeLang === 'vi' ? 'Trung Tâm Khách Hàng 360°' : 'Customer 360° Hub',
+      icon: Users,
+      group: 'masterData',
+      action: () => onOpenCustomer360 && onOpenCustomer360(),
+      badge: '360°',
+      badgeTone: 'sky',
       isCore: true,
     },
     {

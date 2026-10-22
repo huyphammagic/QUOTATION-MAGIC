@@ -462,6 +462,16 @@ export const APP_ROUTES: Record<AppRouteId, RouteDefinition> = {
     descriptionVi: 'Quản lý thông tin doanh nghiệp, mã số thuế và người liên hệ',
     descriptionEn: 'Manage customer companies, tax IDs and contact persons',
   },
+  customer_360_hub: {
+    id: 'customer_360_hub',
+    path: '/customers/360-hub',
+    hash: '#customers/360-hub',
+    titleVi: 'Trung Tâm Khách Hàng 360° (Customer 360° Hub)',
+    titleEn: 'Customer 360° Intelligence Hub',
+    group: 'masterData',
+    descriptionVi: 'Kiểm soát khách hàng toàn diện: Hạn mức công nợ & rủi ro tín dụng, tỷ lệ chốt Win-rate, tuyến hàng chủ lực, sức khỏe quan hệ và nhật ký tương tác đa kênh',
+    descriptionEn: 'Comprehensive 360-degree customer control center: Credit limits, debt risks, quote win-rates, preferred lanes, health scores, and multi-channel engagement timeline',
+  },
   master_suppliers: {
     id: 'master_suppliers',
     path: '/master/suppliers',

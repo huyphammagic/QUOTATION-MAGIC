@@ -739,8 +739,14 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
           isOpen={!!selectedCustomerFor360}
           onClose={() => setSelectedCustomerFor360(null)}
           customer={selectedCustomerFor360}
+          customers={customers}
           companyId={companyId}
           user={user}
+          quotes={quotes}
+          shipments={shipments}
+          contracts={contracts}
+          onSelectCustomerForQuote={onSelectCustomerForQuote}
+          onSaveCustomer={onSaveCustomer}
           onOpenDecisionWorkspace={(prefill) => {
             setSelectedCustomerFor360(null);
             onClose();

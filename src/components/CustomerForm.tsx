@@ -31,6 +31,7 @@ interface CustomerFormProps {
   onSaveToCrm?: () => void;
   onSelectCustomer?: (customer: CustomerRecord) => void;
   isSavingToCrm?: boolean;
+  onOpenCustomer360?: () => void;
 }
 
 export const CustomerForm: React.FC<CustomerFormProps> = ({
@@ -47,6 +48,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
   onSaveToCrm,
   onSelectCustomer,
   isSavingToCrm = false,
+  onOpenCustomer360,
 }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showAdditionalDetails, setShowAdditionalDetails] = useState(false);
@@ -156,6 +158,18 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
             >
               <Users className="w-3.5 h-3.5 text-slate-500" />
               <span className="hidden sm:inline">CRM</span>
+            </button>
+          )}
+
+          {onOpenCustomer360 && (
+            <button
+              type="button"
+              onClick={onOpenCustomer360}
+              className="flex items-center space-x-1 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-1 rounded-lg transition-colors cursor-pointer shadow-2xs"
+              title="Mở hồ sơ khách hàng 360° (Công nợ, Win-rate, Lịch sử, Sức khỏe)"
+            >
+              <Users className="w-3.5 h-3.5 text-indigo-600" />
+              <span>360° Hub</span>
             </button>
           )}
 

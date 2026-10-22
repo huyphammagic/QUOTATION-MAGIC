@@ -193,6 +193,9 @@ export interface CustomerInfo {
   phone: string;
   contactPerson: string;
   salesPerson?: string;
+  creditLimitVnd?: number;      // Hạn mức nợ tối đa (VND)
+  creditTermDays?: number;      // Thời hạn nợ (Số ngày, e.g. 15, 30 ngày)
+  creditStatus?: 'SAFE' | 'WARNING' | 'LOCKED'; // Trạng thái tín dụng
 }
 
 export interface ShipmentDetails {

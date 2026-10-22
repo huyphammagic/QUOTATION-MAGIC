@@ -81,8 +81,7 @@ export const CompanySwitcher: React.FC<CompanySwitcherProps> = ({
         onClick={() => setIsOpen(!isOpen)}
         disabled={isSwitching || isLoadingCompanies}
         aria-label="Chọn công ty hoạt động"
-        aria-expanded={isOpen}
-        className="flex items-center space-x-2.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 rounded-lg transition-all text-left focus:outline-none focus:ring-2 focus:ring-blue-500/20 max-w-[220px] sm:max-w-[260px]"
+        className="flex items-center space-x-1.5 sm:space-x-2.5 px-2 sm:px-3 py-1.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 rounded-lg transition-all text-left focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 max-w-[110px] sm:max-w-[260px]"
       >
         {/* Company Avatar / Logo */}
         <div className="w-7 h-7 bg-white rounded-md border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">

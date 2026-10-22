@@ -238,7 +238,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
             </button>
 
             {isToolsDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 space-y-2 max-h-[75vh] overflow-y-auto">
+              <div className="absolute right-0 mt-2 w-[calc(100vw-2.5rem)] max-w-sm sm:w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 space-y-2 max-h-[75vh] overflow-y-auto">
                 
                 {/* Section 1: Customer Intelligence */}
                 <div className="space-y-0.5">
@@ -770,7 +770,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-100 pt-3">
         
         {/* Sleek Segmented Control */}
-        <div className="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-xl max-w-full overflow-x-auto">
+        <div className="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-xl max-w-full overflow-x-auto [-webkit-overflow-scrolling:touch]">
           <button
             type="button"
             onClick={() => onTabChange('DETAILS')}
