@@ -152,7 +152,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
     <div className="bg-white border border-slate-200/90 rounded-2xl p-3 sm:p-4 shadow-2xs space-y-3">
       
       {/* Top Row: Identity & Action Bar */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 w-full">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 w-full">
         
         {/* Left: Executive Identity */}
         <div className="flex items-center flex-wrap gap-2 text-xs min-w-0">
@@ -222,7 +222,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
         </div>
 
         {/* Right: Modern Streamlined Actions with Compact Clusters */}
-        <div className="flex items-center flex-wrap gap-1.5 justify-start xl:justify-end min-w-0">
+        <div className="flex items-center gap-2 justify-start lg:justify-end shrink-0 flex-wrap sm:flex-nowrap">
           
           {/* Categorized Tools & Radar AI Popover */}
           <div className="relative shrink-0" ref={dropdownRef}>
@@ -562,6 +562,25 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
                     </button>
                   )}
 
+                  {onOpenHistoricalRateAdvisor && (
+                    <button
+                      type="button"
+                      onClick={() => { onOpenHistoricalRateAdvisor(); setIsToolsDropdownOpen(false); }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer bg-emerald-50/30"
+                    >
+                      <div className="flex items-center gap-2">
+                        <History className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <div>
+                          <div className="font-semibold text-slate-900 flex items-center gap-1">
+                            <span>Gợi Ý Giá Cước Lịch Sử</span>
+                          </div>
+                          <div className="text-[10px] text-slate-500">Dữ liệu các báo giá cùng cặp cảng 3 tháng gần nhất</div>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
+                    </button>
+                  )}
+
                   {onOpenMultiOptionQuote && (
                     <button
                       type="button"
@@ -622,114 +641,17 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
             )}
           </div>
 
-          {/* Quick AI Shortcuts */}
-          {onOpenHsCodeTariff && (
-            <button
-              type="button"
-              onClick={onOpenHsCodeTariff}
-              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-semibold text-amber-800 bg-amber-50/90 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors cursor-pointer shrink-0"
-              title="Tra cứu mã HS và tự động tính thuế XNK bằng AI"
-            >
-              <Calculator className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              <span>Tra Thuế HS</span>
-            </button>
-          )}
 
-          {onOpenDocumentParser && (
-            <button
-              type="button"
-              onClick={onOpenDocumentParser}
-              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-semibold text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors cursor-pointer shrink-0"
-              title="Quét chứng từ B/L, Booking, Invoice, Tờ khai bằng AI"
-            >
-              <FileText className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-              <span>Quét B/L AI</span>
-            </button>
-          )}
-
-          {onOpenFreightRateBenchmarking && (
-            <button
-              type="button"
-              onClick={onOpenFreightRateBenchmarking}
-              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-bold text-blue-800 bg-blue-50/90 hover:bg-blue-100 border border-blue-300 rounded-lg transition-colors cursor-pointer shrink-0 shadow-2xs"
-              title="Đối soát cước thị trường SCFI/Drewry & tối ưu hóa biên lợi nhuận thông minh (Phase 72)"
-            >
-              <BarChart3 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-              <span>Đối Soát P.72</span>
-            </button>
-          )}
-
-          {/* Quick Commercial Shortcuts */}
-          {onOpenRoutePresets && (
-            <button
-              type="button"
-              onClick={onOpenRoutePresets}
-              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-bold text-indigo-950 bg-linear-to-r from-amber-50 to-indigo-50 hover:from-amber-100 hover:to-indigo-100 border border-amber-300 rounded-lg transition-colors cursor-pointer shrink-0 shadow-2xs"
-              title="Bộ Mẫu Báo Giá Trọn Gói Theo Tuyến (1-Click Route & Service Presets)"
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
-              <span>Gói Mẫu Tuyến</span>
-            </button>
-          )}
-
-          {onOpenHistoricalRateAdvisor && (
-            <button
-              type="button"
-              onClick={onOpenHistoricalRateAdvisor}
-              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-bold text-emerald-950 bg-linear-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 border border-emerald-300 rounded-lg transition-colors cursor-pointer shrink-0 shadow-2xs"
-              title="Gợi ý giá cước vận tải dựa trên dữ liệu lịch sử các báo giá cùng cặp cảng (POL-POD) trong 3 tháng gần nhất"
-            >
-              <History className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>Giá Cước Lịch Sử</span>
-            </button>
-          )}
-
-          {onOpenMultiOptionQuote && (
-            <button
-              type="button"
-              onClick={onOpenMultiOptionQuote}
-              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg transition-colors cursor-pointer shrink-0 shadow-2xs"
-              title="Báo giá Đa Phương Án So Sánh (Good - Better - Best) giúp chốt sale đỉnh cao"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              <span>3 Phương Án</span>
-            </button>
-          )}
-
-          {onOpenDebitNote && (
-            <button
-              type="button"
-              onClick={onOpenDebitNote}
-              className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-bold text-indigo-800 bg-indigo-50/90 hover:bg-indigo-100 border border-indigo-300 rounded-lg transition-colors cursor-pointer shrink-0 shadow-2xs"
-              title="Lập Debit Note (Giấy Báo Nợ) gửi khách hàng kèm mã VietQR"
-            >
-              <Receipt className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-              <span>Debit Note</span>
-            </button>
-          )}
-
-          {/* Grouped Export & Preview Cluster */}
-          <div className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-0.5 shrink-0 shadow-2xs">
-            <button
-              type="button"
-              onClick={onOpenPreview}
-              className="inline-flex items-center gap-1 h-7 px-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
-              title="Xem trước bản in A4"
-            >
-              <Eye className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-              <span>Xem Trước</span>
-            </button>
-            <div className="h-3.5 w-px bg-slate-200" />
-            <button
-              type="button"
-              onClick={onOpenGeneratePdf}
-              className="inline-flex items-center gap-1 h-7 px-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 rounded-md transition-colors cursor-pointer"
-              title="Xuất file PDF"
-            >
-              <FileDown className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-              <span>Xuất PDF</span>
-            </button>
-          </div>
+          {/* Unified Preview & Export PDF Button */}
+          <button
+            type="button"
+            onClick={onOpenPreview}
+            className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer shrink-0 shadow-2xs"
+            title="Xem trước bản in A4 & Xuất file PDF / Excel"
+          >
+            <Eye className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <span>Xem & Xuất PDF</span>
+          </button>
 
           {/* Send Quote */}
           <button

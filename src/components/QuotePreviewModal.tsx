@@ -81,8 +81,12 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-      
+    <div 
+      className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="bg-white text-slate-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col border border-slate-200">
         
         {/* Modal Top Control Bar */}
@@ -165,8 +169,11 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({
             )}
 
             <button
+              type="button"
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors ml-1"
+              className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors ml-1 cursor-pointer"
+              title="Đóng cửa sổ"
+              aria-label="Đóng cửa sổ"
             >
               <X className="w-5 h-5" />
             </button>

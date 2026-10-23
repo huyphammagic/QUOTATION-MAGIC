@@ -154,25 +154,15 @@ export const Navbar: React.FC<NavbarProps> = ({
 
 
         {onOpenDashboard && (
-          <>
-            <button
-              type="button"
-              onClick={() => onOpenDashboard('COCKPIT')}
-              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800 border border-indigo-200/80 transition-colors cursor-pointer shadow-2xs"
-              title="Mở Bảng Điều Hành Cockpit Dành Cho Ban Lãnh Đạo & Trưởng Phòng Sales"
-            >
-              <Compass className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Cockpit Lãnh Đạo</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onOpenDashboard('OVERVIEW')}
-              className="hover:text-slate-900 transition-colors cursor-pointer"
-            >
-              Báo Cáo & BI
-            </button>
-          </>
+          <button
+            type="button"
+            onClick={() => onOpenDashboard('COCKPIT')}
+            className="flex items-center space-x-1.5 hover:text-slate-900 transition-colors cursor-pointer"
+            title="Mở Bảng Điều Hành Cockpit & Báo Cáo Phân Tích BI"
+          >
+            <Compass className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Cockpit & Báo Cáo BI</span>
+          </button>
         )}
 
         {onOpenEngagementRadar && (
@@ -197,7 +187,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         )}
       </nav>
 
-      {/* Zone 3: Exchange Rate, Sync Health, Auth, and Primary Action */}
+      {/* Zone 3: Exchange Rate, Sync Health, and Primary Action */}
       <div className="flex items-center space-x-2 sm:space-x-3">
         {/* Sync Health Badge */}
         <CloudSyncStatusBadge
@@ -235,28 +225,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="font-mono font-bold text-slate-900">{exchangeRate.toLocaleString()}</span>
             <span className="text-[10px] text-slate-400">₫</span>
           </div>
-        )}
-
-        {/* Unrestricted System Status (No login required) */}
-        <div 
-          className="flex items-center space-x-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800"
-          title="Hệ thống đã mở toàn quyền - Không yêu cầu đăng nhập hay phân quyền"
-        >
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span className="hidden sm:inline">Toàn Quyền Quản Trị</span>
-        </div>
-
-        {/* 1-Click Route Presets Action */}
-        {onOpenRoutePresets && (
-          <button
-            type="button"
-            onClick={onOpenRoutePresets}
-            className="flex items-center space-x-1.5 bg-linear-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold text-xs px-3 py-1.5 rounded-lg shadow-xs hover:shadow transition-all cursor-pointer"
-            title="Bộ Mẫu Báo Giá Trọn Gói Theo Tuyến (1-Click Route & Service Presets)"
-          >
-            <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-            <span className="hidden sm:inline">Gói Mẫu Tuyến 1-Click</span>
-          </button>
         )}
 
         {/* New Quote Quick Action */}

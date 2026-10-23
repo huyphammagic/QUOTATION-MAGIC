@@ -71,6 +71,17 @@ export const GeneratePdfModal: React.FC<GeneratePdfModalProps> = ({
     load();
   }, [isOpen, quote]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const nextRevision = existingRevisionsCount + 1;
@@ -115,7 +126,12 @@ export const GeneratePdfModal: React.FC<GeneratePdfModalProps> = ({
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+    <div 
+      className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="bg-white text-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col border border-slate-200">
         
         {/* Header */}
@@ -130,8 +146,11 @@ export const GeneratePdfModal: React.FC<GeneratePdfModalProps> = ({
             </div>
           </div>
           <button 
+            type="button"
             onClick={onClose} 
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+            title="Đóng cửa sổ"
+            aria-label="Đóng cửa sổ"
           >
             <X className="w-5 h-5" />
           </button>
