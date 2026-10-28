@@ -108,7 +108,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
     <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col justify-between">
       
       {/* Header Bar */}
-      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
+      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-2.5 flex-wrap">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
             <Building className="w-3.5 h-3.5 text-slate-800" />
@@ -120,14 +120,14 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               </h2>
               <span className="text-slate-300">·</span>
               <span className="text-[11px] text-slate-500 font-mono truncate">
-                {customers.length} KH Cloud
+                {customers.length} KH CRM
               </span>
             </div>
           </div>
         </div>
 
         {/* Header Right Actions */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
           {/* Quick CRM Dropdown */}
           {customers.length > 0 && (
             <select
@@ -137,7 +137,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
                 const found = customers.find(c => c.id === targetId || c.code === targetId);
                 if (found) handleSelectSuggestion(found);
               }}
-              className="text-xs font-medium pl-2 pr-6 py-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 transition-colors cursor-pointer max-w-[150px] sm:max-w-[180px] truncate"
+              className="text-xs font-medium pl-2 pr-6 py-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 transition-colors cursor-pointer max-w-[130px] sm:max-w-[160px] truncate"
               title="Chọn nhanh từ danh sách khách hàng Cloud CRM"
             >
               <option value="">Chọn từ CRM ({customers.length})...</option>
@@ -149,27 +149,27 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
             </select>
           )}
 
-          {onOpenCustomerManager && (
-            <button
-              type="button"
-              onClick={onOpenCustomerManager}
-              className="flex items-center space-x-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg transition-colors cursor-pointer"
-              title="Mở quản lý khách hàng CRM"
-            >
-              <Users className="w-3.5 h-3.5 text-slate-500" />
-              <span className="hidden sm:inline">CRM</span>
-            </button>
-          )}
-
           {onOpenCustomer360 && (
             <button
               type="button"
               onClick={onOpenCustomer360}
-              className="flex items-center space-x-1 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-1 rounded-lg transition-colors cursor-pointer shadow-2xs"
-              title="Mở hồ sơ khách hàng 360° (Công nợ, Win-rate, Lịch sử, Sức khỏe)"
+              className="press-physics-subtle inline-flex items-center gap-1 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-1 rounded-lg transition-colors cursor-pointer shrink-0"
+              title="Mở hồ sơ khách hàng 360°"
             >
-              <Users className="w-3.5 h-3.5 text-indigo-600" />
-              <span>360° Hub</span>
+              <Users className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <span>360°</span>
+            </button>
+          )}
+
+          {onOpenCustomerManager && (
+            <button
+              type="button"
+              onClick={onOpenCustomerManager}
+              className="press-physics-subtle inline-flex items-center gap-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg transition-colors cursor-pointer shrink-0"
+              title="Mở quản lý khách hàng CRM"
+            >
+              <Users className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+              <span className="hidden sm:inline">CRM</span>
             </button>
           )}
 
@@ -178,10 +178,10 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               type="button"
               onClick={onSaveToCrm}
               disabled={isSavingToCrm || (!customer.companyName && !customer.taxId)}
-              className="flex items-center space-x-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none border border-slate-200 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+              className="press-physics-subtle inline-flex items-center gap-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none border border-slate-200 px-2 py-1 rounded-lg transition-colors cursor-pointer shrink-0"
               title="Lưu thông tin khách hàng này vào CRM"
             >
-              <UserPlus className="w-3.5 h-3.5 text-slate-500" />
+              <UserPlus className="w-3.5 h-3.5 text-slate-500 shrink-0" />
               <span className="hidden sm:inline">{isSavingToCrm ? 'Lưu...' : '+ CRM'}</span>
             </button>
           )}
@@ -190,7 +190,22 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
           <select
             value={status}
             onChange={(e) => onChangeQuoteMeta('status', e.target.value)}
-            className="text-xs font-semibold px-2 py-1 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
+            className={`text-xs font-bold px-2 py-1 rounded-lg border focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer shrink-0 transition-colors ${
+              status === 'APPROVED' 
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                : status === 'SENT'
+                ? 'bg-blue-50 text-blue-800 border-blue-300'
+                : status === 'ACCEPTED'
+                ? 'bg-emerald-100 text-emerald-900 border-emerald-400'
+                : status === 'PENDING_APPROVAL'
+                ? 'bg-amber-50 text-amber-800 border-amber-300'
+                : status === 'REJECTED'
+                ? 'bg-rose-50 text-rose-800 border-rose-300'
+                : status === 'EXPIRED'
+                ? 'bg-slate-100 text-slate-600 border-slate-300'
+                : 'bg-slate-50 text-slate-800 border-slate-200'
+            }`}
+            title="Trạng thái quy trình báo giá"
           >
             <option value="DRAFT">Bản nháp</option>
             <option value="PENDING_APPROVAL">Chờ duyệt</option>
@@ -231,7 +246,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowSuggestions(prev => !prev)}
-                  className="text-[11px] text-slate-500 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
+                  className="text-[11px] text-slate-500 hover:text-slate-900 flex items-center gap-1 cursor-pointer transition-colors"
                 >
                   <Search className="w-3 h-3 text-slate-400" />
                   <span>Tìm trong CRM</span>
@@ -294,9 +309,22 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
 
         </div>
 
-        {/* Row 2: Contact Person (1/3), Phone (1/3), Email (1/3) */}
+        {/* Row 2: Tax ID (1/3), Contact Person (1/3), Phone Number (1/3) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+              Mã số thuế (MST)
+            </label>
+            <input
+              type="text"
+              value={customer.taxId}
+              onChange={(e) => onChangeCustomer('taxId', e.target.value)}
+              className="w-full px-3 py-1.5 rounded-lg border border-slate-200 font-mono text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs transition-colors"
+              placeholder="0312345678"
+            />
+          </div>
+
           <div>
             <label className="block text-[11px] font-semibold text-slate-600 mb-1">
               Người liên hệ
@@ -305,7 +333,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               type="text"
               value={customer.contactPerson}
               onChange={(e) => onChangeCustomer('contactPerson', e.target.value)}
-              className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs"
+              className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs transition-colors"
               placeholder="Anh / Chị phụ trách XNK"
             />
           </div>
@@ -318,54 +346,41 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               type="text"
               value={customer.phone}
               onChange={(e) => onChangeCustomer('phone', e.target.value)}
-              className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs font-mono"
+              className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs font-mono transition-colors"
               placeholder="0901 234 567"
-            />
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-              Email nhận báo giá
-            </label>
-            <input
-              type="email"
-              value={customer.email}
-              onChange={(e) => onChangeCustomer('email', e.target.value)}
-              className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs"
-              placeholder="contact@company.com"
             />
           </div>
 
         </div>
 
-        {/* Row 3: Validity Date with Quick Increments */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+        {/* Row 3: Validity Date with Quick Increments + Progressive Disclosure Toggle */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
           
           <div className="sm:col-span-2">
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
               <label className="block text-[11px] font-semibold text-slate-600">
-                Hiệu lực đến ngày *
+                Hiệu lực báo giá *
               </label>
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center space-x-1 shrink-0">
                 <span className="text-[10px] text-slate-400">Chọn nhanh:</span>
                 <button
                   type="button"
                   onClick={() => setQuickValidity(7)}
-                  className="px-1.5 py-0.5 text-[10px] rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+                  className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
                 >
                   +7 ngày
                 </button>
                 <button
                   type="button"
                   onClick={() => setQuickValidity(14)}
-                  className="px-1.5 py-0.5 text-[10px] rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+                  className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
                 >
                   +14 ngày
                 </button>
                 <button
                   type="button"
                   onClick={() => setQuickValidity(30)}
-                  className="px-1.5 py-0.5 text-[10px] rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+                  className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
                 >
                   +30 ngày
                 </button>
@@ -375,42 +390,42 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               type="date"
               value={validityDate}
               onChange={(e) => onChangeQuoteMeta('validityDate', e.target.value)}
-              className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50/70 text-slate-900 font-mono font-medium focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs"
+              className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50/70 text-slate-900 font-mono font-medium focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs transition-colors"
             />
           </div>
 
           {/* Collapsible Trigger */}
-          <div className="pt-4 sm:pt-4">
+          <div>
             <button
               type="button"
               onClick={() => setShowAdditionalDetails(!showAdditionalDetails)}
-              className="w-full flex items-center justify-between px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+              className="w-full flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
             >
-              <span>{showAdditionalDetails ? 'Thu gọn chi tiết' : 'Thêm MST & Địa chỉ'}</span>
+              <span>{showAdditionalDetails ? 'Thu gọn chi tiết' : 'Mở rộng (Email, Địa chỉ)'}</span>
               {showAdditionalDetails ? (
-                <ChevronUp className="w-3.5 h-3.5 text-slate-500" />
+                <ChevronUp className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
               ) : (
-                <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
               )}
             </button>
           </div>
 
         </div>
 
-        {/* Collapsible Progressive Disclosure: Secondary details (Tax ID, Created Date, Full Address) */}
+        {/* Collapsible Progressive Disclosure: Secondary details (Email, Created Date, Full Address) */}
         {showAdditionalDetails && (
           <div className="pt-2 border-t border-slate-100 space-y-3 animate-in fade-in duration-150">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                  Mã số thuế (MST)
+                  Email nhận báo giá
                 </label>
                 <input
-                  type="text"
-                  value={customer.taxId}
-                  onChange={(e) => onChangeCustomer('taxId', e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 font-mono text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs"
-                  placeholder="0312345678"
+                  type="email"
+                  value={customer.email}
+                  onChange={(e) => onChangeCustomer('email', e.target.value)}
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs transition-colors"
+                  placeholder="contact@company.com"
                 />
               </div>
 
@@ -422,7 +437,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
                   type="date"
                   value={createdDate}
                   onChange={(e) => onChangeQuoteMeta('createdDate', e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs font-mono"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs font-mono transition-colors"
                 />
               </div>
             </div>
@@ -435,7 +450,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
                 type="text"
                 value={customer.address}
                 onChange={(e) => onChangeCustomer('address', e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs"
+                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs transition-colors"
                 placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố..."
               />
             </div>

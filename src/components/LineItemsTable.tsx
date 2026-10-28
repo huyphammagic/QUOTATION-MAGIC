@@ -731,6 +731,32 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                 <span>Nhóm 4 Chặng</span>
               </button>
             </div>
+
+            {/* Quick Toggle: Internal vs Client Presentation Mode */}
+            <button
+              type="button"
+              onClick={() => setShowCostAndProfit(!showCostAndProfit)}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                showCostAndProfit 
+                  ? 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200' 
+                  : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300 font-bold shadow-2xs ring-1 ring-amber-300'
+              }`}
+              title={showCostAndProfit ? "Đang hiện giá vốn nội bộ. Bấm để chuyển sang chế độ trình chiếu khách hàng (Ẩn vốn)" : "Đang ở chế độ trình chiếu khách hàng an toàn. Bấm để hiện lại giá vốn & biên lãi"}
+            >
+              {showCostAndProfit ? (
+                <>
+                  <Eye className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="hidden sm:inline">Hiện Vốn & Lãi</span>
+                  <span className="sm:hidden">Vốn</span>
+                </>
+              ) : (
+                <>
+                  <EyeOff className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                  <span className="hidden sm:inline">Chế Độ Trình Chiếu Khách (Ẩn Vốn)</span>
+                  <span className="sm:hidden">Ẩn Vốn</span>
+                </>
+              )}
+            </button>
           </div>
 
           {/* Right: Quick Search, Presets Dropdown & Primary Add Split Button */}

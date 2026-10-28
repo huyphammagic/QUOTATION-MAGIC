@@ -341,56 +341,115 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
 
         </div>
 
-        {/* Row 3: Progressive Disclosure Trigger for Operational details (T/T & Free Time) */}
+        {/* Row 3: Progressive Disclosure Trigger for Operational details */}
         <div>
           <button
             type="button"
             onClick={() => setShowTransitDetails(!showTransitDetails)}
-            className="w-full flex items-center justify-between px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+            className="w-full flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
           >
             <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-slate-500" />
+              <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
               <span>
-                {shipment.transitTime || shipment.freeTime 
-                  ? `Vận hành: ${shipment.transitTime || ''} ${shipment.freeTime ? `· FreeTime: ${shipment.freeTime}` : ''}`
-                  : 'Thêm thời gian hành trình (T/T) & Free Time lưu cont/bãi'}
+                {shipment.carrier || shipment.transitTime || shipment.freeTime || shipment.etd
+                  ? `Vận hành: ${shipment.carrier ? `${shipment.carrier} · ` : ''}${shipment.transitTime ? `T/T ${shipment.transitTime} · ` : ''}${shipment.freeTime ? `FreeTime ${shipment.freeTime}` : ''}`
+                  : 'Mở rộng (Hãng tàu, Tàu/Chuyến, ETD/ETA, Free Time)'}
               </span>
             </div>
             {showTransitDetails ? (
-              <ChevronUp className="w-3.5 h-3.5 text-slate-500" />
+              <ChevronUp className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
             ) : (
-              <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
             )}
           </button>
         </div>
 
         {/* Collapsible Operational details */}
         {showTransitDetails && (
-          <div className="pt-2 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in duration-150">
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                Thời gian hành trình (T/T)
-              </label>
-              <input
-                type="text"
-                value={shipment.transitTime || ''}
-                onChange={(e) => onChangeShipment({ transitTime: e.target.value })}
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs"
-                placeholder="Ví dụ: 18 - 22 ngày"
-              />
+          <div className="pt-2 border-t border-slate-100 space-y-3 animate-in fade-in duration-150">
+            {/* Sub-row 1: Carrier & Vessel/Voyage */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                  Hãng vận chuyển (Carrier / Hãng tàu)
+                </label>
+                <input
+                  type="text"
+                  value={shipment.carrier || ''}
+                  onChange={(e) => onChangeShipment({ carrier: e.target.value })}
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs transition-colors"
+                  placeholder="Maersk, ONE, Cosco, Vietnam Airlines..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                  Tên tàu & Số chuyến (Vessel / Voyage)
+                </label>
+                <input
+                  type="text"
+                  value={(shipment as any).vesselVoyage || ''}
+                  onChange={(e) => onChangeShipment({ ...shipment, vesselVoyage: e.target.value } as any)}
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs transition-colors"
+                  placeholder="Ví dụ: CMA CGM RACINE / 012E"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                Thời gian miễn phí lưu cont / bãi (Free Time Dem/Det)
-              </label>
-              <input
-                type="text"
-                value={shipment.freeTime || ''}
-                onChange={(e) => onChangeShipment({ freeTime: e.target.value })}
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs"
-                placeholder="Ví dụ: 14 ngày kết hợp tại POD"
-              />
+            {/* Sub-row 2: ETD & ETA */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                  Ngày khởi hành (ETD)
+                </label>
+                <input
+                  type="date"
+                  value={shipment.etd || ''}
+                  onChange={(e) => onChangeShipment({ etd: e.target.value })}
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs font-mono transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                  Ngày đến dự kiến (ETA)
+                </label>
+                <input
+                  type="date"
+                  value={shipment.eta || ''}
+                  onChange={(e) => onChangeShipment({ eta: e.target.value })}
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs font-mono transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Sub-row 3: Transit Time & Free Time */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                  Thời gian hành trình (T/T)
+                </label>
+                <input
+                  type="text"
+                  value={shipment.transitTime || ''}
+                  onChange={(e) => onChangeShipment({ transitTime: e.target.value })}
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs transition-colors"
+                  placeholder="Ví dụ: 18 - 22 ngày"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                  Miễn phí lưu cont / bãi (Free Time Dem/Det)
+                </label>
+                <input
+                  type="text"
+                  value={shipment.freeTime || ''}
+                  onChange={(e) => onChangeShipment({ freeTime: e.target.value })}
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs transition-colors"
+                  placeholder="Ví dụ: 14 ngày kết hợp tại POD"
+                />
+              </div>
             </div>
           </div>
         )}

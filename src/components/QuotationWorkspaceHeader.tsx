@@ -192,17 +192,17 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
           )}
 
           {/* Route & Customer Breadcrumb Card */}
-          <div className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-600 min-w-0 max-w-full sm:max-w-[420px] shrink-0">
+          <div className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-600 min-w-0 max-w-[280px] sm:max-w-[380px] shrink">
             <Building className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span className="font-semibold text-slate-900 truncate max-w-[140px] sm:max-w-[200px]" title={customerName}>
+            <span className="font-semibold text-slate-900 truncate max-w-[120px] sm:max-w-[180px]" title={customerName}>
               {customerName}
             </span>
-            <span className="text-slate-300">·</span>
-            <span className="font-mono text-slate-700 shrink-0 text-[11px]">
+            <span className="text-slate-300 shrink-0">·</span>
+            <span className="font-mono text-slate-700 shrink-0 text-[11px] whitespace-nowrap">
               {pol} &rarr; {pod}
             </span>
-            <span className="text-slate-300 hidden md:inline">·</span>
-            <span className="text-slate-500 hidden md:inline text-[11px] font-medium">{modeText}</span>
+            <span className="text-slate-300 hidden md:inline shrink-0">·</span>
+            <span className="text-slate-500 hidden md:inline text-[11px] font-medium shrink-0">{modeText}</span>
           </div>
 
           {/* Auto-save status */}

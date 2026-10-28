@@ -206,11 +206,11 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
           <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800/80 flex flex-col justify-between cosmic-card-sheen card-hover-lift transition-all">
             <div>
               <span className="text-slate-400 text-[11px] font-medium uppercase tracking-wider block">Doanh thu bán</span>
-              <div className="font-bold text-white text-base sm:text-lg font-mono tracking-tight tabular-nums mt-1">
+              <div className="font-bold text-white text-base sm:text-lg font-mono tracking-tight tabular-nums mt-1 whitespace-nowrap truncate">
                 {isVnd ? formatVND(quote.subtotalVnd) : formatUSD(quote.subtotalUsd)}
               </div>
             </div>
-            <div className="text-[11px] text-slate-500 font-mono mt-1.5">
+            <div className="text-[11px] text-slate-500 font-mono mt-1.5 whitespace-nowrap truncate">
               {isVnd ? `~ ${formatUSD(quote.subtotalUsd)}` : `~ ${formatVND(quote.subtotalVnd)}`}
             </div>
           </div>
@@ -219,11 +219,11 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
           <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800/80 flex flex-col justify-between cosmic-card-sheen card-hover-lift transition-all">
             <div>
               <span className="text-slate-400 text-[11px] font-medium uppercase tracking-wider block">Giá vốn (Cost)</span>
-              <div className="font-bold text-slate-300 text-base sm:text-lg font-mono tracking-tight tabular-nums mt-1">
+              <div className="font-bold text-slate-300 text-base sm:text-lg font-mono tracking-tight tabular-nums mt-1 whitespace-nowrap truncate">
                 {isVnd ? formatVND(quote.totalCostVnd || 0) : formatUSD(quote.totalCostUsd || 0)}
               </div>
             </div>
-            <div className="text-[11px] text-slate-500 font-mono mt-1.5">
+            <div className="text-[11px] text-slate-500 font-mono mt-1.5 whitespace-nowrap truncate">
               {isVnd ? `~ ${formatUSD(quote.totalCostUsd || 0)}` : `~ ${formatVND(quote.totalCostVnd || 0)}`}
             </div>
           </div>
@@ -232,15 +232,15 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
           <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800/80 flex flex-col justify-between cosmic-card-sheen card-hover-lift transition-all">
             <div className="flex items-center justify-between">
               <span className="text-slate-400 text-[11px] font-medium uppercase tracking-wider">Lợi nhuận gộp</span>
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             </div>
-            <div className={`font-bold text-base sm:text-lg font-mono tracking-tight tabular-nums mt-1 ${
+            <div className={`font-bold text-base sm:text-lg font-mono tracking-tight tabular-nums mt-1 whitespace-nowrap truncate ${
               (quote.totalProfitUsd || 0) < 0 ? 'text-rose-400' : 'text-emerald-400'
             }`}>
               {(quote.totalProfitUsd || 0) >= 0 ? '+' : ''}
               {isVnd ? formatVND(quote.totalProfitVnd || 0) : formatUSD(quote.totalProfitUsd || 0)}
             </div>
-            <div className="text-[11px] text-slate-500 font-mono mt-1.5">
+            <div className="text-[11px] text-slate-500 font-mono mt-1.5 whitespace-nowrap">
               Markup: {formatPercent(markup, 1)}
             </div>
           </div>
@@ -249,20 +249,26 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
           <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800/80 flex flex-col justify-between cosmic-card-sheen card-hover-lift transition-all">
             <div className="flex items-center justify-between">
               <span className="text-slate-400 text-[11px] font-medium uppercase tracking-wider">Biên lợi nhuận</span>
-              <span className={`text-[11px] font-mono font-bold ${
+              <span className={`text-[11px] font-mono font-bold whitespace-nowrap ${
                 isBelowMinimum 
                   ? 'text-rose-400' 
                   : isBelowTarget 
                   ? 'text-amber-400' 
                   : 'text-emerald-400'
               }`}>
-                {formatPercent(margin, 1)}
+                {renderRiskBadge()}
               </span>
             </div>
-            <div className="font-bold text-base sm:text-lg font-mono tracking-tight text-white mt-1 tabular-nums">
+            <div className={`font-bold text-base sm:text-lg font-mono tracking-tight mt-1 tabular-nums whitespace-nowrap ${
+              isBelowMinimum 
+                ? 'text-rose-400' 
+                : isBelowTarget 
+                ? 'text-amber-400' 
+                : 'text-emerald-400'
+            }`}>
               {formatPercent(margin, 1)}
             </div>
-            <div className="flex items-center justify-between text-[11px] font-mono mt-1.5 text-slate-500">
+            <div className="flex items-center justify-between text-[11px] font-mono mt-1.5 text-slate-500 whitespace-nowrap truncate">
               <span>VAT: {isVnd ? formatVND(quote.vatTotalVnd) : formatUSD(quote.vatTotalUsd)}</span>
             </div>
           </div>
@@ -270,15 +276,17 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
         </div>
 
         {/* Center 4 Cols: Grand Total Cosmic Nebula Card */}
-        <div className="lg:col-span-4 p-5 rounded-xl bg-gradient-to-b from-[#0D1527] to-[#070B14] border border-cyan-500/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_0_24px_rgba(56,189,248,0.15)] flex flex-col justify-center items-center text-center space-y-1.5 relative overflow-hidden cosmic-card-sheen card-hover-lift">
+        <div className="lg:col-span-4 p-4 sm:p-5 rounded-xl bg-gradient-to-b from-[#0D1527] to-[#070B14] border border-cyan-500/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_0_24px_rgba(56,189,248,0.15)] flex flex-col justify-center items-center text-center space-y-1.5 relative overflow-hidden cosmic-card-sheen card-hover-lift">
           <span className="text-[11px] font-bold text-cyan-300 uppercase tracking-widest flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#38bdf8]" />
             Tổng thanh toán ({isVnd ? 'VNĐ' : 'USD'})
           </span>
-          <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white font-mono tracking-tight tabular-nums drop-shadow-[0_2px_12px_rgba(56,189,248,0.4)]">
+          <div className={`${
+            isVnd ? 'text-xl sm:text-2xl lg:text-3xl' : 'text-2xl sm:text-3xl lg:text-4xl'
+          } font-extrabold text-white font-mono tracking-tight tabular-nums drop-shadow-[0_2px_12px_rgba(56,189,248,0.4)] whitespace-nowrap`}>
             {isVnd ? formatVND(quote.grandTotalVnd) : formatUSD(quote.grandTotalUsd)}
           </div>
-          <div className="text-xs text-slate-400 font-mono tabular-nums">
+          <div className="text-xs text-slate-400 font-mono tabular-nums whitespace-nowrap">
             ≈ {isVnd ? formatUSD(quote.grandTotalUsd) : formatVND(quote.grandTotalVnd)}
           </div>
           {isBelowSafeFloor && (
@@ -296,8 +304,8 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
             onClick={onSaveQuote}
             className="press-physics w-full flex items-center justify-center space-x-2 bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs py-2 px-3 rounded-xl shadow-xs transition-colors cursor-pointer"
           >
-            <Save className="w-4 h-4 text-slate-900" />
-            <span>Lưu Báo Giá Lên Cloud</span>
+            <Save className="w-4 h-4 text-slate-900 shrink-0" />
+            <span className="truncate">Lưu Báo Giá Lên Cloud</span>
           </button>
 
           {onOpenFreightRateBenchmarking && (

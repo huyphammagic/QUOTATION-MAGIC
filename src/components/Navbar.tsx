@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ship, RefreshCw, Menu, Plus, LayoutDashboard, ShieldCheck, LogIn, FileText, Anchor, Radio, Compass, LayoutGrid, Zap } from 'lucide-react';
+import { Menu, Plus } from 'lucide-react';
 import { CompanyProfile } from '../types/logistics';
 import { ExchangeRateDetail } from '../types/exchangeRate';
 import { ExchangeRateBadge } from './exchangeRate/ExchangeRateBadge';
@@ -111,83 +111,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         )}
       </div>
 
-      {/* Zone 2: Fast Navigation Links (Single-line, quiet hover with focus & selection physics) */}
-      <nav className="hidden xl:flex items-center space-x-6 text-xs font-medium text-slate-600">
-        <button
-          type="button"
-          onClick={() => {}}
-          className="relative text-slate-900 font-bold pb-1 cursor-pointer press-physics-subtle focus-ring-physics-light"
-        >
-          <span>Báo Giá Hiện Tại</span>
-          <span className="absolute bottom-0 left-0 right-0 h-0.5 cosmic-laser-rail rounded-full shadow-[0_0_8px_rgba(56,189,248,0.8)]">
-            <span className="absolute -top-0.5 left-0 w-1 h-1 rounded-full bg-cyan-300" />
-            <span className="absolute -top-0.5 right-0 w-1 h-1 rounded-full bg-violet-400" />
-          </span>
-        </button>
-
-        {onOpenSavedQuotes && (
-          <button
-            type="button"
-            onClick={onOpenSavedQuotes}
-            className="hover:text-slate-900 transition-colors cursor-pointer press-physics-subtle focus-ring-physics-light rounded-sm px-1"
-          >
-            Danh Sách Báo Giá ({quoteCount})
-          </button>
-        )}
-
-        {onOpenShipments && (
-          <button
-            type="button"
-            onClick={onOpenShipments}
-            className="hover:text-slate-900 transition-colors cursor-pointer press-physics-subtle focus-ring-physics-light rounded-sm px-1"
-          >
-            Điều Hành Lô Hàng
-          </button>
-        )}
-
-        {onOpenControlTower && (
-          <button
-            type="button"
-            onClick={onOpenControlTower}
-            className="hover:text-slate-900 transition-colors cursor-pointer press-physics-subtle focus-ring-physics-light rounded-sm px-1"
-          >
-            Tháp Điều Hành
-          </button>
-        )}
-
-        {onOpenDashboard && (
-          <button
-            type="button"
-            onClick={() => onOpenDashboard('COCKPIT')}
-            className="flex items-center space-x-1.5 hover:text-slate-900 transition-colors cursor-pointer press-physics-subtle focus-ring-physics-light rounded-sm px-1"
-            title="Mở Bảng Điều Hành Cockpit & Báo Cáo Phân Tích BI"
-          >
-            <Compass className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Cockpit & Báo Cáo BI</span>
-          </button>
-        )}
-
-        {onOpenEngagementRadar && (
-          <button
-            type="button"
-            onClick={onOpenEngagementRadar}
-            className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer press-physics focus-ring-physics-light ${
-              activeEngagementsCount > 0
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-semibold shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-50'
-            }`}
-            title="Radar khách hàng đang xem báo giá thời gian thực"
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${activeEngagementsCount > 0 ? 'bg-emerald-500 animate-ping' : 'bg-slate-400'}`} />
-            <span>Radar Live</span>
-            {activeEngagementsCount > 0 && (
-              <span className="font-mono text-[10px] px-1 bg-emerald-600 text-white rounded-full">
-                {activeEngagementsCount}
-              </span>
-            )}
-          </button>
-        )}
-      </nav>
+      {/* Zone 2: Navigation is cleanly handled via Sidebar */}
 
       {/* Zone 3: Exchange Rate, Sync Health, and Primary Action */}
       <div className="flex items-center space-x-2 sm:space-x-3">
