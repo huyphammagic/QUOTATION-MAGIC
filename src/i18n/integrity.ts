@@ -14,6 +14,7 @@ export interface IntegrityTranslations {
   tabTargetedScan: string;
   tabStorageAudit: string;
   tabAuditLogs: string;
+  tabOrphanValidator: string;
 
   // Technical System Statuses
   statusHealthy: string;
@@ -89,6 +90,7 @@ export const INTEGRITY_I18N: Record<IntegrityLanguage, IntegrityTranslations> = 
     tabTargetedScan: 'Quét Toàn Vẹn Theo Phạm Vi',
     tabStorageAudit: 'Kiểm Toán Storage & Tệp',
     tabAuditLogs: 'Nhật Ký Đồng Bộ & Xung Đột',
+    tabOrphanValidator: 'Đối Soát Báo Giá & CRM',
 
     statusHealthy: 'Khỏe mạnh (Real-time)',
     statusDegraded: 'Hiệu năng giảm',
@@ -156,6 +158,7 @@ export const INTEGRITY_I18N: Record<IntegrityLanguage, IntegrityTranslations> = 
     tabTargetedScan: 'Targeted Integrity Scan',
     tabStorageAudit: 'Storage & Document Audit',
     tabAuditLogs: 'Sync & Conflict Logs',
+    tabOrphanValidator: 'Quote-CRM Orphan Validator',
 
     statusHealthy: 'Healthy (Real-time)',
     statusDegraded: 'Degraded',

@@ -220,6 +220,7 @@ async function runDealClosingVerification() {
   console.log('   ✅ Deal WON outcome recorded with net profit $450, cached properly.\n');
 
   console.log('🎉 All Phase 55 (Gói B) Deal-Closing Accelerator tests passed successfully!');
+  process.exit(0);
 }
 
 runDealClosingVerification().catch(err => {

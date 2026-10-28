@@ -55,3 +55,4 @@ assert(metrics.totalPreventedLeakageUsd > 1000, 'Expected total prevented leakag
 console.log('✓ Test 5: Scorecard & metrics calculated successfully. Total prevented leakage:', metrics.totalPreventedLeakageVnd);
 
 console.log('--- ALL CARRIER INVOICE AUDIT TESTS PASSED SUCCESSFULLY! ---');
+process.exit(0);

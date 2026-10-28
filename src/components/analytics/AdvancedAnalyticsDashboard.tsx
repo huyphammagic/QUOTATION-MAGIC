@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { QuoteData } from '../../types/logistics';
+import { QuoteData, CustomerRecord } from '../../types/logistics';
 import { 
   QuotationCommunication, 
   QuotationCustomerResponse, 
@@ -49,6 +49,7 @@ import {
 
 interface AdvancedAnalyticsDashboardProps {
   quotes: QuoteData[];
+  customers?: CustomerRecord[];
   communications?: QuotationCommunication[];
   customerResponses?: QuotationCustomerResponse[];
   documents?: QuotationDocumentRecord[];
@@ -75,6 +76,7 @@ type DashboardTab =
 
 export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
   quotes,
+  customers = [],
   communications = [],
   customerResponses = [],
   documents = [],
@@ -146,6 +148,7 @@ export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProp
   const analytics: AggregatedAnalyticsResult = useMemo(() => {
     return computeAggregatedAnalytics({
       quotes,
+      customers,
       communications,
       responses: customerResponses,
       followUps: followUpTasks,
@@ -153,7 +156,7 @@ export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProp
       filters,
       userRole,
     });
-  }, [quotes, communications, customerResponses, documents, followUpTasks, shareLinks, filters, userRole]);
+  }, [quotes, customers, communications, customerResponses, documents, followUpTasks, shareLinks, filters, userRole]);
 
   // Export CSV Report
   const handleExportCsv = () => {

@@ -51,6 +51,8 @@ interface LineItemsTableProps {
   onOpenCompetitorRadar?: () => void;
   onOpenRoutePresets?: () => void;
   onOpenHistoricalRateAdvisor?: () => void;
+  onOpenSmartSurcharge?: () => void;
+  smartSurchargesCount?: number;
 }
 
 export const LineItemsTable: React.FC<LineItemsTableProps> = ({ 
@@ -69,6 +71,8 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
   onOpenCompetitorRadar,
   onOpenRoutePresets,
   onOpenHistoricalRateAdvisor,
+  onOpenSmartSurcharge,
+  smartSurchargesCount = 0,
 }) => {
   // Toggle Cost & Profit margin column
   const [showCostAndProfit, setShowCostAndProfit] = useState(true);
@@ -842,6 +846,25 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider hidden sm:inline-block mr-0.5">
               Công cụ hỗ trợ:
             </span>
+
+            {/* Smart Surcharge Suggestion Engine */}
+            {onOpenSmartSurcharge && (
+              <button
+                type="button"
+                onClick={onOpenSmartSurcharge}
+                className="press-physics-subtle inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-50 to-sky-50 hover:from-indigo-100 hover:to-sky-100 text-indigo-900 border border-indigo-300/80 font-bold text-xs px-2.5 py-1 rounded-md transition-colors cursor-pointer shadow-2xs"
+                title="Gợi ý phụ phí thông minh theo tuyến & mùa vận tải (Smart Surcharges)"
+                id="btn-open-smart-surcharges"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600 fill-indigo-200 animate-pulse" />
+                <span>Smart Surcharges</span>
+                {smartSurchargesCount > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] font-mono font-bold flex items-center justify-center">
+                    {smartSurchargesCount}
+                  </span>
+                )}
+              </button>
+            )}
 
             {/* AI & Market Intelligence Group */}
             {onOpenSmartAssistant && (

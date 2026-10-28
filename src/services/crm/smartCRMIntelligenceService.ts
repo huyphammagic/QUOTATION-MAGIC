@@ -25,6 +25,10 @@ export function detectSmartCRMRecommendations(
   followUps: CustomerFollowUp[],
   rateReviewTasks: RateReviewTask[] = []
 ): SmartCRMRecommendation[] {
+  if (!customers || customers.length === 0) {
+    return [];
+  }
+
   const recommendations: SmartCRMRecommendation[] = [];
   const now = new Date();
   const nowMs = now.getTime();
@@ -39,6 +43,24 @@ export function detectSmartCRMRecommendations(
     } catch {
       return val;
     }
+  };
+
+  // Helper to verify customer belongs to created/updated database
+  const isRegisteredCustomer = (quoteCust?: any) => {
+    if (!quoteCust) return false;
+    const cid = quoteCust.id;
+    const code = quoteCust.code;
+    const taxId = quoteCust.taxId ? String(quoteCust.taxId).trim() : '';
+    const name = (quoteCust.companyName || quoteCust.customerName || '').toLowerCase().trim();
+
+    return customers.some(rc => {
+      if (cid && rc.id && cid === rc.id) return true;
+      if (code && rc.code && code === rc.code) return true;
+      if (taxId && rc.taxId && taxId === rc.taxId.trim()) return true;
+      const rName = (rc.companyName || rc.customerName || '').toLowerCase().trim();
+      if (name && rName && (name === rName || name.includes(rName) || rName.includes(name))) return true;
+      return false;
+    });
   };
 
   // 1. Overdue Follow-ups
@@ -70,7 +92,7 @@ export function detectSmartCRMRecommendations(
   // 2. Quotations Expiring Soon (< 4 days)
   quotes.forEach(q => {
     const validityDate = q.terms?.validityDate;
-    if ((q.status === 'SENT' || q.status === 'DRAFT') && validityDate) {
+    if ((q.status === 'SENT' || q.status === 'DRAFT') && validityDate && isRegisteredCustomer(q.customer)) {
       const validMs = new Date(validityDate).getTime();
       const diffDays = Math.ceil((validMs - nowMs) / (1000 * 60 * 60 * 24));
       if (diffDays >= 0 && diffDays <= 4) {
@@ -97,7 +119,7 @@ export function detectSmartCRMRecommendations(
   // 3. Quotation Sent but No Response (> 48 hours)
   quotes.forEach(q => {
     const createdDate = q.createdDate;
-    if (q.status === 'SENT' && createdDate) {
+    if (q.status === 'SENT' && createdDate && isRegisteredCustomer(q.customer)) {
       const sentMs = new Date(createdDate).getTime();
       const hoursSinceSent = (nowMs - sentMs) / (1000 * 60 * 60);
       if (hoursSinceSent >= 48 && hoursSinceSent <= 240) {
@@ -127,7 +149,7 @@ export function detectSmartCRMRecommendations(
   // 4. Quotation Rejected Follow-up (Analyze reason)
   quotes.forEach(q => {
     const updatedDate = q.updatedDate;
-    if (q.status === 'REJECTED' && updatedDate) {
+    if (q.status === 'REJECTED' && updatedDate && isRegisteredCustomer(q.customer)) {
       const rejectMs = new Date(updatedDate).getTime();
       const daysSinceReject = (nowMs - rejectMs) / (1000 * 60 * 60 * 24);
       if (daysSinceReject <= 7) {
@@ -157,7 +179,7 @@ export function detectSmartCRMRecommendations(
   // 5. Quotation Accepted Follow-up (Ensure booking slot)
   quotes.forEach(q => {
     const updatedDate = q.updatedDate;
-    if (q.status === 'ACCEPTED' && updatedDate) {
+    if (q.status === 'ACCEPTED' && updatedDate && isRegisteredCustomer(q.customer)) {
       const acceptMs = new Date(updatedDate).getTime();
       const daysSinceAccept = (nowMs - acceptMs) / (1000 * 60 * 60 * 24);
       if (daysSinceAccept <= 5) {
@@ -183,6 +205,7 @@ export function detectSmartCRMRecommendations(
       }
     }
   });
+
 
   // 6. Dormant Customer Reactivation
   customers.forEach(c => {
@@ -225,7 +248,11 @@ export function detectSmartCRMRecommendations(
 
   // 7. Contract Expiring (< 30 days)
   contracts.forEach(cnt => {
-    if (cnt.status === 'ACTIVE' && cnt.expiryDate) {
+    const matchesCustomer = customers.some(c => 
+      c.id === cnt.partyId || 
+      (cnt.partyName && c.companyName.toLowerCase().trim() === cnt.partyName.toLowerCase().trim())
+    );
+    if (cnt.status === 'ACTIVE' && cnt.expiryDate && matchesCustomer) {
       const expMs = new Date(cnt.expiryDate).getTime();
       const daysToExpiry = Math.ceil((expMs - nowMs) / (1000 * 60 * 60 * 24));
       if (daysToExpiry >= 0 && daysToExpiry <= 30) {
@@ -251,7 +278,11 @@ export function detectSmartCRMRecommendations(
 
   // 8. Rate Review Due Tasks
   rateReviewTasks.forEach(task => {
-    if (task.status === 'REVIEW_REQUIRED' && task.dueAt) {
+    const matchesCustomer = customers.some(c => 
+      c.id === task.customerId || 
+      (task.customerName && c.companyName.toLowerCase().trim() === task.customerName.toLowerCase().trim())
+    );
+    if (task.status === 'REVIEW_REQUIRED' && task.dueAt && matchesCustomer) {
       const dueMs = new Date(task.dueAt).getTime();
       if (dueMs <= nowMs + 3 * 24 * 60 * 60 * 1000) {
         recommendations.push({

@@ -147,6 +147,7 @@ async function runTests() {
   console.log('\n================================================================');
   console.log('ALL PHASE 51 VERIFICATION TESTS PASSED SUCCESSFULLY (6/6)');
   console.log('================================================================');
+  process.exit(0);
 }
 
 runTests().catch(err => {

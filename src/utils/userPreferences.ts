@@ -56,14 +56,11 @@ export function persistPinnedFavorites(ids: string[]): void {
 }
 
 export const DEFAULT_EXPANDED_GROUPS: Record<string, boolean> = {
-  quotation: true,
-  radar: false,
-  operations: false,
-  pricing: false,
-  documents: false,
-  masterData: false,
-  analytics: false,
-  system: false,
+  commercial: true,  // 1. Kinh Doanh & Báo Giá (Luôn mở mặc định)
+  pricing: true,     // 2. Biểu Cước & Trí Tuệ Giá (Truy cập nhanh cước)
+  operations: false, // 3. Vận Hành & Điều Hành Lô Hàng
+  crm: false,        // 4. Khách Hàng & Công Nợ
+  system: false,     // 5. Hệ Thống, Danh Mục & Quản Trị
 };
 
 /**

@@ -61,3 +61,4 @@ if (nonCashOpt.newFreightSellUsd !== 4000) {
 }
 console.log(`✅ Test 3 Passed: Non-cash perks preserves 100% sell price ($${nonCashOpt.newFreightSellUsd}) while providing $${nonCashOpt.customerPerceivedValueUsd} value to client`);
 console.log('🎉 ALL PHASE 62 TESTS PASSED SUCCESSFULLY!\n');
+process.exit(0);

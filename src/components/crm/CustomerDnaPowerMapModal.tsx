@@ -33,11 +33,14 @@ import {
   ShipperPersonaType
 } from '../../types/customerDnaPowerMap';
 import { CustomerDnaPowerMapService } from '../../services/crm/customerDnaPowerMapService';
+import { CustomerRecord, QuoteData } from '../../types/logistics';
 
 interface CustomerDnaPowerMapModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialCustomerName?: string;
+  customers?: CustomerRecord[];
+  quotes?: QuoteData[];
   onApplyPlaybookToQuote?: (playbook: CustomerDnaPowerMapProfile['salesPlaybook']) => void;
 }
 
@@ -45,20 +48,30 @@ export const CustomerDnaPowerMapModal: React.FC<CustomerDnaPowerMapModalProps> =
   isOpen,
   onClose,
   initialCustomerName,
+  customers = [],
+  quotes = [],
   onApplyPlaybookToQuote
 }) => {
   const [profiles, setProfiles] = useState<CustomerDnaPowerMapProfile[]>(() =>
-    CustomerDnaPowerMapService.getProfiles()
+    CustomerDnaPowerMapService.getProfilesForRealCustomers(customers, quotes)
   );
 
   const [selectedProfileId, setSelectedProfileId] = useState<string>(() => {
+    const all = CustomerDnaPowerMapService.getProfilesForRealCustomers(customers, quotes);
     if (initialCustomerName) {
-      const match = CustomerDnaPowerMapService.getProfileByCustomerName(initialCustomerName);
+      const match = all.find(p => p.customerName.toLowerCase().includes(initialCustomerName.toLowerCase().trim()));
       if (match) return match.id;
     }
-    const all = CustomerDnaPowerMapService.getProfiles();
     return all[0]?.id || '';
   });
+
+  React.useEffect(() => {
+    const fresh = CustomerDnaPowerMapService.getProfilesForRealCustomers(customers, quotes);
+    setProfiles(fresh);
+    if (fresh.length > 0 && !fresh.some(p => p.id === selectedProfileId)) {
+      setSelectedProfileId(fresh[0].id);
+    }
+  }, [customers, quotes]);
 
   const [activeTab, setActiveTab] = useState<'dna' | 'powermap' | 'scripts'>('dna');
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -86,7 +99,7 @@ export const CustomerDnaPowerMapModal: React.FC<CustomerDnaPowerMapModalProps> =
   });
 
   const currentProfile = useMemo(() => {
-    return profiles.find(p => p.id === selectedProfileId) || profiles[0];
+    return profiles.find(p => p.id === selectedProfileId) || profiles[0] || null;
   }, [profiles, selectedProfileId]);
 
   // Set default contact for script tab
@@ -193,6 +206,30 @@ export const CustomerDnaPowerMapModal: React.FC<CustomerDnaPowerMapModalProps> =
     }
   };
 
+  if (!currentProfile) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-xl p-8 flex flex-col items-center text-center animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 flex items-center justify-center mb-4">
+            <Dna className="w-7 h-7" />
+          </div>
+          <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
+            Chưa có khách hàng nào để giải mã DNA & Bản Đồ Quyền Lực
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 max-w-md">
+            Hệ thống chỉ đánh giá và phân tích những khách hàng bạn đã tạo hoặc cập nhật trên hệ thống. Hãy tạo khách hàng mới trong Danh Bạ CRM để thiết lập hồ sơ KYS 360° với 100% dữ liệu thực tế.
+          </p>
+          <button
+            onClick={onClose}
+            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition cursor-pointer"
+          >
+            Đóng cửa sổ
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -211,9 +248,13 @@ export const CustomerDnaPowerMapModal: React.FC<CustomerDnaPowerMapModalProps> =
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                   Customer Logistics DNA & Power Map
                 </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
+                  <Check className="w-3 h-3 text-emerald-600" />
+                  Đồng Bộ 100% ({profiles.length} KH)
+                </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Bóc tách bản sắc vận tải, điểm đau quá khứ & sơ đồ quyền lực bộ sậu nhà máy để Sales nắm bắt triệt để
+                Chỉ đánh giá và phân tích những khách hàng bạn đã tạo hoặc cập nhật trên hệ thống (Bản quyền Sales KYS)
               </p>
             </div>
           </div>

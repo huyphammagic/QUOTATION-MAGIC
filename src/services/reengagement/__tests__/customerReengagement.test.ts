@@ -85,6 +85,7 @@ async function runCustomerReengagementTests() {
   console.log(`   ✅ Customer ${updatedItem.companyName} marked as SENT via ${updatedItem.outreachChannel}`);
 
   console.log('\n🎉 All Phase 58 Customer Re-engagement & Lane Replenishment tests passed successfully!');
+  process.exit(0);
 }
 
 runCustomerReengagementTests().catch(err => {

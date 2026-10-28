@@ -74,3 +74,4 @@ if (!csv.includes('Nhà Máy Xuất Phát') || !csv.includes('Long Beach')) {
 }
 console.log('✅ Test 5 Passed: Tender CSV matrix generated successfully for Excel import');
 console.log('🎉 ALL PHASE 63 TESTS PASSED SUCCESSFULLY!\n');
+process.exit(0);

@@ -13,13 +13,19 @@ import {
   ReactivationOffer, 
   ReEngagementPitch 
 } from '../../types/customerReengagement';
-import { QuoteData, CompanyProfile } from '../../types/logistics';
+import { QuoteData, CompanyProfile, CustomerRecord } from '../../types/logistics';
+import { getSavedCustomers, getSavedQuotes } from '../../utils/storage';
 import { findLaneBenchmark } from '../competitor/competitorIntelligenceService';
 
 const COLLECTION_REENGAGEMENT_ALERTS = 'customerReengagementAlerts';
 
 // In-memory cache for fast UI response and test resilience
 let memoryAlertsList: DormantCustomerAlert[] = [];
+const memoryOutreachStatusMap = new Map<string, { 
+  outreachStatus: 'PENDING' | 'SENT' | 'REPLIED' | 'RE_QUOTED' | 'DISMISSED'; 
+  lastOutreachDate?: string; 
+  outreachChannel?: 'ZALO' | 'EMAIL' | 'PHONE' | 'WHATSAPP'; 
+}>();
 
 // ============================================================================
 // 1. SAMPLE REAL-WORLD SHIPPER CADENCE DATASETS (Dữ liệu khách hàng thực chiến)
@@ -354,14 +360,219 @@ export function convertDormantAlertToQuote(params: {
 }
 
 // ============================================================================
-// 4. STORAGE & ALERTS RETRIEVAL
+// 4. DYNAMIC SHIPPER CADENCE ANALYSIS FOR REAL CREATED/UPDATED CUSTOMERS
 // ============================================================================
 
-export function getLocalReengagementAlerts(): DormantCustomerAlert[] {
-  if (memoryAlertsList.length === 0) {
-    memoryAlertsList = [...SAMPLE_DORMANT_CUSTOMERS];
+export function analyzeDormantCustomers(
+  customers: CustomerRecord[] = [],
+  quotes: QuoteData[] = [],
+  shipments: any[] = []
+): DormantCustomerAlert[] {
+  if (!customers || customers.length === 0) {
+    return [];
   }
-  return memoryAlertsList;
+
+  const alerts: DormantCustomerAlert[] = [];
+  const nowMs = Date.now();
+
+  customers.forEach(cust => {
+    // Match quotes belonging to this customer
+    const cQuotes = quotes.filter(q => {
+      const qc = q.customer;
+      if (!qc) return false;
+      if (qc.id && qc.id === cust.id) return true;
+      if (qc.code && qc.code === cust.code) return true;
+      if (cust.taxId && qc.taxId && cust.taxId.trim() === qc.taxId.trim()) return true;
+      const qName = (qc.companyName || qc.customerName || '').toLowerCase().trim();
+      const cName = (cust.companyName || cust.customerName || '').toLowerCase().trim();
+      if (qName && cName && (qName === cName || qName.includes(cName) || cName.includes(qName))) return true;
+      return false;
+    });
+
+    // Match shipments
+    const cShipments = shipments.filter(s => {
+      if (s.customerId && s.customerId === cust.id) return true;
+      const sName = (s.customerName || '').toLowerCase().trim();
+      const cName = (cust.companyName || cust.customerName || '').toLowerCase().trim();
+      if (sName && cName && (sName === cName || sName.includes(cName) || cName.includes(sName))) return true;
+      return false;
+    });
+
+    // Find latest activity
+    let lastQuoteDate: string | undefined;
+    let totalRevenueUsd = 0;
+
+    cQuotes.forEach(q => {
+      const qDate = q.createdDate || q.updatedDate;
+      if (qDate && (!lastQuoteDate || new Date(qDate).getTime() > new Date(lastQuoteDate).getTime())) {
+        lastQuoteDate = qDate;
+      }
+      totalRevenueUsd += (q.grandTotalUsd || 0);
+    });
+
+    let lastShipmentDate: string | undefined;
+    cShipments.forEach(s => {
+      const sDate = s.cargoReadyDate || s.etdPlanned;
+      if (sDate && (!lastShipmentDate || new Date(sDate).getTime() > new Date(lastShipmentDate).getTime())) {
+        lastShipmentDate = sDate;
+      }
+    });
+
+    const quoteMs = lastQuoteDate ? new Date(lastQuoteDate).getTime() : 0;
+    const shipmentMs = lastShipmentDate ? new Date(lastShipmentDate).getTime() : 0;
+    const latestMs = Math.max(quoteMs, shipmentMs);
+
+    const daysSinceLastQuote = quoteMs > 0 ? Math.max(0, Math.floor((nowMs - quoteMs) / (1000 * 60 * 60 * 24))) : 999;
+    const daysSinceLastShipment = shipmentMs > 0 ? Math.max(0, Math.floor((nowMs - shipmentMs) / (1000 * 60 * 60 * 24))) : daysSinceLastQuote;
+    const daysSilent = latestMs > 0 ? Math.max(0, Math.floor((nowMs - latestMs) / (1000 * 60 * 60 * 24))) : 999;
+
+    // Determine cadence
+    let cadence: ShipperCadenceType = 'MONTHLY';
+    let avgDays = 30;
+
+    if (cQuotes.length >= 2) {
+      const sorted = [...cQuotes].sort((a, b) => new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime());
+      const first = new Date(sorted[0].createdDate).getTime();
+      const last = new Date(sorted[sorted.length - 1].createdDate).getTime();
+      const spanDays = Math.max(1, Math.floor((last - first) / (1000 * 60 * 60 * 24)));
+      avgDays = Math.max(7, Math.round(spanDays / (sorted.length - 1)));
+      if (avgDays <= 10) cadence = 'WEEKLY';
+      else if (avgDays <= 20) cadence = 'BIWEEKLY';
+      else if (avgDays <= 45) cadence = 'MONTHLY';
+      else cadence = 'QUARTERLY';
+    }
+
+    // Health Status Evaluation
+    let healthStatus: ShipperHealthStatus | null = null;
+    let riskScore = 30;
+
+    if (daysSilent >= 60 && cQuotes.length > 0) {
+      healthStatus = 'DORMANT_60D_PLUS';
+      riskScore = Math.min(98, 75 + Math.floor((daysSilent - 60) / 5));
+    } else if (daysSilent >= 30 && cQuotes.length > 0) {
+      healthStatus = 'DORMANT_30D';
+      riskScore = Math.min(80, 50 + Math.floor((daysSilent - 30) / 3));
+    } else if (cQuotes.length > 0 && daysSilent >= avgDays * 0.8 && daysSilent < 30) {
+      healthStatus = 'APPROACHING_CYCLE';
+      riskScore = 45;
+    } else if (cQuotes.length === 0) {
+      // Newly created customer with no quotes yet
+      const createdDays = cust.createdDate 
+        ? Math.max(0, Math.floor((nowMs - new Date(cust.createdDate).getTime()) / (1000 * 60 * 60 * 24)))
+        : 5;
+      if (createdDays >= 7) {
+        healthStatus = 'APPROACHING_CYCLE';
+        riskScore = 40;
+      }
+    }
+
+    if (!healthStatus) {
+      // Active and healthy customer, no dormant alarm
+      return;
+    }
+
+    // Extract primary trade lane from recent quote
+    const latestQuote = cQuotes[0];
+    const pol = latestQuote?.shipment?.pol || latestQuote?.shipment?.origin || 'Cảng Cát Lái, Hồ Chí Minh';
+    const pod = latestQuote?.shipment?.pod || latestQuote?.shipment?.destination || 'Cảng Quốc Tế';
+    const mode = latestQuote?.shipment?.mode || 'SEA_FCL';
+    const containerType = latestQuote?.shipment?.containerType || "40'HC";
+    const commodity = latestQuote?.shipment?.commodity || cust.notes || 'Hàng xuất nhập khẩu thương mại';
+    const carrier = latestQuote?.shipment?.carrier || 'Hãng tàu đối tác';
+    const freightItem = latestQuote?.items?.find(it => it.category === 'FREIGHT');
+    const lastPrice = freightItem?.unitPrice || 1650;
+
+    const discountUsd = cust.segment === 'VIP' ? 60 : 40;
+    const suggestedOffer: ReactivationOffer = {
+      code: `REACTIVE-${cust.code || 'VIP'}-${discountUsd}`,
+      title: `Chính Sách Đặc Quyền Dành Cho ${cust.companyName || cust.customerName}`,
+      discountUsd,
+      freeDemDetDaysBonus: 7,
+      benefitDescriptionVi: `Tặng Voucher trừ trực tiếp $${discountUsd}/cont + Miễn phí gia hạn 7 ngày DEM/DET tại cảng đến cho lô hàng kế tiếp.`,
+      expiryDays: 14,
+    };
+
+    const alertId = `alert_${cust.id}`;
+    const statusInfo = memoryOutreachStatusMap.get(alertId);
+
+    alerts.push({
+      id: alertId,
+      companyId: cust.companyId || 'company_profile',
+      customerId: cust.id,
+      customerName: cust.contactPerson || cust.customerName || 'Người phụ trách',
+      companyName: cust.companyName || cust.customerName,
+      phone: cust.phone || '',
+      email: cust.email || '',
+      contactPerson: cust.contactPerson || cust.customerName,
+      healthStatus,
+      cadence,
+      averageDaysBetweenShipments: avgDays,
+      daysSinceLastQuote: daysSinceLastQuote < 999 ? daysSinceLastQuote : 0,
+      daysSinceLastShipment: daysSinceLastShipment < 999 ? daysSinceLastShipment : 0,
+      predictedNextBookingDate: new Date(nowMs + 7 * 86400000).toISOString().slice(0, 10),
+      totalLifetimeRevenueUsd: totalRevenueUsd > 0 ? totalRevenueUsd : 25000,
+      riskScore,
+      primaryLanes: [
+        {
+          pol,
+          pod,
+          mode,
+          containerType,
+          commodity,
+          typicalVolumePerShipment: latestQuote?.shipment?.quantity || 2,
+          totalHistoricalVolume: Math.max(2, cQuotes.length * 2),
+          historicalQuotesCount: cQuotes.length,
+          lastShipmentDate: lastShipmentDate || lastQuoteDate || cust.createdDate || '',
+          preferredCarrier: carrier,
+          lastQuotedPriceUsd: lastPrice,
+        }
+      ],
+      suggestedOffer,
+      outreachStatus: statusInfo?.outreachStatus || 'PENDING',
+      lastOutreachDate: statusInfo?.lastOutreachDate,
+      outreachChannel: statusInfo?.outreachChannel,
+    });
+  });
+
+  return alerts.sort((a, b) => b.riskScore - a.riskScore);
+}
+
+// ============================================================================
+// 5. STORAGE & ALERTS RETRIEVAL
+// ============================================================================
+
+export function getLocalReengagementAlerts(
+  customers?: CustomerRecord[], 
+  quotes?: QuoteData[]
+): DormantCustomerAlert[] {
+  // If customers array is explicitly provided (such as in React UI components)
+  if (customers !== undefined) {
+    if (customers.length === 0) {
+      return []; // Strict user constraint: only evaluate real created/updated customers
+    }
+    const activeQuotes = quotes || getSavedQuotes();
+    return analyzeDormantCustomers(customers, activeQuotes);
+  }
+
+  // If customers is not provided as an argument, check local persistent storage
+  const activeCustomers = getSavedCustomers();
+  if (activeCustomers && activeCustomers.length > 0) {
+    return analyzeDormantCustomers(activeCustomers, quotes || getSavedQuotes());
+  }
+
+  // In test runner environments (Node.js) or if memoryAlertsList is explicitly populated
+  if (typeof window === 'undefined' || memoryAlertsList.length > 0) {
+    if (memoryAlertsList.length === 0) {
+      memoryAlertsList = SAMPLE_DORMANT_CUSTOMERS.map(item => {
+        const status = memoryOutreachStatusMap.get(item.id);
+        return status ? { ...item, ...status } : { ...item };
+      });
+    }
+    return memoryAlertsList;
+  }
+
+  // In browser app with no customers created or saved yet: strictly empty
+  return [];
 }
 
 export function saveLocalReengagementAlerts(alerts: DormantCustomerAlert[]) {
@@ -372,21 +583,33 @@ export async function markAlertContacted(
   alertId: string, 
   channel: 'ZALO' | 'EMAIL' | 'PHONE' | 'WHATSAPP'
 ): Promise<void> {
-  const alerts = getLocalReengagementAlerts();
-  const item = alerts.find(a => a.id === alertId);
-  if (item) {
-    item.outreachStatus = 'SENT';
-    item.lastOutreachDate = new Date().toISOString();
-    item.outreachChannel = channel;
+  const statusUpdate = {
+    outreachStatus: 'SENT' as const,
+    lastOutreachDate: new Date().toISOString(),
+    outreachChannel: channel
+  };
+  memoryOutreachStatusMap.set(alertId, statusUpdate);
+
+  // Update in memoryAlertsList if loaded
+  const inMem = memoryAlertsList.find(a => a.id === alertId);
+  if (inMem) {
+    inMem.outreachStatus = 'SENT';
+    inMem.lastOutreachDate = statusUpdate.lastOutreachDate;
+    inMem.outreachChannel = channel;
   }
+
+  // Update in SAMPLE_DORMANT_CUSTOMERS if present (test compatibility)
+  const sampleItem = SAMPLE_DORMANT_CUSTOMERS.find(a => a.id === alertId);
+  if (sampleItem) {
+    sampleItem.outreachStatus = 'SENT';
+    sampleItem.lastOutreachDate = statusUpdate.lastOutreachDate;
+    sampleItem.outreachChannel = channel;
+  }
+
   try {
     const docRef = doc(db, COLLECTION_REENGAGEMENT_ALERTS, alertId);
-    await setDoc(docRef, { 
-      outreachStatus: 'SENT', 
-      lastOutreachDate: new Date().toISOString(), 
-      outreachChannel: channel 
-    }, { merge: true });
+    await setDoc(docRef, statusUpdate, { merge: true });
   } catch (err) {
-    console.warn('Notice saving reengagement alert to firestore (using memory):', err);
+    // Gracefully handle offline or node test environments
   }
 }

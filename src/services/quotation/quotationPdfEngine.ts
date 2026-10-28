@@ -111,13 +111,13 @@ export async function generateQuotationPdf(
     ].filter(Boolean).join(' | ');
 
     if (contactParts) {
-      doc.text(contactParts, 14, currentHeaderY);
+      doc.text(contactParts, 14, currentHeaderY, { maxWidth: 182 });
       currentHeaderY += 4.2;
     }
   }
 
   if (company.website) {
-    doc.text(`Website: ${company.website}`, 14, currentHeaderY);
+    doc.text(`Website: ${company.website}`, 14, currentHeaderY, { maxWidth: 182 });
     currentHeaderY += 4.2;
   }
 
@@ -145,7 +145,7 @@ export async function generateQuotationPdf(
     docTitle = 'XÁC NHẬN ĐẶT CHỖ / BOOKING CONFIRMATION & RATE NOTICE';
   }
 
-  doc.text(normalizeUnicode(docTitle), 14, titleY);
+  doc.text(normalizeUnicode(docTitle), 14, titleY, { maxWidth: 182 });
 
   // Quote Metadata Line
   doc.setFontSize(8);
@@ -153,21 +153,23 @@ export async function generateQuotationPdf(
   doc.setTextColor(100, 116, 139);
   const revStr = snapshot.revision > 0 ? `Rev ${String(snapshot.revision).padStart(2, '0')}` : 'Rev 01';
   doc.text(`Mã báo giá / Quote Ref: ${snapshot.quoteNumber} (${revStr})`, 14, titleY + 5.5);
-  doc.text(`Ngày / Date: ${snapshot.createdDate}`, 82, titleY + 5.5);
-  doc.text(`Hiệu lực / Valid: ${snapshot.terms.validityDate || '15 ngày'}`, 128, titleY + 5.5);
+  doc.text(`Ngày / Date: ${snapshot.createdDate}`, 78, titleY + 5.5);
+  doc.text(`Hiệu lực: ${snapshot.terms.validityDate || '15 ngày'}`, 122, titleY + 5.5, { maxWidth: 36 });
 
   doc.setFont(fontFamily, 'bold');
   doc.setTextColor(isVnd ? 16 : primaryRgb[0], isVnd ? 117 : primaryRgb[1], isVnd ? 76 : primaryRgb[2]);
-  doc.text(`Đồng tiền / Curr: ${snapshot.currency}`, 174, titleY + 5.5);
+  doc.text(`Đồng tiền / Curr: ${snapshot.currency}`, 196, titleY + 5.5, { align: 'right' });
 
-  // 4. Two-column Customer & Shipment Summary Boxes
+  // 4. Two-column Customer & Shipment Summary Boxes (Strictly 14mm to 196mm)
   const boxY = titleY + 9;
   const boxHeight = 36;
+  const boxWidth = 89;
+  const rightBoxX = 107;
 
-  // Left Box: Customer Info
+  // Left Box: Customer Info (14 to 103mm)
   doc.setFillColor(lightBgRgb[0], lightBgRgb[1], lightBgRgb[2]);
   doc.setDrawColor(226, 232, 240);
-  doc.roundedRect(14, boxY, 88, boxHeight, 2, 2, 'FD');
+  doc.roundedRect(14, boxY, boxWidth, boxHeight, 2, 2, 'FD');
 
   doc.setFont(fontFamily, 'bold');
   doc.setFontSize(8.5);
@@ -177,37 +179,37 @@ export async function generateQuotationPdf(
   doc.setFont(fontFamily, 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(30, 41, 59);
-  doc.text(`Công ty: ${normalizeUnicode(snapshot.customer.companyName || snapshot.customer.customerName || 'N/A')}`, 18, boxY + 11.5, { maxWidth: 80 });
+  doc.text(`Công ty: ${normalizeUnicode(snapshot.customer.companyName || snapshot.customer.customerName || 'N/A')}`, 18, boxY + 11.5, { maxWidth: 81 });
 
   if (template.sections.customer.showContactPerson) {
-    doc.text(`Người liên hệ: ${normalizeUnicode(snapshot.customer.contactPerson || snapshot.customer.customerName || 'N/A')}`, 18, boxY + 18);
+    doc.text(`Người liên hệ: ${normalizeUnicode(snapshot.customer.contactPerson || snapshot.customer.customerName || 'N/A')}`, 18, boxY + 18, { maxWidth: 81 });
   }
   if (template.sections.customer.showTaxId) {
     doc.text(`Mã số thuế: ${snapshot.customer.taxId || 'N/A'}`, 18, boxY + 23);
   }
   if (template.sections.customer.showPhoneEmail) {
-    doc.text(`Điện thoại: ${snapshot.customer.phone || 'N/A'} | Email: ${snapshot.customer.email || 'N/A'}`, 18, boxY + 28, { maxWidth: 80 });
+    doc.text(`Điện thoại: ${snapshot.customer.phone || 'N/A'} | Email: ${snapshot.customer.email || 'N/A'}`, 18, boxY + 28, { maxWidth: 81 });
   }
   if (template.sections.customer.showAddress && snapshot.customer.address) {
-    doc.text(`Địa chỉ: ${normalizeUnicode(snapshot.customer.address)}`, 18, boxY + 33, { maxWidth: 80 });
+    doc.text(`Địa chỉ: ${normalizeUnicode(snapshot.customer.address)}`, 18, boxY + 33, { maxWidth: 81 });
   }
 
-  // Right Box: Shipment Details
+  // Right Box: Shipment Details (107 to 196mm)
   doc.setFillColor(lightBgRgb[0], lightBgRgb[1], lightBgRgb[2]);
-  doc.roundedRect(108, boxY, 88, boxHeight, 2, 2, 'FD');
+  doc.roundedRect(rightBoxX, boxY, boxWidth, boxHeight, 2, 2, 'FD');
 
   doc.setFont(fontFamily, 'bold');
   doc.setFontSize(8.5);
   doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
-  doc.text(language === 'en' ? 'SHIPMENT ROUTING & DETAILS' : 'THÔNG TIN LÔ HÀNG / SHIPMENT DETAILS', 112, boxY + 6);
+  doc.text(language === 'en' ? 'SHIPMENT ROUTING & DETAILS' : 'THÔNG TIN LÔ HÀNG / SHIPMENT DETAILS', rightBoxX + 4, boxY + 6);
 
   doc.setFont(fontFamily, 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(30, 41, 59);
-  doc.text(`Phương thức: ${snapshot.shipment.mode} (${snapshot.shipment.containerType || 'Standard'})`, 112, boxY + 11.5);
-  doc.text(`Cảng đi (POL): ${normalizeUnicode(snapshot.shipment.pol || 'N/A')}`, 112, boxY + 16.5, { maxWidth: 80 });
-  doc.text(`Cảng đến (POD): ${normalizeUnicode(snapshot.shipment.pod || 'N/A')}`, 112, boxY + 21.5, { maxWidth: 80 });
-  doc.text(`Tên hàng: ${normalizeUnicode(snapshot.shipment.commodity || 'General Cargo')}`, 112, boxY + 26.5, { maxWidth: 80 });
+  doc.text(`Phương thức: ${snapshot.shipment.mode} (${snapshot.shipment.containerType || 'Standard'})`, rightBoxX + 4, boxY + 11.5);
+  doc.text(`Cảng đi (POL): ${normalizeUnicode(snapshot.shipment.pol || 'N/A')}`, rightBoxX + 4, boxY + 16.5, { maxWidth: 81 });
+  doc.text(`Cảng đến (POD): ${normalizeUnicode(snapshot.shipment.pod || 'N/A')}`, rightBoxX + 4, boxY + 21.5, { maxWidth: 81 });
+  doc.text(`Tên hàng: ${normalizeUnicode(snapshot.shipment.commodity || 'General Cargo')}`, rightBoxX + 4, boxY + 26.5, { maxWidth: 81 });
 
   const qtyDetails = [
     `${snapshot.shipment.quantity} cont`,
@@ -215,7 +217,7 @@ export async function generateQuotationPdf(
     template.sections.shipment.showVolumeCbm ? `${formatNumber(snapshot.shipment.volumeCbm)} CBM` : '',
   ].filter(Boolean).join(' | ');
 
-  doc.text(`Quy cách: ${qtyDetails}`, 112, boxY + 31.5);
+  doc.text(`Quy cách: ${qtyDetails}`, rightBoxX + 4, boxY + 31.5, { maxWidth: 81 });
 
   // 5. Line Items Table Rendering with Full Vietnamese Diacritics
   const groupBy = template.sections.charges.groupBy || 'LOCATION';
@@ -430,7 +432,8 @@ export async function generateQuotationPdf(
         6: { halign: 'center', cellWidth: 12 },
         7: { halign: 'right', cellWidth: isVnd ? 30 : 26 },
       },
-      margin: { left: 14, right: 14 },
+      margin: { left: 14, right: 14, top: 16, bottom: 20 },
+      pageBreak: 'auto',
     });
   }
 
@@ -439,12 +442,12 @@ export async function generateQuotationPdf(
 
   // Check if we need to add a new page for Totals + Terms + Signatures
   let blockStartY = finalY;
-  if (blockStartY > 215) {
+  if (blockStartY + 30 > 260) {
     doc.addPage();
     blockStartY = 16;
   }
 
-  // 6. Totals Box
+  // 6. Totals Box (106mm to 196mm)
   doc.setFillColor(lightBgRgb[0], lightBgRgb[1], lightBgRgb[2]);
   doc.setDrawColor(226, 232, 240);
   doc.roundedRect(106, blockStartY, 90, 26, 2, 2, 'FD');
@@ -483,27 +486,27 @@ export async function generateQuotationPdf(
     { align: 'right' }
   );
 
-  // Left Note: Exchange Rate & Equivalent Conversion
+  // Left Note: Exchange Rate & Equivalent Conversion (14mm to 102mm)
   doc.setFont(fontFamily, 'italic');
   doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139);
-  doc.text(`* Tỷ giá quy đổi (Ex.Rate): 1 USD = ${formatExchangeRate(snapshot.exchangeRate)} VND`, 14, blockStartY + 6);
+  doc.text(`* Tỷ giá quy đổi (Ex.Rate): 1 USD = ${formatExchangeRate(snapshot.exchangeRate)} VND`, 14, blockStartY + 6, { maxWidth: 88 });
   if (isVnd) {
-    doc.text(`* Quy đổi tương đương USD: ~ ${formatUSD(snapshot.grandTotalUsd)}`, 14, blockStartY + 11);
+    doc.text(`* Quy đổi tương đương USD: ~ ${formatUSD(snapshot.grandTotalUsd)}`, 14, blockStartY + 11, { maxWidth: 88 });
   } else if (snapshot.grandTotalVnd) {
-    doc.text(`* Tổng thanh toán quy đổi: ~ ${formatNumberVND(snapshot.grandTotalVnd)} VND`, 14, blockStartY + 11);
+    doc.text(`* Tổng thanh toán quy đổi: ~ ${formatNumberVND(snapshot.grandTotalVnd)} VND`, 14, blockStartY + 11, { maxWidth: 88 });
   }
 
   // If internal quotation, display summary profit
   if (isInternal && snapshot.totalProfitUsd !== undefined) {
     doc.setFont(fontFamily, 'bold');
     doc.setTextColor(16, 185, 129);
-    doc.text(`[NỘI BỘ] Lợi nhuận gộp: ${isVnd ? `${formatNumberVND(snapshot.totalProfitVnd || 0)} VND` : formatUSD(snapshot.totalProfitUsd)} (Margin: ${(snapshot.overallMarginPercent || 0).toFixed(1)}%)`, 14, blockStartY + 18);
+    doc.text(`[NỘI BỘ] Lợi nhuận gộp: ${isVnd ? `${formatNumberVND(snapshot.totalProfitVnd || 0)} VND` : formatUSD(snapshot.totalProfitUsd)} (Margin: ${(snapshot.overallMarginPercent || 0).toFixed(1)}%)`, 14, blockStartY + 18, { maxWidth: 88 });
   }
 
   // 7. Terms & Conditions Block
   let termsY = blockStartY + 31;
-  if (termsY > 225) {
+  if (termsY > 215) {
     doc.addPage();
     termsY = 16;
   }
@@ -511,54 +514,72 @@ export async function generateQuotationPdf(
   doc.setFont(fontFamily, 'bold');
   doc.setFontSize(8.5);
   doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
-  doc.text('ĐIỀU KHOẢN VÀ QUY ĐỊNH BÁO GIÁ / TERMS & CONDITIONS', 14, termsY);
+  doc.text('ĐIỀU KHOẢN VÀ QUY ĐỊNH BÁO GIÁ / TERMS & CONDITIONS', 14, termsY, { maxWidth: 182 });
 
   doc.setFont(fontFamily, 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(51, 65, 85);
 
-  doc.text(`Incoterm: ${snapshot.terms.incoterm}`, 14, termsY + 4.5);
-  doc.text(`Điều khoản thanh toán: ${normalizeUnicode(snapshot.terms.paymentTerm)}`, 14, termsY + 8.5, { maxWidth: 180 });
+  doc.text(`Incoterm: ${snapshot.terms.incoterm}`, 14, termsY + 4.5, { maxWidth: 182 });
+  doc.text(`Điều khoản thanh toán: ${normalizeUnicode(snapshot.terms.paymentTerm)}`, 14, termsY + 8.5, { maxWidth: 182 });
 
-  const splitNotes = doc.splitTextToSize(`Ghi chú & Miễn trừ trách nhiệm: ${normalizeUnicode(snapshot.terms.exclusionsNotes)}`, 180);
+  const splitNotes = doc.splitTextToSize(`Ghi chú & Miễn trừ trách nhiệm: ${normalizeUnicode(snapshot.terms.exclusionsNotes)}`, 182);
   doc.text(splitNotes, 14, termsY + 13);
 
   let nextY = termsY + 13 + splitNotes.length * 3.5;
 
   // Bank Info
   if (template.sections.terms.showBankInfo && snapshot.terms.bankAccountInfo) {
+    if (nextY > 238) {
+      doc.addPage();
+      nextY = 16;
+    }
+
     doc.setFont(fontFamily, 'bold');
-    doc.text('THÔNG TIN CHUYỂN KHOẢN / BANK INFORMATION:', 14, nextY);
+    doc.text('THÔNG TIN CHUYỂN KHOẢN / BANK INFORMATION:', 14, nextY, { maxWidth: 182 });
     doc.setFont(fontFamily, 'normal');
-    const splitBank = doc.splitTextToSize(normalizeUnicode(snapshot.terms.bankAccountInfo), 180);
+    const splitBank = doc.splitTextToSize(normalizeUnicode(snapshot.terms.bankAccountInfo), 182);
     doc.text(splitBank, 14, nextY + 4);
     nextY += 4 + splitBank.length * 3.5;
   }
 
   // 8. Dual Signature Block
-  let signY = nextY + 4;
-  if (signY > 245) {
+  let signY = nextY + 5;
+  if (signY > 225) {
     doc.addPage();
-    signY = 18;
+    signY = 16;
   }
 
   doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.4);
   doc.line(14, signY, 196, signY);
   signY += 5;
+
+  const colWidth = 82;
+  const leftX = 14;
+  const rightX = 114;
 
   if (template.sections.signature.showCustomerSignature) {
     // Left Sign: Customer Acceptance
     doc.setFont(fontFamily, 'bold');
     doc.setFontSize(8);
     doc.setTextColor(30, 41, 59);
-    doc.text('XÁC NHẬN KHÁCH HÀNG / CUSTOMER ACCEPTANCE', 14, signY);
+    doc.text('XÁC NHẬN KHÁCH HÀNG / CUSTOMER ACCEPTANCE', leftX, signY, { maxWidth: colWidth });
     doc.setFont(fontFamily, 'italic');
     doc.setFontSize(7);
     doc.setTextColor(148, 163, 184);
-    doc.text('(Ký tên & đóng dấu / Sign & Stamp)', 14, signY + 4);
+    doc.text('(Ký tên & đóng dấu / Sign & Stamp)', leftX, signY + 4, { maxWidth: colWidth });
+
+    const custSignerY = signY + 22;
+    doc.setFont(fontFamily, 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(30, 41, 59);
+    doc.text(normalizeUnicode(snapshot.customer.contactPerson || snapshot.customer.customerName || 'Đại diện được ủy quyền'), leftX, custSignerY, { maxWidth: colWidth });
+
     doc.setFont(fontFamily, 'normal');
-    doc.setTextColor(71, 85, 105);
-    doc.text(normalizeUnicode(snapshot.customer.contactPerson || snapshot.customer.customerName || 'Đại diện được ủy quyền'), 14, signY + 20);
+    doc.setFontSize(7);
+    doc.setTextColor(148, 163, 184);
+    doc.text('Ngày / Date: ...... / ...... / 202...', leftX, custSignerY + 4.2);
   }
 
   if (template.sections.signature.showCompanySignature) {
@@ -566,28 +587,46 @@ export async function generateQuotationPdf(
     doc.setFont(fontFamily, 'bold');
     doc.setFontSize(8);
     doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
-    doc.text('ĐẠI DIỆN ĐƠN VỊ BÁO GIÁ / FOR AND ON BEHALF OF', 114, signY);
+    doc.text('ĐẠI DIỆN ĐƠN VỊ BÁO GIÁ / FOR AND ON BEHALF OF', rightX, signY, { maxWidth: colWidth });
     doc.setFont(fontFamily, 'italic');
     doc.setFontSize(7);
     doc.setTextColor(100, 116, 139);
-    doc.text(normalizeUnicode(company.shortName || company.name || 'LOGISTICS COMPANY'), 114, signY + 4);
+    doc.text(normalizeUnicode(company.shortName || company.name || 'LOGISTICS COMPANY'), rightX, signY + 4, { maxWidth: colWidth });
+
+    const companySignerY = signY + 22;
     doc.setFont(fontFamily, 'bold');
-    doc.setFontSize(8);
+    doc.setFontSize(8.5);
     doc.setTextColor(15, 23, 42);
-    doc.text(normalizeUnicode(company.salesRepName || 'ĐẠI DIỆN KINH DOANH'), 114, signY + 18);
-    doc.setFont(fontFamily, 'normal');
-    doc.setFontSize(7);
-    doc.setTextColor(100, 116, 139);
-    const repContact = [
-      company.salesRepTitle ? normalizeUnicode(company.salesRepTitle) : '',
-      company.salesRepPhone ? `Tel: ${company.salesRepPhone}` : ''
-    ].filter(Boolean).join(' | ');
-    if (repContact) {
-      doc.text(repContact, 114, signY + 22);
+    doc.text(normalizeUnicode(company.salesRepName || 'ĐẠI DIỆN KINH DOANH'), rightX, companySignerY, { maxWidth: colWidth });
+
+    let rY = companySignerY;
+
+    if (company.salesRepTitle) {
+      rY += 4.2;
+      doc.setFont(fontFamily, 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(71, 85, 105);
+      doc.text(normalizeUnicode(company.salesRepTitle), rightX, rY, { maxWidth: colWidth });
+    }
+
+    if (company.salesRepPhone) {
+      rY += 3.8;
+      doc.setFont(fontFamily, 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Tel/Zalo: ${company.salesRepPhone}`, rightX, rY, { maxWidth: colWidth });
+    }
+
+    if (company.salesRepEmail) {
+      rY += 3.8;
+      doc.setFont(fontFamily, 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Email: ${company.salesRepEmail}`, rightX, rY, { maxWidth: colWidth });
     }
   }
 
-  // 9. Running Footers on ALL Pages (Trang X / Y)
+  // 9. Running Footers on ALL Pages (Trang X / Y strictly inside A4)
   const totalPages = (doc as any).internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
@@ -595,14 +634,19 @@ export async function generateQuotationPdf(
     doc.setFont(fontFamily, 'normal');
     doc.setTextColor(148, 163, 184);
 
+    // Decorative footer hairline
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.3);
+    doc.line(14, 286, 196, 286);
+
     // Left: Custom footer or template note
     const footerLeftText = template.sections.footer.customFooterText || 
       `Hệ thống Báo giá LogiQuote - Số: ${snapshot.quoteNumber} (Bản ${snapshot.revision}) - Ngày tạo: ${new Date().toLocaleDateString('vi-VN')}`;
-    doc.text(normalizeUnicode(footerLeftText), 14, 290, { maxWidth: 140 });
+    doc.text(normalizeUnicode(footerLeftText), 14, 291, { maxWidth: 140 });
 
     // Right: Page number
     if (template.sections.footer.showPageNumbers) {
-      doc.text(`Trang / Page ${i} / ${totalPages}`, 196, 290, { align: 'right' });
+      doc.text(`Trang / Page ${i} / ${totalPages}`, 196, 291, { align: 'right' });
     }
   }
 

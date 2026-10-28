@@ -296,6 +296,7 @@ async function runPhase52WorkflowTests() {
   console.log('\n================================================================');
   console.log('ALL PHASE 52 WORKFLOW INTEGRITY CHECKS PASSED (5/5)');
   console.log('================================================================');
+  process.exit(0);
 }
 
 runPhase52WorkflowTests().catch(err => {

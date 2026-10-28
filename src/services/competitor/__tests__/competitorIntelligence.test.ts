@@ -92,6 +92,7 @@ async function runCompetitorIntelligenceTests() {
   console.log(`   ✅ Recorded Win/Loss feedback properly, total cached: ${localRecords.length}`);
 
   console.log('\n🎉 All Phase 57 Competitor Intelligence & Win-Rate Benchmark tests passed successfully!');
+  process.exit(0);
 }
 
 runCompetitorIntelligenceTests().catch(err => {

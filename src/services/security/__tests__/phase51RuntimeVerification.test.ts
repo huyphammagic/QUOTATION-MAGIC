@@ -175,6 +175,7 @@ async function runPhase51_1Tests() {
   console.log('\n================================================================');
   console.log('ALL PHASE 51.1 RUNTIME & PERSISTENCE CHECKS PASSED (8/8)');
   console.log('================================================================');
+  process.exit(0);
 }
 
 runPhase51_1Tests().catch(err => {

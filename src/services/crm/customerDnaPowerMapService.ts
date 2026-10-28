@@ -11,6 +11,8 @@ import {
   ShipperSensitivityScores,
   LogisticsScar
 } from '../../types/customerDnaPowerMap';
+import { CustomerRecord, QuoteData } from '../../types/logistics';
+import { getSavedCustomers, getSavedQuotes } from '../../utils/storage';
 
 const STORAGE_KEY = 'bogi_customer_dna_profiles_v1';
 
@@ -376,6 +378,157 @@ export const PRESEEDED_CUSTOMER_DNA_PROFILES: CustomerDnaPowerMapProfile[] = [
 
 // Helper Service
 export class CustomerDnaPowerMapService {
+  /**
+   * Lấy danh sách hồ sơ Customer DNA & Power Map CHỈ cho các khách hàng đã tạo hoặc cập nhật trên hệ thống.
+   */
+  static getProfilesForRealCustomers(
+    customers?: CustomerRecord[],
+    quotes?: QuoteData[]
+  ): CustomerDnaPowerMapProfile[] {
+    const activeCustomers = (customers && customers.length > 0)
+      ? customers
+      : getSavedCustomers();
+    const activeQuotes = quotes || getSavedQuotes();
+
+    if (!activeCustomers || activeCustomers.length === 0) {
+      return [];
+    }
+
+    let savedProfiles: CustomerDnaPowerMapProfile[] = [];
+    try {
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            savedProfiles = parsed;
+          }
+        }
+      }
+    } catch {
+      savedProfiles = [];
+    }
+
+    const resultProfiles: CustomerDnaPowerMapProfile[] = [];
+
+    activeCustomers.forEach(cust => {
+      const custCompanyLower = (cust.companyName || cust.customerName || '').toLowerCase().trim();
+      const existing = savedProfiles.find(p => 
+        (p.customerId && p.customerId === cust.id) ||
+        (p.id && (p.id === `dna-${cust.id}` || p.id === cust.id)) ||
+        (p.customerName && p.customerName.toLowerCase().trim() === custCompanyLower)
+      );
+
+      if (existing) {
+        // Keep updated with latest customer basic info
+        resultProfiles.push({
+          ...existing,
+          customerId: cust.id,
+          customerName: cust.companyName || cust.customerName,
+          updatedAt: cust.updatedDate || existing.updatedAt || new Date().toISOString(),
+        });
+      } else {
+        // Dynamically initialize a tailored, clean profile scaffold from this real customer
+        const cQuotes = activeQuotes.filter(q => {
+          const qc = q.customer;
+          if (!qc) return false;
+          if (qc.id && qc.id === cust.id) return true;
+          if (qc.code && qc.code === cust.code) return true;
+          if (cust.taxId && qc.taxId && cust.taxId.trim() === qc.taxId.trim()) return true;
+          const qName = (qc.companyName || qc.customerName || '').toLowerCase().trim();
+          if (qName && custCompanyLower && (qName === custCompanyLower || qName.includes(custCompanyLower) || custCompanyLower.includes(qName))) return true;
+          return false;
+        });
+
+        const latestQuote = cQuotes[0];
+        const origin = latestQuote?.shipment?.pol || latestQuote?.shipment?.origin || 'Cát Lái (VNSGN)';
+        const dest = latestQuote?.shipment?.pod || latestQuote?.shipment?.destination || 'Rotterdam (NLRTM)';
+        const carrier = latestQuote?.shipment?.carrier || 'Maersk';
+        const cont = latestQuote?.shipment?.containerType || "40'HC";
+        const commodity = latestQuote?.shipment?.commodity || cust.notes || 'Hàng xuất khẩu thương mại';
+
+        const personaType: ShipperPersonaType = cust.segment === 'VIP' 
+          ? 'RELIABILITY_FIRST' 
+          : cust.segment === 'STRATEGIC' 
+          ? 'SERVICE_PERFECTIONIST' 
+          : 'PRICE_HUNTER';
+
+        const freshProfile: CustomerDnaPowerMapProfile = {
+          id: `dna-${cust.id}`,
+          companyId: cust.companyId || 'company_profile',
+          customerId: cust.id,
+          customerName: cust.companyName || cust.customerName,
+          industry: cust.group || cust.notes || 'Sản xuất & Xuất nhập khẩu Quốc tế',
+          personaType,
+          compatibilityScore: 88,
+          sensitivityScores: {
+            priceSensitivity: cust.segment === 'VIP' ? 5 : 8,
+            transitTimeSensitivity: cust.segment === 'VIP' ? 9 : 7,
+            freeTimeDemDetSensitivity: 8,
+            creditTermSensitivity: cust.creditTermDays ? 8 : 6,
+            customsReliabilitySensitivity: 8,
+          },
+          scars: [],
+          shipmentDna: {
+            primaryCommodity: commodity,
+            packagingType: cont,
+            monthlyVolumeTeu: latestQuote?.shipment?.quantity ? latestQuote.shipment.quantity * 4 : 10,
+            annualLogisticsBudgetUsd: 120000,
+            peakSeasonMonths: [8, 9, 10, 11, 12],
+            coreTradeLanes: [
+              {
+                origin,
+                destination: dest,
+                incotermDefault: (latestQuote?.terms?.incoterm as any) || 'FOB',
+                preferredCarriers: [carrier],
+                currentRateBenchmarkUsd: latestQuote?.items?.find(i => i.category === 'FREIGHT')?.unitPrice || 2200,
+              }
+            ],
+            criticalRequirements: [
+              'Cam kết slot và lịch tàu ổn định',
+              'Cập nhật tracking chủ động trước khi tàu cập cảng',
+            ]
+          },
+          powerMapContacts: [
+            {
+              id: `contact-${cust.id}-primary`,
+              name: cust.contactPerson || cust.customerName || 'Đại diện phụ trách',
+              title: 'Trưởng phòng Xuất Nhập Khẩu',
+              department: 'PURCHASING',
+              roleInDeal: 'DECISION_MAKER',
+              influenceLevel: 9,
+              personalityStyle: 'DOMINANT',
+              stanceTowardUs: 'LEANING_POSITIVE',
+              personalPainPoint: 'Đòi hỏi sự chuẩn xác về chứng từ, tránh mọi phát sinh chi phí ngoài báo giá.',
+              hiddenAgenda: 'Tìm đối tác Logistics làm chỗ dựa vững chắc, phản hồi nhanh chóng.',
+              preferredChannel: 'ZALO',
+              notes: 'Tự động đồng bộ 100% từ Danh Bạ Khách Hàng CRM.',
+              phone: cust.phone || '',
+              email: cust.email || '',
+            }
+          ],
+          salesPlaybook: {
+            openingHook: `Chào anh/chị bên ${cust.companyName || cust.customerName}, em bên bộ phận điều phối Logistics theo dõi tuyến vận chuyển của công ty mình.`,
+            tabooWords: ['hứa miệng', 'phụ phí phát sinh sau', 'không chắc slot'],
+            powerValueProps: [
+              'Cam kết bằng văn bản không phụ phí ẩn',
+              'Đội ngũ hiện trường thông quan và kéo cont 24/7',
+              'Chính sách công nợ linh hoạt theo chu kỳ dòng tiền'
+            ],
+            closingTactic: 'Lock chỗ trước giữ giá cước ưu đãi kèm cam kết miễn phí gia hạn lưu kho bãi DEM/DET'
+          },
+          multiThreadingPlans: [],
+          createdAt: cust.createdDate || new Date().toISOString(),
+          updatedAt: cust.updatedDate || new Date().toISOString(),
+        };
+
+        resultProfiles.push(freshProfile);
+      }
+    });
+
+    return resultProfiles;
+  }
+
   /**
    * Lấy danh sách toàn bộ hồ sơ Customer DNA & Power Map
    */

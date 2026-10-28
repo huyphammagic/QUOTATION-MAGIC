@@ -233,49 +233,60 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
         />
 
         {/* Top Folder KPI Overview Banner */}
-        <div className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 shrink-0">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5">
-              <div className="flex items-center justify-between text-slate-500 text-[11px] font-medium">
-                <span>Tổng Hồ Sơ Báo Giá</span>
+        <div className="bg-slate-50/60 border-b border-slate-200/90 px-4 sm:px-6 py-3.5 shrink-0">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+            <div className="bg-white border border-slate-200/80 rounded-xl p-3.5 shadow-2xs">
+              <div className="flex items-center justify-between text-slate-500">
+                <span className="text-[11px] font-semibold uppercase tracking-wider">Tổng Hồ Sơ</span>
                 <FileText className="w-3.5 h-3.5 text-blue-500" />
               </div>
-              <div className="mt-1 flex items-baseline gap-1.5">
-                <span className="text-lg font-bold text-slate-900">{stats.total}</span>
-                <span className="text-[10px] text-slate-500">đơn</span>
+              <div className="mt-2 flex items-baseline gap-1.5">
+                <span className="text-2xl font-bold font-mono text-slate-900 tracking-tight tabular-nums">{stats.total}</span>
+                <span className="text-xs text-slate-500 font-mono">báo giá</span>
+              </div>
+              <div className="mt-1 text-[11px] text-slate-400">
+                Toàn bộ dữ liệu hồ sơ
               </div>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5">
-              <div className="flex items-center justify-between text-slate-500 text-[11px] font-medium">
-                <span>Tổng Doanh Thu Báo Giá</span>
+            <div className="bg-white border border-slate-200/80 rounded-xl p-3.5 shadow-2xs">
+              <div className="flex items-center justify-between text-slate-500">
+                <span className="text-[11px] font-semibold uppercase tracking-wider">Doanh Thu Pipeline</span>
                 <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
               </div>
-              <div className="mt-1 flex items-baseline gap-1.5">
-                <span className="text-base font-bold text-emerald-600 font-mono">{formatUSD(stats.totalUsd)}</span>
-                <span className="text-[10px] text-slate-400 hidden xl:inline">({formatVND(stats.totalVnd)})</span>
+              <div className="mt-2 flex items-baseline gap-1.5">
+                <span className="text-xl sm:text-2xl font-bold text-emerald-600 font-mono tracking-tight tabular-nums">{formatUSD(stats.totalUsd)}</span>
+              </div>
+              <div className="mt-1 text-[11px] text-slate-400 font-mono truncate">
+                ≈ {formatVND(stats.totalVnd)}
               </div>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5">
-              <div className="flex items-center justify-between text-slate-500 text-[11px] font-medium">
-                <span>Đã Chốt & Tỷ Lệ Thắng</span>
+            <div className="bg-white border border-slate-200/80 rounded-xl p-3.5 shadow-2xs">
+              <div className="flex items-center justify-between text-slate-500">
+                <span className="text-[11px] font-semibold uppercase tracking-wider">Tỷ Lệ Thắng (Win)</span>
                 <TrendingUp className="w-3.5 h-3.5 text-indigo-500" />
               </div>
-              <div className="mt-1 flex items-baseline gap-1.5">
-                <span className="text-lg font-bold text-indigo-600">{stats.accepted}</span>
-                <span className="text-[11px] font-semibold text-emerald-600">({stats.winRate}%)</span>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-bold font-mono text-slate-900 tracking-tight tabular-nums">{stats.winRate}%</span>
+                <span className="text-xs font-mono font-semibold text-emerald-600">({stats.accepted} chốt)</span>
+              </div>
+              <div className="mt-1 text-[11px] text-slate-400">
+                Tỷ lệ đơn hàng thành công
               </div>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5">
-              <div className="flex items-center justify-between text-slate-500 text-[11px] font-medium">
-                <span>Chờ Duyệt & Nháp</span>
+            <div className="bg-white border border-slate-200/80 rounded-xl p-3.5 shadow-2xs">
+              <div className="flex items-center justify-between text-slate-500">
+                <span className="text-[11px] font-semibold uppercase tracking-wider">Chờ Duyệt & Nháp</span>
                 <Clock className="w-3.5 h-3.5 text-amber-500" />
               </div>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-lg font-bold text-amber-600">{stats.pending}</span>
-                <span className="text-[11px] text-slate-500">chờ duyệt · {stats.drafts} nháp</span>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-bold font-mono text-amber-600 tracking-tight tabular-nums">{stats.pending}</span>
+                <span className="text-xs text-slate-500 font-mono">đang chờ</span>
+              </div>
+              <div className="mt-1 text-[11px] text-slate-400">
+                {stats.drafts} bản ghi nháp lưu trữ
               </div>
             </div>
           </div>

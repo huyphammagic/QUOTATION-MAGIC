@@ -75,3 +75,4 @@ if (!weapon.salesPitchParagraphVi.includes('Phong Phú') || weapon.guaranteedSav
 }
 console.log(`✅ Test 5 Passed: Generated Sales Weapon pitch saving $${weapon.guaranteedSavingsUsd.toLocaleString()} USD with contract clause snippet`);
 console.log('🎉 ALL PHASE 60 TESTS PASSED SUCCESSFULLY!\n');
+process.exit(0);

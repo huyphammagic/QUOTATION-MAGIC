@@ -26,6 +26,11 @@ export interface NavigationTranslations {
   groupOperations: string;
   groupAnalytics: string;
   groupSystem: string;
+  workflowCommercial: string;
+  workflowPricing: string;
+  workflowOperations: string;
+  workflowCrm: string;
+  workflowSystem: string;
 
   // Quotation Module
   createQuotation: string;
@@ -117,6 +122,11 @@ export const NAVIGATION_I18N: Record<NavigationLanguage, NavigationTranslations>
     groupOperations: 'NGHIỆP VỤ VẬN TẢI',
     groupAnalytics: 'PHÂN TÍCH & BÁO CÁO',
     groupSystem: 'HỆ THỐNG & CÀI ĐẶT',
+    workflowCommercial: 'Kinh Doanh & Báo Giá',
+    workflowPricing: 'Biểu Cước & Trí Tuệ Giá',
+    workflowOperations: 'Vận Hành & Điều Hành Lô Hàng',
+    workflowCrm: 'Khách Hàng & Công Nợ',
+    workflowSystem: 'Hệ Thống, Danh Mục & Quản Trị',
 
     createQuotation: 'Tạo Báo Giá Mới',
     createQuotationShort: 'Tạo Mới',
@@ -199,6 +209,11 @@ export const NAVIGATION_I18N: Record<NavigationLanguage, NavigationTranslations>
     groupOperations: 'OPERATIONS',
     groupAnalytics: 'ANALYTICS',
     groupSystem: 'SYSTEM & SETTINGS',
+    workflowCommercial: 'Commercial & Deal Desk',
+    workflowPricing: 'Pricing & Carrier Intelligence',
+    workflowOperations: 'Operations & Control Tower',
+    workflowCrm: 'CRM & Receivables Intelligence',
+    workflowSystem: 'System & Master Governance',
 
     createQuotation: 'Create Quotation',
     createQuotationShort: 'New Quote',

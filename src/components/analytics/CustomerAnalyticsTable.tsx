@@ -38,14 +38,20 @@ export const CustomerAnalyticsTable: React.FC<CustomerAnalyticsTableProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
         <div>
-          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <Users className="w-5 h-5 text-blue-600" />
-            {isVi ? 'Phân Tích Giá Trị Khách Hàng (Customer Analytics)' : 'Customer Value & Engagement Analytics'}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-600" />
+              {isVi ? 'Phân Tích Giá Trị Khách Hàng (Customer Analytics)' : 'Customer Value & Engagement Analytics'}
+            </h3>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <CheckCircle className="w-3 h-3 text-emerald-600" />
+              {isVi ? '100% Đồng Bộ CRM' : '100% CRM Synced'}
+            </span>
+          </div>
           <p className="text-xs text-slate-500 mt-0.5">
             {isVi 
-              ? 'Xác định khách hàng VIP, tỷ lệ phản hồi, điểm tương tác (Engagement Score) và chu kỳ chào giá.'
-              : 'Identify key accounts, quotation volume, response tracking, and customer engagement health.'}
+              ? `Chỉ đánh giá và phân tích ${customers.length} khách hàng đã tạo hoặc cập nhật trên hệ thống (tỷ lệ thắng, doanh số chốt, điểm tương tác).`
+              : `Strictly evaluating ${customers.length} customers created or updated in the system.`}
           </p>
         </div>
 
@@ -95,8 +101,18 @@ export const CustomerAnalyticsTable: React.FC<CustomerAnalyticsTableProps> = ({
           <tbody className="divide-y divide-slate-100">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={10} className="py-8 text-center text-slate-400 italic">
-                  {isVi ? 'Không tìm thấy khách hàng nào.' : 'No customers found.'}
+                <td colSpan={10} className="py-10 text-center text-slate-500">
+                  <div className="flex flex-col items-center justify-center gap-1.5">
+                    <Users className="w-6 h-6 text-slate-400" />
+                    <p className="text-xs font-semibold text-slate-700">
+                      {isVi ? 'Không có khách hàng nào để đánh giá' : 'No customers to evaluate'}
+                    </p>
+                    <p className="text-[11px] text-slate-400 max-w-sm">
+                      {isVi 
+                        ? 'Hệ thống chỉ đánh giá và phân tích những khách hàng bạn đã tạo hoặc cập nhật trên hệ thống (đồng bộ 100% từ Danh Bạ CRM).' 
+                        : 'The system only evaluates customers created or updated on the system.'}
+                    </p>
+                  </div>
                 </td>
               </tr>
             ) : (

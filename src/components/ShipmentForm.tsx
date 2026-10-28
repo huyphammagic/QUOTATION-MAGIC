@@ -29,6 +29,8 @@ interface ShipmentFormProps {
   savedQuotes?: QuoteData[];
   currentQuoteId?: string;
   onOpenHistoricalRateAdvisor?: () => void;
+  onOpenSmartSurcharges?: () => void;
+  smartSurchargesCount?: number;
 }
 
 export const ShipmentForm: React.FC<ShipmentFormProps> = ({ 
@@ -39,6 +41,8 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
   savedQuotes = [],
   currentQuoteId,
   onOpenHistoricalRateAdvisor,
+  onOpenSmartSurcharges,
+  smartSurchargesCount = 0,
 }) => {
   const [showTransitDetails, setShowTransitDetails] = useState(false);
 
@@ -97,9 +101,26 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
           </div>
         </div>
 
-        {/* Live Weight Pulse */}
-        <div className="text-right shrink-0">
-          <span className="text-[11px] font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
+        {/* Live Weight Pulse & Smart Surcharges */}
+        <div className="flex items-center gap-2 shrink-0">
+          {onOpenSmartSurcharges && (
+            <button
+              type="button"
+              onClick={onOpenSmartSurcharges}
+              className="press-physics-subtle inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/90 px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-2xs"
+              title="Phân tích và gợi ý phụ phí thông minh cho tuyến này"
+            >
+              <Sparkles className="w-3 h-3 text-indigo-600 animate-pulse" />
+              <span>Gợi ý phụ phí</span>
+              {smartSurchargesCount > 0 && (
+                <span className="font-mono text-indigo-900 bg-indigo-200/70 px-1 rounded text-[10px]">
+                  {smartSurchargesCount}
+                </span>
+              )}
+            </button>
+          )}
+
+          <span className="text-[11px] font-mono font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded-lg">
             CW: {formatNumber(shipment.chargeableWeight)} {shipment.mode === 'AIR_FREIGHT' ? 'KG' : 'RT'}
           </span>
         </div>

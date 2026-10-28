@@ -157,8 +157,12 @@ export const CustomerManagerModal: React.FC<CustomerManagerModalProps> = ({
         email: (editingCustomer.email || '').trim(),
         phone: (editingCustomer.phone || '').trim(),
         group: (editingCustomer.group || 'Khách Thương Mại').trim(),
+        segment: (editingCustomer.segment || 'STANDARD').trim(),
         notes: (editingCustomer.notes || '').trim(),
-        createdDate: (editingCustomer.createdDate || new Date().toISOString().slice(0, 10)).trim()
+        createdDate: (editingCustomer.createdDate || new Date().toISOString().slice(0, 10)).trim(),
+        updatedDate: new Date().toISOString().slice(0, 10),
+        isUserCreated: true,
+        syncSource: 'CRM',
       };
 
       await onSaveCustomer(finalCustomer);

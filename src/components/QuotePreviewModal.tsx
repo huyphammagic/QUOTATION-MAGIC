@@ -406,7 +406,7 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({
           </div>
 
           {/* 6. Terms & Conditions & Banking */}
-          <div className="border-t border-slate-200 pt-4 space-y-2 text-slate-700 text-[11px]">
+          <div className="border-t border-slate-200 pt-4 space-y-2 text-slate-700 text-[11px] break-inside-avoid">
             <p className="font-bold text-slate-900 uppercase">ĐIỀU KHOẢN VÀ QUY ĐỊNH BÁO GIÁ (TERMS & CONDITIONS):</p>
             <p>• Điều kiện giao hàng (Incoterm): <span className="font-bold">{quote.terms.incoterm}</span></p>
             <p>• Điều khoản thanh toán: {quote.terms.paymentTerm}</p>
@@ -420,7 +420,7 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({
           </div>
 
           {/* 7. Corporate Dual Signature Block */}
-          <div className="pt-6 border-t-2 border-slate-200 grid grid-cols-2 gap-8 text-xs text-center">
+          <div className="pt-6 border-t-2 border-slate-200 grid grid-cols-2 gap-8 text-xs text-center break-inside-avoid">
             
             {/* Left: Customer Acceptance */}
             <div className="space-y-1">
@@ -440,7 +440,7 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({
             {/* Right: Forwarding Company Sign-off */}
             <div className="space-y-1">
               <p className="font-bold text-cyan-950 uppercase tracking-wide">
-                ĐẠI DIỆN CÔNG TY BÁO GIÁ (FOR AND ON BEHALF OF)
+                ĐẠI DIỆN ĐƠN VỊ BÁO GIÁ (FOR AND ON BEHALF OF)
               </p>
               <p className="text-slate-500 font-medium text-[11px] truncate">
                 {quote.company.shortName || quote.company.name}
@@ -448,11 +448,22 @@ export const QuotePreviewModal: React.FC<QuotePreviewModalProps> = ({
               <div className="h-20 flex items-center justify-center text-blue-300 italic text-[10px]">
                 [Chữ ký & Xác nhận của Sales Executive]
               </div>
-              <p className="font-bold text-slate-900 text-sm">{quote.company.salesRepName}</p>
-              <p className="text-slate-600 text-[11px]">{quote.company.salesRepTitle}</p>
-              <p className="text-slate-500 text-[10px]">
-                Hotline/Zalo: {quote.company.salesRepPhone} | Email: {quote.company.salesRepEmail}
+              <p className="font-bold text-slate-900 text-sm tracking-tight">
+                {quote.company.salesRepName || 'Đại diện kinh doanh'}
               </p>
+              {quote.company.salesRepTitle && (
+                <p className="text-slate-600 text-[11px] font-medium">
+                  {quote.company.salesRepTitle}
+                </p>
+              )}
+              <div className="text-slate-500 text-[10px] space-y-0.5 pt-0.5">
+                {quote.company.salesRepPhone && (
+                  <p>Tel/Zalo: <span className="font-medium text-slate-700">{quote.company.salesRepPhone}</span></p>
+                )}
+                {quote.company.salesRepEmail && (
+                  <p className="break-all">Email: <span className="font-medium text-slate-700">{quote.company.salesRepEmail}</span></p>
+                )}
+              </div>
             </div>
 
           </div>

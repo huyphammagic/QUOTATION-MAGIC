@@ -43,6 +43,7 @@ recordGoldenHourFollowUpOutcome({
   }
   console.log(`✅ Test 3 Passed: Successfully recorded WON_BOOKING outcome for lead ${updated.customerName}`);
   console.log('🎉 ALL PHASE 61 TESTS PASSED SUCCESSFULLY!\n');
+  process.exit(0);
 }).catch(err => {
   console.error('Phase 61 Test Failed:', err);
   process.exit(1);

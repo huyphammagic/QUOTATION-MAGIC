@@ -17,6 +17,7 @@ import { db } from '../firebase/firebaseConfig';
 import { CustomerRecord, CustomerInfo, QuoteData } from '../../types/logistics';
 import { saveCustomersList, getSavedCustomers } from '../../utils/storage';
 import { syncHealthService } from '../integrity/syncHealthService';
+import { moduleSyncMonitor } from '../integrity/moduleSyncMonitorService';
 
 const COLLECTION_NAME = 'customers';
 
@@ -56,7 +57,14 @@ export function sanitizeCustomerRecord(customer: Partial<CustomerRecord>): Custo
   const segment = (customer.segment || 'STANDARD').trim();
   const notes = (customer.notes || '').trim();
   const createdDate = (customer.createdDate || new Date().toISOString().slice(0, 10)).trim();
+  const updatedDate = (customer.updatedDate || new Date().toISOString().slice(0, 10)).trim();
+  const isUserCreated = customer.isUserCreated !== undefined ? Boolean(customer.isUserCreated) : true;
+  const syncSource = customer.syncSource || 'CRM';
   const companyId = customer.companyId ? String(customer.companyId).trim() : undefined;
+  const salesPerson = customer.salesPerson ? String(customer.salesPerson).trim() : undefined;
+  const creditLimitVnd = typeof customer.creditLimitVnd === 'number' ? customer.creditLimitVnd : undefined;
+  const creditTermDays = typeof customer.creditTermDays === 'number' ? customer.creditTermDays : undefined;
+  const creditStatus = customer.creditStatus || undefined;
 
   const result: CustomerRecord = {
     id: custId,
@@ -72,10 +80,25 @@ export function sanitizeCustomerRecord(customer: Partial<CustomerRecord>): Custo
     segment,
     notes,
     createdDate,
+    updatedDate,
+    isUserCreated,
+    syncSource,
   };
 
   if (companyId) {
     result.companyId = companyId;
+  }
+  if (salesPerson) {
+    result.salesPerson = salesPerson;
+  }
+  if (creditLimitVnd !== undefined) {
+    result.creditLimitVnd = creditLimitVnd;
+  }
+  if (creditTermDays !== undefined) {
+    result.creditTermDays = creditTermDays;
+  }
+  if (creditStatus) {
+    result.creditStatus = creditStatus;
   }
 
   return result;
@@ -87,7 +110,7 @@ export function sanitizeCustomerRecord(customer: Partial<CustomerRecord>): Custo
  * Optionally filter by companyId for strict company isolation.
  */
 export async function fetchCustomers(forceRefresh = false, companyId?: string): Promise<CustomerRecord[]> {
-  const targetCompany = companyId || localStorage.getItem('logistics_active_company_id') || undefined;
+  const targetCompany = companyId || (typeof localStorage !== 'undefined' ? localStorage.getItem('logistics_active_company_id') : null) || undefined;
   const now = Date.now();
   if (!forceRefresh && !targetCompany && memoryCustomersCache && (now - memoryCustomersCache.cachedAt < CACHE_TTL_MS)) {
     return memoryCustomersCache.data;
@@ -132,8 +155,10 @@ export async function fetchCustomers(forceRefresh = false, companyId?: string): 
       memoryCustomersCache = { data: items, cachedAt: now };
       saveCustomersList(items);
     }
+    moduleSyncMonitor.setModuleSynced('customers', items.length);
     return items;
   } catch (error: any) {
+    moduleSyncMonitor.setModuleError('customers', error);
     // Graceful offline / unauthenticated fallback
     const local = getSavedCustomers();
     if (local && local.length > 0) {
@@ -159,33 +184,47 @@ export async function saveCustomer(customer: Partial<CustomerRecord>, fallbackCo
   }
 
   const opKey = `save_customer_${record.id}_${Date.now()}`;
-  return syncHealthService.executeWithSafeRetry(
-    opKey,
-    async () => {
-      const docRef = doc(db, COLLECTION_NAME, record.id);
-      await setDoc(docRef, {
-        ...record,
-        _updatedAt: serverTimestamp(),
-      }, { merge: true });
+  moduleSyncMonitor.setModuleSyncing('customers');
+  try {
+    const savedResult = await syncHealthService.executeWithSafeRetry(
+      opKey,
+      async () => {
+        const docRef = doc(db, COLLECTION_NAME, record.id);
+        await setDoc(docRef, {
+          ...record,
+          _updatedAt: serverTimestamp(),
+        }, { merge: true });
 
-      // Update in-memory state only after Firebase confirmation
-      const currentList = getSavedCustomers();
-      const idx = currentList.findIndex(c => c.id === record.id);
-      const updatedList = idx >= 0 
-        ? currentList.map((c, i) => i === idx ? record : c)
-        : [record, ...currentList];
-      saveCustomersList(updatedList);
-      invalidateCustomerCache();
+        // Update in-memory state only after Firebase confirmation
+        const currentList = getSavedCustomers();
+        const idx = currentList.findIndex(c => c.id === record.id);
+        const updatedList = idx >= 0 
+          ? currentList.map((c, i) => i === idx ? record : c)
+          : [record, ...currentList];
+        saveCustomersList(updatedList);
+        invalidateCustomerCache();
 
-      console.log(`[customerRepository] Saved customer ${record.code} (${record.id}) to Firestore successfully.`);
-      return record;
-    },
-    {
-      entityType: 'Customer',
-      entityId: record.id,
-      maxRetries: 3,
-    }
-  );
+        // Broadcast customer synchronization across entire system
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('customers-synchronized', { detail: updatedList }));
+          window.dispatchEvent(new CustomEvent('customer-single-updated', { detail: record }));
+        }
+
+        console.log(`[customerRepository] Saved customer ${record.code} (${record.id}) to Firestore successfully.`);
+        return record;
+      },
+      {
+        entityType: 'Customer',
+        entityId: record.id,
+        maxRetries: 3,
+      }
+    );
+    moduleSyncMonitor.setModuleSynced('customers');
+    return savedResult;
+  } catch (err: any) {
+    moduleSyncMonitor.setModuleError('customers', err);
+    throw err;
+  }
 }
 
 /**
@@ -201,6 +240,12 @@ export async function deleteCustomer(id: string): Promise<boolean> {
   const currentList = getSavedCustomers().filter(c => c.id !== id);
   saveCustomersList(currentList);
   invalidateCustomerCache();
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('customers-synchronized', { detail: currentList }));
+    window.dispatchEvent(new CustomEvent('customer-deleted', { detail: { id } }));
+  }
+
   console.log(`[customerRepository] Deleted customer ${id} from Firestore.`);
   return true;
 }
@@ -222,6 +267,11 @@ export function subscribeToCustomerCollection(onUpdate: (customers: CustomerReco
       items.sort((a, b) => (a.companyName || a.customerName || '').localeCompare(b.companyName || b.customerName || ''));
       memoryCustomersCache = { data: items, cachedAt: Date.now() };
       saveCustomersList(items);
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('customers-synchronized', { detail: items }));
+      }
+
       onUpdate(items);
     }, (err) => {
       console.warn('[customerRepository] Realtime customers snapshot notice:', err);

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Users, 
   Clock, 
@@ -29,7 +29,7 @@ import {
   ShipperHealthStatus, 
   ReEngagementPitch 
 } from '../../types/customerReengagement';
-import { QuoteData, CompanyProfile } from '../../types/logistics';
+import { QuoteData, CompanyProfile, CustomerRecord } from '../../types/logistics';
 import { 
   SAMPLE_DORMANT_CUSTOMERS, 
   getLocalReengagementAlerts, 
@@ -43,6 +43,8 @@ interface CustomerReengagementRadarModalProps {
   onClose: () => void;
   companyProfile: CompanyProfile;
   exchangeRate?: number;
+  customers?: CustomerRecord[];
+  quotes?: QuoteData[];
   onReQuotationCreated?: (quote: QuoteData) => void;
 }
 
@@ -51,9 +53,15 @@ export const CustomerReengagementRadarModal: React.FC<CustomerReengagementRadarM
   onClose,
   companyProfile,
   exchangeRate = 25400,
+  customers = [],
+  quotes = [],
   onReQuotationCreated
 }) => {
-  const [alerts, setAlerts] = useState<DormantCustomerAlert[]>(() => getLocalReengagementAlerts());
+  const [alerts, setAlerts] = useState<DormantCustomerAlert[]>(() => getLocalReengagementAlerts(customers, quotes));
+
+  useEffect(() => {
+    setAlerts(getLocalReengagementAlerts(customers, quotes));
+  }, [customers, quotes]);
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'APPROACHING_CYCLE' | 'DORMANT_30D' | 'DORMANT_60D_PLUS'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -140,12 +148,13 @@ export const CustomerReengagementRadarModal: React.FC<CustomerReengagementRadarM
                 <h3 className="text-base font-bold text-white tracking-tight">
                   Radar Tái Kích Hoạt Khách Hàng Cũ & Đơn Hàng Lặp Lại
                 </h3>
-                <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-sky-500/30 text-sky-200 border border-sky-400/30 rounded-full">
-                  Phase 58 • Lựa Chọn 2
+                <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full flex items-center gap-1">
+                  <Check className="w-3 h-3 text-emerald-400" />
+                  Đồng Bộ 100% CRM ({customers.length} KH)
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                Nhận diện khách trễ chu kỳ xuất khẩu, đón đầu trước đối thủ và tái chào giá 1-chạm (Auto Re-engagement)
+                Chỉ đánh giá và phân tích những khách hàng bạn đã tạo hoặc cập nhật trên hệ thống (Realtime Cloud Sync)
               </p>
             </div>
           </div>
@@ -266,9 +275,18 @@ export const CustomerReengagementRadarModal: React.FC<CustomerReengagementRadarM
         {/* Shippers Cards List */}
         <div className="p-6 overflow-y-auto flex-1 space-y-4">
           {filteredAlerts.length === 0 ? (
-            <div className="text-center py-12 text-slate-400">
-              <Users className="w-12 h-12 mx-auto mb-2 text-slate-300" />
-              <p className="text-sm font-medium">Không tìm thấy khách hàng nào theo bộ lọc</p>
+            <div className="text-center py-12 px-4 text-slate-500">
+              <Users className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+              <p className="text-sm font-bold text-slate-700">
+                {customers.length === 0 
+                  ? 'Chưa có khách hàng nào được tạo trên hệ thống' 
+                  : 'Tất cả khách hàng đã tạo đều đang có tương tác tốt'}
+              </p>
+              <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                {customers.length === 0
+                  ? 'Hệ thống chỉ đánh giá và phân tích những khách hàng bạn đã tạo hoặc cập nhật trên hệ thống. Hãy tạo khách hàng mới trong Danh Bạ CRM để kích hoạt Radar.'
+                  : `Trong tổng số ${customers.length} khách hàng đã tạo/cập nhật, không có khách hàng nào rơi vào tình trạng ngủ đông hoặc trễ chu kỳ.`}
+              </p>
             </div>
           ) : (
             filteredAlerts.map((alert) => {

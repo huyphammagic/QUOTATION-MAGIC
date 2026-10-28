@@ -4,7 +4,8 @@
  * revision deduplication, and role-based data analytics.
  */
 
-import { QuoteData, QuoteStatus } from '../../types/logistics';
+import { QuoteData, QuoteStatus, CustomerRecord } from '../../types/logistics';
+import { getSavedCustomers } from '../../utils/storage';
 import { 
   QuotationCommunication, 
   QuotationCustomerResponse, 
@@ -356,6 +357,7 @@ export function computeAggregatedAnalytics(params: {
   links?: QuotationSecureLink[];
   filters: AnalyticsFilterState;
   userRole: UserRole;
+  customers?: CustomerRecord[];
 }): AggregatedAnalyticsResult {
   const { 
     quotes, 
@@ -364,7 +366,8 @@ export function computeAggregatedAnalytics(params: {
     followUps = [], 
     links = [], 
     filters,
-    userRole
+    userRole,
+    customers
   } = params;
 
   // 1. Deduplicate revisions
@@ -627,7 +630,7 @@ export function computeAggregatedAnalytics(params: {
   ];
 
   // 5. Win / Loss by Dimensions (Sales, Customer, Service, Lane)
-  const buildDimensionAggregator = (keyExtractor: (d: DeduplicatedQuote) => { key: string; label: string }) => {
+  const buildDimensionAggregator = (keyExtractor: (d: DeduplicatedQuote) => { key: string; label: string } | null | undefined) => {
     const dimMap = new Map<string, {
       key: string;
       label: string;
@@ -640,7 +643,9 @@ export function computeAggregatedAnalytics(params: {
     }>();
 
     filtered.forEach(d => {
-      const { key, label } = keyExtractor(d);
+      const extracted = keyExtractor(d);
+      if (!extracted || !extracted.key) return;
+      const { key, label } = extracted;
       const currEntry = dimMap.get(key) || {
         key,
         label,
@@ -695,9 +700,31 @@ export function computeAggregatedAnalytics(params: {
     return { key: rep, label: rep };
   });
 
+  // Strict Customer Registry: Only evaluate and analyze customers created or updated on the system
+  const registeredCustomers: CustomerRecord[] = (customers && customers.length > 0)
+    ? customers
+    : getSavedCustomers();
+
+  const isMatchingRegisteredCustomer = (quoteCust: any, regCust: CustomerRecord): boolean => {
+    if (!quoteCust || !regCust) return false;
+    if (quoteCust.id && regCust.id && quoteCust.id === regCust.id) return true;
+    if (quoteCust.code && regCust.code && quoteCust.code === regCust.code) return true;
+    if (regCust.taxId && quoteCust.taxId && regCust.taxId.trim() === quoteCust.taxId.trim()) return true;
+    const qName = (quoteCust.companyName || quoteCust.customerName || '').toLowerCase().trim();
+    const rName = (regCust.companyName || regCust.customerName || '').toLowerCase().trim();
+    if (qName && rName && (qName === rName || qName.includes(rName) || rName.includes(qName))) return true;
+    return false;
+  };
+
   const winLossByCustomer = buildDimensionAggregator(d => {
-    const cust = d.activeQuote.customer?.companyName || d.activeQuote.customer?.customerName || 'Khách vãng lai';
-    return { key: cust, label: cust };
+    const quoteCust = d.activeQuote.customer;
+    const matched = registeredCustomers.find(rc => isMatchingRegisteredCustomer(quoteCust, rc));
+    if (!matched) {
+      // Exclude uncreated / generic quotes from customer-level dimension ranking
+      return null;
+    }
+    const label = matched.companyName || matched.customerName || matched.code;
+    return { key: matched.id, label };
   });
 
   const winLossByService = buildDimensionAggregator(d => {
@@ -712,102 +739,102 @@ export function computeAggregatedAnalytics(params: {
     return { key: lane, label: lane };
   });
 
-  // 6. Customer Analytics & Engagement Scoring
-  const customerMap = new Map<string, {
-    name: string;
-    quotes: DeduplicatedQuote[];
-  }>();
-
-  filtered.forEach(d => {
-    const name = d.activeQuote.customer?.companyName || d.activeQuote.customer?.customerName || 'Khách lẻ';
-    const entry = customerMap.get(name) || { name, quotes: [] };
-    entry.quotes.push(d);
-    customerMap.set(name, entry);
-  });
-
+  // 6. Customer Analytics & Engagement Scoring (Strictly user-created / updated customers)
   const customerAnalytics: CustomerAnalyticsItem[] = [];
-  customerMap.forEach(({ name, quotes: cQuotes }) => {
-    let won = 0;
-    let lost = 0;
-    let pending = 0;
-    let totalVal: CurrencyAmountMap = { USD: 0, VND: 0 };
-    let wonVal: CurrencyAmountMap = { USD: 0, VND: 0 };
-    let potentialVal: CurrencyAmountMap = { USD: 0, VND: 0 };
-    let lostVal: CurrencyAmountMap = { USD: 0, VND: 0 };
-    let lastDate = '';
 
-    cQuotes.forEach(d => {
-      const q = d.activeQuote;
-      if (!lastDate || (q.createdDate && q.createdDate > lastDate)) {
-        lastDate = q.createdDate || '';
-      }
-      const { sellingByCurrency } = computeQuoteCurrencyTotals(q);
-      totalVal = sumCurrencyMaps(totalVal, sellingByCurrency);
+  if (registeredCustomers.length > 0) {
+    registeredCustomers.forEach(regCust => {
+      const cQuotes = filtered.filter(d => isMatchingRegisteredCustomer(d.activeQuote.customer, regCust));
+      const name = regCust.companyName || regCust.customerName || regCust.code || 'Khách hàng';
 
-      if (d.isWon) {
-        won++;
-        wonVal = sumCurrencyMaps(wonVal, sellingByCurrency);
-      } else if (d.isLost) {
-        lost++;
-        lostVal = sumCurrencyMaps(lostVal, sellingByCurrency);
-      } else {
-        pending++;
-        potentialVal = sumCurrencyMaps(potentialVal, sellingByCurrency);
+      let won = 0;
+      let lost = 0;
+      let pending = 0;
+      let totalVal: CurrencyAmountMap = { USD: 0, VND: 0 };
+      let wonVal: CurrencyAmountMap = { USD: 0, VND: 0 };
+      let potentialVal: CurrencyAmountMap = { USD: 0, VND: 0 };
+      let lostVal: CurrencyAmountMap = { USD: 0, VND: 0 };
+      let lastDate = regCust.createdDate || '';
+
+      cQuotes.forEach(d => {
+        const q = d.activeQuote;
+        if (!lastDate || (q.createdDate && q.createdDate > lastDate)) {
+          lastDate = q.createdDate || '';
+        }
+        const { sellingByCurrency } = computeQuoteCurrencyTotals(q);
+        totalVal = sumCurrencyMaps(totalVal, sellingByCurrency);
+
+        if (d.isWon) {
+          won++;
+          wonVal = sumCurrencyMaps(wonVal, sellingByCurrency);
+        } else if (d.isLost) {
+          lost++;
+          lostVal = sumCurrencyMaps(lostVal, sellingByCurrency);
+        } else {
+          pending++;
+          potentialVal = sumCurrencyMaps(potentialVal, sellingByCurrency);
+        }
+      });
+
+      const dec = won + lost;
+      const rate = dec > 0 ? Math.round((won / dec) * 1000) / 10 : 0;
+
+      // Interaction response counts
+      const quoteIds = new Set(cQuotes.map(q => q.activeQuote.id));
+      const cComms = communications.filter(c => quoteIds.has(c.quotationId));
+      const cResps = responses.filter(r => quoteIds.has(r.quotationId));
+      const cLinks = links.filter(l => quoteIds.has(l.quotationId));
+
+      const sentCount = cComms.length;
+      const openedCount = cLinks.filter(l => l.viewCount > 0).length;
+      const acceptedCount = cResps.filter(r => r.responseType === 'ACCEPTED').length;
+      const rejectedCount = cResps.filter(r => r.responseType === 'REJECTED').length;
+      const revisionCount = cResps.filter(r => r.responseType === 'REVISION_REQUESTED').length;
+
+      // Engagement scoring formula (0 - 100)
+      let engagementScore = 0;
+      engagementScore += Math.round(rate * 0.4); // 40 pts max for win rate
+      const respRate = sentCount > 0 ? Math.min(1, (openedCount + acceptedCount + revisionCount) / sentCount) : 0.5;
+      engagementScore += Math.round(respRate * 30); // 30 pts for response
+      if (cQuotes.length >= 3) engagementScore += 15; else if (cQuotes.length >= 1) engagementScore += 8;
+      if (lastDate) {
+        const diffDays = (Date.now() - new Date(lastDate).getTime()) / (1000 * 3600 * 24);
+        if (diffDays <= 30) engagementScore += 15;
+        else if (diffDays <= 60) engagementScore += 8;
       }
+      if (regCust.segment === 'VIP') engagementScore = Math.min(100, engagementScore + 10);
+      engagementScore = Math.min(100, Math.max(0, engagementScore));
+
+      customerAnalytics.push({
+        customerId: regCust.id,
+        customerName: name,
+        totalQuotes: cQuotes.length,
+        wonQuotes: won,
+        lostQuotes: lost,
+        pendingQuotes: pending,
+        winRate: rate,
+        totalValueByCurrency: totalVal,
+        wonValueByCurrency: wonVal,
+        potentialValueByCurrency: potentialVal,
+        lostValueByCurrency: lostVal,
+        lastQuoteDate: lastDate,
+        quotesPerMonthAvg: Math.round((cQuotes.length / 3) * 10) / 10,
+        sentCount,
+        openedCount,
+        acceptedCount,
+        rejectedCount,
+        revisionCount,
+        engagementScore,
+      });
     });
 
-    const dec = won + lost;
-    const rate = dec > 0 ? Math.round((won / dec) * 1000) / 10 : 0;
-
-    // Interaction response counts
-    const quoteIds = new Set(cQuotes.map(q => q.activeQuote.id));
-    const cComms = communications.filter(c => quoteIds.has(c.quotationId));
-    const cResps = responses.filter(r => quoteIds.has(r.quotationId));
-    const cLinks = links.filter(l => quoteIds.has(l.quotationId));
-
-    const sentCount = cComms.length;
-    const openedCount = cLinks.filter(l => l.viewCount > 0).length;
-    const acceptedCount = cResps.filter(r => r.responseType === 'ACCEPTED').length;
-    const rejectedCount = cResps.filter(r => r.responseType === 'REJECTED').length;
-    const revisionCount = cResps.filter(r => r.responseType === 'REVISION_REQUESTED').length;
-
-    // Engagement scoring formula (0 - 100)
-    let engagementScore = 0;
-    engagementScore += Math.round(rate * 0.4); // 40 pts max for win rate
-    const respRate = sentCount > 0 ? Math.min(1, (openedCount + acceptedCount + revisionCount) / sentCount) : 0.5;
-    engagementScore += Math.round(respRate * 30); // 30 pts for response
-    if (cQuotes.length >= 3) engagementScore += 15; else if (cQuotes.length >= 1) engagementScore += 8;
-    if (lastDate) {
-      const diffDays = (Date.now() - new Date(lastDate).getTime()) / (1000 * 3600 * 24);
-      if (diffDays <= 30) engagementScore += 15;
-      else if (diffDays <= 60) engagementScore += 8;
-    }
-    engagementScore = Math.min(100, Math.max(0, engagementScore));
-
-    customerAnalytics.push({
-      customerId: `cust_${name.replace(/\s+/g, '_')}`,
-      customerName: name,
-      totalQuotes: cQuotes.length,
-      wonQuotes: won,
-      lostQuotes: lost,
-      pendingQuotes: pending,
-      winRate: rate,
-      totalValueByCurrency: totalVal,
-      wonValueByCurrency: wonVal,
-      potentialValueByCurrency: potentialVal,
-      lostValueByCurrency: lostVal,
-      lastQuoteDate: lastDate,
-      quotesPerMonthAvg: Math.round((cQuotes.length / 3) * 10) / 10,
-      sentCount,
-      openedCount,
-      acceptedCount,
-      rejectedCount,
-      revisionCount,
-      engagementScore,
+    customerAnalytics.sort((a, b) => {
+      const wonA = a.wonValueByCurrency?.['USD'] || 0;
+      const wonB = b.wonValueByCurrency?.['USD'] || 0;
+      if (wonB !== wonA) return wonB - wonA;
+      return b.totalQuotes - a.totalQuotes;
     });
-  });
-
-  customerAnalytics.sort((a, b) => (b.wonValueByCurrency?.['USD'] || 0) - (a.wonValueByCurrency?.['USD'] || 0));
+  }
 
   // 7. Sales Performance & Leaderboard
   const salesMap = new Map<string, DeduplicatedQuote[]>();

@@ -151,6 +151,10 @@ const StatementOfAccountModal = lazyWithRetry(() => import('./components/soa/Sta
 const MultiOptionQuoteModal = lazyWithRetry(() => import('./components/pricing/MultiOptionQuoteModal').then(m => ({ default: m.MultiOptionQuoteModal })), 'MultiOptionQuoteModal');
 const RoutePresetModal = lazyWithRetry(() => import('./components/routePreset/RoutePresetModal').then(m => ({ default: m.RoutePresetModal })), 'RoutePresetModal');
 const HistoricalRateAdvisorModal = lazyWithRetry(() => import('./components/pricing/HistoricalRateAdvisorModal').then(m => ({ default: m.HistoricalRateAdvisorModal })), 'HistoricalRateAdvisorModal');
+const SmartSurchargeAssistantModal = lazyWithRetry(() => import('./components/surcharge/SmartSurchargeAssistantModal').then(m => ({ default: m.SmartSurchargeAssistantModal })), 'SmartSurchargeAssistantModal');
+import { SmartSurchargeRecommendationBanner } from './components/surcharge/SmartSurchargeRecommendationBanner';
+import { SmartSurchargeEngine } from './services/surcharge/smartSurchargeEngine';
+import type { SmartSurchargeSuggestion } from './types/smartSurcharge';
 import { LiveLeadToastNotifier } from './components/telemetry/LiveLeadToastNotifier';
 import { subscribeToLiveEngagements } from './services/telemetry/customerEngagementService';
 import { QuotationEngagementSession } from './types/customerEngagement';
@@ -208,6 +212,7 @@ import { APP_ROUTES, parseRouteFromUrl, checkRoutePermission } from './navigatio
 import { RouteErrorBoundary } from './components/common/RouteErrorBoundary';
 import { AccessDeniedModal } from './components/common/AccessDeniedModal';
 import { NotFoundViewModal } from './components/common/NotFoundViewModal';
+import { ModalSkeleton, PortalSkeleton } from './components/common/SkeletonLoader';
 import { QuotationCommunicationModal } from './components/communication/QuotationCommunicationModal';
 import { loadSuppliers, loadCarriers } from './services/masterRate/supplierCarrierService';
 import { SupplierItem, CarrierItem } from './types/masterRate';
@@ -581,6 +586,43 @@ export default function App() {
   const handleApplyHistoricalRate = (updatedQuote: QuoteData, message: string) => {
     setQuote(updatedQuote);
     showToast(message);
+  };
+
+  // Smart Surcharge Suggestion Engine (Phase 83)
+  const [isSmartSurchargeModalOpen, setIsSmartSurchargeModalOpen] = useState(false);
+
+  const smartSurchargeAnalysis = useMemo(() => {
+    return SmartSurchargeEngine.analyzeQuote(quote, surcharges);
+  }, [
+    quote.shipment?.pol,
+    quote.shipment?.pod,
+    quote.shipment?.mode,
+    quote.shipment?.quantity,
+    quote.shipment?.grossWeightKg,
+    quote.shipment?.volumeCbm,
+    quote.shipment?.chargeableWeight,
+    quote.items,
+    quote.exchangeRate,
+    surcharges
+  ]);
+
+  const handleApplySmartSurcharge = (suggestion: SmartSurchargeSuggestion) => {
+    const newItem = SmartSurchargeEngine.createLineItemFromSuggestion(
+      suggestion,
+      quote.shipment,
+      quote.exchangeRate
+    );
+    handleUpdateItems([...quote.items, newItem]);
+    showToast(`⚡ Đã tự động thêm phụ phí ${suggestion.code} (${suggestion.nameVi}) vào báo giá!`);
+  };
+
+  const handleApplyAllSmartSurcharges = (suggestions: SmartSurchargeSuggestion[]) => {
+    if (suggestions.length === 0) return;
+    const newItems = suggestions.map(s =>
+      SmartSurchargeEngine.createLineItemFromSuggestion(s, quote.shipment, quote.exchangeRate)
+    );
+    handleUpdateItems([...quote.items, ...newItems]);
+    showToast(`⚡ Đã áp dụng thành công ${suggestions.length} phụ phí thông minh theo tuyến ${quote.shipment.mode}!`);
   };
 
   // Customer 360° Hub
@@ -1477,6 +1519,13 @@ export default function App() {
       }
     }, currentCompId);
 
+    const handleCustomerSyncEvent = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setCustomers(e.detail);
+      }
+    };
+    window.addEventListener('customers-synchronized', handleCustomerSyncEvent);
+
     const unsubRates = subscribeToRateMasters((cloudRates) => {
       if (Array.isArray(cloudRates)) {
         setRates(cloudRates);
@@ -1502,6 +1551,7 @@ export default function App() {
     });
 
     return () => {
+      window.removeEventListener('customers-synchronized', handleCustomerSyncEvent);
       unsubQuotes();
       unsubCustomers();
       unsubRates();
@@ -1710,6 +1760,24 @@ export default function App() {
       await saveCustomer(cust);
       const updated = await fetchCustomers(true);
       setCustomers(updated);
+      // Synchronize active quote customer details if it matches the saved customer
+      if (quote.customer && (quote.customer.id === cust.id || quote.customer.code === cust.code || (cust.taxId && quote.customer.taxId === cust.taxId))) {
+        updateQuoteState({
+          customer: {
+            ...quote.customer,
+            id: cust.id,
+            code: cust.code,
+            companyName: cust.companyName,
+            customerName: cust.customerName || cust.companyName,
+            contactPerson: cust.contactPerson || quote.customer.contactPerson,
+            taxId: cust.taxId,
+            phone: cust.phone || quote.customer.phone,
+            email: cust.email || quote.customer.email,
+            address: cust.address || quote.customer.address,
+            segment: cust.segment,
+          }
+        });
+      }
       showToast(`Đã lưu và đồng bộ 100% khách hàng [${cust.code}] lên Cloud!`);
     } catch (err: any) {
       console.error('Lỗi khi lưu khách hàng:', err);
@@ -1723,6 +1791,15 @@ export default function App() {
       await deleteCustomer(id);
       const updated = await fetchCustomers(true);
       setCustomers(updated);
+      if (quote.customer && quote.customer.id === id) {
+        updateQuoteState({
+          customer: {
+            ...quote.customer,
+            id: undefined,
+            code: undefined,
+          }
+        });
+      }
       showToast('Đã xóa thông tin khách hàng khỏi hệ thống!');
     } catch (err: any) {
       console.error('Lỗi khi xóa khách hàng:', err);
@@ -2430,7 +2507,7 @@ export default function App() {
   // If viewing a public customer secure quote link, render the dedicated portal view
   if (viewingSecureToken) {
     return (
-      <Suspense fallback={<div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Đang tải cổng thông tin bảo mật...</div>}>
+      <Suspense fallback={<PortalSkeleton />}>
         <CustomerSecureQuotePage
           token={viewingSecureToken}
           onBackToApp={() => {
@@ -2508,6 +2585,8 @@ export default function App() {
           onOpenRfqInbox={() => navigateToRoute('rfq_inbox')}
           onOpenCompetitorRadar={() => navigateToRoute('competitor_radar')}
           onOpenCustomerReengagement={() => navigateToRoute('customer_reengagement')}
+          onOpenSmartSurcharge={() => setIsSmartSurchargeModalOpen(true)}
+          smartSurchargesCount={smartSurchargeAnalysis.unappliedCount}
           onOpenValiditySurcharge={() => navigateToRoute('validity_surcharge_radar')}
           onOpenDemDetPort={() => navigateToRoute('dem_det_port_radar')}
           onOpenGoldenHourRadar={() => navigateToRoute('golden_hour_radar')}
@@ -2661,8 +2740,10 @@ export default function App() {
               onOpenAnalytics={() => setIsDashboardOpen(true)}
             />
 
-            {/* Tab 1: Chi Tiết & Bảng Cước (or ALL) */}
-            {(activeWorkspaceTab === 'DETAILS' || activeWorkspaceTab === 'ALL') && (
+            {/* Quantum Fluid View Transition Container */}
+            <div key={activeWorkspaceTab} className="quantum-view-enter space-y-4">
+              {/* Tab 1: Chi Tiết & Bảng Cước (or ALL) */}
+              {(activeWorkspaceTab === 'DETAILS' || activeWorkspaceTab === 'ALL') && (
               <>
                 {/* Top Section: Customer Info & Shipment Route Forms Side-by-Side */}
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -2691,6 +2772,18 @@ export default function App() {
                     savedQuotes={savedQuotes}
                     currentQuoteId={quote.id}
                     onOpenHistoricalRateAdvisor={() => setIsHistoricalRateAdvisorOpen(true)}
+                    onOpenSmartSurcharges={() => setIsSmartSurchargeModalOpen(true)}
+                    smartSurchargesCount={smartSurchargeAnalysis.unappliedCount}
+                  />
+                </div>
+
+                {/* Smart Surcharge Suggestion Banner (Route & Seasonality Analysis) */}
+                <div className="w-full">
+                  <SmartSurchargeRecommendationBanner
+                    quote={quote}
+                    onApplySuggestion={handleApplySmartSurcharge}
+                    onApplyAllSuggestions={handleApplyAllSmartSurcharges}
+                    customSurcharges={surcharges}
                   />
                 </div>
 
@@ -2712,6 +2805,8 @@ export default function App() {
                     onOpenCompetitorRadar={() => setIsCompetitorRadarOpen(true)}
                     onOpenRoutePresets={() => setIsRoutePresetModalOpen(true)}
                     onOpenHistoricalRateAdvisor={() => setIsHistoricalRateAdvisorOpen(true)}
+                    onOpenSmartSurcharge={() => setIsSmartSurchargeModalOpen(true)}
+                    smartSurchargesCount={smartSurchargeAnalysis.unappliedCount}
                   />
                 </div>
 
@@ -2795,6 +2890,7 @@ export default function App() {
                 )}
               </div>
             )}
+            </div>
 
           </main>
 
@@ -2840,15 +2936,8 @@ export default function App() {
         }}
       />
 
-      {/* Modals */}
-      <Suspense fallback={
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl shadow-xl px-6 py-4 flex items-center gap-3 border border-slate-200">
-            <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs font-semibold text-slate-700">Đang tải phân hệ...</span>
-          </div>
-        </div>
-      }>
+      {/* Modals with High Perceived Performance Skeleton Shimmer */}
+      <Suspense fallback={<ModalSkeleton />}>
         {isPreviewOpen && (
           <RouteErrorBoundary routeName="Xem Trước Báo Giá" onReset={handleModalClose} onNavigateHome={handleModalClose}>
             <QuotePreviewModal
@@ -3294,6 +3383,7 @@ export default function App() {
         <RouteErrorBoundary routeName="Dashboard & BI Doanh Nghiệp" onReset={handleModalClose} onNavigateHome={handleModalClose}>
           <AdvancedAnalyticsDashboard
             quotes={savedQuotes}
+            customers={customers}
             communications={allCommunications}
             customerResponses={allResponses}
             documents={allDocuments}
@@ -3753,6 +3843,8 @@ export default function App() {
             onClose={() => setIsReengagementRadarOpen(false)}
             companyProfile={company}
             exchangeRate={quote.exchangeRate || 25400}
+            customers={customers}
+            quotes={savedQuotes}
             onReQuotationCreated={(createdQuote) => {
               setQuote(createdQuote);
               setSavedQuotes(prev => [createdQuote, ...prev.filter(q => q.id !== createdQuote.id)]);
@@ -3882,6 +3974,8 @@ export default function App() {
             isOpen={isCustomerDnaOpen}
             onClose={() => setIsCustomerDnaOpen(false)}
             initialCustomerName={quote?.customer?.companyName || (quote as any)?.customerName}
+            customers={customers}
+            quotes={savedQuotes}
             onApplyPlaybookToQuote={(playbook) => {
               if (quote) {
                 const updatedNotes = quote.terms?.exclusionsNotes 
@@ -4115,6 +4209,19 @@ export default function App() {
             currentQuote={quote}
             savedQuotes={savedQuotes}
             onApplyRate={handleApplyHistoricalRate}
+          />
+        </Suspense>
+      )}
+
+      {/* Smart Surcharge Assistant Modal (Route & Seasonality Engine) */}
+      {isSmartSurchargeModalOpen && (
+        <Suspense fallback={null}>
+          <SmartSurchargeAssistantModal
+            isOpen={isSmartSurchargeModalOpen}
+            onClose={() => setIsSmartSurchargeModalOpen(false)}
+            quote={quote}
+            onApplySuggestions={handleApplyAllSmartSurcharges}
+            customSurcharges={surcharges}
           />
         </Suspense>
       )}

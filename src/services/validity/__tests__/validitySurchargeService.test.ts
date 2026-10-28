@@ -128,6 +128,7 @@ bulkPromise.then(results => {
   }
   console.log('✅ Test 5 Passed: Urgency closing messages generated for Zalo and Email');
   console.log('🎉 ALL PHASE 59 TESTS PASSED SUCCESSFULLY!\n');
+  process.exit(0);
 }).catch(err => {
   console.error('Phase 59 Test Failed:', err);
   process.exit(1);

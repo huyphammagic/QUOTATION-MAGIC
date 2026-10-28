@@ -46,6 +46,7 @@ import {
 } from '../../utils/storage';
 import { syncQuotationDeadlines } from '../deadline/deadlineService';
 import { syncHealthService } from '../integrity/syncHealthService';
+import { moduleSyncMonitor } from '../integrity/moduleSyncMonitorService';
 import { 
   saveCustomer as repoSaveCustomer, 
   fetchCustomers as repoFetchCustomers, 
@@ -301,6 +302,7 @@ export async function saveRateMasterToFirestore(rate: RateMasterItem, actor: str
   };
   if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
 
+  moduleSyncMonitor.setModuleSyncing('rates');
   try {
     const docRef = doc(db, COLLECTIONS.RATE_MASTERS, rate.id);
     await setDoc(docRef, {
@@ -317,8 +319,10 @@ export async function saveRateMasterToFirestore(rate: RateMasterItem, actor: str
 
     addRateHistoryItem(historyItem);
     saveRateMasterItem(rate);
+    moduleSyncMonitor.setModuleSynced('rates');
   } catch (error) {
     console.error('Firestore save rate master error:', error);
+    moduleSyncMonitor.setModuleError('rates', error);
     throw error;
   }
 }
@@ -328,6 +332,7 @@ export async function getRateMastersFromFirestore(): Promise<RateMasterItem[]> {
     return getSavedRateMasters();
   }
 
+  moduleSyncMonitor.setModuleSyncing('rates');
   try {
     const q = query(collection(db, COLLECTIONS.RATE_MASTERS));
     const snapshot = await getDocs(q);
@@ -338,10 +343,13 @@ export async function getRateMastersFromFirestore(): Promise<RateMasterItem[]> {
       });
       // Save to memory cache
       items.forEach(it => saveRateMasterItem(it));
+      moduleSyncMonitor.setModuleSynced('rates', items.length);
       return items;
     }
+    moduleSyncMonitor.setModuleSynced('rates', 0);
   } catch (error) {
     console.warn('Firestore load rate masters fallback to local:', error);
+    moduleSyncMonitor.setModuleError('rates', error);
   }
 
   return getSavedRateMasters();
@@ -833,14 +841,17 @@ export function subscribeToQuotations(onUpdate: (quotes: QuoteData[]) => void, _
       });
       saveQuotesList(items);
       syncHealthService.reportListenerEvent(listenerId, 'Quotation', items.length);
+      moduleSyncMonitor.setModuleSynced('quotes', items.length);
       onUpdate(items);
     }, (err) => {
       console.warn('[firestoreService] Live quotes snapshot notice:', err?.message || err);
       syncHealthService.reportListenerError(listenerId, err);
+      moduleSyncMonitor.setModuleError('quotes', err);
     });
   } catch (err) {
     console.warn('[firestoreService] Could not attach listener to quotes:', err);
     syncHealthService.reportListenerError(listenerId, err);
+    moduleSyncMonitor.setModuleError('quotes', err);
     return () => {};
   }
 }
@@ -864,14 +875,17 @@ export function subscribeToCustomers(onUpdate: (customers: CustomerRecord[]) => 
       items.sort((a, b) => (a.customerName || a.companyName || '').localeCompare(b.customerName || b.companyName || ''));
       saveCustomersList(items);
       syncHealthService.reportListenerEvent(listenerId, 'Customer', items.length);
+      moduleSyncMonitor.setModuleSynced('customers', items.length);
       onUpdate(items);
     }, (err) => {
       console.warn('[firestoreService] Live customers snapshot notice:', err?.message || err);
       syncHealthService.reportListenerError(listenerId, err);
+      moduleSyncMonitor.setModuleError('customers', err);
     });
   } catch (err) {
     console.warn('[firestoreService] Could not attach listener to customers:', err);
     syncHealthService.reportListenerError(listenerId, err);
+    moduleSyncMonitor.setModuleError('customers', err);
     return () => {};
   }
 }
@@ -895,14 +909,17 @@ export function subscribeToRateMasters(onUpdate: (rates: RateMasterItem[]) => vo
       items.sort((a, b) => (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || ''));
       items.forEach(it => saveRateMasterItem(it));
       syncHealthService.reportListenerEvent(listenerId, 'Rate', items.length);
+      moduleSyncMonitor.setModuleSynced('rates', items.length);
       onUpdate(items);
     }, (err) => {
       console.warn('[firestoreService] Live rates snapshot notice:', err?.message || err);
       syncHealthService.reportListenerError(listenerId, err);
+      moduleSyncMonitor.setModuleError('rates', err);
     });
   } catch (err) {
     console.warn('[firestoreService] Could not attach listener to rates:', err);
     syncHealthService.reportListenerError(listenerId, err);
+    moduleSyncMonitor.setModuleError('rates', err);
     return () => {};
   }
 }

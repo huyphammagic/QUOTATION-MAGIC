@@ -101,6 +101,9 @@ export interface CanonicalDocumentViewModel {
     companyTitle: string;
     companySub: string;
     companySigner: string;
+    companyRole: string;
+    companyPhone: string;
+    companyEmail: string;
     companyContact: string;
   };
 }
@@ -345,6 +348,9 @@ export function buildQuotationDocumentModel(
       : 'ĐẠI DIỆN ĐƠN VỊ BÁO GIÁ / FOR AND ON BEHALF OF',
     companySub: company.name || 'LOGISTICS COMPANY',
     companySigner: company.salesRepName || 'Đại diện kinh doanh',
+    companyRole: company.salesRepTitle || '',
+    companyPhone: company.salesRepPhone || '',
+    companyEmail: company.salesRepEmail || '',
     companyContact: [
       company.salesRepTitle,
       company.salesRepPhone ? `Tel: ${company.salesRepPhone}` : '',

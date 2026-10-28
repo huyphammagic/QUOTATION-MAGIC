@@ -691,57 +691,69 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
       {/* Bottom Row: Clean Segmented Tabs & Context Meta */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-100 pt-3">
         
-        {/* Sleek Segmented Control */}
+        {/* Sleek Cosmic Segmented Control with Laser Track Physics */}
         <div className="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-xl max-w-full overflow-x-auto [-webkit-overflow-scrolling:touch]">
           <button
             type="button"
             onClick={() => onTabChange('DETAILS')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer shrink-0 ${
+            className={`relative flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer shrink-0 press-physics-subtle focus-ring-physics-light overflow-hidden ${
               activeTab === 'DETAILS'
-                ? 'bg-white text-slate-900 shadow-2xs'
+                ? 'bg-white text-slate-900 shadow-2xs font-bold'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <Layers className="w-3.5 h-3.5 text-indigo-600" />
             <span>Chi Tiết Bảng Cước</span>
+            {activeTab === 'DETAILS' && (
+              <span className="absolute bottom-0 left-2 right-2 h-0.5 cosmic-laser-rail rounded-full shadow-[0_0_8px_rgba(56,189,248,0.8)]" />
+            )}
           </button>
 
           <button
             type="button"
             onClick={() => onTabChange('TERMS')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer shrink-0 ${
+            className={`relative flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer shrink-0 press-physics-subtle focus-ring-physics-light overflow-hidden ${
               activeTab === 'TERMS'
-                ? 'bg-white text-slate-900 shadow-2xs'
+                ? 'bg-white text-slate-900 shadow-2xs font-bold'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <FileText className="w-3.5 h-3.5 text-amber-600" />
             <span>Điều Khoản & Ngân Hàng</span>
+            {activeTab === 'TERMS' && (
+              <span className="absolute bottom-0 left-2 right-2 h-0.5 cosmic-laser-rail rounded-full shadow-[0_0_8px_rgba(56,189,248,0.8)]" />
+            )}
           </button>
 
           <button
             type="button"
             onClick={() => onTabChange('COMMUNICATION')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer shrink-0 ${
+            className={`relative flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer shrink-0 press-physics-subtle focus-ring-physics-light overflow-hidden ${
               activeTab === 'COMMUNICATION'
-                ? 'bg-white text-slate-900 shadow-2xs'
+                ? 'bg-white text-slate-900 shadow-2xs font-bold'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <MessageSquare className="w-3.5 h-3.5 text-purple-600" />
             <span>Giao Tiếp & Lịch Sử</span>
+            {activeTab === 'COMMUNICATION' && (
+              <span className="absolute bottom-0 left-2 right-2 h-0.5 cosmic-laser-rail rounded-full shadow-[0_0_8px_rgba(56,189,248,0.8)]" />
+            )}
           </button>
 
           <button
             type="button"
             onClick={() => onTabChange('ALL')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer shrink-0 ${
+            className={`relative flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer shrink-0 press-physics-subtle focus-ring-physics-light overflow-hidden ${
               activeTab === 'ALL'
-                ? 'bg-white text-slate-900 shadow-2xs'
+                ? 'bg-white text-slate-900 shadow-2xs font-bold'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <span>Toàn Bộ Trang</span>
+            {activeTab === 'ALL' && (
+              <span className="absolute bottom-0 left-2 right-2 h-0.5 cosmic-laser-rail rounded-full shadow-[0_0_8px_rgba(56,189,248,0.8)]" />
+            )}
           </button>
         </div>
 

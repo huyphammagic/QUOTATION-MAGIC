@@ -111,21 +111,25 @@ export const Navbar: React.FC<NavbarProps> = ({
         )}
       </div>
 
-      {/* Zone 2: Fast Navigation Links (Single-line, quiet hover) */}
+      {/* Zone 2: Fast Navigation Links (Single-line, quiet hover with focus & selection physics) */}
       <nav className="hidden xl:flex items-center space-x-6 text-xs font-medium text-slate-600">
         <button
           type="button"
           onClick={() => {}}
-          className="text-slate-900 font-semibold border-b-2 border-slate-900 pb-0.5 cursor-pointer"
+          className="relative text-slate-900 font-bold pb-1 cursor-pointer press-physics-subtle focus-ring-physics-light"
         >
-          Báo Giá Hiện Tại
+          <span>Báo Giá Hiện Tại</span>
+          <span className="absolute bottom-0 left-0 right-0 h-0.5 cosmic-laser-rail rounded-full shadow-[0_0_8px_rgba(56,189,248,0.8)]">
+            <span className="absolute -top-0.5 left-0 w-1 h-1 rounded-full bg-cyan-300" />
+            <span className="absolute -top-0.5 right-0 w-1 h-1 rounded-full bg-violet-400" />
+          </span>
         </button>
 
         {onOpenSavedQuotes && (
           <button
             type="button"
             onClick={onOpenSavedQuotes}
-            className="hover:text-slate-900 transition-colors cursor-pointer"
+            className="hover:text-slate-900 transition-colors cursor-pointer press-physics-subtle focus-ring-physics-light rounded-sm px-1"
           >
             Danh Sách Báo Giá ({quoteCount})
           </button>
@@ -135,7 +139,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onOpenShipments}
-            className="hover:text-slate-900 transition-colors cursor-pointer"
+            className="hover:text-slate-900 transition-colors cursor-pointer press-physics-subtle focus-ring-physics-light rounded-sm px-1"
           >
             Điều Hành Lô Hàng
           </button>
@@ -145,19 +149,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onOpenControlTower}
-            className="hover:text-slate-900 transition-colors cursor-pointer"
+            className="hover:text-slate-900 transition-colors cursor-pointer press-physics-subtle focus-ring-physics-light rounded-sm px-1"
           >
             Tháp Điều Hành
           </button>
         )}
 
-
-
         {onOpenDashboard && (
           <button
             type="button"
             onClick={() => onOpenDashboard('COCKPIT')}
-            className="flex items-center space-x-1.5 hover:text-slate-900 transition-colors cursor-pointer"
+            className="flex items-center space-x-1.5 hover:text-slate-900 transition-colors cursor-pointer press-physics-subtle focus-ring-physics-light rounded-sm px-1"
             title="Mở Bảng Điều Hành Cockpit & Báo Cáo Phân Tích BI"
           >
             <Compass className="w-3.5 h-3.5 text-indigo-600" />
@@ -169,9 +171,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onOpenEngagementRadar}
-            className={`flex items-center space-x-1.5 px-2 py-0.5 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
+            className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer press-physics focus-ring-physics-light ${
               activeEngagementsCount > 0
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-semibold'
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-semibold shadow-xs'
                 : 'text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-50'
             }`}
             title="Radar khách hàng đang xem báo giá thời gian thực"
@@ -209,12 +211,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             isUpdating={isRefreshingLiveRate}
             onRefresh={onRefreshLiveRate}
             onClick={onOpenExchangeRateModal}
-            className="hidden sm:flex"
+            className="hidden sm:flex press-physics-subtle focus-ring-physics-light"
           />
         ) : (
           <div 
             onClick={onOpenExchangeRateModal}
-            className="hidden sm:flex items-center bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs text-slate-600 space-x-1.5 cursor-pointer hover:border-blue-400 hover:bg-white transition-colors"
+            className="hidden sm:flex items-center bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs text-slate-600 space-x-1.5 cursor-pointer hover:border-blue-400 hover:bg-white transition-all press-physics-subtle focus-ring-physics-light"
             title="Bấm để mở Trung tâm Tỷ giá USD Realtime Vietcombank"
           >
             <span className="relative flex h-2 w-2">
@@ -232,7 +234,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onNewQuote}
-            className="flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
+            className="flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs px-3.5 py-1.5 rounded-lg shadow-sm hover:shadow transition-all cursor-pointer press-physics focus-ring-physics-light"
             title="Tạo báo giá mới sạch"
           >
             <Plus className="w-3.5 h-3.5" />

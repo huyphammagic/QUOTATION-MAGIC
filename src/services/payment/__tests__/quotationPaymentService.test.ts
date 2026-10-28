@@ -67,3 +67,4 @@ console.assert(metrics.collectionRatePercent > 0, 'Collection rate should be > 0
 console.log(`✓ Test 6: Payment metrics calculated (Total Receivable: $${metrics.totalReceivableUsd.toLocaleString()}, Rate: ${metrics.collectionRatePercent}%)`);
 
 console.log('--- ALL QUOTATION PAYMENT TESTS PASSED SUCCESSFULLY! ---');
+process.exit(0);

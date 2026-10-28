@@ -153,6 +153,7 @@ async function runSmartRfqVerification() {
   console.log(`   ✅ Line Items generated: ${q.items.length} items (${q.items.map(i => i.description.slice(0, 20)).join(', ')}...)\n`);
 
   console.log('🎉 All Phase 56 Smart RFQ Inbox & 5-Second Quote Generator tests passed successfully!');
+  process.exit(0);
 }
 
 runSmartRfqVerification().catch(err => {

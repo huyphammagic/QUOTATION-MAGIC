@@ -16,6 +16,7 @@ import {
 import { db } from '../firebase/firebaseConfig';
 import { QuoteData } from '../../types/logistics';
 import { syncHealthService, classifyErrorToSaveState } from '../integrity/syncHealthService';
+import { moduleSyncMonitor } from '../integrity/moduleSyncMonitorService';
 import { recordHealthAudit } from '../audit/systemHealthAuditService';
 
 import { validateQuotationIntegrity, isQuotationLocked } from '../integrity/quotationIntegrityEngine';
@@ -58,7 +59,7 @@ export interface SaveQuotationResult {
  * Does NOT scan entire database blindly; uses limits and sorting.
  */
 export async function fetchQuotations(options: FetchQuotationsOptions = {}): Promise<QuoteData[]> {
-  const targetCompany = options.companyId || localStorage.getItem('logistics_active_company_id') || undefined;
+  const targetCompany = options.companyId || (typeof localStorage !== 'undefined' ? localStorage.getItem('logistics_active_company_id') : null) || undefined;
   const { status, customerId, limitCount = 50, forceRefresh = false } = options;
 
   // 1. Check in-memory cache if no specific filters
@@ -135,8 +136,10 @@ export async function fetchQuotations(options: FetchQuotationsOptions = {}): Pro
       };
     }
 
+    moduleSyncMonitor.setModuleSynced('quotes', items.length);
     return items.length > 0 ? items : (memoryQuotesCache ? memoryQuotesCache.data : []);
   } catch (error: any) {
+    moduleSyncMonitor.setModuleError('quotes', error);
     if (memoryQuotesCache) return memoryQuotesCache.data;
     return [];
   }
@@ -225,6 +228,7 @@ export async function saveQuotation(
     entityId: quoteId,
     action: 'UPDATE',
   });
+  moduleSyncMonitor.setModuleSyncing('quotes');
 
   try {
     const docRef = doc(db, COLLECTION_NAME, quoteId);
@@ -342,6 +346,7 @@ export async function saveQuotation(
 
     syncHealthService.setSaveState('SAVED_TO_CLOUD', `Đã lưu thành công lên Cloud (v${newVersion})`);
     syncHealthService.endOperation(opKey, true);
+    moduleSyncMonitor.setModuleSynced('quotes');
 
     return {
       success: true,
@@ -354,6 +359,7 @@ export async function saveQuotation(
     const classified = classifyErrorToSaveState(error);
     syncHealthService.setSaveState(classified.state, classified.messageVi);
     syncHealthService.endOperation(opKey, false, error);
+    moduleSyncMonitor.setModuleError('quotes', error);
     return {
       success: false,
       conflict: false,

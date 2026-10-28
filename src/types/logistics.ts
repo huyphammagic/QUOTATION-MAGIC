@@ -162,6 +162,10 @@ export interface CustomerRecord extends CustomerInfo {
   segment?: string; // VIP, STRATEGIC, STANDARD
   notes?: string;
   createdDate?: string;
+  updatedDate?: string;
+  isUserCreated?: boolean;
+  syncSource?: string;
+  lastEvaluatedAt?: string;
 }
 
 export type SurchargeTransportMode = 'SEA_FCL' | 'SEA_LCL' | 'AIR' | 'ROAD' | 'CUSTOMS' | 'ALL';

@@ -168,6 +168,7 @@ async function runRuntimeSuite() {
   console.log('\n================================================================');
   console.log('ALL RUNTIME VERIFICATION SUITE CHECKS COMPLETED SUCCESSFULLY!');
   console.log('================================================================\n');
+  process.exit(0);
 }
 
 runRuntimeSuite().catch((err) => {
