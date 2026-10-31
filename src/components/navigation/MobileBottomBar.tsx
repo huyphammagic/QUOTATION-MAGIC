@@ -20,10 +20,12 @@ import {
 } from 'lucide-react';
 import { QuoteData } from '../../types/logistics';
 import { formatUSD, formatVND } from '../../utils/formatters';
+import { RollingNumberTicker } from '../common/RollingNumberTicker';
 
 interface MobileBottomBarProps {
   quote: QuoteData;
   isSaving?: boolean;
+  hasUnsavedChanges?: boolean;
   onOpenSidebar: () => void;
   onOpenAddFee: () => void;
   onOpenPreview: () => void;
@@ -40,6 +42,7 @@ interface MobileBottomBarProps {
 export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
   quote,
   isSaving = false,
+  hasUnsavedChanges = false,
   onOpenSidebar,
   onOpenAddFee,
   onOpenPreview,
@@ -53,10 +56,17 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
   onOpenSavedQuotes,
 }) => {
   const [isActionsSheetOpen, setIsActionsSheetOpen] = useState(false);
+  const isVnd = quote.quoteCurrency === 'VND';
+  const margin = quote.overallMarginPercent || 0;
+  const ledGlowClass = margin >= 15 
+    ? 'margin-led-bar-emerald' 
+    : margin >= 8 
+    ? 'margin-led-bar-amber' 
+    : 'margin-led-bar-rose';
 
-  const totalAmount = quote.quoteCurrency === 'USD' 
-    ? formatUSD(quote.grandTotalUsd || quote.subtotalUsd || 0) 
-    : formatVND(quote.grandTotalVnd || quote.subtotalVnd || 0);
+  const numericTotal = isVnd 
+    ? (quote.grandTotalVnd || quote.subtotalVnd || 0)
+    : (quote.grandTotalUsd || quote.subtotalUsd || 0);
 
   return (
     <>
@@ -86,7 +96,15 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
                 Thao Tác Nhanh Trên Điện Thoại
               </h3>
               <p className="text-[11px] text-slate-500">
-                Báo giá: <strong className="text-slate-800">{quote.quoteNumber || 'Bản nháp'}</strong> • Tổng: <strong className="text-blue-600">{totalAmount}</strong>
+                Báo giá: <strong className="text-slate-800">{quote.quoteNumber || 'Bản nháp'}</strong> • Tổng:{' '}
+                <strong className="text-blue-600 font-mono">
+                  <RollingNumberTicker 
+                    value={numericTotal}
+                    prefix={isVnd ? '' : '$'}
+                    suffix={isVnd ? ' ₫' : ''}
+                    decimals={isVnd ? 0 : 2}
+                  />
+                </strong>
               </p>
             </div>
             <button
@@ -217,10 +235,13 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
 
       {/* Floating Bottom Navigation Bar */}
       <nav 
-        className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-2xl px-2 py-1.5 lg:hidden select-none"
+        className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-2xl px-2 py-1.5 lg:hidden select-none relative overflow-hidden"
         aria-label="Thanh điều hướng di động"
         style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}
       >
+        {/* Micro-LED Margin Glow Bar */}
+        <div className={`h-[2px] w-full absolute top-0 left-0 right-0 ${ledGlowClass}`} />
+
         <div className="max-w-md mx-auto grid grid-cols-5 gap-1 items-center">
           
           {/* Button 1: Menu (Open Sidebar) */}
@@ -263,16 +284,28 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
             type="button"
             onClick={onSaveQuote}
             disabled={isSaving}
-            className="flex flex-col items-center justify-center py-1 px-1 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:scale-95 disabled:opacity-50 transition cursor-pointer"
+            className={`flex flex-col items-center justify-center py-1 px-1 rounded-xl active:scale-95 disabled:opacity-50 transition cursor-pointer relative ${
+              hasUnsavedChanges
+                ? 'text-emerald-700 bg-emerald-50/80 btn-save-unsaved-pulse'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
             aria-label="Lưu báo giá"
           >
             {isSaving ? (
               <RotateCcw className="w-5 h-5 text-indigo-600 animate-spin" />
             ) : (
-              <Save className="w-5 h-5 text-emerald-600" />
+              <div className="relative">
+                <Save className={`w-5 h-5 ${hasUnsavedChanges ? 'text-emerald-600 drop-shadow-[0_0_4px_rgba(16,185,129,0.5)]' : 'text-emerald-600'}`} />
+                {hasUnsavedChanges && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-xs" />
+                  </span>
+                )}
+              </div>
             )}
             <span className="text-[10px] font-semibold mt-0.5 tracking-tight">
-              {isSaving ? 'Đang lưu' : 'Lưu Cloud'}
+              {isSaving ? 'Đang lưu' : hasUnsavedChanges ? 'Lưu ngay' : 'Lưu Cloud'}
             </span>
           </button>
 

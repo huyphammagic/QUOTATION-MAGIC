@@ -13,8 +13,10 @@ import {
   X, 
   ShieldCheck, 
   Weight, 
-  AlertCircle 
+  AlertCircle,
+  Sparkles
 } from 'lucide-react';
+import { ContainerCargoSimulator } from './simulation/ContainerCargoSimulator';
 
 interface ShipmentContainerManagerProps {
   containers: ShipmentContainer[];
@@ -56,6 +58,7 @@ export const ShipmentContainerManager: React.FC<ShipmentContainerManagerProps> =
   activeLanguage = 'vi',
 }) => {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCargoSimulator, setShowCargoSimulator] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Form state
@@ -147,17 +150,58 @@ export const ShipmentContainerManager: React.FC<ShipmentContainerManagerProps> =
           </p>
         </div>
 
-        {!readOnly && (
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={handleOpenAdd}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-colors"
+            onClick={() => setShowCargoSimulator(!showCargoSimulator)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+              showCargoSimulator
+                ? 'bg-amber-400 border-amber-500 text-slate-950 shadow-xs font-bold'
+                : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-amber-400'
+            }`}
           >
-            <Plus className="w-3.5 h-3.5" />
-            {activeLanguage === 'vi' ? 'Thêm Container' : 'Add Container'}
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <span>{showCargoSimulator ? (activeLanguage === 'vi' ? 'Ẩn Mô Phỏng 3D' : 'Hide 3D Sim') : (activeLanguage === 'vi' ? 'Mô Phỏng Xếp Dỡ 3D' : '3D Stowage Sim')}</span>
           </button>
-        )}
+
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={handleOpenAdd}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              {activeLanguage === 'vi' ? 'Thêm Container' : 'Add Container'}
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Embedded 3D Cargo Load Simulator Panel */}
+      {showCargoSimulator && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs font-bold text-amber-500 flex items-center gap-1.5">
+              <Box className="w-4 h-4" />
+              {activeLanguage === 'vi' ? 'Mô Phỏng Tải Trọng & Xếp Dỡ Thực Nghiệm' : '3D Cargo Stowage Simulator'}
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowCargoSimulator(false)}
+              className="text-xs text-slate-400 hover:text-slate-200 cursor-pointer"
+            >
+              ✕ {activeLanguage === 'vi' ? 'Đóng' : 'Close'}
+            </button>
+          </div>
+          <ContainerCargoSimulator
+            containerType={containers[0]?.containerType || "40'HC"}
+            quantity={containers.length || 1}
+            grossWeightKg={containers.reduce((acc, c) => acc + (c.grossWeightKg || 0), 0) || 18500}
+            volumeCbm={containers.length ? containers.length * 35 : 45}
+            commodity="Hàng hóa container xuất nhập khẩu"
+          />
+        </div>
+      )}
 
       {/* Container Cards / Table */}
       {containers.length === 0 ? (

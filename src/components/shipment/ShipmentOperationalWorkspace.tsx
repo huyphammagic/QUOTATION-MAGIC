@@ -34,8 +34,13 @@ import {
   ListFilter,
   ArrowUpDown,
   Building2,
-  ShieldAlert
+  ShieldAlert,
+  Compass,
+  Box,
+  Sparkles
 } from 'lucide-react';
+import { RouteParticleBeamMap } from './simulation/RouteParticleBeamMap';
+import { ContainerCargoSimulator } from './simulation/ContainerCargoSimulator';
 
 interface ShipmentOperationalWorkspaceProps {
   companyId: string;
@@ -74,7 +79,9 @@ export const ShipmentOperationalWorkspace: React.FC<ShipmentOperationalWorkspace
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<ShipmentStatus | 'ALL'>('ALL');
   const [selectedMode, setSelectedMode] = useState<ShipmentServiceMode | 'ALL'>('ALL');
-  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'simulation'>('list');
+  const [simShipmentId, setSimShipmentId] = useState<string | null>(null);
+  const [simViewTab, setSimViewTab] = useState<'route' | 'cargo'>('route');
 
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -145,6 +152,14 @@ export const ShipmentOperationalWorkspace: React.FC<ShipmentOperationalWorkspace
       return true;
     });
   }, [shipments, selectedStatus, selectedMode, searchQuery]);
+
+  const activeSimShipment = useMemo(() => {
+    if (simShipmentId) {
+      const found = filteredShipments.find(s => s.id === simShipmentId);
+      if (found) return found;
+    }
+    return filteredShipments[0] || null;
+  }, [filteredShipments, simShipmentId]);
 
   const getModeIcon = (mode: ShipmentServiceMode) => {
     switch (mode) {
@@ -329,6 +344,18 @@ export const ShipmentOperationalWorkspace: React.FC<ShipmentOperationalWorkspace
             <Kanban className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Kanban</span>
           </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('simulation')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+              viewMode === 'simulation'
+                ? 'bg-cyan-500 text-slate-950 font-bold shadow-2xs'
+                : 'text-slate-500 dark:text-slate-400 hover:text-cyan-500'
+            }`}
+          >
+            <Compass className={`w-3.5 h-3.5 ${viewMode === 'simulation' ? 'text-slate-950 animate-spin-slow' : 'text-cyan-500'}`} />
+            <span className="hidden sm:inline">{activeLanguage === 'vi' ? 'Mô Phỏng 3D / Hải Trình' : '3D Sim & Radar'}</span>
+          </button>
         </div>
       </div>
 
@@ -460,7 +487,7 @@ export const ShipmentOperationalWorkspace: React.FC<ShipmentOperationalWorkspace
             </tbody>
           </table>
         </div>
-      ) : (
+      ) : viewMode === 'kanban' ? (
         /* KANBAN BOARD VIEW */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 overflow-x-auto pb-4">
           {[
@@ -542,6 +569,124 @@ export const ShipmentOperationalWorkspace: React.FC<ShipmentOperationalWorkspace
               </div>
             );
           })}
+        </div>
+      ) : (
+        /* SIMULATION & RADAR VIEW (EFFECTS 3 & 4) */
+        <div className="space-y-6">
+          {activeSimShipment ? (
+            <>
+              {/* Simulation Header & Fast Selector */}
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 text-slate-950 font-bold shadow-md shadow-cyan-500/20">
+                    <Compass className="w-5 h-5 text-slate-950 animate-spin-slow" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm font-bold text-slate-900 dark:text-slate-100">
+                        {activeSimShipment.shipmentNumber}
+                      </span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-300 font-semibold">
+                        {activeSimShipment.serviceMode}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {activeSimShipment.customerName} • {activeSimShipment.origin} ➔ {activeSimShipment.destination}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 flex-wrap">
+                  {/* Selector for other shipments */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
+                      {activeLanguage === 'vi' ? 'Chọn lô hàng:' : 'Select shipment:'}
+                    </label>
+                    <select
+                      value={activeSimShipment.id}
+                      onChange={(e) => setSimShipmentId(e.target.value)}
+                      className="text-xs font-semibold rounded-lg px-3 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-cyan-500 cursor-pointer"
+                    >
+                      {filteredShipments.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.shipmentNumber} - {s.customerName} ({s.origin} ➔ {s.destination})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedShipment(activeSimShipment)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition cursor-pointer"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>{activeLanguage === 'vi' ? 'Mở Chi Tiết Lô Hàng' : 'View Full Details'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Sub Mode Toggle Bar */}
+              <div className="p-3 bg-slate-900 dark:bg-slate-950 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSimViewTab('route')}
+                    className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                      simViewTab === 'route'
+                        ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+                        : 'text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800'
+                    }`}
+                  >
+                    <Compass className="w-4 h-4" />
+                    {activeLanguage === 'vi' ? 'Hiệu Ứng 4: Tia Hạt Hải Trình POL ➔ POD (Great-Circle Beam)' : 'Route Particle Beam Map'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSimViewTab('cargo')}
+                    className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                      simViewTab === 'cargo'
+                        ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-400/20'
+                        : 'text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800'
+                    }`}
+                  >
+                    <Box className="w-4 h-4" />
+                    {activeLanguage === 'vi' ? 'Hiệu Ứng 3: Mô Phỏng Tải Trọng Cont / Air Cargo 3D' : '3D Cargo Load Simulator'}
+                  </button>
+                </div>
+
+                <div className="text-2xs text-slate-400 font-mono hidden md:flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                  <span>Real-time Geodesic Arc & Stowage Computing Engine</span>
+                </div>
+              </div>
+
+              {/* Active Simulation Content */}
+              {simViewTab === 'route' ? (
+                <RouteParticleBeamMap
+                  pol={activeSimShipment.origin}
+                  pod={activeSimShipment.destination}
+                  mode={activeSimShipment.serviceMode}
+                  transitTimeDays={activeSimShipment.transitTimeDays}
+                  carrier={activeSimShipment.carrierName}
+                  etd={activeSimShipment.etdPlanned || activeSimShipment.etdActual}
+                  eta={activeSimShipment.etaPlanned || activeSimShipment.etaActual}
+                />
+              ) : (
+                <ContainerCargoSimulator
+                  containerType={activeSimShipment.containers?.[0]?.containerType || (activeSimShipment.serviceMode === 'AIR' ? 'PMC' : "40'HC")}
+                  quantity={activeSimShipment.containers?.length || 1}
+                  grossWeightKg={activeSimShipment.grossWeightKg || 18500}
+                  volumeCbm={activeSimShipment.volumeCbm || 52}
+                  commodity={activeSimShipment.commodity || 'Điện tử & Thiết bị viễn thông'}
+                />
+              )}
+            </>
+          ) : (
+            <div className="p-12 text-center rounded-2xl border border-slate-800 bg-slate-900/40 text-slate-400 text-xs">
+              {activeLanguage === 'vi' ? 'Chưa có lô hàng nào để kích hoạt mô phỏng hải trình.' : 'No active shipment selected for simulation.'}
+            </div>
+          )}
         </div>
       )}
 

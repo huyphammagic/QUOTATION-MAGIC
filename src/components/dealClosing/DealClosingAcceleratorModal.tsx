@@ -40,6 +40,7 @@ import {
   generateMultiChannelClosingPitch, 
   recordDealClosingOutcome 
 } from '../../services/dealClosing/dealClosingService';
+import { GoldenBurstCelebration, DealCelebrationData } from '../common/GoldenBurstCelebration';
 
 interface DealClosingAcceleratorModalProps {
   isOpen: boolean;
@@ -99,6 +100,9 @@ export const DealClosingAcceleratorModal: React.FC<DealClosingAcceleratorModalPr
     shipmentId?: string;
   } | null>(null);
 
+  // Hiệu ứng 7: Trạng thái Chùm hạt vàng kim vinh danh chốt deal
+  const [celebrationData, setCelebrationData] = useState<DealCelebrationData | null>(null);
+
   // Sync initial proposal when quote changes
   useEffect(() => {
     if (quotation) {
@@ -107,6 +111,7 @@ export const DealClosingAcceleratorModal: React.FC<DealClosingAcceleratorModalPr
       setProposedTotal(tot);
       setDiscountInput(0);
       setWonSuccessState(null);
+      setCelebrationData(null);
     }
   }, [quotation]);
 
@@ -223,6 +228,17 @@ export const DealClosingAcceleratorModal: React.FC<DealClosingAcceleratorModalPr
 
       setWonSuccessState({
         isWon: true,
+        shipmentId: result.createdShipmentId
+      });
+
+      // Hiệu ứng 7: Kích hoạt Chùm hạt vàng kim quang học vinh danh chốt deal
+      setCelebrationData({
+        quoteNumber,
+        customerName,
+        totalAmount: proposedTotal,
+        currency,
+        profit: simulation.simulatedNetProfit,
+        marginPercent: simulation.simulatedMarginPercent,
         shipmentId: result.createdShipmentId
       });
 
@@ -1004,6 +1020,14 @@ export const DealClosingAcceleratorModal: React.FC<DealClosingAcceleratorModalPr
             </button>
           </div>
         </div>
+
+        {/* Hiệu ứng 7: Chùm hạt vàng kim khi Chốt Deal Thành Công */}
+        <GoldenBurstCelebration
+          isOpen={Boolean(celebrationData)}
+          onClose={() => setCelebrationData(null)}
+          data={celebrationData}
+          onOpenShipment={onOpenShipmentDetail}
+        />
 
       </div>
     </div>

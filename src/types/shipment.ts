@@ -174,6 +174,7 @@ export interface ShipmentRecord {
   etaSource?: 'CARRIER' | 'USER_CONFIRMED' | 'SYSTEM';
   etaConfidence?: 'HIGH' | 'MEDIUM' | 'LOW' | 'UNCONFIRMED';
   etaLastUpdatedAt?: string;
+  transitTimeDays?: number;
   lastOperationalEventId?: string;
   lastOperationalEventTime?: string;
   lastOperationalEventTitle?: string;

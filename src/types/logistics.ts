@@ -60,6 +60,20 @@ export type QuoteStatus =
   | 'EXPIRED' 
   | 'CANCELLED';
 
+export type SalesRoadmapStage = 
+  | 'PROSPECTING'    // 1. Tiếp cận (Xác định khách hàng, lịch sử tín dụng & nhu cầu sơ bộ)
+  | 'RFQ'            // 2. Tiếp nhận RFQ (Chi tiết tuyến cảng, quy cách hàng, Incoterms, mã HS)
+  | 'QUOTATION'      // 3. Lập Báo giá (Xây dựng cơ cấu cước, tối ưu margin, so sánh đa phương án)
+  | 'NEGOTIATION'    // 4. Đàm phán (Thương lượng cước & free time, bảo vệ sàn giá Concession Guard)
+  | 'DEAL_CLOSED';   // 5. Chốt Deal (Khách ký duyệt, cấp Booking, chuyển giao lô hàng & nổ pháo hoa)
+
+export interface SalesRoadmapHistoryItem {
+  stage: SalesRoadmapStage;
+  timestamp: string;
+  notes?: string;
+  updatedBy?: string;
+}
+
 export type IncotermCode = 'FOB' | 'CIF' | 'EXW' | 'DDP' | 'DAP' | 'CFR' | 'FCA' | 'CPT' | 'CIP' | 'DPU';
 
 export type ChargeBasis = 
@@ -266,6 +280,8 @@ export interface QuoteData {
   createdDate: string;
   updatedDate: string;
   status: QuoteStatus;
+  salesStage?: SalesRoadmapStage; // 5 Giai đoạn Smart Sales Roadmap: Tiếp cận -> RFQ -> Báo giá -> Đàm phán -> Chốt deal
+  salesStageHistory?: SalesRoadmapHistoryItem[];
   quoteCurrency?: QuoteCurrency; // 'USD' | 'VND' - Loại tiền chính hiển thị trên file báo giá (Mặc định USD)
   exchangeRate: number;     // E.g. 25400 VND/USD
   customer: CustomerInfo;

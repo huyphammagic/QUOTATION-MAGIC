@@ -82,6 +82,18 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
   const [activeLegFilter, setActiveLegFilter] = useState<ChargeLocation | 'ALL'>('ALL');
   const presetDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Hiệu ứng 5: Ánh quang nhận diện cập nhật giá (Diff Luminescence Ripple State)
+  const [diffGlowCells, setDiffGlowCells] = useState<Record<string, 'emerald' | 'amber' | 'cyan'>>({});
+  const [diffGlowRows, setDiffGlowRows] = useState<Record<string, boolean>>({});
+  const cellTimersRef = useRef<Record<string, any>>({});
+
+  useEffect(() => {
+    return () => {
+      // Cleanup all active timers on unmount
+      Object.values(cellTimersRef.current).forEach((t) => clearTimeout(t));
+    };
+  }, []);
+
   // Add Fee Search & Custom Modal State
   const [isAddFeeModalOpen, setIsAddFeeModalOpen] = useState(false);
   const [addFeeLocation, setAddFeeLocation] = useState<ChargeLocation>('POL');
@@ -203,8 +215,54 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
     setIsPresetDropdownOpen(false);
   };
 
-  // Update line item
+  // Update line item with Diff Luminescence Ripple Trigger (Hiệu ứng 5)
   const handleItemChange = (id: string, field: keyof LineItem, value: any) => {
+    const oldItem = items.find((i) => i.id === id);
+
+    // Hiệu ứng 5: Nhận diện biến động giá bán, giá vốn, số lượng hoặc tiền tệ
+    if (oldItem && (field === 'unitPrice' || field === 'costPrice' || field === 'quantity' || field === 'currency')) {
+      let glow: 'emerald' | 'amber' | 'cyan' = 'cyan';
+      if (field === 'unitPrice') {
+        const oldP = Number(oldItem.unitPrice || 0);
+        const newP = Number(value || 0);
+        glow = newP >= oldP ? 'emerald' : 'amber';
+      } else if (field === 'costPrice') {
+        const oldC = Number(oldItem.costPrice || 0);
+        const newC = Number(value || 0);
+        // Cost giảm là tin tốt (emerald), cost tăng là cảnh báo (amber)
+        glow = newC <= oldC ? 'emerald' : 'amber';
+      } else if (field === 'currency') {
+        glow = 'cyan';
+      } else if (field === 'quantity') {
+        glow = 'cyan';
+      }
+
+      const cellKey = `${id}:${String(field)}`;
+      const rowKey = id;
+
+      if (cellTimersRef.current[cellKey]) clearTimeout(cellTimersRef.current[cellKey]);
+      if (cellTimersRef.current[rowKey]) clearTimeout(cellTimersRef.current[rowKey]);
+
+      setDiffGlowCells((prev) => ({ ...prev, [cellKey]: glow }));
+      setDiffGlowRows((prev) => ({ ...prev, [rowKey]: true }));
+
+      cellTimersRef.current[cellKey] = setTimeout(() => {
+        setDiffGlowCells((prev) => {
+          const next = { ...prev };
+          delete next[cellKey];
+          return next;
+        });
+      }, 1800);
+
+      cellTimersRef.current[rowKey] = setTimeout(() => {
+        setDiffGlowRows((prev) => {
+          const next = { ...prev };
+          delete next[rowKey];
+          return next;
+        });
+      }, 1800);
+    }
+
     const updated = items.map((item) => {
       if (item.id === id) {
         let itemCopy: LineItem = { ...item, [field]: value };
@@ -362,6 +420,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
     const isLast = realIndex === items.length - 1;
     const isBeingDragged = draggedItemId === item.id;
     const isDragTarget = dragOverItemId === item.id;
+    const isRowDiffGlowing = Boolean(diffGlowRows[item.id]);
 
     return (
       <tr 
@@ -374,7 +433,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
           isDragTarget && dragOverPosition === 'top' ? 'border-t-2 border-t-blue-600 bg-blue-50/30' : ''
         } ${
           isDragTarget && dragOverPosition === 'bottom' ? 'border-b-2 border-b-blue-600 bg-blue-50/30' : ''
-        }`}
+        } ${isRowDiffGlowing ? 'diff-row-ripple' : ''}`}
       >
         {/* Col 1: Thứ Tự & Kéo Thả / Di Chuyển Vị Trí */}
         <td className="py-2 px-1 text-center align-middle w-16 text-slate-400 select-none">
@@ -517,7 +576,9 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
               step="any"
               value={item.quantity}
               onChange={(e) => handleItemChange(item.id, 'quantity', Number(e.target.value) || 0)}
-              className="w-full px-2 py-1 text-xs font-mono font-bold text-right text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-slate-800"
+              className={`w-full px-2 py-1 text-xs font-mono font-bold text-right text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-slate-800 transition-all ${
+                diffGlowCells[`${item.id}:quantity`] === 'cyan' ? 'diff-luminescence-cyan ring-1 ring-sky-400' : ''
+              }`}
             />
             <input
               type="text"
@@ -533,7 +594,15 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
         <td className={`py-2.5 px-2.5 align-top w-[170px] ${isLoss ? 'bg-rose-50/40' : 'bg-blue-50/15'}`}>
           <div className="space-y-1.5">
             {/* Input price + currency toggle group */}
-            <div className="flex items-center rounded-lg border border-blue-200 bg-white overflow-hidden shadow-2xs focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
+            <div className={`flex items-center rounded-lg border border-blue-200 bg-white overflow-hidden shadow-2xs focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all ${
+              diffGlowCells[`${item.id}:unitPrice`] === 'emerald'
+                ? 'diff-luminescence-emerald ring-2 ring-emerald-500/80'
+                : diffGlowCells[`${item.id}:unitPrice`] === 'amber'
+                ? 'diff-luminescence-amber ring-2 ring-amber-500/80'
+                : diffGlowCells[`${item.id}:currency`]
+                ? 'diff-luminescence-cyan ring-2 ring-sky-500/80'
+                : ''
+            }`}>
               <input
                 type="number"
                 min="0"
@@ -580,7 +649,13 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
           <td className="py-2.5 px-2.5 align-top w-[155px] bg-amber-50/25 border-l border-r border-amber-100">
             <div className="space-y-1.5">
               {/* Cost input */}
-              <div className="flex items-center rounded-lg border border-amber-200 bg-white overflow-hidden shadow-2xs focus-within:border-amber-400">
+              <div className={`flex items-center rounded-lg border border-amber-200 bg-white overflow-hidden shadow-2xs focus-within:border-amber-400 transition-all ${
+                diffGlowCells[`${item.id}:costPrice`] === 'emerald'
+                  ? 'diff-luminescence-emerald ring-2 ring-emerald-500/80'
+                  : diffGlowCells[`${item.id}:costPrice`] === 'amber'
+                  ? 'diff-luminescence-amber ring-2 ring-amber-500/80'
+                  : ''
+              }`}>
                 <input
                   type="number"
                   min="0"
@@ -621,7 +696,9 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
         {/* Col 7: Thành Tiền (USD & VND Stacked cleanly without column clutter) */}
         <td className="py-2.5 px-3 align-top text-right w-[155px]">
           <div className="space-y-1 pt-1">
-            <div className="font-mono font-bold text-slate-900 text-sm tracking-tight">
+            <div className={`font-mono font-bold text-slate-900 text-sm tracking-tight transition-all rounded px-1.5 py-0.5 inline-block ${
+              isRowDiffGlowing ? 'bg-emerald-50 text-emerald-900 ring-1 ring-emerald-300' : ''
+            }`}>
               {formatUSD(item.amountUsd)}
             </div>
             <div className="font-mono text-[11px] text-slate-500 font-normal">

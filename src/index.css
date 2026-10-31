@@ -141,6 +141,17 @@
     }
   }
 
+  /* Subtle Shake Animation for empty required inputs */
+  @keyframes fieldShake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-4px); }
+    40%, 80% { transform: translateX(4px); }
+  }
+
+  .animate-field-shake {
+    animation: fieldShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  }
+
   /* -------------------------------------------------------------------------- */
   /* 2. Selection & Focus Physics Utilities (Tactile Interaction Engine)        */
   /* -------------------------------------------------------------------------- */
@@ -486,18 +497,20 @@
     right: -50%;
     background: linear-gradient(
       105deg,
-      transparent 35%,
-      rgba(255, 255, 255, 0.12) 48%,
-      rgba(56, 189, 248, 0.16) 52%,
-      transparent 65%
+      transparent 30%,
+      rgba(255, 255, 255, 0.1) 46%,
+      rgba(56, 189, 248, 0.18) 50%,
+      rgba(255, 255, 255, 0.1) 54%,
+      transparent 70%
     );
-    transform: translateX(-150%) skewX(-20deg);
+    transform: translateX(-160%) skewX(-20deg);
     pointer-events: none;
+    will-change: transform;
     transition: transform 0s;
   }
   .cosmic-card-sheen:hover::after {
-    transform: translateX(150%) skewX(-20deg);
-    transition: transform 750ms cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateX(160%) skewX(-20deg);
+    transition: transform 550ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   /* Deep Cosmic Void & Starlight Glass */
@@ -569,6 +582,357 @@
     animation: indeterminateSweep 1.5s infinite ease-in-out;
   }
 
+  /* -------------------------------------------------------------------------- */
+  /* 5. Gói 1, 2, 3: Cyber-Logistics Optical Systems & Margin LED Physics        */
+  /* -------------------------------------------------------------------------- */
+
+  /* Micro-LED Margin Glow System */
+  @keyframes marginAlarmPulse {
+    0%, 100% {
+      opacity: 0.8;
+      box-shadow: 0 0 10px rgba(244, 63, 94, 0.6), 0 0 20px rgba(244, 63, 94, 0.3);
+    }
+    50% {
+      opacity: 1;
+      box-shadow: 0 0 18px rgba(244, 63, 94, 1), 0 0 35px rgba(244, 63, 94, 0.6);
+    }
+  }
+
+  .margin-led-bar-emerald {
+    background: linear-gradient(90deg, #10b981 0%, #34d399 50%, #059669 100%);
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.8), 0 0 24px rgba(52, 211, 153, 0.4);
+  }
+
+  .margin-led-bar-amber {
+    background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 50%, #d97706 100%);
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.8), 0 0 24px rgba(251, 191, 36, 0.4);
+  }
+
+  .margin-led-bar-rose {
+    background: linear-gradient(90deg, #f43f5e 0%, #fb7185 50%, #e11d48 100%);
+    animation: marginAlarmPulse 1.8s infinite ease-in-out;
+  }
+
+  /* Dynamic Route Laser Beam & Photon Particle Track */
+  @keyframes photonParticleRun {
+    0% {
+      left: 0%;
+      opacity: 0;
+    }
+    15% {
+      opacity: 1;
+    }
+    85% {
+      opacity: 1;
+    }
+    100% {
+      left: 100%;
+      opacity: 0;
+    }
+  }
+
+  @keyframes laserTrackSweep {
+    0% {
+      background-position: 0% 50%;
+    }
+    100% {
+      background-position: 200% 50%;
+    }
+  }
+
+  @keyframes maritimeShipDrift {
+    0%, 100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-2px) rotate(1.5deg);
+    }
+  }
+
+  .laser-route-rail {
+    background: linear-gradient(90deg, #0284c7 0%, #38bdf8 30%, #818cf8 70%, #6366f1 100%);
+    background-size: 200% 100%;
+    animation: laserTrackSweep 4s linear infinite;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.7), 0 0 20px rgba(99, 102, 241, 0.4);
+  }
+
+  .photon-pulse-node {
+    animation: photonParticleRun 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+
+  .maritime-ship-float {
+    animation: maritimeShipDrift 3.5s ease-in-out infinite;
+  }
+
+  /* Spotlight Cyber Glassmorphism Surface */
+  .spotlight-glass {
+    background: rgba(11, 17, 32, 0.94);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    box-shadow: 0 24px 70px -12px rgba(0, 0, 0, 0.8), 0 0 35px -5px rgba(56, 189, 248, 0.15);
+  }
+
+  /* Interactive Specular Card with Shimmer Reflection */
+  .card-specular-glow {
+    position: relative;
+    overflow: hidden;
+    transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms ease, border-color 180ms ease;
+  }
+  .card-specular-glow:hover {
+    box-shadow: 0 12px 30px -8px rgba(56, 189, 248, 0.2), 0 0 1px 1px rgba(56, 189, 248, 0.3);
+  }
+
+  /* Subtle Pulse Animation for Save Quote Button on Unsaved Changes */
+  @keyframes saveQuotePulse {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5), 0 2px 5px rgba(0, 0, 0, 0.15);
+      transform: scale(1);
+    }
+    50% {
+      box-shadow: 0 0 0 5px rgba(16, 185, 129, 0), 0 0 14px rgba(16, 185, 129, 0.45);
+      transform: scale(1.02);
+    }
+  }
+
+  .btn-save-unsaved-pulse {
+    animation: saveQuotePulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    position: relative;
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /* Hiệu ứng 5: Ánh quang nhận diện cập nhật giá (Diff Luminescence Ripple)    */
+  /* -------------------------------------------------------------------------- */
+  @keyframes diffLuminescenceEmerald {
+    0% {
+      background-color: rgba(16, 185, 129, 0.3);
+      box-shadow: inset 0 0 0 1.5px rgba(16, 185, 129, 0.9), 0 0 16px rgba(16, 185, 129, 0.45);
+      transform: scale(1.015);
+    }
+    40% {
+      background-color: rgba(16, 185, 129, 0.14);
+      box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.5), 0 0 8px rgba(16, 185, 129, 0.2);
+      transform: scale(1);
+    }
+    100% {
+      background-color: transparent;
+      box-shadow: inset 0 0 0 0 transparent, 0 0 0 transparent;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes diffLuminescenceAmber {
+    0% {
+      background-color: rgba(245, 158, 11, 0.3);
+      box-shadow: inset 0 0 0 1.5px rgba(245, 158, 11, 0.9), 0 0 16px rgba(245, 158, 11, 0.45);
+      transform: scale(1.015);
+    }
+    40% {
+      background-color: rgba(245, 158, 11, 0.14);
+      box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.5), 0 0 8px rgba(245, 158, 11, 0.2);
+      transform: scale(1);
+    }
+    100% {
+      background-color: transparent;
+      box-shadow: inset 0 0 0 0 transparent, 0 0 0 transparent;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes diffLuminescenceCyan {
+    0% {
+      background-color: rgba(14, 165, 233, 0.3);
+      box-shadow: inset 0 0 0 1.5px rgba(14, 165, 233, 0.9), 0 0 16px rgba(14, 165, 233, 0.45);
+      transform: scale(1.015);
+    }
+    40% {
+      background-color: rgba(14, 165, 233, 0.14);
+      box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.5), 0 0 8px rgba(14, 165, 233, 0.2);
+      transform: scale(1);
+    }
+    100% {
+      background-color: transparent;
+      box-shadow: inset 0 0 0 0 transparent, 0 0 0 transparent;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes diffRowScanline {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .diff-luminescence-emerald {
+    animation: diffLuminescenceEmerald 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    position: relative;
+    z-index: 2;
+  }
+
+  .diff-luminescence-amber {
+    animation: diffLuminescenceAmber 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    position: relative;
+    z-index: 2;
+  }
+
+  .diff-luminescence-cyan {
+    animation: diffLuminescenceCyan 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    position: relative;
+    z-index: 2;
+  }
+
+  .diff-row-ripple {
+    background: linear-gradient(90deg, transparent 0%, rgba(56, 189, 248, 0.15) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: diffRowScanline 1.6s ease-out forwards;
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /* Hiệu ứng 7: Chùm hạt vàng kim khi Chốt Deal thành công (Golden Burst)      */
+  /* -------------------------------------------------------------------------- */
+  @keyframes goldenHaloExpand {
+    0% {
+      transform: scale(0.2);
+      opacity: 0.95;
+      box-shadow: 0 0 40px 20px rgba(245, 158, 11, 0.8), inset 0 0 30px rgba(251, 191, 36, 0.9);
+    }
+    50% {
+      opacity: 0.7;
+      box-shadow: 0 0 80px 40px rgba(245, 158, 11, 0.5), inset 0 0 50px rgba(251, 191, 36, 0.6);
+    }
+    100% {
+      transform: scale(2.8);
+      opacity: 0;
+      box-shadow: 0 0 120px 60px rgba(245, 158, 11, 0), inset 0 0 60px rgba(251, 191, 36, 0);
+    }
+  }
+
+  @keyframes goldenParticleFly {
+    0% {
+      transform: translate(0, 0) scale(0.2) rotate(0deg);
+      opacity: 1;
+      filter: drop-shadow(0 0 6px #f59e0b);
+    }
+    50% {
+      opacity: 1;
+      filter: drop-shadow(0 0 12px #fde047);
+    }
+    100% {
+      transform: translate(var(--dx), var(--dy)) scale(var(--scale, 1)) rotate(var(--rot, 360deg));
+      opacity: 0;
+      filter: drop-shadow(0 0 2px #d97706);
+    }
+  }
+
+  @keyframes trophyBounceCelebration {
+    0% {
+      transform: scale(0.4) translateY(40px);
+      opacity: 0;
+    }
+    55% {
+      transform: scale(1.08) translateY(-8px);
+      opacity: 1;
+    }
+    75% {
+      transform: scale(0.97) translateY(2px);
+    }
+    100% {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes goldCrownSheen {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .golden-halo-ring {
+    animation: goldenHaloExpand 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .golden-particle-node {
+    animation: goldenParticleFly var(--duration, 2.2s) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .trophy-bounce-in {
+    animation: trophyBounceCelebration 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  .gold-gradient-sheen {
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 35%, #fef08a 50%, #f59e0b 70%, #d97706 100%);
+    background-size: 200% 200%;
+    animation: goldCrownSheen 3s ease infinite;
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /* Cyber Aurora Mesh & Super-Nova Kinetic Sidebar Systems                     */
+  /* -------------------------------------------------------------------------- */
+  @keyframes auroraMeshPulse {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
+      opacity: 0.18;
+    }
+    50% {
+      transform: translate(12px, -15px) scale(1.15);
+      opacity: 0.32;
+    }
+  }
+
+  @keyframes auroraMeshPulseAlt {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
+      opacity: 0.15;
+    }
+    50% {
+      transform: translate(-15px, 12px) scale(1.2);
+      opacity: 0.28;
+    }
+  }
+
+  @keyframes supernovaSweep {
+    0% {
+      transform: translateX(-160%) skewX(-20deg);
+    }
+    50%, 100% {
+      transform: translateX(260%) skewX(-20deg);
+    }
+  }
+
+  .aurora-mesh-orb-1 {
+    animation: auroraMeshPulse 9s ease-in-out infinite;
+  }
+
+  .aurora-mesh-orb-2 {
+    animation: auroraMeshPulseAlt 11s ease-in-out infinite;
+  }
+
+  .supernova-sweep-shine::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.08) 35%,
+      rgba(255, 255, 255, 0.35) 50%,
+      rgba(255, 255, 255, 0.08) 65%,
+      transparent 100%
+    );
+    animation: supernovaSweep 3.8s ease-in-out infinite;
+    pointer-events: none;
+  }
+
   /* Respect reduced motion preference */
   @media (prefers-reduced-motion: reduce) {
     .press-physics,
@@ -599,7 +963,20 @@
       background: #334155 !important;
     }
     .loading-bar-sweep::after,
-    .cosmic-laser-rail {
+    .cosmic-laser-rail,
+    .laser-route-rail,
+    .photon-pulse-node,
+    .maritime-ship-float,
+    .margin-led-bar-rose,
+    .btn-save-unsaved-pulse,
+    .diff-luminescence-emerald,
+    .diff-luminescence-amber,
+    .diff-luminescence-cyan,
+    .diff-row-ripple,
+    .golden-halo-ring,
+    .golden-particle-node,
+    .trophy-bounce-in,
+    .gold-gradient-sheen {
       animation: none !important;
       transform: none !important;
     }

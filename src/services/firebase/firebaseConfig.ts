@@ -2,8 +2,9 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { 
   getFirestore, 
   initializeFirestore, 
-  persistentLocalCache, 
-  persistentMultipleTabManager,
+  memoryLocalCache, 
+  doc, 
+  getDocFromServer, 
   Firestore 
 } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
@@ -22,45 +23,41 @@ const firebaseConfig = {
 // Initialize Firebase safely (avoiding duplicate app initialization in hot reloads)
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-// Initialize Firestore with Long Polling enabled for iframe & proxy stability
+// Initialize Firestore with memoryLocalCache to eliminate multi-tab lease contention in iframes
+const firestoreDbId = (firebaseConfigJson as any).firestoreDatabaseId || undefined;
 let firestoreDb: Firestore | null = null;
-const rawDatabaseId = (firebaseConfigJson as any).firestoreDatabaseId;
-const databaseId = rawDatabaseId && rawDatabaseId !== '(default)' ? rawDatabaseId : undefined;
 
 try {
-  // Primary attempt: Persistent local cache + force long-polling for lightning-fast connection in iframe/proxy
   firestoreDb = initializeFirestore(
     app, 
     {
-      experimentalForceLongPolling: true,
       ignoreUndefinedProperties: true,
-      localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager(),
-      }),
+      localCache: memoryLocalCache(),
     },
-    databaseId
+    firestoreDbId
   );
-} catch (primaryError) {
-  // Secondary attempt: Fallback with force long-polling if IndexedDB is restricted
+} catch (err) {
   try {
-    firestoreDb = initializeFirestore(
-      app,
-      {
-        experimentalForceLongPolling: true,
-        ignoreUndefinedProperties: true,
-      },
-      databaseId
-    );
-  } catch (fallbackError) {
-    try {
-      firestoreDb = getFirestore(app, databaseId);
-    } catch (err) {
-      console.warn('Firebase Firestore initialization notice:', err);
-    }
+    firestoreDb = getFirestore(app, firestoreDbId);
+  } catch (fallbackErr) {
+    console.warn('Firebase Firestore initialization notice:', fallbackErr);
   }
 }
 
 export const db = firestoreDb;
+
+// Validate Connection to Firestore as per Firebase skill guidelines
+async function testConnection() {
+  if (!db) return;
+  try {
+    await getDocFromServer(doc(db, 'test', 'connection'));
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('the client is offline')) {
+      console.error("Please check your Firebase configuration.");
+    }
+  }
+}
+testConnection();
 
 // Initialize Storage
 let firebaseStorage: FirebaseStorage | null = null;

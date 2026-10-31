@@ -1193,43 +1193,301 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (onLanguageChange) onLanguageChange(nextLang);
   };
 
+  const getWorkflowGroupStyles = (groupKey: string, hasActiveChild: boolean) => {
+    switch (groupKey) {
+      case 'commercial':
+        return {
+          badge: hasActiveChild ? 'bg-indigo-500/25 text-indigo-300 border-indigo-400/40 shadow-[0_0_10px_rgba(99,102,241,0.25)]' : 'bg-slate-800 text-slate-400 border-slate-700/60',
+          icon: hasActiveChild ? 'text-indigo-400 drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]' : 'text-indigo-400/70',
+          container: hasActiveChild ? 'bg-gradient-to-r from-indigo-950/45 via-slate-900/80 to-slate-900/60 border-indigo-500/40 shadow-[0_4px_20px_rgba(99,102,241,0.12)]' : 'bg-slate-900/40 border-slate-800/60 hover:border-indigo-500/30'
+        };
+      case 'pricing':
+        return {
+          badge: hasActiveChild ? 'bg-cyan-500/25 text-cyan-300 border-cyan-400/40 shadow-[0_0_10px_rgba(6,182,212,0.25)]' : 'bg-slate-800 text-slate-400 border-slate-700/60',
+          icon: hasActiveChild ? 'text-cyan-400 drop-shadow-[0_0_6px_rgba(6,182,212,0.8)]' : 'text-cyan-400/70',
+          container: hasActiveChild ? 'bg-gradient-to-r from-cyan-950/45 via-slate-900/80 to-slate-900/60 border-cyan-500/40 shadow-[0_4px_20px_rgba(6,182,212,0.12)]' : 'bg-slate-900/40 border-slate-800/60 hover:border-cyan-500/30'
+        };
+      case 'operations':
+        return {
+          badge: hasActiveChild ? 'bg-emerald-500/25 text-emerald-300 border-emerald-400/40 shadow-[0_0_10px_rgba(16,185,129,0.25)]' : 'bg-slate-800 text-slate-400 border-slate-700/60',
+          icon: hasActiveChild ? 'text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.8)]' : 'text-emerald-400/70',
+          container: hasActiveChild ? 'bg-gradient-to-r from-emerald-950/45 via-slate-900/80 to-slate-900/60 border-emerald-500/40 shadow-[0_4px_20px_rgba(16,185,129,0.12)]' : 'bg-slate-900/40 border-slate-800/60 hover:border-emerald-500/30'
+        };
+      case 'crm':
+        return {
+          badge: hasActiveChild ? 'bg-amber-500/25 text-amber-300 border-amber-400/40 shadow-[0_0_10px_rgba(245,158,11,0.25)]' : 'bg-slate-800 text-slate-400 border-slate-700/60',
+          icon: hasActiveChild ? 'text-amber-400 drop-shadow-[0_0_6px_rgba(245,158,11,0.8)]' : 'text-amber-400/70',
+          container: hasActiveChild ? 'bg-gradient-to-r from-amber-950/45 via-slate-900/80 to-slate-900/60 border-amber-500/40 shadow-[0_4px_20px_rgba(245,158,11,0.12)]' : 'bg-slate-900/40 border-slate-800/60 hover:border-amber-500/30'
+        };
+      case 'system':
+      default:
+        return {
+          badge: hasActiveChild ? 'bg-fuchsia-500/25 text-fuchsia-300 border-fuchsia-400/40 shadow-[0_0_10px_rgba(217,70,239,0.25)]' : 'bg-slate-800 text-slate-400 border-slate-700/60',
+          icon: hasActiveChild ? 'text-fuchsia-400 drop-shadow-[0_0_6px_rgba(217,70,239,0.8)]' : 'text-fuchsia-400/70',
+          container: hasActiveChild ? 'bg-gradient-to-r from-fuchsia-950/45 via-slate-900/80 to-slate-900/60 border-fuchsia-500/40 shadow-[0_4px_20px_rgba(217,70,239,0.12)]' : 'bg-slate-900/40 border-slate-800/60 hover:border-fuchsia-500/30'
+        };
+    }
+  };
+
+  const getItemTelemetry = (item: NavItem) => {
+    switch (item.id) {
+      case 'quotation_workbench':
+        return { 
+          hint: activeLang === 'vi' ? 'Báo giá nhanh & tính biên lãi gộp' : 'Quick quote workspace & margin analysis', 
+          liveTag: 'ACTIVE' 
+        };
+      case 'hs_code_tariff_engine':
+        return { 
+          hint: activeLang === 'vi' ? 'Biểu thuế 2026, 17 FTA & rủi ro NSW' : 'Tariff 2026, 17 FTAs & NSW risk matrix', 
+          liveTag: '2026' 
+        };
+      case 'container_cargo_simulator':
+        return { 
+          hint: activeLang === 'vi' ? 'Mô phỏng 3D tải trọng 20/40/HQ & Air' : '3D container & air cargo loading simulator', 
+          liveTag: '3D' 
+        };
+      case 'route_particle_beam_map':
+        return { 
+          hint: activeLang === 'vi' ? 'Hải trình POL-POD & hạt năng lượng' : 'Real-time POL-POD particle beam tracker', 
+          liveTag: 'RADAR' 
+        };
+      case 'sales_roadmap_workflow':
+        return { 
+          hint: activeLang === 'vi' ? 'Lộ trình 5 bước: Tiếp cận ➔ Chốt deal' : '5-Stage Sales Roadmap & Pipeline', 
+          liveTag: 'SMART' 
+        };
+      case 'quotations_saved':
+        return { 
+          hint: `${savedQuotes.length} ${activeLang === 'vi' ? 'bản ghi trong kho lưu trữ' : 'quotes in system storage'}`, 
+          liveTag: savedQuotes.length > 0 ? `${savedQuotes.length}` : undefined 
+        };
+      case 'customers':
+        return { 
+          hint: `${customersCount} ${activeLang === 'vi' ? 'đối tác & khách hàng doanh nghiệp' : 'enterprise customer profiles'}`, 
+          liveTag: customersCount > 0 ? `${customersCount}` : undefined 
+        };
+      case 'freight_rates':
+        return { 
+          hint: `${rateMastersCount} ${activeLang === 'vi' ? 'biểu cước gốc Ocean/Air/Trucking' : 'carrier freight rate master records'}`, 
+          liveTag: 'LIVE FX' 
+        };
+      case 'surcharges_catalog':
+        return { 
+          hint: `${surchargesCount} ${activeLang === 'vi' ? 'phụ phí Local Charges & THC' : 'local charge & surcharge items'}`, 
+          liveTag: undefined 
+        };
+      case 'contracts_hub':
+        return { 
+          hint: `${contractsCount} ${activeLang === 'vi' ? 'hợp đồng & phụ lục số hóa' : 'digital enterprise contracts'}`, 
+          liveTag: undefined 
+        };
+      case 'exchange_rate_hub':
+        return { 
+          hint: `1 USD = ${exchangeRate.toLocaleString()}₫ (VCB Live)`, 
+          liveTag: 'LIVE' 
+        };
+      case 'shipment_workspace':
+        return { 
+          hint: activeLang === 'vi' ? 'Vận đơn B/L, AWB & tiến độ giao hàng' : 'B/L, AWB tracking & customs milestones', 
+          liveTag: 'SHIP' 
+        };
+      case 'control_tower':
+        return { 
+          hint: activeLang === 'vi' ? 'Tháp giám sát vận hành & cảnh báo ngoại lệ' : 'Operations control tower & exceptions', 
+          liveTag: 'TOWER' 
+        };
+      case 'rfq_inbox':
+        return { 
+          hint: activeLang === 'vi' ? 'Hộp thư yêu cầu báo giá tự động' : 'Automated RFQ intake inbox', 
+          liveTag: 'INBOX' 
+        };
+      case 'quotation_preview':
+        return { 
+          hint: activeLang === 'vi' ? 'Xem trước bản in A4 tiêu chuẩn xuất khẩu' : 'Export-ready A4 PDF print preview', 
+          liveTag: 'A4' 
+        };
+      case 'multi_option_quotation':
+        return { 
+          hint: activeLang === 'vi' ? 'So sánh song song 3 phương án cước' : 'Side-by-side 3-tier price matrix', 
+          liveTag: 'MULTI' 
+        };
+      default:
+        return { 
+          hint: item.requiredRoleDesc 
+            ? `${activeLang === 'vi' ? 'Yêu cầu: ' : 'Required: '}${item.requiredRoleDesc}` 
+            : (activeLang === 'vi' ? 'Bấm để truy cập module' : 'Click to launch module'), 
+          liveTag: item.badge ? String(item.badge) : undefined 
+        };
+    }
+  };
+
+  const renderModuleItem = (item: NavItem, isSearchItem: boolean = false) => {
+    const Icon = item.icon;
+    const isPinned = pinnedIds.includes(item.id);
+    const isActive = activeRouteId === item.id;
+    const telemetry = getItemTelemetry(item);
+
+    return (
+      <div
+        key={item.id}
+        data-nav-id={item.id}
+        className={`relative w-full rounded-xl transition-all duration-200 group overflow-hidden press-physics-subtle cosmic-card-sheen ${
+          isActive 
+            ? 'bg-gradient-to-r from-indigo-950/85 via-slate-900/90 to-slate-900/50 border border-indigo-500/40 text-cyan-200 font-semibold shadow-[0_0_15px_rgba(99,102,241,0.25)]' 
+            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80 border border-transparent hover:border-cyan-500/30 hover:shadow-[0_0_12px_rgba(56,189,248,0.12)]'
+        } ${item.restricted ? 'opacity-60' : ''}`}
+      >
+        {/* 1. Magnetic Laser Rail (Left Edge) */}
+        <span 
+          className={`absolute left-0 top-1.5 bottom-1.5 rounded-r-full transition-all duration-200 pointer-events-none ${
+            isActive
+              ? 'w-1 cosmic-laser-rail shadow-[0_0_10px_rgba(56,189,248,0.9)]'
+              : 'w-0 group-hover:w-1 group-hover:bg-gradient-to-b group-hover:from-cyan-400 group-hover:to-indigo-500 group-hover:shadow-[0_0_8px_rgba(56,189,248,0.7)]'
+          }`} 
+          aria-hidden="true" 
+        >
+          {isActive && (
+            <>
+              <span className="absolute -top-0.5 left-0 w-1.5 h-1.5 rounded-full bg-cyan-300 shadow-[0_0_6px_#38bdf8]" />
+              <span className="absolute -bottom-0.5 left-0 w-1.5 h-1.5 rounded-full bg-violet-400 shadow-[0_0_6px_#c084fc]" />
+            </>
+          )}
+        </span>
+
+        <div className="flex items-center justify-between px-2.5 py-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              if (item.restricted) {
+                if (onAccessDenied) onAccessDenied(item.label, item.requiredRoleDesc || activeRole);
+                return;
+              }
+              handleAction(item.action);
+              if (isSearchItem) setSearchQuery('');
+            }}
+            className="flex-1 flex items-center space-x-2.5 min-w-0 text-left cursor-pointer pl-0.5 focus-ring-physics rounded-md py-0.5"
+          >
+            {/* 2. Phosphor Icon with Spring Shift */}
+            <Icon className={`w-3.5 h-3.5 shrink-0 transition-all duration-200 ease-out group-hover:translate-x-1 ${
+              isActive 
+                ? 'text-cyan-300 icon-active-glow drop-shadow-[0_0_6px_rgba(56,189,248,0.7)]' 
+                : 'text-slate-400 group-hover:text-cyan-300 group-hover:drop-shadow-[0_0_6px_rgba(56,189,248,0.6)]'
+            }`} />
+
+            {/* 3. Title + Smooth Inline Telemetry Drawer */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className={`text-xs truncate transition-colors duration-150 ${
+                  isActive ? 'font-semibold text-cyan-200' : 'text-slate-300 group-hover:text-white'
+                }`}>
+                  {item.label}
+                </span>
+                {/* 5. Sonar Ping Ripple for real-time live tags */}
+                {telemetry.liveTag && (
+                  <span className="relative flex h-1.5 w-1.5 shrink-0" title={telemetry.liveTag}>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-400 shadow-[0_0_4px_#38bdf8]"></span>
+                  </span>
+                )}
+              </div>
+
+              {/* Telemetry Subtitle: reveals cleanly on hover with zero jitter */}
+              <div className="max-h-0 overflow-hidden opacity-0 group-hover:max-h-4 group-hover:opacity-100 transition-all duration-200 ease-out">
+                <span className="text-[10px] text-cyan-300/80 font-normal truncate block leading-tight pt-0.5">
+                  {telemetry.hint}
+                </span>
+              </div>
+            </div>
+          </button>
+
+          <div className="flex items-center space-x-1.5 ml-1.5 shrink-0">
+            {item.restricted && (
+              <span title={item.requiredRoleDesc} className="inline-flex items-center">
+                <Lock className="w-3 h-3 text-rose-400 shrink-0" />
+              </span>
+            )}
+
+            {item.badge && (
+              <span className="text-[10px] px-1.5 py-0.2 rounded font-mono font-medium border bg-slate-900/90 border-slate-700/60 text-slate-300 shadow-xs transition-colors group-hover:border-cyan-500/40 group-hover:text-cyan-200">
+                {item.badge}
+              </span>
+            )}
+
+            {/* 4. Spring-Action Star Pin Reveal */}
+            <button
+              type="button"
+              onClick={(e) => togglePin(e, item.id)}
+              className={`p-0.5 rounded transition-all duration-200 cursor-pointer press-physics focus-ring-physics ${
+                isPinned 
+                  ? 'text-amber-400 opacity-100 hover:scale-125' 
+                  : 'text-slate-500 opacity-0 -translate-x-1.5 group-hover:opacity-100 group-hover:translate-x-0 hover:text-amber-300 hover:scale-125 hover:drop-shadow-[0_0_6px_rgba(245,158,11,0.8)]'
+              }`}
+              title={isPinned ? (activeLang === 'vi' ? 'Bỏ ghim' : 'Unpin') : (activeLang === 'vi' ? 'Ghim yêu thích' : 'Pin to top')}
+            >
+              <Star className={`w-3 h-3 ${isPinned ? 'fill-amber-400 text-amber-400' : ''}`} />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       {/* Mobile Backdrop */}
       {isOpenMobile && (
         <div 
           onClick={onCloseMobile}
-          className="fixed inset-0 bg-slate-950/70 z-40 lg:hidden backdrop-blur-xs transition-opacity"
+          className="fixed inset-0 bg-slate-950/80 z-40 lg:hidden backdrop-blur-sm transition-opacity"
           aria-hidden="true"
         />
       )}
 
-      {/* Main Sidebar Column with Deep Cosmic Starlight Glass & Void Texture */}
+      {/* Main Sidebar Column with Cyber Glassmorphism & Ambient Aurora Mesh */}
       <aside 
-        className={`fixed top-0 bottom-0 left-0 z-40 bg-[#070B14] text-slate-300 flex flex-col border-r border-slate-800/90 transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto shrink-0 select-none shadow-2xl ${
+        className={`fixed top-0 bottom-0 left-0 z-40 bg-slate-950/92 backdrop-blur-2xl text-slate-300 flex flex-col border-r border-slate-800/80 transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto shrink-0 select-none shadow-[0_0_40px_rgba(0,0,0,0.8)] relative ${
+          isCollapsed ? 'overflow-visible' : 'overflow-hidden'
+        } ${
           isCollapsed ? 'w-16' : 'w-72'
         } ${isOpenMobile ? 'translate-x-0' : '-translate-x-full'}`}
         role="navigation"
         aria-label="Sidebar Navigation"
       >
-        {/* Top Header & Branding with Cosmic Starlight Glass */}
-        <div className="h-14 px-3.5 border-b border-slate-800/90 flex items-center justify-between shrink-0 bg-[#0A101E]/95 backdrop-blur-md">
+        {/* Ambient Cyber Aurora Orbs */}
+        <div className="absolute -top-24 -left-20 w-72 h-72 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none aurora-mesh-orb-1" aria-hidden="true" />
+        <div className="absolute top-1/2 -right-24 w-64 h-64 rounded-full bg-indigo-600/10 blur-3xl pointer-events-none aurora-mesh-orb-2" aria-hidden="true" />
+        <div className="absolute -bottom-20 -left-12 w-60 h-60 rounded-full bg-fuchsia-600/8 blur-3xl pointer-events-none" aria-hidden="true" />
+
+        {/* Top Header & Branding with Holographic Prism & Live Radar Heartbeat */}
+        <div className="h-14 px-3.5 border-b border-slate-800/80 flex items-center justify-between shrink-0 bg-slate-950/80 backdrop-blur-xl relative z-10">
           <div className="flex items-center space-x-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-white/10 border border-slate-700/80 p-0.5 shrink-0 shadow-inner">
-              <img 
-                src="/logo.png" 
-                alt="LogiQuote Logo" 
-                className="w-full h-full object-contain"
-              />
+            {/* Holographic Logo Prism Frame */}
+            <div className="p-0.5 rounded-xl bg-gradient-to-tr from-cyan-400 via-indigo-500 to-fuchsia-500 shadow-[0_0_12px_rgba(99,102,241,0.35)] shrink-0 group">
+              <div className="w-7.5 h-7.5 rounded-[10px] overflow-hidden flex items-center justify-center bg-slate-950 p-1">
+                <img 
+                  src="/logo.png" 
+                  alt="LogiQuote Logo" 
+                  className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
+                />
+              </div>
             </div>
             
             {!isCollapsed && (
               <div className="min-w-0">
-                <span className="font-semibold text-xs text-white tracking-tight block truncate flex items-center gap-1.5">
-                  LogiQuote Studio
-                  <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-indigo-500/30 text-indigo-300 border border-indigo-400/30">PRO</span>
-                </span>
-                <span className="text-[11px] text-slate-400 font-normal truncate block">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-xs bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent tracking-tight truncate">
+                    LogiQuote Studio
+                  </span>
+                  {/* PRO Badge + Live Radar Heartbeat */}
+                  <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 shadow-[0_0_8px_rgba(99,102,241,0.25)]">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400 shadow-[0_0_4px_#34d399]"></span>
+                    </span>
+                    <span>PRO</span>
+                  </span>
+                </div>
+                <span className="text-[11px] text-slate-400/90 font-normal truncate block">
                   {company.shortName || company.name || 'TMS Logistics'}
                 </span>
               </div>
@@ -1240,12 +1498,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={() => toggleSidebarCollapse()}
-            className="hidden lg:flex p-1.5 text-slate-400 hover:text-white hover:bg-slate-800/80 rounded-md transition-colors cursor-pointer"
+            className="hidden lg:flex p-1.5 text-slate-400 hover:text-cyan-300 hover:bg-slate-800/80 rounded-xl transition-all cursor-pointer border border-transparent hover:border-slate-700/60 hover:shadow-[0_0_10px_rgba(56,189,248,0.15)]"
             title={isCollapsed ? 'Mở rộng sidebar' : 'Thu gọn sidebar'}
             aria-label={isCollapsed ? 'Mở rộng' : 'Thu gọn'}
           >
             {isCollapsed ? (
-              <PanelLeftOpen className="w-4 h-4 text-slate-300" />
+              <PanelLeftOpen className="w-4 h-4 text-cyan-400" />
             ) : (
               <PanelLeftClose className="w-4 h-4" />
             )}
@@ -1255,42 +1513,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={onCloseMobile}
-            className="lg:hidden p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md cursor-pointer"
+            className="lg:hidden p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl cursor-pointer"
             aria-label="Đóng menu"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Primary Action Button: Tạo Báo Giá Mới (Ergonomic Hero CTA) */}
-        <div className="p-2.5 pb-2 shrink-0">
+        {/* Primary Action Button: Tạo Báo Giá Mới (Super-Nova Hero CTA with Shimmer & Spring) */}
+        <div className="p-2.5 pb-2 shrink-0 relative z-10">
           <button
             type="button"
             onClick={() => handleAction(onNewQuote)}
             className={`w-full flex items-center ${
               isCollapsed ? 'justify-center p-2.5' : 'justify-between px-3.5 py-2'
-            } rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-md shadow-indigo-600/30 hover:shadow-indigo-600/40 press-physics focus-ring-physics cursor-pointer group`}
+            } rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-500 hover:via-indigo-500 hover:to-violet-500 text-white font-semibold shadow-[0_4px_20px_rgba(79,70,229,0.4)] hover:shadow-[0_4px_25px_rgba(79,70,229,0.55)] border border-white/20 supernova-sweep-shine press-physics focus-ring-physics cursor-pointer relative overflow-hidden group transition-all`}
             title={isCollapsed ? (activeLang === 'vi' ? 'Tạo Báo Giá Mới (Ctrl+N)' : 'Create Quotation (Ctrl+N)') : undefined}
           >
-            <div className="flex items-center space-x-2 min-w-0">
-              <Plus className="w-4 h-4 text-white shrink-0 group-hover:rotate-90 transition-transform duration-200" />
+            <div className="flex items-center space-x-2 min-w-0 relative z-10">
+              <Plus className="w-4 h-4 text-white shrink-0 group-hover:rotate-90 group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_4px_rgba(255,255,255,0.6)]" />
               {!isCollapsed && (
-                <span className="text-xs font-bold tracking-tight truncate">
+                <span className="text-xs font-bold tracking-tight truncate drop-shadow-sm">
                   {activeLang === 'vi' ? 'Tạo Báo Giá Mới' : 'Create Quotation'}
                 </span>
               )}
             </div>
             {!isCollapsed && (
-              <span className="text-[10px] text-indigo-100 font-mono px-1.5 py-0.5 rounded bg-indigo-700/70 border border-indigo-400/30 text-xs">
+              <span className="relative z-10 text-[10px] text-indigo-100 font-mono px-1.5 py-0.5 rounded-md bg-black/25 backdrop-blur-xs border border-white/20 shadow-inner">
                 Ctrl+N
               </span>
             )}
           </button>
         </div>
 
-        {/* Quick Search & Minimalist View Mode Switch */}
+        {/* Quick Search & Minimalist View Mode Switch (Glassmorphism) */}
         {!isCollapsed && (
-          <div className="px-2.5 pb-2 shrink-0 flex items-center gap-1.5">
+          <div className="px-2.5 pb-2 shrink-0 flex items-center gap-1.5 relative z-10">
             <div className="relative flex-1">
               <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
@@ -1299,13 +1557,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={activeLang === 'vi' ? 'Tìm nhanh (Ctrl+K)...' : 'Search (Ctrl+K)...'}
-                className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-900/90 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus-ring-physics focus:bg-slate-900 transition-all"
+                className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus-ring-physics focus:bg-slate-900 focus:border-cyan-500/50 focus:shadow-[0_0_12px_rgba(6,182,212,0.15)] transition-all"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-0.5 cursor-pointer press-physics focus-ring-physics rounded"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-200 p-0.5 cursor-pointer press-physics focus-ring-physics rounded"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -1318,8 +1576,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={toggleMinimalMode}
               className={`h-7.5 px-2.5 rounded-xl border flex items-center gap-1 text-[11px] font-medium transition-all cursor-pointer shrink-0 press-physics focus-ring-physics ${
                 isMinimalMode
-                  ? 'bg-indigo-950/60 text-indigo-300 border-indigo-800/60 hover:bg-indigo-900/60 shadow-xs'
-                  : 'bg-slate-900/90 text-slate-400 border-slate-800 hover:text-slate-200 hover:bg-slate-800'
+                  ? 'bg-indigo-950/70 text-indigo-300 border-indigo-700/60 hover:bg-indigo-900/70 shadow-[0_0_10px_rgba(99,102,241,0.2)]'
+                  : 'bg-slate-900/80 backdrop-blur-md text-slate-400 border-slate-800 hover:text-slate-200 hover:bg-slate-800'
               }`}
               title={isMinimalMode ? (activeLang === 'vi' ? 'Đang bật Chế độ Tối giản (Click để xem đầy đủ)' : 'Minimal mode ON (Click to show full)') : (activeLang === 'vi' ? 'Đang xem Đầy đủ (Click để bật tối giản)' : 'Full mode (Click to switch to minimal)')}
             >
@@ -1331,7 +1589,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Pinned Favorites Quick Strip (When Expanded & not searching) */}
         {!isCollapsed && !searchQuery && pinnedItems.length > 0 && (
-          <div className="px-2.5 py-1.5 border-b border-slate-800/60 shrink-0 bg-slate-900/30">
+          <div className="px-2.5 py-1.5 border-b border-slate-800/60 shrink-0 bg-slate-900/40 backdrop-blur-sm relative z-10">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] font-medium text-slate-400 flex items-center gap-1.5">
                 <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
@@ -1347,8 +1605,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     key={`pinned-${item.id}`}
                     className={`inline-flex items-center rounded-lg text-[11px] border transition-all press-physics-subtle ${
                       isActive 
-                        ? 'active-nav-glow text-white font-semibold shadow-xs' 
-                        : 'bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-800'
+                        ? 'bg-gradient-to-r from-indigo-900/80 to-purple-900/60 text-cyan-200 border-indigo-500/50 shadow-[0_0_10px_rgba(99,102,241,0.3)] font-semibold' 
+                        : 'bg-slate-900/80 backdrop-blur-xs hover:bg-slate-800/90 text-slate-300 hover:text-white border-slate-800 hover:border-slate-700'
                     }`}
                   >
                     <button
@@ -1357,7 +1615,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       className="flex items-center gap-1.5 px-2 py-0.5 cursor-pointer focus-ring-physics rounded-l-md"
                       title={item.label}
                     >
-                      <Icon className={`w-3 h-3 shrink-0 ${isActive ? 'icon-active-glow' : 'text-slate-400'}`} />
+                      <Icon className={`w-3 h-3 shrink-0 ${isActive ? 'text-cyan-300 icon-active-glow drop-shadow-[0_0_4px_rgba(56,189,248,0.8)]' : 'text-slate-400'}`} />
                       <span className="truncate max-w-[110px]">{item.label}</span>
                     </button>
                     <button
@@ -1401,181 +1659,89 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     {activeLang === 'vi' ? 'Không tìm thấy chức năng' : 'No feature matches found'}
                   </div>
                 ) : (
-                  filteredNavItems.map((item) => {
-                    const isItemPinned = pinnedIds.includes(item.id);
-                    const isActive = activeRouteId === item.id;
-                    return (
-                      <div
-                        key={item.id}
-                        data-nav-id={item.id}
-                        className={`relative w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl transition-all border group overflow-hidden press-physics-subtle cosmic-card-sheen ${
-                          isActive 
-                            ? 'active-nav-glow text-white font-medium shadow-[0_0_12px_rgba(56,189,248,0.2)]' 
-                            : 'bg-slate-900/60 hover:bg-slate-800/80 text-slate-300 hover:text-white border-slate-800/80'
-                        }`}
-                      >
-                      {/* Cosmic Laser Beam on Active Item */}
-                      {isActive && (
-                        <span 
-                          className="absolute left-0 top-1.5 bottom-1.5 w-1 cosmic-laser-rail rounded-r-full shadow-[0_0_10px_rgba(56,189,248,0.9)]" 
-                          aria-hidden="true" 
-                        >
-                          <span className="absolute -top-0.5 left-0 w-1.5 h-1.5 rounded-full bg-cyan-300 shadow-[0_0_6px_#38bdf8]" />
-                          <span className="absolute -bottom-0.5 left-0 w-1.5 h-1.5 rounded-full bg-violet-400 shadow-[0_0_6px_#c084fc]" />
-                        </span>
-                      )}
-
+                  filteredNavItems.map((item) => renderModuleItem(item, true))
+                )}
+              </div>
+            ) : isCollapsed ? (
+              /* COLLAPSED ICON RAIL: Show only the top 10 curated core/pinned tools with Floating HUD Flyout */
+              <div className="space-y-1.5 py-1">
+                {collapsedNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeRouteId === item.id;
+                  const telemetry = getItemTelemetry(item);
+                  return (
+                    <div key={`collapsed-${item.id}`} data-nav-id={item.id} className="relative group/tooltip flex justify-center">
                       <button
                         type="button"
                         onClick={() => {
+                          if (item.restricted) {
+                            if (onAccessDenied) onAccessDenied(item.label, item.requiredRoleDesc || activeRole);
+                            return;
+                          }
                           handleAction(item.action);
-                          setSearchQuery('');
                         }}
-                        className="flex items-center space-x-2.5 min-w-0 flex-1 text-left cursor-pointer focus-ring-physics rounded-lg py-0.5 pl-0.5"
+                        className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all cursor-pointer press-physics focus-ring-physics ${
+                          isActive 
+                            ? 'bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-600 text-white font-medium shadow-[0_0_15px_rgba(99,102,241,0.5)] ring-2 ring-cyan-400/60' 
+                            : 'text-slate-400 hover:text-cyan-300 hover:bg-slate-800/80 hover:shadow-[0_0_10px_rgba(56,189,248,0.2)] hover:border hover:border-cyan-500/30'
+                        } ${item.restricted ? 'opacity-50' : ''}`}
+                        aria-label={item.label}
                       >
-                        <item.icon className={`w-3.5 h-3.5 shrink-0 transition-transform duration-150 group-hover:scale-110 ${isActive ? 'icon-active-glow' : 'text-slate-400 group-hover:text-white'}`} />
-                        <span className="text-xs truncate">{item.label}</span>
+                        <Icon className={`w-4 h-4 shrink-0 transition-transform duration-200 group-hover/tooltip:scale-110 group-hover/tooltip:rotate-3 ${isActive ? 'text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.8)]' : ''}`} />
                       </button>
-                      <div className="flex items-center space-x-1.5 shrink-0 ml-2">
-                        {item.badge && (
-                          <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-slate-800 text-slate-300 border border-slate-700/50">
-                            {item.badge}
+
+                      {/* Floating HUD Flyout Card in Collapsed Mode */}
+                      <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 hidden group-hover/tooltip:flex flex-col gap-1.5 p-2.5 bg-slate-950/95 backdrop-blur-2xl text-white text-xs font-medium rounded-xl shadow-[0_10px_35px_rgba(0,0,0,0.8),0_0_20px_rgba(56,189,248,0.2)] border border-slate-700/80 whitespace-nowrap z-50 pointer-events-none min-w-[190px] max-w-[280px]">
+                        <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-1">
+                          <span className="font-semibold text-slate-100 flex items-center gap-1.5">
+                            <Icon className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                            <span className="truncate">{item.label}</span>
                           </span>
+                          {item.badge && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-cyan-950/80 text-cyan-300 border border-cyan-800/60">
+                              {item.badge}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-slate-400 truncate flex items-center gap-1">
+                          {telemetry.liveTag && (
+                            <span className="relative flex h-1.5 w-1.5 shrink-0">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-400"></span>
+                            </span>
+                          )}
+                          <span className="truncate">{telemetry.hint}</span>
+                        </div>
+                        {item.restricted && (
+                          <div className="text-[9px] text-rose-300 font-mono flex items-center gap-1 pt-0.5 border-t border-slate-800/60">
+                            <Lock className="w-2.5 h-2.5 text-rose-400 shrink-0" />
+                            <span className="truncate">{item.requiredRoleDesc}</span>
+                          </div>
                         )}
-                        <button
-                          type="button"
-                          onClick={(e) => togglePin(e, item.id)}
-                          className="p-1 rounded text-slate-500 hover:text-amber-400 cursor-pointer press-physics focus-ring-physics"
-                          title={isItemPinned ? 'Bỏ ghim' : 'Ghim'}
-                        >
-                          <Star className={`w-3 h-3 ${isItemPinned ? 'fill-amber-400 text-amber-400' : ''}`} />
-                        </button>
                       </div>
                     </div>
                   );
-                })
-              )}
-            </div>
-          ) : isCollapsed ? (
-            /* COLLAPSED ICON RAIL: Show only the top 10 curated core/pinned tools */
-            <div className="space-y-1.5 py-1">
-              {collapsedNavItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeRouteId === item.id;
-                return (
-                  <div key={`collapsed-${item.id}`} data-nav-id={item.id} className="relative group/tooltip flex justify-center">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (item.restricted) {
-                          if (onAccessDenied) onAccessDenied(item.label, item.requiredRoleDesc || activeRole);
-                          return;
-                        }
-                        handleAction(item.action);
-                      }}
-                      className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all cursor-pointer press-physics focus-ring-physics ${
-                        isActive 
-                          ? 'bg-indigo-600 text-white font-medium shadow-md shadow-indigo-600/40 ring-2 ring-indigo-400/50' 
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
-                      } ${item.restricted ? 'opacity-50' : ''}`}
-                      aria-label={item.label}
-                    >
-                      <Icon className={`w-4 h-4 shrink-0 transition-transform duration-150 group-hover:scale-110 ${isActive ? 'icon-active-glow' : ''}`} />
-                    </button>
+                })}
+              </div>
+            ) : isMinimalMode ? (
+              /* MINIMALIST WORKSPACE: Pure, zero-noise, essential daily workflow */
+              <div className="space-y-3">
+                {minimalSections.map((section) => {
+                  if (section.items.length === 0) return null;
+                  const SectionIcon = section.icon;
+                  return (
+                    <div key={section.id} className="space-y-1">
+                      <div className="px-2 pt-1 pb-0.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        <SectionIcon className="w-3 h-3 text-slate-500" />
+                        <span>{section.title}</span>
+                      </div>
 
-                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2.5 hidden group-hover/tooltip:flex items-center gap-2 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg shadow-xl border border-slate-700/80 whitespace-nowrap z-50 pointer-events-none">
-                      <span>{item.label}</span>
-                      {item.badge && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-slate-800 text-slate-300">
-                          {item.badge}
-                        </span>
-                      )}
+                      <div className="space-y-0.5">
+                        {section.items.map((item) => renderModuleItem(item))}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : isMinimalMode ? (
-            /* MINIMALIST WORKSPACE: Pure, zero-noise, essential daily workflow */
-            <div className="space-y-3">
-              {minimalSections.map((section) => {
-                if (section.items.length === 0) return null;
-                const SectionIcon = section.icon;
-                return (
-                  <div key={section.id} className="space-y-1">
-                    <div className="px-2 pt-1 pb-0.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      <SectionIcon className="w-3 h-3 text-slate-500" />
-                      <span>{section.title}</span>
-                    </div>
-
-                    <div className="space-y-0.5">
-                      {section.items.map((item) => {
-                        const Icon = item.icon;
-                        const isPinned = pinnedIds.includes(item.id);
-                        const isActive = activeRouteId === item.id;
-                        return (
-                          <div
-                            key={item.id}
-                            data-nav-id={item.id}
-                            className={`relative w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl transition-all duration-150 group overflow-hidden press-physics-subtle cosmic-card-sheen ${
-                              isActive 
-                                ? 'active-nav-glow text-cyan-200 font-semibold shadow-[0_0_12px_rgba(56,189,248,0.2)]' 
-                                : 'text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent'
-                            } ${item.restricted ? 'opacity-60' : ''}`}
-                          >
-                            {/* Cosmic Laser Beam on Active Item */}
-                            {isActive && (
-                              <span 
-                                className="absolute left-0 top-1.5 bottom-1.5 w-1 cosmic-laser-rail rounded-r-full shadow-[0_0_10px_rgba(56,189,248,0.9)]" 
-                                aria-hidden="true"
-                              >
-                                <span className="absolute -top-0.5 left-0 w-1.5 h-1.5 rounded-full bg-cyan-300 shadow-[0_0_6px_#38bdf8]" />
-                                <span className="absolute -bottom-0.5 left-0 w-1.5 h-1.5 rounded-full bg-violet-400 shadow-[0_0_6px_#c084fc]" />
-                              </span>
-                            )}
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (item.restricted) {
-                                  if (onAccessDenied) onAccessDenied(item.label, item.requiredRoleDesc || activeRole);
-                                  return;
-                                }
-                                handleAction(item.action);
-                              }}
-                              className="flex-1 flex items-center space-x-2.5 min-w-0 text-left cursor-pointer pl-0.5 focus-ring-physics rounded-lg py-0.5"
-                            >
-                              <Icon className={`w-3.5 h-3.5 shrink-0 transition-transform duration-150 group-hover:scale-110 ${isActive ? 'text-indigo-400 icon-active-glow' : 'text-slate-400 group-hover:text-slate-200'}`} />
-                              <span className="text-xs truncate">{item.label}</span>
-                            </button>
-
-                            <div className="flex items-center space-x-1.5 ml-2 shrink-0">
-                              {item.badge && (
-                                <span className="text-[10px] px-1.5 py-0.2 rounded font-mono font-medium border bg-slate-900 border-slate-800 text-slate-300">
-                                  {item.badge}
-                                </span>
-                              )}
-
-                              <button
-                                type="button"
-                                onClick={(e) => togglePin(e, item.id)}
-                                className={`p-0.5 rounded transition-opacity cursor-pointer press-physics focus-ring-physics ${
-                                  isPinned 
-                                    ? 'text-amber-400 opacity-100' 
-                                    : 'text-slate-600 opacity-0 group-hover:opacity-100 hover:text-amber-400'
-                                }`}
-                                title={isPinned ? 'Bỏ ghim' : 'Ghim'}
-                              >
-                                <Star className={`w-3 h-3 ${isPinned ? 'fill-amber-400 text-amber-400' : ''}`} />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
 
               {/* Minimal Mode Expander Button */}
               <div className="pt-2 px-0.5">
@@ -1624,7 +1790,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               </div>
 
-              {/* 5 Enterprise Workflow Groups */}
+              {/* 5 Enterprise Workflow Groups with Semantic Colors */}
               <div className="space-y-2">
                 {workflowGroups.map((group) => {
                   const groupItems = allNavItems.filter(item => item.group === group.key);
@@ -1633,15 +1799,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   const isExpanded = expandedGroups[group.key] ?? false;
                   const GroupIcon = group.icon;
                   const hasActiveChild = groupItems.some(i => i.id === activeRouteId);
+                  const groupStyles = getWorkflowGroupStyles(group.key, hasActiveChild);
 
                   return (
                     <div 
                       key={group.key} 
-                      className={`rounded-xl border transition-all ${
-                        hasActiveChild 
-                          ? 'bg-slate-900/80 border-indigo-500/35 shadow-xs' 
-                          : 'bg-slate-900/35 border-slate-800/60 hover:border-slate-700/60'
-                      }`}
+                      className={`rounded-xl border backdrop-blur-md transition-all ${groupStyles.container}`}
                     >
                       {/* Workflow Desk Header */}
                       <button
@@ -1655,14 +1818,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         aria-expanded={isExpanded}
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md border shrink-0 ${
-                            hasActiveChild 
-                              ? 'bg-indigo-600/30 text-indigo-300 border-indigo-500/40' 
-                              : 'bg-slate-800 text-slate-400 border-slate-700/60'
-                          }`}>
+                          <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md border shrink-0 transition-all ${groupStyles.badge}`}>
                             0{group.index}
                           </span>
-                          <GroupIcon className={`w-3.5 h-3.5 shrink-0 ${hasActiveChild ? 'text-indigo-400' : 'text-slate-400'}`} />
+                          <GroupIcon className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${groupStyles.icon}`} />
                           <span className="text-[11px] font-semibold tracking-tight truncate">
                             {group.title}
                           </span>
@@ -1681,76 +1840,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       {/* Workflow Module List */}
                       {isExpanded && (
                         <div className="px-1.5 pb-1.5 pt-0.5 space-y-0.5 border-t border-slate-800/60">
-                          {groupItems.map((item) => {
-                            const Icon = item.icon;
-                            const isPinned = pinnedIds.includes(item.id);
-                            const isActive = activeRouteId === item.id;
-
-                            return (
-                              <div
-                                key={item.id}
-                                data-nav-id={item.id}
-                                className={`relative w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-all duration-150 group overflow-hidden press-physics-subtle cosmic-card-sheen ${
-                                  isActive 
-                                    ? 'active-nav-glow text-white font-medium shadow-[0_0_12px_rgba(56,189,248,0.2)]' 
-                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent'
-                                } ${item.restricted ? 'opacity-60' : ''}`}
-                              >
-                                {/* Cosmic Laser Beam on Active Item */}
-                                {isActive && (
-                                  <span 
-                                    className="absolute left-0 top-1.5 bottom-1.5 w-1 cosmic-laser-rail rounded-r-full shadow-[0_0_10px_rgba(56,189,248,0.9)]" 
-                                    aria-hidden="true"
-                                  >
-                                    <span className="absolute -top-0.5 left-0 w-1.5 h-1.5 rounded-full bg-cyan-300 shadow-[0_0_6px_#38bdf8]" />
-                                    <span className="absolute -bottom-0.5 left-0 w-1.5 h-1.5 rounded-full bg-violet-400 shadow-[0_0_6px_#c084fc]" />
-                                  </span>
-                                )}
-
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (item.restricted) {
-                                      if (onAccessDenied) onAccessDenied(item.label, item.requiredRoleDesc || activeRole);
-                                      return;
-                                    }
-                                    handleAction(item.action);
-                                  }}
-                                  className="flex-1 flex items-center space-x-2.5 min-w-0 text-left cursor-pointer pl-0.5 focus-ring-physics rounded-md py-0.5"
-                                >
-                                  <Icon className={`w-3.5 h-3.5 shrink-0 transition-transform duration-150 group-hover:scale-110 ${isActive ? 'text-indigo-400 icon-active-glow' : 'text-slate-400 group-hover:text-slate-300'}`} />
-                                  <span className="text-xs truncate">{item.label}</span>
-                                </button>
-
-                                <div className="flex items-center space-x-1.5 ml-2 shrink-0">
-                                  {item.restricted && (
-                                    <span title={item.requiredRoleDesc} className="inline-flex items-center">
-                                      <Lock className="w-3 h-3 text-rose-400 shrink-0" />
-                                    </span>
-                                  )}
-
-                                  {item.badge && (
-                                    <span className="text-[10px] px-1.5 py-0.2 rounded font-mono font-medium border bg-slate-950 border-slate-800 text-slate-300">
-                                      {item.badge}
-                                    </span>
-                                  )}
-
-                                  <button
-                                    type="button"
-                                    onClick={(e) => togglePin(e, item.id)}
-                                    className={`p-0.5 rounded transition-opacity cursor-pointer press-physics focus-ring-physics ${
-                                      isPinned 
-                                        ? 'text-amber-400 opacity-100' 
-                                        : 'text-slate-600 opacity-0 group-hover:opacity-100 hover:text-amber-400'
-                                    }`}
-                                    title={isPinned ? (activeLang === 'vi' ? 'Bỏ ghim' : 'Unpin') : (activeLang === 'vi' ? 'Ghim yêu thích' : 'Pin to top')}
-                                  >
-                                    <Star className={`w-3 h-3 ${isPinned ? 'fill-amber-400 text-amber-400' : ''}`} />
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
+                          {groupItems.map((item) => renderModuleItem(item))}
                         </div>
                       )}
                     </div>
@@ -1784,22 +1874,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
-        {/* Sidebar Bottom Footer: User, Role & Sync status */}
-        <div className="p-2.5 bg-[#0d1527] border-t border-slate-800/80 text-slate-400 flex flex-col gap-2 shrink-0">
+        {/* Sidebar Bottom Footer: User, Role & Sync Telemetry HUD */}
+        <div className="p-2.5 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800/80 text-slate-400 flex flex-col gap-2 shrink-0 relative z-10">
           
           {!isCollapsed ? (
             <div className="relative">
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/90 border border-slate-800/80">
+              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-800/80 hover:border-slate-700/80 transition-all shadow-sm">
                 <div 
                   className="flex items-center space-x-2.5 min-w-0 cursor-pointer press-physics-subtle rounded-lg p-0.5"
                   onClick={() => onOpenAuthModal && onOpenAuthModal()}
                   title="Quản lý tài khoản"
                 >
-                  <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white flex items-center justify-center text-xs font-semibold shrink-0">
-                    {company.salesRepName ? company.salesRepName.charAt(0).toUpperCase() : 'U'}
+                  {/* Holographic Avatar with Live Status Dot */}
+                  <div className="relative shrink-0">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 via-indigo-600 to-violet-600 p-0.5 shadow-[0_0_10px_rgba(99,102,241,0.3)]">
+                      <div className="w-full h-full rounded-[10px] bg-slate-950 flex items-center justify-center text-white text-xs font-bold">
+                        {company.salesRepName ? company.salesRepName.charAt(0).toUpperCase() : 'U'}
+                      </div>
+                    </div>
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-950 shadow-[0_0_4px_#34d399]" />
                   </div>
+
                   <div className="min-w-0">
-                    <div className="text-xs font-medium text-white truncate hover:text-slate-300">
+                    <div className="text-xs font-semibold text-slate-100 truncate hover:text-cyan-300 transition-colors">
                       {company.salesRepName || 'Chuyên viên Logistics'}
                     </div>
                     {Boolean((import.meta as any).env?.DEV) ? (
@@ -1828,18 +1925,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   type="button"
                   onClick={handleLanguageToggle}
-                  className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-[10px] font-semibold border border-slate-700 transition-colors cursor-pointer press-physics focus-ring-physics"
+                  className="px-2 py-1 bg-slate-800/90 hover:bg-slate-700/90 text-slate-300 hover:text-white rounded-lg text-[10px] font-semibold border border-slate-700/80 transition-all cursor-pointer press-physics focus-ring-physics shadow-xs"
                   title="Chuyển ngôn ngữ / Switch language"
                 >
-                  <span className={activeLang === 'vi' ? 'text-white' : 'text-slate-500'}>VI</span>
+                  <span className={activeLang === 'vi' ? 'text-cyan-300 font-bold' : 'text-slate-500'}>VI</span>
                   <span className="mx-0.5 text-slate-600">/</span>
-                  <span className={activeLang === 'en' ? 'text-white' : 'text-slate-500'}>EN</span>
+                  <span className={activeLang === 'en' ? 'text-cyan-300 font-bold' : 'text-slate-500'}>EN</span>
                 </button>
               </div>
 
               {/* RBAC Role Selector Dropdown (DEV MODE ONLY) */}
               {showRoleSelector && Boolean((import.meta as any).env?.DEV) && (
-                <div className="absolute bottom-full left-0 right-0 mb-1.5 p-1.5 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 space-y-1">
+                <div className="absolute bottom-full left-0 right-0 mb-1.5 p-1.5 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 space-y-1 backdrop-blur-xl">
                   <div className="px-2 py-1 text-[10px] font-semibold uppercase text-amber-400 tracking-wider">
                     Chuyển vai trò (DEV TEST)
                   </div>
@@ -1879,27 +1976,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {activeLang.toUpperCase()}
               </button>
               <div 
-                className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white flex items-center justify-center text-xs font-semibold cursor-pointer"
+                className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 via-indigo-600 to-violet-600 p-0.5 cursor-pointer shadow-[0_0_10px_rgba(99,102,241,0.3)]"
                 onClick={() => onOpenAuthModal && onOpenAuthModal()}
                 title={`${company.salesRepName || 'User'} (${activeRole})`}
               >
-                {company.salesRepName ? company.salesRepName.charAt(0).toUpperCase() : 'U'}
+                <div className="w-full h-full rounded-[10px] bg-slate-950 text-white flex items-center justify-center text-xs font-semibold">
+                  {company.salesRepName ? company.salesRepName.charAt(0).toUpperCase() : 'U'}
+                </div>
               </div>
             </div>
           )}
 
-          {/* Real-time Cloud Auto-Save & Rate status */}
+          {/* Real-time Cloud Auto-Save & Rate status Telemetry */}
           {!isCollapsed && (
             <div className="pt-1.5 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400">
               <span className="flex items-center gap-1.5">
-                <span className={`w-1.5 h-1.5 rounded-full ${isAutoSaving ? 'bg-amber-400 animate-ping' : 'bg-emerald-400'}`} />
-                <span>{isAutoSaving ? 'Đang lưu Cloud...' : 'Đã đồng bộ'}:</span>
-                <span className="font-mono text-slate-300">
+                <span className={`w-2 h-2 rounded-full ${isAutoSaving ? 'bg-amber-400 animate-ping' : 'bg-emerald-400 shadow-[0_0_6px_#34d399]'}`} />
+                <span className="text-slate-400">{isAutoSaving ? 'Đang lưu Cloud...' : 'Đã đồng bộ'}:</span>
+                <span className="font-mono text-slate-300 font-medium">
                   {lastAutoSaveTime || 'Sẵn sàng'}
                 </span>
               </span>
 
-              <span className="font-mono text-slate-400">
+              <span className="font-mono text-cyan-300 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-800/40 shadow-[0_0_6px_rgba(6,182,212,0.15)] flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse" />
                 1 USD = {exchangeRate.toLocaleString()}₫
               </span>
             </div>

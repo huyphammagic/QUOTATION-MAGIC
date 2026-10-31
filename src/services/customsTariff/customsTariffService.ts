@@ -1,7 +1,10 @@
 import { 
   HsCodeTariffItem, 
   CustomsTaxCalculationRequest, 
-  CustomsTaxCalculationResult 
+  CustomsTaxCalculationResult,
+  FtaComparisonRow,
+  CustomsRiskAssessment,
+  AdvanceRulingDossier
 } from '../../types/customsTariff';
 import { COMMON_HS_CODE_DATABASE } from '../../data/commonHsTariffs';
 import { LineItem } from '../../types/logistics';
@@ -474,5 +477,223 @@ export function calculateCustomsTaxes(
     totalCustomsTaxUsd,
     effectiveTaxRatePercent,
     suggestedLineItems,
+  };
+}
+
+/**
+ * Compare all FTA preferential tariffs against standard MFN duty to calculate exact tax savings.
+ */
+export function compareFtaTaxSavings(
+  hsItem: HsCodeTariffItem,
+  cifValueUsd: number,
+  exchangeRate: number
+): FtaComparisonRow[] {
+  const cifVnd = cifValueUsd * exchangeRate;
+  const mfnRate = hsItem.importPreferentialTariff;
+  const mfnDutyVnd = (cifVnd * mfnRate) / 100;
+  const mfnDutyUsd = (cifValueUsd * mfnRate) / 100;
+
+  const rows: FtaComparisonRow[] = [
+    {
+      agreementCode: 'MFN',
+      agreementName: 'Biểu thuế NK Ưu đãi Chuẩn (MFN)',
+      rate: mfnRate,
+      coForm: 'Không yêu cầu C/O',
+      qualifyingRule: 'Tiêu chuẩn',
+      dutyAmountVnd: mfnDutyVnd,
+      dutyAmountUsd: mfnDutyUsd,
+      savingsVsMfnVnd: 0,
+      savingsVsMfnUsd: 0,
+      isBestOption: false,
+      notes: 'Áp dụng mặc định khi không có C/O ưu đãi'
+    }
+  ];
+
+  if (!hsItem.ftaTariffs || hsItem.ftaTariffs.length === 0) {
+    return rows;
+  }
+
+  // Find lowest rate
+  let minRate = mfnRate;
+  hsItem.ftaTariffs.forEach(fta => {
+    if (fta.rate < minRate) {
+      minRate = fta.rate;
+    }
+  });
+
+  hsItem.ftaTariffs.forEach(fta => {
+    const ftaDutyVnd = (cifVnd * fta.rate) / 100;
+    const ftaDutyUsd = (cifValueUsd * fta.rate) / 100;
+    const savingsVnd = Math.max(0, mfnDutyVnd - ftaDutyVnd);
+    const savingsUsd = Math.max(0, mfnDutyUsd - ftaDutyUsd);
+
+    rows.push({
+      agreementCode: fta.agreementCode,
+      agreementName: fta.agreementName,
+      rate: fta.rate,
+      coForm: fta.coForm,
+      qualifyingRule: fta.qualifyingRule || 'RVC 40% / CTSH',
+      dutyAmountVnd: ftaDutyVnd,
+      dutyAmountUsd: ftaDutyUsd,
+      savingsVsMfnVnd: savingsVnd,
+      savingsVsMfnUsd: savingsUsd,
+      isBestOption: fta.rate === minRate && fta.rate < mfnRate,
+      notes: fta.conditionNotes || 'Cần xuất trình C/O bản gốc hợp lệ tại thời điểm làm thủ tục'
+    });
+  });
+
+  return rows;
+}
+
+/**
+ * Intelligent Customs Risk Assessment Engine (Dự báo Luồng tờ khai & Rủi ro kiểm tra)
+ */
+export function assessCustomsRisk(
+  hsItem: HsCodeTariffItem,
+  cifValueUsd: number
+): CustomsRiskAssessment {
+  const riskFactors: string[] = [];
+  const mitigationSteps: string[] = [];
+  const requiredDossierDocuments: string[] = [
+    'Hóa đơn thương mại (Commercial Invoice)',
+    'Phiếu đóng gói chi tiết (Packing List)',
+    'Vận đơn đường biển / Hàng không (Bill of Lading / Airway Bill)',
+  ];
+
+  let score = 95; // Baseline high confidence
+
+  // Factor 1: Specialized Inspection
+  if (hsItem.specializedInspection?.isRequired) {
+    score -= 25;
+    riskFactors.push(`Hàng thuộc diện kiểm tra chuyên ngành bắt buộc (${hsItem.specializedInspection.agency} - ${hsItem.specializedInspection.inspectionType}).`);
+    mitigationSteps.push(`Đăng ký số hồ sơ kiểm tra chất lượng / kiểm dịch trên Cổng một cửa quốc gia NSW trước khi tàu cập cảng.`);
+    requiredDossierDocuments.push(`Giấy đăng ký kiểm tra chuyên ngành đã được NSW cấp số tiếp nhận`);
+  }
+
+  // Factor 2: High CIF Valuation risk
+  if (cifValueUsd > 50000) {
+    score -= 10;
+    riskFactors.push(`Lô hàng có trị giá cao (> $50,000 USD), nguy cơ bị chuyển tham vấn giá hải quan.`);
+    mitigationSteps.push(`Chuẩn bị sẵn Ủy nhiệm chi thanh toán quốc tế (T/T, L/C) và Hợp đồng ngoại thương có chữ ký số.`);
+    requiredDossierDocuments.push(`Chứng từ thanh toán ngân hàng (Swift message / Bank Slip)`, `Hợp đồng ngoại thương (Sales Contract)`);
+  }
+
+  // Factor 3: High Import Duty rate
+  if (hsItem.importPreferentialTariff >= 15) {
+    score -= 15;
+    riskFactors.push(`Thuế suất MFN cao (${hsItem.importPreferentialTariff}%), Hải quan thường kiểm soát chặt chẽ mã HS để tránh gian lận thuế.`);
+    mitigationSteps.push(`Chuẩn bị Bản mô tả thông số kỹ thuật (Catalogue / Spec Sheet) chứng minh cấu tạo và công dụng.`);
+    requiredDossierDocuments.push(`Catalogue thông số kỹ thuật chính thức từ nhà sản xuất (Technical Spec)`);
+  }
+
+  // Factor 4: Special consumption tax
+  if (hsItem.specialConsumptionTariff && hsItem.specialConsumptionTariff > 0) {
+    score -= 20;
+    riskFactors.push(`Hàng hóa chịu thuế tiêu thụ đặc biệt (${hsItem.specialConsumptionTariff}%).`);
+    mitigationSteps.push(`Khai báo chính xác nhãn hiệu, số khung/số máy hoặc nồng độ cồn/thành phần theo quy định.`);
+  }
+
+  // Channel determination
+  let predictedChannel: 'GREEN' | 'YELLOW' | 'RED' = 'GREEN';
+  if (score < 60) {
+    predictedChannel = 'RED'; // Luồng Đỏ (Kiểm tra thực tế hàng hóa)
+  } else if (score < 80) {
+    predictedChannel = 'YELLOW'; // Luồng Vàng (Kiểm tra chi tiết hồ sơ)
+  }
+
+  // Valuation risk
+  let valuationRisk: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW';
+  if (cifValueUsd > 100000 || (hsItem.importPreferentialTariff >= 20)) {
+    valuationRisk = 'HIGH';
+  } else if (cifValueUsd > 30000 || hsItem.importPreferentialTariff >= 10) {
+    valuationRisk = 'MEDIUM';
+  }
+
+  // HS Discrepancy risk
+  let hsDiscrepancyRisk: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW';
+  if (hsItem.categoryGroup === 'ELECTRONICS' || hsItem.categoryGroup === 'MACHINERY' || hsItem.categoryGroup === 'CHEMICAL') {
+    hsDiscrepancyRisk = 'MEDIUM';
+    if (hsItem.classificationReason.includes('GIR 3') || hsItem.classificationReason.includes('GIR 2')) {
+      hsDiscrepancyRisk = 'HIGH';
+    }
+  }
+
+  if (mitigationSteps.length === 0) {
+    mitigationSteps.push('Hồ sơ tiêu chuẩn, khai báo đúng tên hàng thương mại và mã HS trên phần mềm VNACCS.');
+  }
+
+  return {
+    predictedChannel,
+    valuationRisk,
+    hsDiscrepancyRisk,
+    overallScore: Math.max(10, Math.min(100, score)),
+    riskFactors,
+    mitigationSteps,
+    requiredDossierDocuments
+  };
+}
+
+/**
+ * Generate official Advance Ruling Dossier Draft (Đề nghị xác định trước mã số theo Điều 28 Luật HQ 2014)
+ */
+export function generateAdvanceRulingDossier(
+  hsItem: HsCodeTariffItem,
+  commodityName: string,
+  originCountry: string = 'Trung Quốc'
+): AdvanceRulingDossier {
+  const dossierNum = `AR-${new Date().getFullYear()}-${hsItem.chapter}${hsItem.heading.slice(2)}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+  const girRule = hsItem.classificationReason.includes('GIR 1') 
+    ? 'Quy tắc 1 (GIR 1) - Tên và đề mục chương, nhóm' 
+    : hsItem.classificationReason.includes('GIR 2') 
+    ? 'Quy tắc 2 (GIR 2) - Hàng dạng bán thành phẩm/tháo rời' 
+    : hsItem.classificationReason.includes('GIR 3') 
+    ? 'Quy tắc 3 (GIR 3) - Hàng đa thành phần/đặc trưng cơ bản' 
+    : 'Quy tắc 1 & Quy tắc 6 (GIR 1 & GIR 6) - Căn cứ nội dung nhóm và phân nhóm 8 chữ số';
+
+  const draftPetitionText = `CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+Độc lập - Tự do - Hạnh phúc
+-----------------
+ĐƠN ĐỀ NGHỊ XÁC ĐỊNH TRƯỚC MÃ SỐ HẢI QUAN
+(Kèm theo Thông tư số 38/2015/TT-BTC & Thông tư 39/2018/TT-BTC)
+
+Kính gửi: TỔNG CỤC HẢI QUAN VIỆT NAM (CỤC THUẾ XNK)
+
+1. Tên tổ chức đề nghị: Doanh nghiệp xuất nhập khẩu (BogiLogistics Client)
+2. Tên thương mại của hàng hóa: ${commodityName || hsItem.descriptionVi}
+3. Tên khoa học / Kỹ thuật: ${hsItem.descriptionEn}
+4. Xuất xứ hàng hóa: ${originCountry}
+5. Thành phần cấu tạo: Vật liệu chính phù hợp nhóm ${hsItem.heading}
+6. Công dụng và nguyên lý hoạt động: Phục vụ mục đích quy định tại Chương ${hsItem.chapter}
+7. Mã số HS do Doanh nghiệp đề xuất: ${hsItem.hsCode}
+8. Căn cứ phân loại đề xuất: 
+   - Áp dụng ${girRule}.
+   - Căn cứ Biểu thuế Xuất nhập khẩu hiện hành (Nghị định 26/2023/NĐ-CP).
+   - Đảm bảo tính nhất quán giữa 6 số chuẩn WCO và 8 số Danh mục Biểu thuế Việt Nam.
+
+Kính đề nghị Tổng cục Hải quan xem xét, ban hành Thông báo kết quả xác định trước mã số theo quy định.`;
+
+  return {
+    dossierNumber: dossierNum,
+    commodityName: commodityName || hsItem.descriptionVi,
+    suggestedHsCode: hsItem.hsCode,
+    originCountry,
+    materialComposition: 'Cấu tạo hợp chuẩn theo mô tả kỹ thuật nhóm ' + hsItem.heading,
+    functionPrinciple: 'Vận hành đúng chức năng phân loại theo Chương ' + hsItem.chapter,
+    packagingState: 'Hàng mới 100%, đóng gói theo quy chuẩn bảo vệ vận tải quốc tế',
+    applicableGirRule: girRule,
+    legalBasis: [
+      'Điều 28 Luật Hải quan số 54/2014/QH13',
+      'Điều 24 Nghị định số 08/2015/NĐ-CP',
+      'Thông tư số 38/2015/TT-BTC và Thông tư số 39/2018/TT-BTC của Bộ Tài chính',
+      'Nghị định 26/2023/NĐ-CP về Biểu thuế xuất khẩu, Biểu thuế nhập khẩu ưu đãi'
+    ],
+    requiredAttachments: [
+      { name: 'Catalogue kỹ thuật / Tài liệu sản phẩm (Spec Sheet)', required: true, description: 'Hình ảnh, bản vẽ, thông số cấu tạo do nhà sản xuất phát hành' },
+      { name: 'Quy trình công nghệ / Giấy chứng nhận phân tích (COA)', required: true, description: 'Certificate of Analysis chứng minh thành phần cấu tạo' },
+      { name: 'Mẫu hàng hóa thực tế (nếu được yêu cầu)', required: false, description: 'Cung cấp mẫu thử phục vụ công tác giám định phân tích' },
+      { name: 'Văn bản ủy quyền đại diện làm thủ tục (nếu có)', required: true, description: 'Hợp đồng đại lý làm thủ tục hải quan' }
+    ],
+    draftPetitionText
   };
 }

@@ -10,7 +10,11 @@ import {
   CustomerRecord, 
   SurchargeItem,
   QuoteCurrency,
-  TransportMode
+  TransportMode,
+  FeeCategory,
+  ChargeLocation,
+  Currency,
+  SalesRoadmapStage
 } from './types/logistics';
 import { RateMasterItem, ChargeMasterItem, RateHistoryItem } from './types/masterRate';
 import { DEFAULT_COMPANY_PROFILE, createEmptyQuote, DEFAULT_EXCHANGE_RATE } from './data/presets';
@@ -81,12 +85,13 @@ import { exportQuoteToExcel } from './utils/exportExcel';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { DashboardStats } from './components/DashboardStats';
-import { CustomerForm } from './components/CustomerForm';
-import { ShipmentForm } from './components/ShipmentForm';
+import { CustomerForm, CustomerFormErrors } from './components/CustomerForm';
+import { ShipmentForm, ShipmentFormErrors } from './components/ShipmentForm';
 import { LineItemsTable } from './components/LineItemsTable';
 import { TermsForm } from './components/TermsForm';
 import { SummaryCard } from './components/SummaryCard';
 import { QuotationWorkspaceHeader, WorkspaceTab } from './components/QuotationWorkspaceHeader';
+import { SmartSalesRoadmap } from './components/roadmap/SmartSalesRoadmap';
 import { FolderFullscreenHeader } from './components/tables/TableFullscreenHeader';
 import { MobileBottomBar } from './components/navigation/MobileBottomBar';
 
@@ -155,9 +160,12 @@ const SmartSurchargeAssistantModal = lazyWithRetry(() => import('./components/su
 import { SmartSurchargeRecommendationBanner } from './components/surcharge/SmartSurchargeRecommendationBanner';
 import { SmartSurchargeEngine } from './services/surcharge/smartSurchargeEngine';
 import type { SmartSurchargeSuggestion } from './types/smartSurcharge';
+import { CommandPaletteModal } from './components/command/CommandPaletteModal';
+import { KeyboardShortcutsModal } from './components/command/KeyboardShortcutsModal';
 import { LiveLeadToastNotifier } from './components/telemetry/LiveLeadToastNotifier';
 import { subscribeToLiveEngagements } from './services/telemetry/customerEngagementService';
 import { QuotationEngagementSession } from './types/customerEngagement';
+import { GoldenBurstCelebration, DealCelebrationData } from './components/common/GoldenBurstCelebration';
 
 import { getShipments } from './services/shipment/shipmentService';
 import { ShipmentRecord } from './types/shipment';
@@ -330,6 +338,15 @@ export default function App() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<WorkspaceTab>('DETAILS');
   
+  // Client-side field validation states for CustomerForm & ShipmentForm
+  const [customerFormErrors, setCustomerFormErrors] = useState<CustomerFormErrors>({});
+  const [shipmentFormErrors, setShipmentFormErrors] = useState<ShipmentFormErrors>({});
+  const [formValidationShakeTrigger, setFormValidationShakeTrigger] = useState<number>(0);
+  
+  // Unsaved changes tracking for active state management & subtle pulse animation
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
+  const [isSavingQuote, setIsSavingQuote] = useState<boolean>(false);
+  
   // Phase 7: Professional PDF Quotation Engine & Template Builder Modals
   const [isGeneratePdfOpen, setIsGeneratePdfOpen] = useState(false);
   const [isTemplateBuilderOpen, setIsTemplateBuilderOpen] = useState(false);
@@ -374,6 +391,10 @@ export default function App() {
 
   // Phase 46: Business Opportunity Radar & Customer Growth Intelligence Engine
   const [isOpportunityRadarOpen, setIsOpportunityRadarOpen] = useState(false);
+
+  // Gói 3: Command Palette (Ctrl + K) & Keyboard Shortcuts (?)
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
 
   // Phase 47: Logistics Business Decision & Scenario Workspace
   const [isDecisionWorkspaceOpen, setIsDecisionWorkspaceOpen] = useState(false);
@@ -488,6 +509,9 @@ export default function App() {
   // Phase 55: Deal-Closing Accelerator & Objection Handling Suite (Gói B)
   const [isDealCloserOpen, setIsDealCloserOpen] = useState(false);
   const [selectedClosingQuote, setSelectedClosingQuote] = useState<QuoteData | null>(null);
+
+  // Hiệu ứng 7: Trạng thái Chùm hạt vàng kim quang học khi Chốt Deal Thành Công (Deal Won Celebration)
+  const [globalDealCelebration, setGlobalDealCelebration] = useState<DealCelebrationData | null>(null);
 
   // Phase 56: Smart RFQ Inbox & 5-Second Quote Generator (Ý Tưởng 1)
   const [isRfqInboxOpen, setIsRfqInboxOpen] = useState(false);
@@ -813,6 +837,8 @@ export default function App() {
     setCreateShipmentFromQuote(null);
     setViewingSecureToken(null);
     setNotFoundPath(null);
+    setIsCommandPaletteOpen(false);
+    setIsKeyboardShortcutsOpen(false);
   };
 
   const handleModalClose = () => {
@@ -1642,6 +1668,7 @@ export default function App() {
 
   // Helper to re-compute totals through the Logistics Pricing Engine
   const updateQuoteState = (partialQuote: Partial<QuoteData>) => {
+    setHasUnsavedChanges(true);
     setQuote((prev) => {
       const merged = { 
         ...prev, 
@@ -1719,8 +1746,47 @@ export default function App() {
     };
   }, [exchangeRateConfig]);
 
+  // Smart Sales Roadmap Stage Transition Handler
+  const handleUpdateSalesStage = (newStage: SalesRoadmapStage, notes?: string) => {
+    const history = quote.salesStageHistory || [];
+    const newHistory = [
+      ...history,
+      {
+        stage: newStage,
+        timestamp: new Date().toISOString(),
+        notes,
+        updatedBy: company?.salesRepName || 'Sales Representative'
+      }
+    ];
+
+    let updatedStatus = quote.status;
+    if (newStage === 'DEAL_CLOSED' && quote.status !== 'ACCEPTED') {
+      updatedStatus = 'ACCEPTED';
+    } else if (newStage === 'NEGOTIATION' && quote.status === 'DRAFT') {
+      updatedStatus = 'SENT';
+    }
+
+    updateQuoteState({
+      salesStage: newStage,
+      salesStageHistory: newHistory,
+      status: updatedStatus,
+    });
+
+    const stageNames: Record<SalesRoadmapStage, string> = {
+      PROSPECTING: '1. Tiếp Cận',
+      RFQ: '2. Tiếp Nhận RFQ',
+      QUOTATION: '3. Lập Báo Giá',
+      NEGOTIATION: '4. Đàm Phán',
+      DEAL_CLOSED: '5. Chốt Deal Thành Công 🏆'
+    };
+    showToast(`🚀 Lộ trình bán hàng: Chuyển sang ${stageNames[newStage]}`);
+  };
+
   // Customer Form Changes
-  const handleChangeCustomer = (field: keyof CustomerInfo, val: string) => {
+  const handleChangeCustomer = (field: keyof CustomerInfo, val: any) => {
+    if (field === 'companyName' && customerFormErrors.companyName && typeof val === 'string' && val.trim()) {
+      setCustomerFormErrors(prev => ({ ...prev, companyName: undefined }));
+    }
     updateQuoteState({
       customer: { ...quote.customer, [field]: val },
     });
@@ -1728,6 +1794,7 @@ export default function App() {
 
   // Select Customer from Manager to Auto-fill Quote with Pricing Policy resolution
   const handleSelectCustomerForQuote = (cust: CustomerRecord) => {
+    setCustomerFormErrors(prev => ({ ...prev, companyName: undefined }));
     const resolvedPolicy = resolvePricingPolicy(pricingPolicies, cust.id || cust.code, cust.segment, quote.shipment?.mode);
     setActivePricingPolicy(resolvedPolicy);
 
@@ -1743,6 +1810,9 @@ export default function App() {
         email: cust.email,
         phone: cust.phone,
         contactPerson: cust.contactPerson || cust.customerName,
+        creditLimitVnd: cust.creditLimitVnd,
+        creditTermDays: cust.creditTermDays,
+        creditStatus: cust.creditStatus,
       },
       targetMarginPercent: resolvedPolicy.targetMarginPercent,
       minimumMarginPercent: resolvedPolicy.minimumMarginPercent,
@@ -2017,6 +2087,11 @@ export default function App() {
 
   // Quote Metadata Changes
   const handleChangeQuoteMeta = (field: 'quoteNumber' | 'createdDate' | 'validityDate' | 'status', val: string) => {
+    if (field === 'quoteNumber' && customerFormErrors.quoteNumber && val.trim()) {
+      setCustomerFormErrors(prev => ({ ...prev, quoteNumber: undefined }));
+    } else if (field === 'validityDate' && customerFormErrors.validityDate && val.trim()) {
+      setCustomerFormErrors(prev => ({ ...prev, validityDate: undefined }));
+    }
     if (field === 'validityDate') {
       updateQuoteState({
         terms: { ...quote.terms, validityDate: val },
@@ -2030,6 +2105,21 @@ export default function App() {
 
   // Shipment Details Changes
   const handleChangeShipment = (updatedShipment: Partial<ShipmentDetails>) => {
+    if (shipmentFormErrors.pol && updatedShipment.pol !== undefined && updatedShipment.pol.trim()) {
+      setShipmentFormErrors(prev => ({ ...prev, pol: undefined }));
+    }
+    if (shipmentFormErrors.pod && updatedShipment.pod !== undefined && updatedShipment.pod.trim()) {
+      setShipmentFormErrors(prev => ({ ...prev, pod: undefined }));
+    }
+    if (shipmentFormErrors.commodity && updatedShipment.commodity !== undefined && updatedShipment.commodity.trim()) {
+      setShipmentFormErrors(prev => ({ ...prev, commodity: undefined }));
+    }
+    if (shipmentFormErrors.containerType && updatedShipment.containerType !== undefined && updatedShipment.containerType.trim()) {
+      setShipmentFormErrors(prev => ({ ...prev, containerType: undefined }));
+    }
+    if (shipmentFormErrors.quantity && updatedShipment.quantity !== undefined && Number(updatedShipment.quantity) > 0) {
+      setShipmentFormErrors(prev => ({ ...prev, quantity: undefined }));
+    }
     updateQuoteState({
       shipment: { ...quote.shipment, ...updatedShipment },
     });
@@ -2121,6 +2211,8 @@ export default function App() {
 
   // Create New Blank Quote
   const handleNewQuote = async () => {
+    setCustomerFormErrors({});
+    setShipmentFormErrors({});
     let newRef: string;
     try {
       newRef = await generateNextQuoteNumber();
@@ -2243,6 +2335,7 @@ export default function App() {
     });
 
     showToast(`Đã tạo và lưu 100% báo giá mới [${newRef}] lên Cloud!`);
+    setHasUnsavedChanges(false);
   };
 
   // Manual Cloud Sync Function for Navbar Trigger (Firestore + Firebase Storage 100% Multi-Device Sync)
@@ -2297,8 +2390,74 @@ export default function App() {
     }
   };
 
+  // Validate required fields in CustomerForm & ShipmentForm
+  const validateQuoteForm = (): boolean => {
+    const custErrors: CustomerFormErrors = {};
+    const shipErrors: ShipmentFormErrors = {};
+    let hasError = false;
+
+    // CustomerForm required fields
+    if (!quote.quoteNumber?.trim()) {
+      custErrors.quoteNumber = 'Bắt buộc nhập mã báo giá';
+      hasError = true;
+    }
+    if (!quote.customer?.companyName?.trim()) {
+      custErrors.companyName = 'Bắt buộc nhập tên công ty/khách hàng';
+      hasError = true;
+    }
+    if (!quote.terms?.validityDate?.trim()) {
+      custErrors.validityDate = 'Bắt buộc chọn thời hạn hiệu lực';
+      hasError = true;
+    }
+
+    // ShipmentForm required fields
+    if (!quote.shipment?.pol?.trim()) {
+      shipErrors.pol = 'Bắt buộc nhập cảng đi (POL)';
+      hasError = true;
+    }
+    if (!quote.shipment?.pod?.trim()) {
+      shipErrors.pod = 'Bắt buộc nhập cảng đến (POD)';
+      hasError = true;
+    }
+    if (!quote.shipment?.commodity?.trim()) {
+      shipErrors.commodity = 'Bắt buộc nhập tên hàng';
+      hasError = true;
+    }
+    if (!quote.shipment?.containerType?.trim()) {
+      shipErrors.containerType = 'Bắt buộc chọn loại thiết bị';
+      hasError = true;
+    }
+    if (!quote.shipment?.quantity || Number(quote.shipment.quantity) <= 0) {
+      shipErrors.quantity = 'Số lượng phải > 0';
+      hasError = true;
+    }
+
+    setCustomerFormErrors(custErrors);
+    setShipmentFormErrors(shipErrors);
+
+    return !hasError;
+  };
+
   // Save Quote Handler with Firestore Sync & Cross-Device Conflict Handling
   const handleSaveQuoteAction = async () => {
+    // Client-side field validation for required fields in CustomerForm & ShipmentForm
+    if (!validateQuoteForm()) {
+      setFormValidationShakeTrigger(prev => prev + 1);
+      showToast('Vui lòng điền đầy đủ các thông tin bắt buộc (*) trước khi lưu báo giá!', 'error');
+
+      // Auto-switch to DETAILS tab if user is currently on another tab, so they can see the errors
+      if (activeWorkspaceTab !== 'DETAILS' && activeWorkspaceTab !== 'ALL') {
+        setActiveWorkspaceTab('DETAILS');
+      }
+      return;
+    }
+
+    setCustomerFormErrors({});
+    setShipmentFormErrors({});
+    setIsSavingQuote(true);
+
+    try {
+
     // Ensure companyId and companySnapshot exist on the quote before calculation
     const currentCompany = activeCompanyRecord || company;
     let quoteWithSnapshot: QuoteData = {
@@ -2372,10 +2531,17 @@ export default function App() {
       companyProfile: company,
     });
 
-    const savedTime = saveActiveQuoteDraft(calculatedQuote);
-    if (savedTime) setLastAutoSaveTime(savedTime);
-    setLastCloudSyncedAt(new Date());
-    showToast(`Đã lưu báo giá ${calculatedQuote.quoteNumber} thành công lên Cloud (v${result.savedQuote?.version || calculatedQuote.version || 1})!`);
+      const savedTime = saveActiveQuoteDraft(calculatedQuote);
+      if (savedTime) setLastAutoSaveTime(savedTime);
+      setLastCloudSyncedAt(new Date());
+      setHasUnsavedChanges(false);
+      showToast(`Đã lưu báo giá ${calculatedQuote.quoteNumber} thành công lên Cloud (v${result.savedQuote?.version || calculatedQuote.version || 1})!`);
+    } catch (saveErr: any) {
+      console.warn('Lỗi khi lưu báo giá lên Cloud:', saveErr);
+      showToast(saveErr?.message || 'Có lỗi xảy ra khi lưu báo giá lên Firebase Cloud!', 'error');
+    } finally {
+      setIsSavingQuote(false);
+    }
   };
 
   // Handle Conflict Modal Actions
@@ -2406,10 +2572,13 @@ export default function App() {
 
   // Select Saved Quote
   const handleSelectQuote = (selected: QuoteData) => {
+    setCustomerFormErrors({});
+    setShipmentFormErrors({});
     const { calculatedQuote } = calculateQuote(selected);
     setQuote(calculatedQuote);
     const savedTime = saveActiveQuoteDraft(calculatedQuote);
     if (savedTime) setLastAutoSaveTime(savedTime);
+    setHasUnsavedChanges(false);
     showToast(`Đã tải báo giá ${selected.quoteNumber}`);
   };
 
@@ -2501,8 +2670,191 @@ export default function App() {
       setQuote(prev => ({ ...prev, status }));
     }
     setLastCloudSyncedAt(new Date());
+
+    // Hiệu ứng 7: Kích hoạt Chùm hạt vàng kim quang học khi Chốt Deal Thành Công (ACCEPTED hoặc APPROVED)
+    if (status === 'ACCEPTED' || status === 'APPROVED') {
+      const qTarget = target || (quote.id === id ? quote : updatedList.find(q => q.id === id)) || quote;
+      const isV = qTarget.quoteCurrency === 'VND';
+      setGlobalDealCelebration({
+        quoteNumber: qTarget.quoteNumber,
+        customerName: qTarget.customer?.companyName || qTarget.customer?.customerName,
+        totalAmount: isV ? qTarget.grandTotalVnd : qTarget.grandTotalUsd,
+        currency: qTarget.quoteCurrency || 'USD',
+        profit: isV ? qTarget.totalProfitVnd : qTarget.totalProfitUsd,
+        marginPercent: qTarget.overallMarginPercent,
+      });
+    }
+
     showToast(`Đã cập nhật trạng thái báo giá thành ${status} & đồng bộ 100% Cloud (kèm Snapshot tài chính)!`);
   };
+
+  // Export current quotation to Excel
+  const handleExportExcel = () => {
+    try {
+      exportQuoteToExcel(quote, quote.quoteCurrency || 'USD');
+      showToast('Đã tải xuống file Excel báo giá thành công!');
+    } catch (err: any) {
+      showToast(`Lỗi khi xuất file Excel: ${err?.message || ''}`, 'error');
+    }
+  };
+
+  // Gói 3: Command Palette Handlers (Fast Sales Operations)
+  const handleSelectPolFromPalette = (portName: string) => {
+    handleChangeShipment({ pol: portName, origin: portName });
+    showToast(`⚓ Đã cập nhật Cảng bốc hàng (POL): ${portName}`);
+  };
+
+  const handleSelectPodFromPalette = (portName: string) => {
+    handleChangeShipment({ pod: portName, destination: portName });
+    showToast(`🏁 Đã cập nhật Cảng dỡ hàng (POD): ${portName}`);
+  };
+
+  const handleAddChargeFromPalette = (charge: {
+    code: string;
+    description: string;
+    category: FeeCategory;
+    location: ChargeLocation;
+    unit: string;
+    unitPrice: number;
+    costPrice: number;
+    currency: Currency;
+    vatRate: number;
+  }) => {
+    const rawItem: LineItem = {
+      id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      code: charge.code,
+      description: charge.description,
+      category: charge.category,
+      location: charge.location,
+      unit: charge.unit,
+      basis: 'PER_CONTAINER',
+      quantity: 1,
+      unitPrice: charge.unitPrice,
+      costPrice: charge.costPrice,
+      currency: charge.currency,
+      vatRate: charge.vatRate,
+      amountUsd: 0,
+      amountVnd: 0,
+      note: 'Thêm nhanh từ Command Palette (Ctrl + K)',
+    };
+    const calculated = calculateLineItem(rawItem, quote.exchangeRate, quote.shipment);
+    handleUpdateItems([...quote.items, calculated]);
+    showToast(`🏷️ Đã thêm phụ phí [${charge.code}] ${charge.description} vào bảng báo giá!`);
+  };
+
+  const handleSelectCustomerFromPalette = (cust: CustomerRecord) => {
+    handleSelectCustomerForQuote(cust);
+    showToast(`👥 Đã gán khách hàng ${cust.companyName || cust.customerName} vào báo giá!`);
+  };
+
+  // Gói 3: Global Keyboard Shortcuts Listener (Ctrl + K, ?, Ctrl + S, Ctrl + N, Ctrl + P, Ctrl + E, etc.)
+  useEffect(() => {
+    const handleGlobalShortcuts = (e: KeyboardEvent) => {
+      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+      const target = e.target as HTMLElement | null;
+      const targetTag = target?.tagName?.toLowerCase();
+      const isInputActive = targetTag === 'input' || targetTag === 'textarea' || target?.isContentEditable;
+
+      // 1. Command Palette: Ctrl + K or Cmd + K
+      if (isCtrlOrCmd && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+        return;
+      }
+
+      // 2. Keyboard Shortcuts Cheatsheet: ? (when not inside an input/textarea)
+      if (e.key === '?' && !isCtrlOrCmd && !isInputActive) {
+        e.preventDefault();
+        setIsKeyboardShortcutsOpen(prev => !prev);
+        return;
+      }
+
+      // 3. Save Quote: Ctrl + S or Cmd + S
+      if (isCtrlOrCmd && !e.shiftKey && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        handleSaveQuoteAction();
+        return;
+      }
+
+      // 4. New Blank Quote: Ctrl + N or Cmd + N
+      if (isCtrlOrCmd && !e.shiftKey && (e.key === 'n' || e.key === 'N')) {
+        e.preventDefault();
+        handleNewQuote();
+        return;
+      }
+
+      // 5. Export PDF: Ctrl + P or Cmd + P
+      if (isCtrlOrCmd && !e.shiftKey && (e.key === 'p' || e.key === 'P')) {
+        e.preventDefault();
+        setIsGeneratePdfOpen(true);
+        return;
+      }
+
+      // 6. Export Excel: Ctrl + E or Cmd + E
+      if (isCtrlOrCmd && !e.shiftKey && (e.key === 'e' || e.key === 'E')) {
+        e.preventDefault();
+        handleExportExcel();
+        return;
+      }
+
+      // 7. Route Presets: Ctrl + Shift + R
+      if (isCtrlOrCmd && e.shiftKey && (e.key === 'r' || e.key === 'R')) {
+        e.preventDefault();
+        setIsRoutePresetModalOpen(true);
+        return;
+      }
+
+      // 8. Surcharges Catalog: Ctrl + Shift + S
+      if (isCtrlOrCmd && e.shiftKey && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        setIsSurchargesOpen(true);
+        return;
+      }
+
+      // 9. Customers CRM: Ctrl + Shift + C
+      if (isCtrlOrCmd && e.shiftKey && (e.key === 'c' || e.key === 'C')) {
+        e.preventDefault();
+        setIsCustomersOpen(true);
+        return;
+      }
+
+      // 10. Master Rates Hub: Ctrl + B
+      if (isCtrlOrCmd && !e.shiftKey && (e.key === 'b' || e.key === 'B')) {
+        e.preventDefault();
+        setIsMasterRateHubOpen(true);
+        return;
+      }
+
+      // 11. Realtime Exchange Rate: Ctrl + Shift + E
+      if (isCtrlOrCmd && e.shiftKey && (e.key === 'e' || e.key === 'E')) {
+        e.preventDefault();
+        setIsExchangeRateModalOpen(true);
+        return;
+      }
+
+      // 12. Control Tower: Ctrl + Shift + T
+      if (isCtrlOrCmd && e.shiftKey && (e.key === 't' || e.key === 'T')) {
+        e.preventDefault();
+        setIsControlTowerOpen(true);
+        return;
+      }
+
+      // 13. BI Dashboard: Ctrl + Shift + D
+      if (isCtrlOrCmd && e.shiftKey && (e.key === 'd' || e.key === 'D')) {
+        e.preventDefault();
+        setIsDashboardOpen(true);
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalShortcuts);
+    return () => {
+      window.removeEventListener('keydown', handleGlobalShortcuts);
+    };
+  }, [
+    quote,
+    company,
+  ]);
 
   // If viewing a public customer secure quote link, render the dedicated portal view
   if (viewingSecureToken) {
@@ -2684,6 +3036,8 @@ export default function App() {
               setIsCompanyOpen(true);
             }}
             onOpenAuthModal={() => setIsAuthModalOpen(true)}
+            onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+            onOpenShortcutsHelp={() => setIsKeyboardShortcutsOpen(true)}
           />
 
           {/* Main Content Area */}
@@ -2705,6 +3059,8 @@ export default function App() {
               activeTab={activeWorkspaceTab}
               onTabChange={setActiveWorkspaceTab}
               onSaveQuote={handleSaveQuoteAction}
+              isSaving={Boolean(isSavingQuote || isAutoSaving)}
+              hasUnsavedChanges={hasUnsavedChanges}
               onOpenPreview={() => setIsPreviewOpen(true)}
               onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
               onOpenSendModal={() => setIsSendQuotationOpen(true)}
@@ -2730,7 +3086,6 @@ export default function App() {
               onOpenMultiOptionQuote={handleOpenMultiOptionQuote}
               onOpenRoutePresets={() => setIsRoutePresetModalOpen(true)}
               onOpenHistoricalRateAdvisor={() => setIsHistoricalRateAdvisorOpen(true)}
-              isSaving={isAutoSaving}
               lastSavedAt={lastAutoSaveTime}
             />
 
@@ -2738,6 +3093,19 @@ export default function App() {
             <DashboardStats 
               quotes={savedQuotes} 
               onOpenAnalytics={() => setIsDashboardOpen(true)}
+            />
+
+            {/* Smart Sales Roadmap HUD (5 Giai đoạn bán hàng: Tiếp cận -> RFQ -> Báo giá -> Đàm phán -> Chốt deal) */}
+            <SmartSalesRoadmap
+              quote={quote}
+              onUpdateSalesStage={handleUpdateSalesStage}
+              onOpenCustomerDna={() => setIsCustomerDnaOpen(true)}
+              onOpenHsCodeTariff={() => setIsHsCodeTariffOpen(true)}
+              onOpenMultiOptionQuote={handleOpenMultiOptionQuote}
+              onOpenCompetitorRadar={() => setIsCompetitorRadarOpen(true)}
+              onOpenConcessionGuard={() => setIsConcessionGuardOpen(true)}
+              onOpenDealCloser={() => handleOpenDealCloser(quote)}
+              onOpenSendModal={() => setIsSendQuotationOpen(true)}
             />
 
             {/* Quantum Fluid View Transition Container */}
@@ -2762,6 +3130,8 @@ export default function App() {
                     onSaveToCrm={handleSaveCurrentCustomerToCrm}
                     onSelectCustomer={handleSelectCustomerForQuote}
                     isSavingToCrm={isSavingCustomerToCrm}
+                    errors={customerFormErrors}
+                    shakeTrigger={formValidationShakeTrigger}
                   />
 
                   <ShipmentForm
@@ -2774,6 +3144,8 @@ export default function App() {
                     onOpenHistoricalRateAdvisor={() => setIsHistoricalRateAdvisorOpen(true)}
                     onOpenSmartSurcharges={() => setIsSmartSurchargeModalOpen(true)}
                     smartSurchargesCount={smartSurchargeAnalysis.unappliedCount}
+                    errors={shipmentFormErrors}
+                    shakeTrigger={formValidationShakeTrigger}
                   />
                 </div>
 
@@ -2816,6 +3188,8 @@ export default function App() {
                   onExchangeRateChange={handleExchangeRateChange}
                   onCurrencyChange={handleQuoteCurrencyChange}
                   onSaveQuote={handleSaveQuoteAction}
+                  isSaving={isSavingQuote}
+                  hasUnsavedChanges={hasUnsavedChanges}
                   onExportPdf={(curr) => exportQuoteToPdf(quote, curr)}
                   onExportExcel={(curr) => exportQuoteToExcel(quote, curr)}
                   onOpenPreview={() => setIsPreviewOpen(true)}
@@ -2845,6 +3219,8 @@ export default function App() {
                     onExchangeRateChange={handleExchangeRateChange}
                     onCurrencyChange={handleQuoteCurrencyChange}
                     onSaveQuote={handleSaveQuoteAction}
+                    isSaving={isSavingQuote}
+                    hasUnsavedChanges={hasUnsavedChanges}
                     onExportPdf={(curr) => exportQuoteToPdf(quote, curr)}
                     onExportExcel={(curr) => exportQuoteToExcel(quote, curr)}
                     onOpenPreview={() => setIsPreviewOpen(true)}
@@ -2878,6 +3254,8 @@ export default function App() {
                     onExchangeRateChange={handleExchangeRateChange}
                     onCurrencyChange={handleQuoteCurrencyChange}
                     onSaveQuote={handleSaveQuoteAction}
+                    isSaving={isSavingQuote}
+                    hasUnsavedChanges={hasUnsavedChanges}
                     onExportPdf={(curr) => exportQuoteToPdf(quote, curr)}
                     onExportExcel={(curr) => exportQuoteToExcel(quote, curr)}
                     onOpenPreview={() => setIsPreviewOpen(true)}
@@ -2915,7 +3293,7 @@ export default function App() {
       {/* Mobile Fixed Bottom Navigation Bar (Smartphones & Tablets) */}
       <MobileBottomBar
         quote={quote}
-        isSaving={Boolean(isAutoSaving || isCloudSyncing)}
+        isSaving={Boolean(isSavingQuote || isAutoSaving || isCloudSyncing)}
         onOpenSidebar={() => setIsMobileSidebarOpen(true)}
         onOpenAddFee={() => {
           window.dispatchEvent(new CustomEvent('OPEN_ADD_FEE_MODAL', {
@@ -2924,6 +3302,7 @@ export default function App() {
         }}
         onOpenPreview={() => setIsPreviewOpen(true)}
         onSaveQuote={handleSaveQuoteAction}
+        hasUnsavedChanges={hasUnsavedChanges}
         onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
         onOpenSendModal={() => setIsSendQuotationOpen(true)}
         onOpenRoutePresets={() => setIsRoutePresetModalOpen(true)}
@@ -3762,6 +4141,17 @@ export default function App() {
                 showToast('🎉 Chúc mừng bạn đã chốt đơn thành công! Đã tạo Lô hàng mới.');
                 // Update local quote status
                 setSavedQuotes(prev => prev.map(q => q.id === qId ? { ...q, status: 'ACCEPTED' as any } : q));
+                const targetQ = savedQuotes.find(q => q.id === qId) || selectedClosingQuote || quote;
+                const isV = targetQ.quoteCurrency === 'VND';
+                setGlobalDealCelebration({
+                  quoteNumber: targetQ.quoteNumber,
+                  customerName: targetQ.customer?.companyName || targetQ.customer?.customerName,
+                  totalAmount: isV ? targetQ.grandTotalVnd : targetQ.grandTotalUsd,
+                  currency: targetQ.quoteCurrency || 'USD',
+                  profit: isV ? targetQ.totalProfitVnd : targetQ.totalProfitUsd,
+                  marginPercent: targetQ.overallMarginPercent,
+                  shipmentId,
+                });
               } else {
                 showToast('Đã ghi nhận thông tin kết quả đàm phán.');
                 setSavedQuotes(prev => prev.map(q => q.id === qId ? { ...q, status: 'REJECTED' as any } : q));
@@ -4265,6 +4655,50 @@ export default function App() {
         </Suspense>
       )}
       </Suspense>
+
+      {/* Gói 3: Universal Command Palette (Ctrl + K / Cmd + K) */}
+      <CommandPaletteModal
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onSelectPol={handleSelectPolFromPalette}
+        onSelectPod={handleSelectPodFromPalette}
+        onAddCharge={handleAddChargeFromPalette}
+        onSelectCustomer={handleSelectCustomerFromPalette}
+        customers={customers}
+        surcharges={surcharges}
+        exchangeRate={quote.exchangeRate}
+        onNewQuote={handleNewQuote}
+        onSaveQuote={handleSaveQuoteAction}
+        onExportPdf={() => setIsGeneratePdfOpen(true)}
+        onExportExcel={handleExportExcel}
+        onOpenRoutePresets={() => setIsRoutePresetModalOpen(true)}
+        onOpenExchangeRate={() => setIsExchangeRateModalOpen(true)}
+        onOpenControlTower={() => setIsControlTowerOpen(true)}
+        onOpenBiDashboard={() => setIsDashboardOpen(true)}
+        onOpenMasterRates={() => setIsMasterRateHubOpen(true)}
+        onOpenCustomers={() => setIsCustomersOpen(true)}
+        onOpenSurcharges={() => setIsSurchargesOpen(true)}
+        onOpenShortcutsHelp={() => setIsKeyboardShortcutsOpen(true)}
+      />
+
+      {/* Gói 3: Keyboard Shortcuts Cheatsheet Modal (?) */}
+      <KeyboardShortcutsModal
+        isOpen={isKeyboardShortcutsOpen}
+        onClose={() => setIsKeyboardShortcutsOpen(false)}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+      />
+
+      {/* Hiệu ứng 7: Chùm hạt vàng kim quang học khi Chốt Deal Thành Công (Deal Won Celebration) */}
+      <GoldenBurstCelebration
+        isOpen={Boolean(globalDealCelebration)}
+        onClose={() => setGlobalDealCelebration(null)}
+        data={globalDealCelebration}
+        onOpenShipment={(shipmentId) => {
+          setGlobalDealCelebration(null);
+          setActiveRouteId('ops_shipments');
+        }}
+        onExportContract={() => handleExportExcel()}
+      />
 
     </div>
   );

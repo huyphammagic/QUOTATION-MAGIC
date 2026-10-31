@@ -30,7 +30,8 @@ import {
   Calculator,
   BarChart3,
   Receipt,
-  History
+  History,
+  Trophy
 } from 'lucide-react';
 import { PaymentStatusBadge } from './payment/PaymentStatusBadge';
 
@@ -67,6 +68,7 @@ interface QuotationWorkspaceHeaderProps {
   onOpenRoutePresets?: () => void;
   onOpenHistoricalRateAdvisor?: () => void;
   isSaving?: boolean;
+  hasUnsavedChanges?: boolean;
   lastSavedAt?: string | null;
 }
 
@@ -101,6 +103,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
   onOpenRoutePresets,
   onOpenHistoricalRateAdvisor,
   isSaving = false,
+  hasUnsavedChanges = false,
   lastSavedAt,
 }) => {
   const [isToolsDropdownOpen, setIsToolsDropdownOpen] = useState(false);
@@ -176,6 +179,21 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
           <span className={`inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[11px] font-semibold border shrink-0 ${statusInfo.color}`}>
             <span className="w-1.5 h-1.5 rounded-full bg-current" />
             <span>{statusInfo.label}</span>
+          </span>
+
+          {/* Smart Sales Roadmap Stage Badge */}
+          <span className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-[11px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200/80 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-ping" />
+            <span>
+              {quote.salesStage === 'PROSPECTING' ? '1. Tiếp Cận' :
+               quote.salesStage === 'RFQ' ? '2. RFQ' :
+               quote.salesStage === 'QUOTATION' ? '3. Lập Báo Giá' :
+               quote.salesStage === 'NEGOTIATION' ? '4. Đàm Phán' :
+               quote.salesStage === 'DEAL_CLOSED' ? '5. Đã Chốt Deal 🏆' :
+               (quote.status === 'ACCEPTED' ? '5. Đã Chốt Deal 🏆' :
+                quote.status === 'SENT' || quote.status === 'VIEWED' ? '4. Đàm Phán' :
+                quote.items && quote.items.length > 0 ? '3. Lập Báo Giá' : '2. RFQ')}
+            </span>
           </span>
 
           {/* Payment Status Badge */}
@@ -653,6 +671,23 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
             <span>Xem & Xuất PDF</span>
           </button>
 
+          {/* Deal Closer Quick Action (Hiệu ứng 7) */}
+          {onOpenDealCloser && (
+            <button
+              type="button"
+              onClick={onOpenDealCloser}
+              className={`inline-flex items-center gap-1.5 h-8 px-3 text-xs font-bold rounded-lg border transition-all cursor-pointer shrink-0 press-physics ${
+                quote.status === 'ACCEPTED'
+                  ? 'bg-amber-50 text-amber-900 border-amber-300 ring-1 ring-amber-400/50'
+                  : 'bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 border-amber-400 hover:brightness-105 shadow-xs'
+              }`}
+              title="Mở Bàn đàm phán, Kịch bản đối kháng & Ký chốt deal thành công (Deal Won)"
+            >
+              <Trophy className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+              <span>{quote.status === 'ACCEPTED' ? 'Đã Chốt Deal 🏆' : 'Chốt Deal (Won) 🏆'}</span>
+            </button>
+          )}
+
           {/* Send Quote */}
           <button
             type="button"
@@ -669,18 +704,30 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
             type="button"
             onClick={onSaveQuote}
             disabled={isSaving}
-            className="inline-flex items-center gap-1.5 h-8 px-3.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-50 rounded-lg shadow-2xs transition-colors cursor-pointer shrink-0"
-            title="Lưu báo giá lên Firestore Cloud"
+            className={`inline-flex items-center gap-1.5 h-8 px-3.5 text-xs font-bold rounded-lg shadow-2xs transition-all cursor-pointer shrink-0 press-physics ${
+              hasUnsavedChanges
+                ? 'bg-slate-900 text-white ring-2 ring-emerald-500/70 btn-save-unsaved-pulse'
+                : 'bg-slate-900 hover:bg-slate-800 text-white disabled:opacity-50'
+            }`}
+            title={hasUnsavedChanges ? "Có thay đổi chưa lưu - Bấm để lưu báo giá lên Firestore Cloud" : "Lưu báo giá lên Firestore Cloud"}
           >
             {isSaving ? (
               <>
-                <RotateCcw className="w-3.5 h-3.5 animate-spin shrink-0" />
+                <RotateCcw className="w-3.5 h-3.5 animate-spin shrink-0 text-emerald-400" />
                 <span>Đang lưu...</span>
               </>
             ) : (
               <>
-                <Save className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span className="relative flex items-center justify-center">
+                  <Save className={`w-3.5 h-3.5 text-emerald-400 shrink-0 ${hasUnsavedChanges ? 'drop-shadow-[0_0_6px_rgba(52,211,153,0.8)]' : ''}`} />
+                  {hasUnsavedChanges && (
+                    <span className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
+                  )}
+                </span>
                 <span>Lưu Báo Giá</span>
+                {hasUnsavedChanges && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_6px_#34d399]" />
+                )}
               </>
             )}
           </button>

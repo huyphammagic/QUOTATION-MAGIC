@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Plus } from 'lucide-react';
+import { Menu, Plus, Search, Keyboard } from 'lucide-react';
 import { CompanyProfile } from '../types/logistics';
 import { ExchangeRateDetail } from '../types/exchangeRate';
 import { ExchangeRateBadge } from './exchangeRate/ExchangeRateBadge';
@@ -36,6 +36,8 @@ interface NavbarProps {
   onRefreshLiveRate?: () => Promise<void>;
   onOpenExchangeRateModal?: () => void;
   onOpenRoutePresets?: () => void;
+  onOpenCommandPalette?: () => void;
+  onOpenShortcutsHelp?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -67,6 +69,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onRefreshLiveRate,
   onOpenExchangeRateModal,
   onOpenRoutePresets,
+  onOpenCommandPalette,
+  onOpenShortcutsHelp,
 }) => {
   const { user, isAuthenticated } = useAuth();
 
@@ -113,8 +117,36 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Zone 2: Navigation is cleanly handled via Sidebar */}
 
-      {/* Zone 3: Exchange Rate, Sync Health, and Primary Action */}
+      {/* Zone 3: Command Palette, Exchange Rate, Sync Health, and Actions */}
       <div className="flex items-center space-x-2 sm:space-x-3">
+        {/* Command Palette Quick Search Button */}
+        {onOpenCommandPalette && (
+          <button
+            type="button"
+            onClick={onOpenCommandPalette}
+            className="hidden md:flex items-center space-x-2 bg-slate-50 hover:bg-slate-100/90 text-slate-500 hover:text-slate-800 text-xs px-2.5 py-1.5 rounded-lg border border-slate-200/90 transition-all cursor-pointer shadow-2xs group press-physics-subtle focus-ring-physics-light"
+            title="Mở Command Palette (Ctrl + K / Cmd + K)"
+          >
+            <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600" />
+            <span className="hidden xl:inline text-slate-500">Tra cứu nhanh cảng, phụ phí...</span>
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-semibold bg-white border border-slate-200 rounded text-slate-600 shadow-2xs">
+              Ctrl K
+            </kbd>
+          </button>
+        )}
+
+        {/* Keyboard Shortcuts Cheatsheet Button */}
+        {onOpenShortcutsHelp && (
+          <button
+            type="button"
+            onClick={onOpenShortcutsHelp}
+            className="hidden sm:flex p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+            title="Bảng phím tắt thao tác nhanh (?)"
+          >
+            <Keyboard className="w-4 h-4" />
+          </button>
+        )}
+
         {/* Sync Health Badge */}
         <CloudSyncStatusBadge
           isSyncing={Boolean(isCloudSyncing)}

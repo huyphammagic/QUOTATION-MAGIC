@@ -7,7 +7,8 @@ import {
   X, Search, FileText, Copy, Trash2, Edit3, FileDown, FileSpreadsheet, 
   ChevronLeft, ChevronRight, Loader2, SlidersHorizontal, Sparkles, 
   CreditCard, Receipt, LayoutGrid, Table as TableIcon, Ship, Plane, 
-  Truck, ArrowRight, CheckCircle2, AlertCircle, Clock, Send, TrendingUp, DollarSign
+  Truck, ArrowRight, CheckCircle2, AlertCircle, Clock, Send, TrendingUp, DollarSign,
+  Trophy
 } from 'lucide-react';
 import { FolderFullscreenHeader } from './tables/TableFullscreenHeader';
 import { PaymentStatusBadge } from './payment/PaymentStatusBadge';
@@ -470,6 +471,21 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                         title="Tạo Giấy Báo Nợ (Debit Note)"
                       >
                         <Receipt className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+
+                    {onOpenDealCloser && (
+                      <button
+                        type="button"
+                        onClick={() => onOpenDealCloser(quote)}
+                        className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                          quote.status === 'ACCEPTED'
+                            ? 'border-amber-300 bg-amber-50 text-amber-700'
+                            : 'border-amber-200 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600'
+                        }`}
+                        title="Mở Bàn Đàm Phán & Chốt Deal Tốc Độ (Won Deal 🏆)"
+                      >
+                        <Trophy className="w-3.5 h-3.5" />
                       </button>
                     )}
 

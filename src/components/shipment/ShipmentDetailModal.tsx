@@ -42,8 +42,13 @@ import {
   ExternalLink,
   ShieldAlert,
   ClipboardList,
-  Activity
+  Activity,
+  Compass,
+  Box,
+  Sparkles
 } from 'lucide-react';
+import { RouteParticleBeamMap } from './simulation/RouteParticleBeamMap';
+import { ContainerCargoSimulator } from './simulation/ContainerCargoSimulator';
 
 interface ShipmentDetailModalProps {
   shipment: ShipmentRecord;
@@ -56,7 +61,7 @@ interface ShipmentDetailModalProps {
   activeLanguage?: 'vi' | 'en';
 }
 
-type TabType = 'overview' | 'timeline' | 'containers' | 'milestones' | 'deadlines' | 'documents' | 'financial' | 'audit';
+type TabType = 'overview' | 'simulation' | 'timeline' | 'containers' | 'milestones' | 'deadlines' | 'documents' | 'financial' | 'audit';
 
 const STATUS_CONFIG: Record<ShipmentStatus, { vi: string; en: string; color: string }> = {
   DRAFT: { vi: 'Bản nháp', en: 'Draft', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
@@ -84,6 +89,7 @@ export const ShipmentDetailModal: React.FC<ShipmentDetailModalProps> = ({
   if (!isOpen) return null;
 
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [simulationMode, setSimulationMode] = useState<'route' | 'cargo'>('route');
   const [currentShipment, setCurrentShipment] = useState<ShipmentRecord>(shipment);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
@@ -250,6 +256,7 @@ export const ShipmentDetailModal: React.FC<ShipmentDetailModalProps> = ({
         <div className="px-6 border-b border-slate-200 dark:border-slate-800 flex items-center gap-1 sm:gap-2 overflow-x-auto shrink-0 bg-white dark:bg-slate-900">
           {[
             { id: 'overview', labelVi: 'Tổng Quan & Lịch Trình', labelEn: 'Overview & Route', icon: Anchor },
+            { id: 'simulation', labelVi: 'Hải Trình & Tải Trọng 3D', labelEn: 'Route & 3D Stowage', icon: Compass },
             { id: 'timeline', labelVi: 'Sự Kiện & Tiến Độ', labelEn: 'Events & Timeline', icon: Activity },
             { id: 'containers', labelVi: `Containers (${currentShipment.containers?.length || 0})`, labelEn: `Containers (${currentShipment.containers?.length || 0})`, icon: Layers },
             { id: 'milestones', labelVi: 'Mốc Dịch Vụ', labelEn: 'Milestones', icon: CheckCircle2 },
@@ -541,13 +548,22 @@ export const ShipmentDetailModal: React.FC<ShipmentDetailModalProps> = ({
                   <Package className="w-4 h-4 text-blue-600" />
                   {activeLanguage === 'vi' ? 'Thông Tin Hàng Hóa & Đóng Gói' : 'Cargo & Commodity Specifications'}
                 </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-xs">
                   <div>
                     <span className="text-slate-500 dark:text-slate-400 block mb-0.5">
                       {activeLanguage === 'vi' ? 'Tên Hàng Hóa' : 'Commodity'}
                     </span>
                     <span className="font-semibold text-slate-800 dark:text-slate-200">
                       {currentShipment.commodity || 'General Cargo'}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="text-slate-500 dark:text-slate-400 block mb-0.5">
+                      {activeLanguage === 'vi' ? 'Mã HS Code' : 'HS Code'}
+                    </span>
+                    <span className="font-bold font-mono text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800/60 inline-block">
+                      {currentShipment.hsCode || (activeLanguage === 'vi' ? 'Chưa phân loại' : 'Unassigned')}
                     </span>
                   </div>
 
@@ -579,6 +595,99 @@ export const ShipmentDetailModal: React.FC<ShipmentDetailModalProps> = ({
                   </div>
                 </div>
               </div>
+
+              {/* Live Marine / Air Route Visualizer Mini-HUD */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Compass className="w-4 h-4 text-cyan-600 dark:text-cyan-400 animate-spin-slow" />
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                      {activeLanguage === 'vi' ? 'Hải Trình Vận Tải Trực Quan (Tia Hạt POL ➔ POD)' : 'Transport Corridor & Real-Time Beam'}
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab('simulation');
+                      setSimulationMode('route');
+                    }}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-600 dark:text-cyan-400 hover:underline cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    {activeLanguage === 'vi' ? 'Xem Buồng Mô Phỏng Đầy Đủ & Tải Trọng 3D' : 'Open Full 3D & Radar Simulator'}
+                  </button>
+                </div>
+                <RouteParticleBeamMap
+                  pol={currentShipment.origin}
+                  pod={currentShipment.destination}
+                  mode={currentShipment.serviceMode}
+                  transitTimeDays={currentShipment.transitTimeDays}
+                  carrier={currentShipment.carrierName}
+                  etd={currentShipment.etdPlanned || currentShipment.etdActual}
+                  eta={currentShipment.etaPlanned || currentShipment.etaActual}
+                  isCompact={true}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* TAB: SIMULATION (EFFECTS 3 & 4) */}
+          {activeTab === 'simulation' && (
+            <div className="space-y-6">
+              {/* Simulation Mode Toggle Bar */}
+              <div className="p-3 bg-slate-900 dark:bg-slate-950 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSimulationMode('route')}
+                    className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                      simulationMode === 'route'
+                        ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+                        : 'text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800'
+                    }`}
+                  >
+                    <Compass className="w-4 h-4" />
+                    {activeLanguage === 'vi' ? 'Hiệu Ứng 4: Tia Hạt Hải Trình POL ➔ POD' : 'Route Particle Beam (POL ➔ POD)'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSimulationMode('cargo')}
+                    className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                      simulationMode === 'cargo'
+                        ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-400/20'
+                        : 'text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800'
+                    }`}
+                  >
+                    <Box className="w-4 h-4" />
+                    {activeLanguage === 'vi' ? 'Hiệu Ứng 3: Mô Phỏng Tải Trọng Cont / Air Cargo 3D' : '3D Container / Air Load Simulator'}
+                  </button>
+                </div>
+
+                <div className="text-2xs text-slate-400 font-mono hidden md:flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  <span>BogiLogistics Smart Simulator Engine</span>
+                </div>
+              </div>
+
+              {simulationMode === 'route' ? (
+                <RouteParticleBeamMap
+                  pol={currentShipment.origin}
+                  pod={currentShipment.destination}
+                  mode={currentShipment.serviceMode}
+                  transitTimeDays={currentShipment.transitTimeDays}
+                  carrier={currentShipment.carrierName}
+                  etd={currentShipment.etdPlanned || currentShipment.etdActual}
+                  eta={currentShipment.etaPlanned || currentShipment.etaActual}
+                />
+              ) : (
+                <ContainerCargoSimulator
+                  containerType={currentShipment.containers?.[0]?.containerType || (currentShipment.serviceMode === 'AIR' ? 'PMC' : "40'HC")}
+                  quantity={currentShipment.containers?.length || 1}
+                  grossWeightKg={currentShipment.grossWeightKg || 18500}
+                  volumeCbm={currentShipment.volumeCbm || 52}
+                  commodity={currentShipment.commodity || 'Điện tử & Phụ tùng linh kiện'}
+                />
+              )}
             </div>
           )}
 

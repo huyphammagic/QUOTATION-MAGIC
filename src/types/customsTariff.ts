@@ -51,6 +51,52 @@ export interface HsCodeTariffItem {
   // Practical Logistics & Customs Warnings
   warnings: string[];
   recommendations: string[];
+
+  // Advanced Intelligence Fields (Optional for rich database entries)
+  girRuleCode?: 'GIR_1' | 'GIR_2A' | 'GIR_2B' | 'GIR_3A' | 'GIR_3B' | 'GIR_3C' | 'GIR_5' | 'GIR_6';
+  girRuleTitle?: string;
+  wcoCode6Digits?: string;     // 6 số chuẩn WCO toàn cầu (e.g., '8507.60')
+  nationalDigits2?: string;    // 2 số phân nhóm quốc gia VN (e.g., '90')
+  valuationRiskLevel?: 'LOW' | 'MEDIUM' | 'HIGH';
+  channelRiskPrediction?: 'GREEN' | 'YELLOW' | 'RED';
+}
+
+export interface FtaComparisonRow {
+  agreementCode: string;
+  agreementName: string;
+  rate: number;
+  coForm: string;
+  qualifyingRule: string;
+  dutyAmountVnd: number;
+  dutyAmountUsd: number;
+  savingsVsMfnVnd: number;
+  savingsVsMfnUsd: number;
+  isBestOption: boolean;
+  notes?: string;
+}
+
+export interface CustomsRiskAssessment {
+  predictedChannel: 'GREEN' | 'YELLOW' | 'RED';
+  valuationRisk: 'LOW' | 'MEDIUM' | 'HIGH';
+  hsDiscrepancyRisk: 'LOW' | 'MEDIUM' | 'HIGH';
+  overallScore: number; // 0 - 100 (100 = cực kỳ an toàn)
+  riskFactors: string[];
+  mitigationSteps: string[];
+  requiredDossierDocuments: string[];
+}
+
+export interface AdvanceRulingDossier {
+  dossierNumber: string;
+  commodityName: string;
+  suggestedHsCode: string;
+  originCountry: string;
+  materialComposition: string;
+  functionPrinciple: string;
+  packagingState: string;
+  applicableGirRule: string;
+  legalBasis: string[];
+  requiredAttachments: { name: string; required: boolean; description: string }[];
+  draftPetitionText: string;
 }
 
 export interface CustomsTaxCalculationRequest {

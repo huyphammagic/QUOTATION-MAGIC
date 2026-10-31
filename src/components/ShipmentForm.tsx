@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShipmentDetails, TransportMode, ContainerType } from '../types/logistics';
 import { COMMON_PORTS } from '../data/presets';
 import { computeChargeableWeight, formatNumber } from '../utils/formatters';
@@ -15,11 +15,21 @@ import {
   Clock,
   Info,
   Sparkles,
-  BarChart3
+  BarChart3,
+  AlertCircle,
+  Ship
 } from 'lucide-react';
 
 import { QuoteData } from '../types/logistics';
 import { HistoricalRateBadge } from './pricing/HistoricalRateBadge';
+
+export interface ShipmentFormErrors {
+  pol?: string;
+  pod?: string;
+  commodity?: string;
+  containerType?: string;
+  quantity?: string;
+}
 
 interface ShipmentFormProps {
   shipment: ShipmentDetails;
@@ -31,6 +41,8 @@ interface ShipmentFormProps {
   onOpenHistoricalRateAdvisor?: () => void;
   onOpenSmartSurcharges?: () => void;
   smartSurchargesCount?: number;
+  errors?: ShipmentFormErrors;
+  shakeTrigger?: number;
 }
 
 export const ShipmentForm: React.FC<ShipmentFormProps> = ({ 
@@ -43,8 +55,20 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
   onOpenHistoricalRateAdvisor,
   onOpenSmartSurcharges,
   smartSurchargesCount = 0,
+  errors,
+  shakeTrigger = 0,
 }) => {
   const [showTransitDetails, setShowTransitDetails] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
+
+  // Trigger subtle shake animation when shakeTrigger updates and errors exist
+  useEffect(() => {
+    if (shakeTrigger > 0 && errors && (errors.pol || errors.pod || errors.commodity || errors.containerType || errors.quantity)) {
+      setIsShaking(true);
+      const timer = setTimeout(() => setIsShaking(false), 450);
+      return () => clearTimeout(timer);
+    }
+  }, [shakeTrigger, errors]);
 
   const handleModeChange = (mode: TransportMode) => {
     let defaultContainer: ContainerType = "40'HC";
@@ -80,7 +104,7 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
   ];
 
   return (
-    <div id="shipment-form-section" className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+    <div id="shipment-form-section" className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col justify-between card-specular-glow card-hover-lift">
       
       {/* Title Header */}
       <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
@@ -157,12 +181,19 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
           
           {/* POL */}
-          <div className="sm:col-span-4">
+          <div className={`sm:col-span-4 ${errors?.pol ? 'field-invalid' : ''}`}>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-[11px] font-semibold text-slate-600">
+              <label className={`text-[11px] font-semibold transition-colors ${
+                errors?.pol ? 'text-rose-600 font-bold' : 'text-slate-600'
+              }`}>
                 Cảng đi / Nơi gửi (POL) *
               </label>
-              {onOpenFreightRateBenchmarking && (
+              {errors?.pol ? (
+                <span className="text-[10px] text-rose-600 font-semibold flex items-center gap-0.5 animate-in fade-in">
+                  <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />
+                  {errors.pol}
+                </span>
+              ) : onOpenFreightRateBenchmarking ? (
                 <button
                   type="button"
                   onClick={onOpenFreightRateBenchmarking}
@@ -172,14 +203,18 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
                   <BarChart3 className="w-2.5 h-2.5 text-blue-600" />
                   <span>Đối Soát Cước AI</span>
                 </button>
-              )}
+              ) : null}
             </div>
             <input
               type="text"
               list="ports-list"
               value={shipment.pol}
               onChange={(e) => onChangeShipment({ pol: e.target.value })}
-              className="w-full px-3 py-1.5 rounded-lg border border-slate-200 font-semibold text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs transition-colors"
+              className={`w-full px-3 py-1.5 rounded-lg border font-semibold text-xs transition-all ${
+                errors?.pol
+                  ? 'border-rose-400 bg-rose-50/60 text-rose-950 ring-2 ring-rose-200 focus:border-rose-500 focus:ring-rose-400 ' + (isShaking ? 'animate-field-shake' : '')
+                  : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900'
+              }`}
               placeholder="Cát Lái, Hải Phòng..."
             />
           </div>
@@ -189,7 +224,7 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
             <button
               type="button"
               onClick={handleSwapPorts}
-              className="p-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-all cursor-pointer press-physics active:rotate-180 duration-300"
               title="Đảo chiều cảng đi và cảng đến"
             >
               <ArrowLeftRight className="w-3.5 h-3.5" />
@@ -197,27 +232,48 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
           </div>
 
           {/* POD */}
-          <div className="sm:col-span-4">
-            <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-              Cảng đến / Nơi nhận (POD) *
-            </label>
+          <div className={`sm:col-span-4 ${errors?.pod ? 'field-invalid' : ''}`}>
+            <div className="flex items-center justify-between mb-1">
+              <label className={`block text-[11px] font-semibold transition-colors ${
+                errors?.pod ? 'text-rose-600 font-bold' : 'text-slate-600'
+              }`}>
+                Cảng đến / Nơi nhận (POD) *
+              </label>
+              {errors?.pod && (
+                <span className="text-[10px] text-rose-600 font-semibold flex items-center gap-0.5 animate-in fade-in">
+                  <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />
+                  {errors.pod}
+                </span>
+              )}
+            </div>
             <input
               type="text"
               list="ports-list"
               value={shipment.pod}
               onChange={(e) => onChangeShipment({ pod: e.target.value })}
-              className="w-full px-3 py-1.5 rounded-lg border border-slate-200 font-semibold text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs transition-colors"
+              className={`w-full px-3 py-1.5 rounded-lg border font-semibold text-xs transition-all ${
+                errors?.pod
+                  ? 'border-rose-400 bg-rose-50/60 text-rose-950 ring-2 ring-rose-200 focus:border-rose-500 focus:ring-rose-400 ' + (isShaking ? 'animate-field-shake' : '')
+                  : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900'
+              }`}
               placeholder="Los Angeles, Hamburg..."
             />
           </div>
 
           {/* Commodity */}
-          <div className="sm:col-span-3">
+          <div className={`sm:col-span-3 ${errors?.commodity ? 'field-invalid' : ''}`}>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-[11px] font-semibold text-slate-600">
+              <label className={`text-[11px] font-semibold transition-colors ${
+                errors?.commodity ? 'text-rose-600 font-bold' : 'text-slate-600'
+              }`}>
                 Tên hàng (Commodity) *
               </label>
-              {onOpenHsCodeTariff && (
+              {errors?.commodity ? (
+                <span className="text-[10px] text-rose-600 font-semibold flex items-center gap-0.5 animate-in fade-in">
+                  <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />
+                  {errors.commodity}
+                </span>
+              ) : onOpenHsCodeTariff ? (
                 <button
                   type="button"
                   onClick={onOpenHsCodeTariff}
@@ -227,18 +283,71 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
                   <Sparkles className="w-2.5 h-2.5 text-amber-500" />
                   <span>Mã HS AI</span>
                 </button>
-              )}
+              ) : null}
             </div>
             <input
               type="text"
               value={shipment.commodity}
               onChange={(e) => onChangeShipment({ commodity: e.target.value })}
-              className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs"
+              className={`w-full px-3 py-1.5 rounded-lg border text-xs transition-all ${
+                errors?.commodity
+                  ? 'border-rose-400 bg-rose-50/60 text-rose-950 ring-2 ring-rose-200 focus:border-rose-500 focus:ring-rose-400 ' + (isShaking ? 'animate-field-shake' : '')
+                  : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900'
+              }`}
               placeholder="May mặc, thủy sản..."
             />
           </div>
 
         </div>
+
+        {/* Gói 3: Hải Trình Động POL ➔ POD (Dynamic Maritime Route Laser Beam & Radar Track) */}
+        {shipment.pol && shipment.pod && (
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-2.5 text-white border border-cyan-500/30 shadow-xs">
+            {/* Ambient cyber grid effect */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-900/20 via-transparent to-transparent pointer-events-none" />
+            
+            <div className="relative z-10 flex items-center justify-between gap-3 text-xs">
+              {/* Origin Point */}
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 ring-4 ring-emerald-400/20 animate-pulse shrink-0" />
+                <div className="min-w-0">
+                  <span className="text-[10px] uppercase tracking-wider text-slate-400 font-medium block">Xuất phát (POL)</span>
+                  <span className="font-bold text-white text-xs truncate block max-w-[110px] sm:max-w-[160px]">{shipment.pol}</span>
+                </div>
+              </div>
+
+              {/* Dynamic Laser Route Track */}
+              <div className="flex-1 px-2 relative flex flex-col items-center">
+                <div className="w-full relative py-1">
+                  {/* Laser track beam */}
+                  <div className="h-[2px] w-full rounded-full laser-route-rail opacity-80" />
+                  {/* Running photon particle */}
+                  <div className="photon-pulse-node top-1/2 -translate-y-1/2" />
+                  {/* Floating vessel icon */}
+                  <div className="absolute left-1/2 -top-2.5 -translate-x-1/2 maritime-ship-float flex items-center gap-1 bg-slate-900/90 border border-cyan-400/40 px-1.5 py-0.5 rounded-full shadow-xs">
+                    <Ship className="w-3 h-3 text-cyan-400" />
+                    <span className="text-[9px] font-mono text-cyan-300 font-semibold hidden sm:inline">
+                      {shipment.transitTime ? `${shipment.transitTime}d` : 'Maritime Track'}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-[9px] text-cyan-300/80 font-mono tracking-tight mt-1 flex items-center gap-1">
+                  <span>Hải trình động</span>
+                  {shipment.transitTime && <span className="text-slate-400">• Dự kiến {shipment.transitTime} ngày</span>}
+                </div>
+              </div>
+
+              {/* Destination Point */}
+              <div className="flex items-center gap-1.5 min-w-0 text-right">
+                <div className="min-w-0">
+                  <span className="text-[10px] uppercase tracking-wider text-slate-400 font-medium block">Cập cảng (POD)</span>
+                  <span className="font-bold text-cyan-300 text-xs truncate block max-w-[110px] sm:max-w-[160px]">{shipment.pod}</span>
+                </div>
+                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 ring-4 ring-cyan-400/20 shrink-0" />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 3-Month Historical Rate Suggestion Ribbon */}
         {shipment.pol && shipment.pod && onOpenHistoricalRateAdvisor && (
@@ -262,14 +371,28 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
         {/* Row 2: Equipment / Container Type (3/12) | Quantity (2/12) | Gross Weight (2/12) | Volume (2/12) | Chargeable Weight (3/12) */}
         <div className="grid grid-cols-2 sm:grid-cols-12 gap-3 items-end">
           
-          <div className="col-span-2 sm:col-span-4">
-            <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-              Loại thiết bị / Quy cách *
-            </label>
+          <div className={`col-span-2 sm:col-span-4 ${errors?.containerType ? 'field-invalid' : ''}`}>
+            <div className="flex items-center justify-between mb-1">
+              <label className={`block text-[11px] font-semibold transition-colors ${
+                errors?.containerType ? 'text-rose-600 font-bold' : 'text-slate-600'
+              }`}>
+                Loại thiết bị / Quy cách *
+              </label>
+              {errors?.containerType && (
+                <span className="text-[10px] text-rose-600 font-semibold flex items-center gap-0.5 animate-in fade-in">
+                  <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />
+                  {errors.containerType}
+                </span>
+              )}
+            </div>
             <select
               value={shipment.containerType}
               onChange={(e) => onChangeShipment({ containerType: e.target.value as ContainerType })}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs cursor-pointer font-medium"
+              className={`w-full px-2.5 py-1.5 rounded-lg border font-medium text-xs cursor-pointer transition-all ${
+                errors?.containerType
+                  ? 'border-rose-400 bg-rose-50/60 text-rose-950 ring-2 ring-rose-200 focus:border-rose-500 focus:ring-rose-400 ' + (isShaking ? 'animate-field-shake' : '')
+                  : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900'
+              }`}
             >
               <option value="20'GP">Cont 20'GP (Tiêu chuẩn)</option>
               <option value="40'GP">Cont 40'GP (Tiêu chuẩn)</option>
@@ -290,16 +413,30 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
             </select>
           </div>
 
-          <div className="col-span-1 sm:col-span-2">
-            <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-              Số lượng *
-            </label>
+          <div className={`col-span-1 sm:col-span-2 ${errors?.quantity ? 'field-invalid' : ''}`}>
+            <div className="flex items-center justify-between mb-1">
+              <label className={`block text-[11px] font-semibold transition-colors ${
+                errors?.quantity ? 'text-rose-600 font-bold' : 'text-slate-600'
+              }`}>
+                Số lượng *
+              </label>
+              {errors?.quantity && (
+                <span className="text-[10px] text-rose-600 font-semibold flex items-center gap-0.5 animate-in fade-in">
+                  <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />
+                  {errors.quantity}
+                </span>
+              )}
+            </div>
             <input
               type="number"
               min="1"
               value={shipment.quantity}
-              onChange={(e) => onChangeShipment({ quantity: Math.max(1, Number(e.target.value) || 1) })}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-900 font-mono font-bold bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs text-center"
+              onChange={(e) => onChangeShipment({ quantity: Math.max(0, Number(e.target.value) || 0) })}
+              className={`w-full px-2.5 py-1.5 rounded-lg border font-mono font-bold text-xs text-center transition-all ${
+                errors?.quantity
+                  ? 'border-rose-400 bg-rose-50/60 text-rose-950 ring-2 ring-rose-200 focus:border-rose-500 focus:ring-rose-400 ' + (isShaking ? 'animate-field-shake' : '')
+                  : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900'
+              }`}
             />
           </div>
 

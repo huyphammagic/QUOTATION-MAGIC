@@ -4,7 +4,7 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json({ limit: "10mb" }));
 
@@ -1526,4 +1526,7 @@ async function setupServer() {
   });
 }
 
-setupServer();
+setupServer().catch((err) => {
+  console.error("FATAL: Failed to start server:", err);
+  process.exit(1);
+});
