@@ -16,8 +16,16 @@ export interface DocumentChargeRow {
   quantity: number | string;
   unit: string;
   unitPriceFormatted: string;
+  unitPriceRaw: number;
   currency: string;
+  amountBeforeVatFormatted: string;
+  amountBeforeVatRaw: number;
+  vatRate: number;
   vatRateFormatted: string;
+  vatAmountFormatted: string;
+  vatAmountRaw: number;
+  totalWithVatFormatted: string;
+  totalWithVatRaw: number;
   amountFormatted: string;
   location: 'POL' | 'FREIGHT' | 'POD' | 'OTHER';
 }
@@ -26,6 +34,12 @@ export interface DocumentChargeGroup {
   locationKey: 'POL' | 'FREIGHT' | 'POD' | 'OTHER';
   groupTitle: string;
   subtotalText: string;
+  subtotalBeforeVatRaw: number;
+  subtotalBeforeVatFormatted: string;
+  subtotalVatAmountRaw: number;
+  subtotalVatAmountFormatted: string;
+  subtotalTotalWithVatRaw: number;
+  subtotalTotalWithVatFormatted: string;
   rows: DocumentChargeRow[];
 }
 
@@ -284,15 +298,63 @@ export function buildQuotationDocumentModel(
       : `${locTitleMap[locKey].vi} / ${locTitleMap[locKey].en}`;
 
     const groupRows: DocumentChargeRow[] = [];
+    let groupBeforeVatRaw = 0;
+    let groupVatAmountRaw = 0;
+    let groupTotalWithVatRaw = 0;
+
+    const rate = Number(quote.exchangeRate) || 25400;
 
     locItems.forEach((item) => {
-      const unitPriceFormatted = item.currency === 'USD'
-        ? formatUSD(item.unitPrice || 0)
-        : `${formatNumberVND(item.unitPrice || 0)} VND`;
+      const qty = Number(item.quantity) || 1;
+      const vatRate = Number(item.vatRate) || 0;
 
-      const amountFormatted = isVnd
-        ? `${formatNumberVND(item.amountVnd || 0)} VND`
-        : formatUSD(item.amountUsd || 0);
+      let unitPriceInTargetCurrency = Number(item.unitPrice) || 0;
+      let amountBeforeVat = isVnd ? (Number(item.amountVnd) || 0) : (Number(item.amountUsd) || 0);
+
+      if (isVnd) {
+        if (item.currency === 'USD') {
+          unitPriceInTargetCurrency = (Number(item.unitPrice) || 0) * rate;
+          if (!amountBeforeVat) amountBeforeVat = qty * unitPriceInTargetCurrency;
+        } else {
+          unitPriceInTargetCurrency = Number(item.unitPrice) || 0;
+          if (!amountBeforeVat) amountBeforeVat = qty * unitPriceInTargetCurrency;
+        }
+      } else {
+        if (item.currency === 'VND') {
+          unitPriceInTargetCurrency = (Number(item.unitPrice) || 0) / (rate || 1);
+          if (!amountBeforeVat) amountBeforeVat = qty * unitPriceInTargetCurrency;
+        } else {
+          unitPriceInTargetCurrency = Number(item.unitPrice) || 0;
+          if (!amountBeforeVat) amountBeforeVat = qty * unitPriceInTargetCurrency;
+        }
+      }
+
+      const vatAmount = isVnd 
+        ? Math.round(amountBeforeVat * (vatRate / 100))
+        : Number((amountBeforeVat * (vatRate / 100)).toFixed(2));
+      const totalWithVat = isVnd
+        ? (amountBeforeVat + vatAmount)
+        : Number((amountBeforeVat + vatAmount).toFixed(2));
+
+      groupBeforeVatRaw += amountBeforeVat;
+      groupVatAmountRaw += vatAmount;
+      groupTotalWithVatRaw += totalWithVat;
+
+      const unitPriceFormatted = isVnd
+        ? formatNumberVND(unitPriceInTargetCurrency)
+        : formatUSD(unitPriceInTargetCurrency);
+
+      const amountBeforeVatFormatted = isVnd
+        ? formatNumberVND(amountBeforeVat)
+        : formatUSD(amountBeforeVat);
+
+      const vatAmountFormatted = isVnd
+        ? formatNumberVND(vatAmount)
+        : formatUSD(vatAmount);
+
+      const totalWithVatFormatted = isVnd
+        ? formatNumberVND(totalWithVat)
+        : formatUSD(totalWithVat);
 
       const row: DocumentChargeRow = {
         index: itemCounter++,
@@ -301,9 +363,17 @@ export function buildQuotationDocumentModel(
         quantity: item.quantity,
         unit: normalizeUnicode(item.unit || ''),
         unitPriceFormatted,
+        unitPriceRaw: unitPriceInTargetCurrency,
         currency: item.currency,
-        vatRateFormatted: `${item.vatRate || 0}%`,
-        amountFormatted,
+        amountBeforeVatFormatted,
+        amountBeforeVatRaw: amountBeforeVat,
+        vatRate,
+        vatRateFormatted: `${vatRate}%`,
+        vatAmountFormatted,
+        vatAmountRaw: vatAmount,
+        totalWithVatFormatted,
+        totalWithVatRaw: totalWithVat,
+        amountFormatted: totalWithVatFormatted,
         location: locKey,
       };
 
@@ -311,10 +381,28 @@ export function buildQuotationDocumentModel(
       allRows.push(row);
     });
 
+    const subtotalBeforeVatFormatted = isVnd
+      ? formatNumberVND(groupBeforeVatRaw)
+      : formatUSD(groupBeforeVatRaw);
+
+    const subtotalVatAmountFormatted = isVnd
+      ? formatNumberVND(groupVatAmountRaw)
+      : formatUSD(groupVatAmountRaw);
+
+    const subtotalTotalWithVatFormatted = isVnd
+      ? formatNumberVND(groupTotalWithVatRaw)
+      : formatUSD(groupTotalWithVatRaw);
+
     groups.push({
       locationKey: locKey,
       groupTitle: localizedTitle,
       subtotalText,
+      subtotalBeforeVatRaw: groupBeforeVatRaw,
+      subtotalBeforeVatFormatted,
+      subtotalVatAmountRaw: groupVatAmountRaw,
+      subtotalVatAmountFormatted,
+      subtotalTotalWithVatRaw: groupTotalWithVatRaw,
+      subtotalTotalWithVatFormatted,
       rows: groupRows,
     });
   });

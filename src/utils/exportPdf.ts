@@ -1,6 +1,193 @@
 import { QuoteData, QuoteCurrency } from '../types/logistics';
 import { ensureUnicodeFonts, normalizeUnicode } from '../services/pdf/pdfFontLoader';
-import { buildQuotationDocumentModel, DocumentLanguage } from '../services/pdf/quotationDocumentModel';
+import { buildQuotationDocumentModel, DocumentLanguage, DocumentChargeRow } from '../services/pdf/quotationDocumentModel';
+
+/**
+ * Layout configuration dynamically computed for quotation tables.
+ */
+export interface DynamicTableLayout {
+  columnWidths: {
+    stt: number;
+    description: number;
+    unit: number;
+    quantity: number;
+    unitPrice: number;
+    amountBeforeVat: number;
+    vatRate: number;
+    vatAmount: number;
+    total: number;
+  };
+  fontSize: number;
+  cellPadding: { top: number; right: number; bottom: number; left: number };
+  headFontSize: number;
+}
+
+/**
+ * Dynamically calculates optimal column widths and typography sizing based on content length.
+ * When logistics descriptions are long, other columns tighten to safe bounds, expanding description width
+ * up to 68mm while strictly preserving the total available printable width (182mm) with zero layout shifting.
+ */
+export function calculateDynamicColumnWidths(
+  rows: DocumentChargeRow[],
+  isVnd: boolean,
+  totalAvailableWidth = 182
+): DynamicTableLayout {
+  if (!rows || rows.length === 0) {
+    return {
+      columnWidths: {
+        stt: 8,
+        description: 52,
+        unit: 14,
+        quantity: 9,
+        unitPrice: 21,
+        amountBeforeVat: 22,
+        vatRate: 12,
+        vatAmount: 18,
+        total: 26,
+      },
+      fontSize: 7.0,
+      cellPadding: { top: 1.8, right: 1.5, bottom: 1.8, left: 1.5 },
+      headFontSize: 7.2,
+    };
+  }
+
+  // 1. Inspect character metrics across all rows
+  let maxDescLength = 0;
+  let maxUnitLength = 0;
+  let maxQtyLength = 0;
+  let maxUnitPriceLen = 0;
+  let maxBeforeVatLen = 0;
+  let maxVatRateLen = 0;
+  let maxVatAmountLen = 0;
+  let maxTotalLen = 0;
+
+  rows.forEach((r) => {
+    const descTotal = (r.description || '').length + (r.note ? (r.note.length + 4) : 0);
+    if (descTotal > maxDescLength) maxDescLength = descTotal;
+
+    const unitLen = (r.unit || '').length;
+    if (unitLen > maxUnitLength) maxUnitLength = unitLen;
+
+    const qtyLen = String(r.quantity || '').length;
+    if (qtyLen > maxQtyLength) maxQtyLength = qtyLen;
+
+    const upLen = (r.unitPriceFormatted || '').length;
+    if (upLen > maxUnitPriceLen) maxUnitPriceLen = upLen;
+
+    const bvLen = (r.amountBeforeVatFormatted || '').length;
+    if (bvLen > maxBeforeVatLen) maxBeforeVatLen = bvLen;
+
+    const vrLen = (r.vatRateFormatted || '').length;
+    if (vrLen > maxVatRateLen) maxVatRateLen = vrLen;
+
+    const vaLen = (r.vatAmountFormatted || '').length;
+    if (vaLen > maxVatAmountLen) maxVatAmountLen = vaLen;
+
+    const totLen = (r.totalWithVatFormatted || '').length;
+    if (totLen > maxTotalLen) maxTotalLen = totLen;
+  });
+
+  // 2. Base width determinations based on content length
+  const isHighDensityDescription = maxDescLength >= 55;
+  const isUltraLongDescription = maxDescLength >= 100;
+
+  // STT column: 8mm (or 7.5mm if high density)
+  const sttWidth = isHighDensityDescription ? 7.5 : 8.0;
+
+  // Quantity column: 8.5mm - 10mm
+  const qtyWidth = maxQtyLength > 4 ? 10.0 : (isHighDensityDescription ? 8.5 : 9.0);
+
+  // Unit column: adapt to unit length, e.g. "Cont", "Tấn", "Bộ B/L" vs "Container 40'HC"
+  let unitWidth = 13.0;
+  if (maxUnitLength > 9) {
+    unitWidth = 15.5;
+  } else if (maxUnitLength > 5) {
+    unitWidth = 13.5;
+  } else if (isHighDensityDescription) {
+    unitWidth = 11.5;
+  }
+
+  // VAT Rate: e.g. "8%", "10%" vs "5.26%"
+  const vatRateWidth = maxVatRateLen > 3 ? 11.5 : (isHighDensityDescription ? 9.5 : 10.5);
+
+  // Numeric columns (Đơn giá, Chưa VAT, Tiền VAT, Tổng)
+  // Dynamic sizing based on currency (VND vs USD) and max digit lengths
+  let unitPriceWidth = isVnd ? 20.0 : 17.0;
+  let beforeVatWidth = isVnd ? 21.0 : 18.0;
+  let vatAmountWidth = isVnd ? 17.0 : 14.5;
+  let totalWidth = isVnd ? 25.0 : 21.0;
+
+  if (isVnd) {
+    if (maxUnitPriceLen >= 12) unitPriceWidth = 22.0;
+    else if (isHighDensityDescription && maxUnitPriceLen <= 9) unitPriceWidth = 18.0;
+
+    if (maxBeforeVatLen >= 12) beforeVatWidth = 22.5;
+    else if (isHighDensityDescription && maxBeforeVatLen <= 10) beforeVatWidth = 19.0;
+
+    if (maxVatAmountLen >= 11) vatAmountWidth = 18.0;
+    else if (isHighDensityDescription && maxVatAmountLen <= 8) vatAmountWidth = 15.0;
+
+    if (maxTotalLen >= 13) totalWidth = 26.0;
+    else if (isHighDensityDescription && maxTotalLen <= 11) totalWidth = 23.0;
+  } else {
+    // USD
+    if (maxUnitPriceLen >= 9) unitPriceWidth = 18.0;
+    else if (isHighDensityDescription) unitPriceWidth = 15.0;
+
+    if (maxBeforeVatLen >= 9) beforeVatWidth = 18.5;
+    else if (isHighDensityDescription) beforeVatWidth = 16.0;
+
+    if (maxVatAmountLen >= 8) vatAmountWidth = 15.0;
+    else if (isHighDensityDescription) vatAmountWidth = 13.0;
+
+    if (maxTotalLen >= 10) totalWidth = 21.5;
+    else if (isHighDensityDescription) totalWidth = 19.0;
+  }
+
+  // Calculate sum of other columns
+  const otherColsSum = sttWidth + unitWidth + qtyWidth + unitPriceWidth + beforeVatWidth + vatRateWidth + vatAmountWidth + totalWidth;
+
+  // Remaining width dynamically allocated to Description
+  let descriptionWidth = totalAvailableWidth - otherColsSum;
+
+  // Round description width to 1 decimal place and adjust total to maintain exact invariant
+  descriptionWidth = Math.round(descriptionWidth * 10) / 10;
+  const currentTotal = sttWidth + descriptionWidth + unitWidth + qtyWidth + unitPriceWidth + beforeVatWidth + vatRateWidth + vatAmountWidth + totalWidth;
+  const diff = Math.round((totalAvailableWidth - currentTotal) * 10) / 10;
+  descriptionWidth = Math.round((descriptionWidth + diff) * 10) / 10;
+
+  // Typography scaling for table stability with long descriptions
+  let fontSize = 7.0;
+  let cellPadding = { top: 1.8, right: 1.5, bottom: 1.8, left: 1.5 };
+  let headFontSize = 7.2;
+
+  if (isUltraLongDescription) {
+    fontSize = 6.6;
+    headFontSize = 6.8;
+    cellPadding = { top: 1.3, right: 1.2, bottom: 1.3, left: 1.2 };
+  } else if (isHighDensityDescription) {
+    fontSize = 6.8;
+    headFontSize = 7.0;
+    cellPadding = { top: 1.5, right: 1.4, bottom: 1.5, left: 1.4 };
+  }
+
+  return {
+    columnWidths: {
+      stt: sttWidth,
+      description: descriptionWidth,
+      unit: unitWidth,
+      quantity: qtyWidth,
+      unitPrice: unitPriceWidth,
+      amountBeforeVat: beforeVatWidth,
+      vatRate: vatRateWidth,
+      vatAmount: vatAmountWidth,
+      total: totalWidth,
+    },
+    fontSize,
+    cellPadding,
+    headFontSize,
+  };
+}
 
 /**
  * Legacy utility for backwards compatibility.
@@ -165,79 +352,228 @@ export async function exportQuoteToPdf(
   doc.text(`Hàng hóa: ${model.shipment.commodity || 'General Cargo'}`, rightBoxX + 4, y + 27, { maxWidth: 81 });
   doc.text(`Quy cách: ${model.shipment.quantitySummary}`, rightBoxX + 4, y + 32, { maxWidth: 81 });
 
-  // 6. Line Items Table with Grouping & Full Vietnamese Diacritics
+  // 6. Section III Title & Exchange Rate Info (Above table)
+  const sectionTitleY = y + 42;
+  doc.setFont('Roboto', 'bold');
+  doc.setFontSize(8.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text('III. BẢNG PHÂN RÃ CHI TIẾT CƯỚC, LOCAL CHARGES & THUẾ VAT TỪNG PHÍ', 14, sectionTitleY);
+
+  doc.setFont('Roboto', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(3, 105, 161);
+  doc.text(model.meta.exchangeRateText, 196, sectionTitleY, { align: 'right' });
+
+  // Safe wrapping helper to ensure unbroken strings wrap properly
+  const formatSafeWrappingText = (text: string, maxChunkLen = 30): string => {
+    if (!text) return '';
+    return text
+      .split('\n')
+      .map(line => {
+        const words = line.split(' ');
+        return words
+          .map(w => {
+            if (w.length > maxChunkLen) {
+              const chunks: string[] = [];
+              for (let i = 0; i < w.length; i += maxChunkLen) {
+                chunks.push(w.slice(i, i + maxChunkLen));
+              }
+              return chunks.join(' ');
+            }
+            return w;
+          })
+          .join(' ');
+      })
+      .join('\n');
+  };
+
+  // 7. Calculate Dynamic Layout (expands description width for long text, contracts safe columns)
+  const layout = calculateDynamicColumnWidths(model.charges.allRows, isVnd, 182);
+
+  // 8. Line Items Table with 9 Columns & Guaranteed Multi-Line Wrapping (Zero Overlap)
   const tableBody: any[] = [];
 
+  const groupConfig: Record<string, { bannerTitle: string; subtotalLabel: string; bg: [number, number, number]; text: [number, number, number] }> = {
+    FREIGHT: {
+      bannerTitle: `1. CƯỚC VẬN CHUYỂN CHẶNG CHÍNH (MAIN FREIGHT - ${model.shipment.mode})`,
+      subtotalLabel: 'Tiểu kế Cước Vận Chuyển:',
+      bg: [239, 246, 255],
+      text: [29, 78, 216],
+    },
+    POL: {
+      bannerTitle: `2. LOCAL CHARGE ĐẦU XUẤT (ORIGIN / POL CHARGES - ${model.shipment.pol || 'POL'})`,
+      subtotalLabel: 'Tiểu kế Local Charge Đầu Xuất:',
+      bg: [240, 253, 250],
+      text: [13, 148, 136],
+    },
+    POD: {
+      bannerTitle: `3. LOCAL CHARGE ĐẦU NHẬP (DESTINATION / POD CHARGES - ${model.shipment.pod || 'POD'})`,
+      subtotalLabel: 'Tiểu kế Local Charge Đầu Nhập:',
+      bg: [254, 243, 199],
+      text: [180, 83, 9],
+    },
+    OTHER: {
+      bannerTitle: '4. CÁC CHI PHÍ DỊCH VỤ KHÁC (OTHER SERVICES)',
+      subtotalLabel: 'Tiểu kế Chi Phí Dịch Vụ Khác:',
+      bg: [240, 253, 244],
+      text: [21, 128, 61],
+    },
+  };
+
   model.charges.groups.forEach((group) => {
-    // Group Header Row
+    const cfg = groupConfig[group.locationKey] || {
+      bannerTitle: group.groupTitle,
+      subtotalLabel: `Tiểu kế ${group.groupTitle}:`,
+      bg: [241, 245, 249],
+      text: primaryColor as [number, number, number],
+    };
+
+    // Category Header Banner Row
     tableBody.push([
       {
-        content: `${group.groupTitle} — Tổng nhóm: ${group.subtotalText}`,
-        colSpan: 8,
+        content: cfg.bannerTitle,
+        colSpan: 9,
         styles: {
-          fillColor: [241, 245, 249],
-          textColor: primaryColor,
+          fillColor: cfg.bg,
+          textColor: cfg.text,
           font: 'Roboto',
           fontStyle: 'bold',
-          fontSize: 8,
+          fontSize: 7.5,
+          cellPadding: { top: 2, right: 2, bottom: 2, left: 3 },
         }
       }
     ]);
 
-    // Group Items
+    // Items Rows
     group.rows.forEach((row) => {
-      const descriptionText = row.note ? `${row.description}\n(${row.note})` : row.description;
+      const descriptionSafe = formatSafeWrappingText(row.description);
+      const noteSafe = row.note ? `\n(${formatSafeWrappingText(row.note)})` : '';
+      const descriptionFull = `${descriptionSafe}${noteSafe}`;
 
       tableBody.push([
         row.index,
-        descriptionText,
-        row.quantity,
+        descriptionFull,
         row.unit,
+        row.quantity,
         row.unitPriceFormatted,
-        row.currency,
+        row.amountBeforeVatFormatted,
         row.vatRateFormatted,
-        row.amountFormatted
+        row.vatAmountFormatted,
+        row.totalWithVatFormatted,
       ]);
     });
+
+    // Subtotal Row for this Category
+    tableBody.push([
+      {
+        content: cfg.subtotalLabel,
+        colSpan: 5,
+        styles: {
+          fillColor: [248, 250, 252],
+          textColor: [15, 23, 42],
+          font: 'Roboto',
+          fontStyle: 'bold',
+          halign: 'right',
+          fontSize: layout.fontSize + 0.2,
+          cellPadding: { top: layout.cellPadding.top, right: 3, bottom: layout.cellPadding.bottom, left: 2 },
+        }
+      },
+      {
+        content: group.subtotalBeforeVatFormatted,
+        styles: {
+          fillColor: [248, 250, 252],
+          textColor: [15, 23, 42],
+          font: 'Roboto',
+          fontStyle: 'bold',
+          halign: 'right',
+          fontSize: layout.fontSize + 0.2,
+        }
+      },
+      {
+        content: '',
+        styles: {
+          fillColor: [248, 250, 252],
+          halign: 'center',
+        }
+      },
+      {
+        content: group.subtotalVatAmountFormatted,
+        styles: {
+          fillColor: [248, 250, 252],
+          textColor: [15, 23, 42],
+          font: 'Roboto',
+          fontStyle: 'bold',
+          halign: 'right',
+          fontSize: layout.fontSize + 0.2,
+        }
+      },
+      {
+        content: group.subtotalTotalWithVatFormatted,
+        styles: {
+          fillColor: [248, 250, 252],
+          textColor: cfg.text,
+          font: 'Roboto',
+          fontStyle: 'bold',
+          halign: 'right',
+          fontSize: layout.fontSize + 0.2,
+        }
+      }
+    ]);
   });
 
-  const amountColHeader = isVnd ? 'Thành tiền (VND)' : 'Thành tiền (USD)';
+  const totalColHeader = isVnd ? 'TỔNG (VND)' : 'TỔNG (USD)';
 
   autoTable(doc, {
-    startY: y + 43,
-    head: [['STT', 'Hạng Mục Chi Phí / Description', 'SL', 'ĐVT', 'Đơn Giá', 'Loại Tiền', 'VAT', amountColHeader]],
+    startY: sectionTitleY + 3.5,
+    head: [[
+      'STT', 
+      'HẠNG MỤC CHI PHÍ (DESCRIPTION)', 
+      'ĐVT', 
+      'SL', 
+      'ĐƠN GIÁ', 
+      'CHƯA VAT', 
+      'VAT%', 
+      'TIỀN VAT', 
+      totalColHeader
+    ]],
     body: tableBody,
     theme: 'grid',
     styles: {
       font: 'Roboto',
       fontStyle: 'normal',
-      cellPadding: 2,
+      fontSize: layout.fontSize,
+      cellPadding: layout.cellPadding,
       overflow: 'linebreak',
+      valign: 'middle',
+      textColor: [30, 41, 59],
+      lineColor: [226, 232, 240],
+      lineWidth: 0.15,
     },
     headStyles: {
-      fillColor: primaryColor as [number, number, number],
+      fillColor: [15, 23, 42],
       textColor: [255, 255, 255],
-      fontSize: 8,
+      fontSize: layout.headFontSize,
       font: 'Roboto',
       fontStyle: 'bold',
       halign: 'center',
-    },
-    bodyStyles: {
-      fontSize: 7.5,
-      textColor: [30, 41, 59],
-      font: 'Roboto',
-      fontStyle: 'normal',
       valign: 'middle',
+      cellPadding: {
+        top: layout.cellPadding.top + 0.4,
+        right: layout.cellPadding.right,
+        bottom: layout.cellPadding.bottom + 0.4,
+        left: layout.cellPadding.left,
+      },
     },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 9 },
-      1: { cellWidth: 'auto' },
-      2: { halign: 'right', cellWidth: 11 },
-      3: { halign: 'center', cellWidth: 15 },
-      4: { halign: 'right', cellWidth: 24 },
-      5: { halign: 'center', cellWidth: 14 },
-      6: { halign: 'center', cellWidth: 12 },
-      7: { halign: 'right', cellWidth: isVnd ? 30 : 26 },
+      0: { halign: 'center', cellWidth: layout.columnWidths.stt },
+      1: { halign: 'left', cellWidth: layout.columnWidths.description, overflow: 'linebreak' },
+      2: { halign: 'center', cellWidth: layout.columnWidths.unit, overflow: 'linebreak' },
+      3: { halign: 'center', cellWidth: layout.columnWidths.quantity },
+      4: { halign: 'right', cellWidth: layout.columnWidths.unitPrice },
+      5: { halign: 'right', cellWidth: layout.columnWidths.amountBeforeVat },
+      6: { halign: 'center', cellWidth: layout.columnWidths.vatRate },
+      7: { halign: 'right', cellWidth: layout.columnWidths.vatAmount },
+      8: { halign: 'right', cellWidth: layout.columnWidths.total, fontStyle: 'bold' },
     },
     margin: { left: 14, right: 14, top: 16, bottom: 20 },
     pageBreak: 'auto',

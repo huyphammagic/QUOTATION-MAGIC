@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { SurchargeItem, FeeCategory, SurchargeTransportMode, ChargeLocation } from '../types/logistics';
+import { SurchargeItem, FeeCategory, SurchargeTransportMode, ChargeLocation, QuoteData } from '../types/logistics';
 import { 
   Receipt, Plus, Search, Edit2, Trash2, Tag, Check, X, 
-  Ship, Plane, Truck, FileCheck, Layers, MapPin, Anchor, Compass
+  Ship, Plane, Truck, FileCheck, Layers, MapPin, Anchor, Compass,
+  TrendingUp, Sparkles, BarChart3
 } from 'lucide-react';
-
+import { getSavedQuotes } from '../utils/storage';
+import { SurchargeSeasonalityModal } from './surcharge/SurchargeSeasonalityModal';
 import { TableFullscreenHeader } from './tables/TableFullscreenHeader';
 
 interface SurchargeCatalogModalProps {
@@ -18,6 +20,7 @@ interface SurchargeCatalogModalProps {
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
   onNavigateToTable?: (targetTableId: string) => void;
+  savedQuotes?: QuoteData[];
 }
 
 export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
@@ -31,6 +34,7 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
   isFullscreen,
   onToggleFullscreen,
   onNavigateToTable,
+  savedQuotes,
 }) => {
   const [localFullscreen, setLocalFullscreen] = useState(true);
   const effectiveFullscreen = isFullscreen !== undefined ? isFullscreen : localFullscreen;
@@ -42,6 +46,9 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
   const [selectedLocation, setSelectedLocation] = useState<string>('ALL');
   const [isEditing, setIsEditing] = useState(false);
   const [editingItem, setEditingItem] = useState<Partial<SurchargeItem>>({});
+  const [selectedSeasonalitySurcharge, setSelectedSeasonalitySurcharge] = useState<SurchargeItem | null>(null);
+
+  const effectiveSavedQuotes = savedQuotes || getSavedQuotes();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -249,16 +256,31 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
             </select>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
             <span className="text-xs font-bold text-slate-500 font-mono">
               Tổng: {filteredItems.length} Phụ Phí
             </span>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (filteredItems.length > 0) {
+                  setSelectedSeasonalitySurcharge(filteredItems[0]);
+                }
+              }}
+              className="flex items-center space-x-1.5 bg-linear-to-r from-indigo-50 to-sky-50 hover:from-indigo-100 hover:to-sky-100 text-indigo-900 border border-indigo-200/90 font-bold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
+              title="Phân tích xu hướng mùa vụ & chi phí lịch sử để cố vấn độ cạnh tranh giá"
+            >
+              <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Xu Hướng Mùa & Cố Vấn Giá</span>
+            </button>
+
             <button
               onClick={handleAddNew}
-              className="flex items-center space-x-1.5 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-colors"
+              className="flex items-center space-x-1.5 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Thêm Mã Phí Mới</span>
+              <span>+ Thêm Mã Phí</span>
             </button>
           </div>
         </div>
@@ -518,6 +540,14 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
                             </button>
                           )}
                           <button
+                            type="button"
+                            onClick={() => setSelectedSeasonalitySurcharge(item)}
+                            className="p-1 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded transition-colors cursor-pointer"
+                            title="Phân tích xu hướng mùa vụ & chi phí lịch sử (Seasonality & Cost Advisor)"
+                          >
+                            <TrendingUp className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => handleEdit(item)}
                             className="p-1 text-slate-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
                             title="Sửa"
@@ -551,13 +581,44 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
           <span>Tỷ giá quy đổi quy định: 1 USD = {exchangeRate.toLocaleString()} VND</span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded transition-colors"
+            className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded transition-colors cursor-pointer"
           >
             Đóng
           </button>
         </div>
 
       </div>
+
+      {/* Surcharge Seasonality & Historical Cost Analysis Modal */}
+      {selectedSeasonalitySurcharge && (
+        <SurchargeSeasonalityModal
+          isOpen={Boolean(selectedSeasonalitySurcharge)}
+          onClose={() => setSelectedSeasonalitySurcharge(null)}
+          surcharge={selectedSeasonalitySurcharge}
+          exchangeRate={exchangeRate}
+          savedQuotes={effectiveSavedQuotes}
+          onUpdateSurchargePrice={(surchargeId, newPriceUsd, newPriceVnd) => {
+            const itemToUpdate = surcharges.find(s => s.id === surchargeId);
+            if (itemToUpdate) {
+              const updatedItem: SurchargeItem = {
+                ...itemToUpdate,
+                priceUsd: newPriceUsd,
+                priceVnd: newPriceVnd,
+              };
+              onSaveSurcharge(updatedItem);
+              setSelectedSeasonalitySurcharge(updatedItem);
+            }
+          }}
+          onAddSurchargeToQuote={onAddSurchargeToQuote ? (item, pUsd, pVnd) => {
+            const itemWithPrice: SurchargeItem = {
+              ...item,
+              priceUsd: pUsd ?? item.priceUsd,
+              priceVnd: pVnd ?? item.priceVnd,
+            };
+            onAddSurchargeToQuote(itemWithPrice);
+          } : undefined}
+        />
+      )}
     </div>
   );
 };

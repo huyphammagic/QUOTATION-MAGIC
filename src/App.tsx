@@ -3379,6 +3379,7 @@ export default function App() {
             isFullscreen={isFullscreenTable}
             onToggleFullscreen={handleToggleFullscreenTable}
             onNavigateToTable={handleOpenTableDirectly}
+            savedQuotes={savedQuotes}
           />
         </RouteErrorBoundary>
       )}

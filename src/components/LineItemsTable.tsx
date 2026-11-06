@@ -32,8 +32,156 @@ import {
   ChevronsUp,
   ChevronsDown,
   Zap,
-  History
+  History,
+  Check,
+  CheckCheck,
+  RefreshCw
 } from 'lucide-react';
+import { LineItemsTableSkeletonRows, LineItemsTableShimmerBanner } from './LineItemsTableSkeleton';
+
+interface PopularLocalChargePreset {
+  code: string;
+  name: string;
+  location: ChargeLocation;
+  basis: ChargeBasis;
+  basisLabel: string;
+  unit: string;
+  unitPrice: number;
+  costPrice: number;
+  currency: Currency;
+  vatRate: number;
+  category: FeeCategory;
+  note?: string;
+}
+
+const POPULAR_LOCAL_CHARGES_QUICK: PopularLocalChargePreset[] = [
+  {
+    code: 'THC',
+    name: 'Phụ phí xếp dỡ cảng (Terminal Handling Charge - THC)',
+    location: 'POL',
+    basis: 'PER_CONTAINER',
+    basisLabel: 'Cont',
+    unit: 'Cont',
+    unitPrice: 120,
+    costPrice: 95,
+    currency: 'USD',
+    vatRate: 8,
+    category: 'LOCAL_CHARGE',
+    note: 'Áp dụng cho cont 20/40 tại cảng xuất Hải Phòng / Cát Lái',
+  },
+  {
+    code: 'B/L',
+    name: 'Phí chứng từ phát hành vận đơn (Bill of Lading Fee)',
+    location: 'POL',
+    basis: 'PER_BL',
+    basisLabel: 'Set / Bill',
+    unit: 'Set',
+    unitPrice: 40,
+    costPrice: 25,
+    currency: 'USD',
+    vatRate: 8,
+    category: 'LOCAL_CHARGE',
+    note: 'Bao gồm 3 gốc + 3 bản copy',
+  },
+  {
+    code: 'SEAL',
+    name: 'Phí kẹp chì niêm phong container (Container Seal Fee)',
+    location: 'POL',
+    basis: 'PER_CONTAINER',
+    basisLabel: 'Cont',
+    unit: 'Cont',
+    unitPrice: 10,
+    costPrice: 7,
+    currency: 'USD',
+    vatRate: 8,
+    category: 'LOCAL_CHARGE',
+    note: 'Niêm chì an ninh chuẩn IMO / C-TPAT',
+  },
+  {
+    code: 'TELEX',
+    name: 'Phí điện tín giải phóng hàng (Telex Release / Surrender Fee)',
+    location: 'POL',
+    basis: 'PER_BL',
+    basisLabel: 'Bill',
+    unit: 'Bill',
+    unitPrice: 35,
+    costPrice: 20,
+    currency: 'USD',
+    vatRate: 8,
+    category: 'LOCAL_CHARGE',
+    note: 'Giải phóng hàng nhanh không cần vận đơn gốc',
+  },
+  {
+    code: 'D/O',
+    name: 'Lệnh giao hàng cảng đến (Delivery Order Fee)',
+    location: 'POD',
+    basis: 'PER_BL',
+    basisLabel: 'Set / Bill',
+    unit: 'Set',
+    unitPrice: 45,
+    costPrice: 30,
+    currency: 'USD',
+    vatRate: 8,
+    category: 'LOCAL_CHARGE',
+    note: 'Lệnh giao hàng cảng đích D/O',
+  },
+  {
+    code: 'CLEAN',
+    name: 'Phí vệ sinh container cảng đến (Cleaning Fee)',
+    location: 'POD',
+    basis: 'PER_CONTAINER',
+    basisLabel: 'Cont',
+    unit: 'Cont',
+    unitPrice: 25,
+    costPrice: 15,
+    currency: 'USD',
+    vatRate: 8,
+    category: 'LOCAL_CHARGE',
+    note: 'Vệ sinh rửa vỏ cont tiêu chuẩn',
+  },
+  {
+    code: 'CFS',
+    name: 'Phí bốc xếp kho hàng lẻ (Container Freight Station Fee)',
+    location: 'POL',
+    basis: 'PER_CBM',
+    basisLabel: 'CBM / RT',
+    unit: 'CBM',
+    unitPrice: 16,
+    costPrice: 12,
+    currency: 'USD',
+    vatRate: 8,
+    category: 'LOCAL_CHARGE',
+    note: 'Xếp dỡ hàng lẻ tại kho CFS cảng',
+  },
+  {
+    code: 'CIC',
+    name: 'Phụ phí mất cân bằng vỏ container (Container Imbalance Charge)',
+    location: 'FREIGHT',
+    basis: 'PER_CONTAINER',
+    basisLabel: 'Cont',
+    unit: 'Cont',
+    unitPrice: 70,
+    costPrice: 50,
+    currency: 'USD',
+    vatRate: 0,
+    category: 'LOCAL_CHARGE',
+    note: 'Bù đắp điều vỏ rỗng giữa các cảng',
+  },
+  {
+    code: 'CUSTOMS',
+    name: 'Phí dịch vụ khai báo thủ tục hải quan xuất nhập khẩu',
+    location: 'POL',
+    basis: 'PER_SHIPMENT',
+    basisLabel: 'Tờ khai',
+    unit: 'Tờ khai',
+    unitPrice: 850000,
+    costPrice: 600000,
+    currency: 'VND',
+    vatRate: 8,
+    category: 'CUSTOMS',
+    note: 'Lên tờ khai điện tử VNACCS và thông quan',
+  },
+];
 
 interface LineItemsTableProps {
   items: LineItem[];
@@ -53,6 +201,13 @@ interface LineItemsTableProps {
   onOpenHistoricalRateAdvisor?: () => void;
   onOpenSmartSurcharge?: () => void;
   smartSurchargesCount?: number;
+  // Perceived Performance Skeleton & Shimmer Props
+  isLoading?: boolean;
+  isReloading?: boolean;
+  isRecomputing?: boolean;
+  recomputeProgress?: number;
+  loadingMessage?: string;
+  onRefreshOrRecompute?: () => void;
 }
 
 export const LineItemsTable: React.FC<LineItemsTableProps> = ({ 
@@ -73,26 +228,234 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
   onOpenHistoricalRateAdvisor,
   onOpenSmartSurcharge,
   smartSurchargesCount = 0,
+  isLoading = false,
+  isReloading = false,
+  isRecomputing = false,
+  recomputeProgress,
+  loadingMessage,
+  onRefreshOrRecompute,
 }) => {
   // Toggle Cost & Profit margin column
   const [showCostAndProfit, setShowCostAndProfit] = useState(true);
   const [isPresetDropdownOpen, setIsPresetDropdownOpen] = useState(false);
+  const [isQuickCopyOpen, setIsQuickCopyOpen] = useState(false);
+  const [copiedItemSuccessId, setCopiedItemSuccessId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grouped' | 'flat'>('flat');
   const [activeLegFilter, setActiveLegFilter] = useState<ChargeLocation | 'ALL'>('ALL');
   const presetDropdownRef = useRef<HTMLDivElement>(null);
+  const quickCopyDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Perceived Performance & Shimmer Skeleton State (Non-blocking background recomputation)
+  const [internalRecomputing, setInternalRecomputing] = useState(false);
+  const [internalProgress, setInternalProgress] = useState<number | undefined>(undefined);
+  const recomputeIntervalRef = useRef<any>(null);
+
+  const isBusy = Boolean(isLoading || isReloading || isRecomputing || internalRecomputing);
+  const effectiveProgress = recomputeProgress !== undefined ? recomputeProgress : internalProgress;
+  const effectiveLoadingMessage = loadingMessage || (
+    isRecomputing || internalRecomputing 
+      ? 'Đang tái tính toán biểu cước & đối soát phụ phí...' 
+      : 'Đang làm mới dữ liệu bảng cước...'
+  );
 
   // Hiệu ứng 5: Ánh quang nhận diện cập nhật giá (Diff Luminescence Ripple State)
   const [diffGlowCells, setDiffGlowCells] = useState<Record<string, 'emerald' | 'amber' | 'cyan'>>({});
   const [diffGlowRows, setDiffGlowRows] = useState<Record<string, boolean>>({});
   const cellTimersRef = useRef<Record<string, any>>({});
+  const isFirstMountRef = useRef(true);
+  const prevItemsRef = useRef<LineItem[]>(items);
+  const prevExchangeRateRef = useRef<number>(exchangeRate);
 
   useEffect(() => {
     return () => {
       // Cleanup all active timers on unmount
       Object.values(cellTimersRef.current).forEach((t) => clearTimeout(t));
+      if (recomputeIntervalRef.current) clearInterval(recomputeIntervalRef.current);
     };
   }, []);
+
+  // Automated Diff Luminescence Ripple Detection Engine (Tự động nhận diện khi hệ thống đổi giá hoặc thông số)
+  useEffect(() => {
+    // Bỏ qua lần render đầu tiên khi khởi tạo component
+    if (isFirstMountRef.current) {
+      isFirstMountRef.current = false;
+      prevItemsRef.current = items;
+      prevExchangeRateRef.current = exchangeRate;
+      return;
+    }
+
+    const prevItems = prevItemsRef.current;
+    const prevRate = prevExchangeRateRef.current;
+    const rateChanged = prevRate !== exchangeRate;
+
+    const changedRows: Record<string, boolean> = {};
+    const changedCells: Record<string, 'emerald' | 'amber' | 'cyan'> = {};
+
+    items.forEach((item) => {
+      const old = prevItems.find((p) => p.id === item.id);
+      if (!old) {
+        // Dòng mới được hệ thống thêm tự động (như từ Preset, Smart Surcharges, AI)
+        changedRows[item.id] = true;
+        changedCells[`${item.id}:unitPrice`] = 'emerald';
+        changedCells[`${item.id}:amountUsd`] = 'emerald';
+      } else {
+        const oldPrice = Number(old.unitPrice || 0);
+        const newPrice = Number(item.unitPrice || 0);
+        const oldCost = Number(old.costPrice || 0);
+        const newCost = Number(item.costPrice || 0);
+        const oldQty = Number(old.quantity || 0);
+        const newQty = Number(item.quantity || 0);
+        const oldCurr = old.currency;
+        const newCurr = item.currency;
+        const oldAmountUsd = Number(old.amountUsd || 0);
+        const newAmountUsd = Number(item.amountUsd || 0);
+
+        const priceChanged = oldPrice !== newPrice;
+        const costChanged = oldCost !== newCost;
+        const qtyChanged = oldQty !== newQty;
+        const currChanged = oldCurr !== newCurr;
+        const amountChanged = Math.abs(oldAmountUsd - newAmountUsd) > 0.01;
+
+        if (priceChanged || costChanged || qtyChanged || currChanged || (rateChanged && amountChanged)) {
+          changedRows[item.id] = true;
+
+          if (priceChanged) {
+            changedCells[`${item.id}:unitPrice`] = newPrice >= oldPrice ? 'emerald' : 'amber';
+          }
+          if (costChanged) {
+            changedCells[`${item.id}:costPrice`] = newCost <= oldCost ? 'emerald' : 'amber';
+          }
+          if (qtyChanged) {
+            changedCells[`${item.id}:quantity`] = 'cyan';
+          }
+          if (currChanged) {
+            changedCells[`${item.id}:currency`] = 'cyan';
+          }
+          if (amountChanged) {
+            changedCells[`${item.id}:amountUsd`] = newAmountUsd >= oldAmountUsd ? 'emerald' : 'cyan';
+          }
+        }
+      }
+    });
+
+    if (Object.keys(changedRows).length > 0) {
+      setDiffGlowRows((prev) => ({ ...prev, ...changedRows }));
+      setDiffGlowCells((prev) => ({ ...prev, ...changedCells }));
+
+      const timeoutId = setTimeout(() => {
+        setDiffGlowRows((prev) => {
+          const next = { ...prev };
+          Object.keys(changedRows).forEach((k) => delete next[k]);
+          return next;
+        });
+        setDiffGlowCells((prev) => {
+          const next = { ...prev };
+          Object.keys(changedCells).forEach((k) => delete next[k]);
+          return next;
+        });
+      }, 2200);
+
+      prevItemsRef.current = items;
+      prevExchangeRateRef.current = exchangeRate;
+      return () => clearTimeout(timeoutId);
+    }
+
+    prevItemsRef.current = items;
+    prevExchangeRateRef.current = exchangeRate;
+  }, [items, exchangeRate]);
+
+  // Global event listener for explicitly triggering luminescence ripple from outside
+  useEffect(() => {
+    const handleGlobalTrigger = (e: any) => {
+      const targetIds: string[] = Array.isArray(e.detail?.itemIds) && e.detail.itemIds.length > 0
+        ? e.detail.itemIds 
+        : items.map((i) => i.id);
+
+      if (targetIds.length === 0) return;
+
+      const newRows: Record<string, boolean> = {};
+      const newCells: Record<string, 'emerald' | 'amber' | 'cyan'> = {};
+
+      targetIds.forEach((id) => {
+        newRows[id] = true;
+        newCells[`${id}:unitPrice`] = 'emerald';
+        newCells[`${id}:amountUsd`] = 'emerald';
+      });
+
+      setDiffGlowRows((prev) => ({ ...prev, ...newRows }));
+      setDiffGlowCells((prev) => ({ ...prev, ...newCells }));
+
+      setTimeout(() => {
+        setDiffGlowRows((prev) => {
+          const next = { ...prev };
+          targetIds.forEach((k) => delete next[k]);
+          return next;
+        });
+        setDiffGlowCells((prev) => {
+          const next = { ...prev };
+          targetIds.forEach((k) => {
+            delete next[`${k}:unitPrice`];
+            delete next[`${k}:amountUsd`];
+          });
+          return next;
+        });
+      }, 2200);
+    };
+
+    window.addEventListener('TRIGGER_LUMINESCENCE_RIPPLE', handleGlobalTrigger);
+    return () => window.removeEventListener('TRIGGER_LUMINESCENCE_RIPPLE', handleGlobalTrigger);
+  }, [items]);
+
+  // Hàm kích hoạt demo hiệu ứng ánh quang nhận diện cập nhật
+  const triggerLuminescenceDemo = () => {
+    const allRows: Record<string, boolean> = {};
+    const allCells: Record<string, 'emerald' | 'amber' | 'cyan'> = {};
+    items.forEach((item, idx) => {
+      allRows[item.id] = true;
+      allCells[`${item.id}:unitPrice`] = idx % 2 === 0 ? 'emerald' : 'cyan';
+      allCells[`${item.id}:amountUsd`] = 'emerald';
+    });
+    setDiffGlowRows(allRows);
+    setDiffGlowCells(allCells);
+    setTimeout(() => {
+      setDiffGlowRows({});
+      setDiffGlowCells({});
+    }, 2200);
+  };
+
+  // Kích hoạt mô phỏng tái tính toán cước với Shimmer Skeleton (Non-blocking)
+  const handleTriggerRecomputeShimmer = () => {
+    if (onRefreshOrRecompute) {
+      onRefreshOrRecompute();
+    }
+    setInternalRecomputing(true);
+    setInternalProgress(15);
+
+    if (recomputeIntervalRef.current) clearInterval(recomputeIntervalRef.current);
+
+    let current = 15;
+    recomputeIntervalRef.current = setInterval(() => {
+      current += Math.floor(Math.random() * 20) + 18;
+      if (current >= 100) {
+        clearInterval(recomputeIntervalRef.current);
+        setInternalProgress(100);
+        setTimeout(() => {
+          setInternalRecomputing(false);
+          setInternalProgress(undefined);
+          triggerLuminescenceDemo();
+        }, 320);
+      } else {
+        setInternalProgress(current);
+      }
+    }, 220);
+  };
+
+  const handleCancelRecompute = () => {
+    if (recomputeIntervalRef.current) clearInterval(recomputeIntervalRef.current);
+    setInternalRecomputing(false);
+    setInternalProgress(undefined);
+  };
 
   // Add Fee Search & Custom Modal State
   const [isAddFeeModalOpen, setIsAddFeeModalOpen] = useState(false);
@@ -120,20 +483,23 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
     return () => window.removeEventListener('OPEN_ADD_FEE_MODAL', handleOpenEvent);
   }, [activeLegFilter]);
 
-  // Close preset dropdown on click outside
+  // Close preset & quick copy dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (presetDropdownRef.current && !presetDropdownRef.current.contains(e.target as Node)) {
         setIsPresetDropdownOpen(false);
       }
+      if (quickCopyDropdownRef.current && !quickCopyDropdownRef.current.contains(e.target as Node)) {
+        setIsQuickCopyOpen(false);
+      }
     };
-    if (isPresetDropdownOpen) {
+    if (isPresetDropdownOpen || isQuickCopyOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isPresetDropdownOpen]);
+  }, [isPresetDropdownOpen, isQuickCopyOpen]);
 
   // Rate traceability & risk stats
   const rateTraceabilityAlerts = useMemo(() => {
@@ -282,15 +648,160 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
     onUpdateItems(updated);
   };
 
-  // Duplicate item
-  const handleDuplicateItem = (itemToDup: LineItem) => {
+  // Duplicate item - inserts directly beneath source item with luminescence ripple
+  const handleDuplicateItem = (
+    itemToDup: LineItem, 
+    options?: { targetLocation?: ChargeLocation; currencySwitch?: boolean }
+  ) => {
+    const sourceIndex = items.findIndex(i => i.id === itemToDup.id);
+    const targetLoc = options?.targetLocation || itemToDup.location || 'POL';
+    
+    let targetCurr = itemToDup.currency;
+    let targetPrice = itemToDup.unitPrice;
+    let targetCost = itemToDup.costPrice;
+
+    if (options?.currencySwitch) {
+      if (itemToDup.currency === 'USD') {
+        targetCurr = 'VND';
+        targetPrice = Math.round(itemToDup.unitPrice * exchangeRate);
+        if (targetCost) targetCost = Math.round(targetCost * exchangeRate);
+      } else {
+        targetCurr = 'USD';
+        targetPrice = Number((itemToDup.unitPrice / exchangeRate).toFixed(2));
+        if (targetCost) targetCost = Number((targetCost / exchangeRate).toFixed(2));
+      }
+    }
+
+    const newId = `item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    let suffix = '(Sao chép)';
+    if (options?.targetLocation && options.targetLocation !== itemToDup.location) {
+      suffix = `(${options.targetLocation})`;
+    } else if (options?.currencySwitch) {
+      suffix = `(${targetCurr})`;
+    }
+
     const duplicated: LineItem = {
       ...itemToDup,
-      id: `item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      description: `${itemToDup.description} (Copy)`,
+      id: newId,
+      description: `${itemToDup.description} ${suffix}`,
+      location: targetLoc,
+      currency: targetCurr,
+      unitPrice: targetPrice,
+      costPrice: targetCost,
     };
+
     const calculated = calculateLineItem(duplicated, exchangeRate);
+    const newItems = [...items];
+    if (sourceIndex >= 0) {
+      newItems.splice(sourceIndex + 1, 0, calculated);
+    } else {
+      newItems.push(calculated);
+    }
+
+    onUpdateItems(newItems);
+    setCopiedItemSuccessId(itemToDup.id);
+    setTimeout(() => setCopiedItemSuccessId(null), 1500);
+
+    // Trigger luminescence wave for the new duplicate row
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('TRIGGER_LUMINESCENCE_RIPPLE', {
+        detail: { itemIds: [newId] }
+      }));
+    }, 50);
+  };
+
+  // Fast duplicate all POL local charges to POD
+  const handleDuplicatePolToPod = () => {
+    const polItems = items.filter(i => (i.location || 'POL') === 'POL');
+    if (polItems.length === 0) return;
+
+    const newIds: string[] = [];
+    const duplicatedItems: LineItem[] = polItems.map((item) => {
+      const newId = `item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+      newIds.push(newId);
+      return calculateLineItem({
+        ...item,
+        id: newId,
+        location: 'POD',
+        description: item.description.replace(/\(POL\)/gi, '').trim() + ' (POD)',
+      }, exchangeRate);
+    });
+
+    onUpdateItems([...items, ...duplicatedItems]);
+    setIsQuickCopyOpen(false);
+
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('TRIGGER_LUMINESCENCE_RIPPLE', {
+        detail: { itemIds: newIds }
+      }));
+    }, 50);
+  };
+
+  // Fast insert single popular preset
+  const handleQuickInsertPreset = (preset: PopularLocalChargePreset) => {
+    const newId = `item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const newItem: LineItem = {
+      id: newId,
+      category: preset.category,
+      location: preset.location,
+      code: preset.code,
+      description: preset.name,
+      basis: preset.basis,
+      quantity: 1,
+      unit: preset.unit,
+      unitPrice: preset.unitPrice,
+      costPrice: preset.costPrice,
+      currency: preset.currency,
+      vatRate: preset.vatRate,
+      amountUsd: 0,
+      amountVnd: 0,
+      note: preset.note || '',
+    };
+    const calculated = calculateLineItem(newItem, exchangeRate);
     onUpdateItems([...items, calculated]);
+
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('TRIGGER_LUMINESCENCE_RIPPLE', {
+        detail: { itemIds: [newId] }
+      }));
+    }, 50);
+  };
+
+  // Fast insert standard bundle of 4-5 VN port local charges
+  const handleBatchInsertPopularSet = () => {
+    const defaultCodes = ['THC', 'B/L', 'SEAL', 'TELEX'];
+    const toInsert = POPULAR_LOCAL_CHARGES_QUICK.filter(p => defaultCodes.includes(p.code) && p.location === 'POL');
+    const newIds: string[] = [];
+
+    const newItems: LineItem[] = toInsert.map((preset) => {
+      const newId = `item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+      newIds.push(newId);
+      return calculateLineItem({
+        id: newId,
+        category: preset.category,
+        location: preset.location,
+        code: preset.code,
+        description: preset.name,
+        basis: preset.basis,
+        quantity: 1,
+        unit: preset.unit,
+        unitPrice: preset.unitPrice,
+        costPrice: preset.costPrice,
+        currency: preset.currency,
+        vatRate: preset.vatRate,
+        amountUsd: 0,
+        amountVnd: 0,
+        note: 'Local charges tiêu chuẩn tại cảng xuất Việt Nam',
+      }, exchangeRate);
+    });
+
+    onUpdateItems([...items, ...newItems]);
+
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('TRIGGER_LUMINESCENCE_RIPPLE', {
+        detail: { itemIds: newIds }
+      }));
+    }, 50);
   };
 
   // Remove item
@@ -436,7 +947,11 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
         } ${isRowDiffGlowing ? 'diff-row-ripple' : ''}`}
       >
         {/* Col 1: Thứ Tự & Kéo Thả / Di Chuyển Vị Trí */}
-        <td className="py-2 px-1 text-center align-middle w-16 text-slate-400 select-none">
+        <td className="py-2 px-1 text-center align-middle w-16 text-slate-400 select-none relative">
+          {/* Laser vertical luminescence accent bar when row is updated */}
+          {isRowDiffGlowing && (
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 via-emerald-400 to-indigo-600 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse rounded-r" />
+          )}
           <div className="flex items-center justify-center gap-0.5">
             {/* Drag Handle */}
             <div
@@ -511,6 +1026,13 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                 title="Mã phụ phí (Code)"
                 className="w-16 px-1.5 py-0.5 text-[10px] font-mono font-bold text-center text-slate-700 bg-slate-100 border border-slate-200 rounded uppercase focus:outline-none focus:border-slate-400"
               />
+
+              {isRowDiffGlowing && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-gradient-to-r from-emerald-100 to-teal-100 border border-emerald-300 px-2 py-0.5 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.35)] animate-pulse shrink-0">
+                  <Zap className="w-2.5 h-2.5 text-emerald-600 fill-emerald-500 animate-bounce" />
+                  <span>⚡ Tự Động Cập Nhật</span>
+                </span>
+              )}
 
               {item.priceSource === 'CUSTOMER_CONTRACT' && (
                 <span className="shrink-0 text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded" title="Giá chuẩn từ Hợp Đồng Khách Hàng">
@@ -696,12 +1218,16 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
         {/* Col 7: Thành Tiền (USD & VND Stacked cleanly without column clutter) */}
         <td className="py-2.5 px-3 align-top text-right w-[155px]">
           <div className="space-y-1 pt-1">
-            <div className={`font-mono font-bold text-slate-900 text-sm tracking-tight transition-all rounded px-1.5 py-0.5 inline-block ${
-              isRowDiffGlowing ? 'bg-emerald-50 text-emerald-900 ring-1 ring-emerald-300' : ''
+            <div className={`font-mono font-bold text-slate-900 text-sm tracking-tight transition-all rounded px-2 py-0.5 inline-block ${
+              isRowDiffGlowing 
+                ? 'diff-luminescence-emerald ring-2 ring-emerald-400/80 text-emerald-950 font-extrabold shadow-[0_0_12px_rgba(16,185,129,0.4)]' 
+                : ''
             }`}>
               {formatUSD(item.amountUsd)}
             </div>
-            <div className="font-mono text-[11px] text-slate-500 font-normal">
+            <div className={`font-mono text-[11px] transition-all rounded px-1 ${
+              isRowDiffGlowing ? 'text-emerald-700 font-semibold' : 'text-slate-500 font-normal'
+            }`}>
               ≈ {formatVND(item.amountVnd)}
             </div>
           </div>
@@ -735,10 +1261,18 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             <button
               type="button"
               onClick={() => handleDuplicateItem(item)}
-              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-              title="Nhân bản dòng phí này"
+              className={`p-1.5 rounded-lg transition-all cursor-pointer relative group/copy ${
+                copiedItemSuccessId === item.id 
+                  ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-400' 
+                  : 'text-blue-600 hover:text-blue-800 hover:bg-blue-50'
+              }`}
+              title="Sao chép nhanh dòng phí này (Chèn ngay bên dưới)"
             >
-              <Copy className="w-3.5 h-3.5" />
+              {copiedItemSuccessId === item.id ? (
+                <Check className="w-3.5 h-3.5 animate-bounce text-emerald-600" />
+              ) : (
+                <Copy className="w-3.5 h-3.5 transition-transform group-hover/copy:scale-110" />
+              )}
             </button>
             <button
               type="button"
@@ -872,6 +1406,153 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                 <span>Gói Tuyến 1-Click</span>
               </button>
             )}
+
+            {/* Quick Copy / Duplicate Dropdown (Sao Chép Nhanh Dòng Phí & Local Charges) */}
+            <div className="relative" ref={quickCopyDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsQuickCopyOpen(!isQuickCopyOpen)}
+                className="inline-flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200/90 font-bold text-xs px-2.5 py-1.5 rounded-lg transition-all cursor-pointer shadow-2xs"
+                title="Sao chép nhanh các dòng phí phổ biến (Local Charges) hoặc nhân bản phí theo chặng (POL sang POD)"
+                id="btn-quick-copy-line-items"
+              >
+                <Copy className="w-3.5 h-3.5 text-blue-600" />
+                <span>Sao Chép Nhanh</span>
+                <ChevronDown className={`w-3 h-3 text-blue-500 transition-transform duration-150 ${isQuickCopyOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isQuickCopyOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-80 sm:w-88 bg-white border border-slate-200 rounded-2xl shadow-xl z-40 p-2.5 space-y-2.5 animate-in fade-in zoom-in-95 duration-100">
+                  {/* Dropdown Header */}
+                  <div className="px-1 py-1 border-b border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                      <Copy className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Sao Chép Nhanh Dòng Phí</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsQuickCopyOpen(false)}
+                      className="text-slate-400 hover:text-slate-600 p-0.5 rounded cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  {/* Section 1: Thông minh từ các dòng hiện có trong báo giá */}
+                  {items.length > 0 && (
+                    <div className="space-y-1">
+                      <div className="px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                        <span>Nhân bản từ báo giá hiện tại:</span>
+                        <span className="text-[10px] text-blue-600 font-mono font-semibold">{items.length} dòng có sẵn</span>
+                      </div>
+
+                      {/* Clone POL Local Charges to POD */}
+                      <button
+                        type="button"
+                        onClick={handleDuplicatePolToPod}
+                        className="w-full text-left px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 rounded-lg flex items-center justify-between transition cursor-pointer group"
+                        title="Tự động sao chép toàn bộ các dòng phí POL sang cảng đến POD"
+                      >
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
+                          <span>Nhân bản phí POL sang POD (Xuất → Nhập)</span>
+                        </div>
+                        <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-100/80 px-1.5 py-0.5 rounded">
+                          {items.filter(i => (i.location || 'POL') === 'POL').length} dòng
+                        </span>
+                      </button>
+
+                      {/* Duplicate last item */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (items.length > 0) {
+                            handleDuplicateItem(items[items.length - 1]);
+                            setIsQuickCopyOpen(false);
+                          }
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg flex items-center justify-between transition cursor-pointer group"
+                        title="Nhân bản ngay dòng phí cuối cùng trong danh sách"
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <Layers className="w-3.5 h-3.5 text-indigo-600 group-hover:scale-110 transition-transform shrink-0" />
+                          <span className="truncate">Nhân bản dòng phí cuối: {items[items.length - 1].code || items[items.length - 1].description}</span>
+                        </div>
+                        <span className="text-[10px] text-indigo-600 font-mono font-bold shrink-0">+1 dòng</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Section 2: Popular Local Charges Quick Insert */}
+                  <div className="space-y-1 pt-1.5 border-t border-slate-100">
+                    <div className="px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                      <span>Phụ phí Local Charges phổ biến:</span>
+                      <span className="text-[9px] text-emerald-600 font-semibold">1-Click chèn</span>
+                    </div>
+
+                    <div className="max-h-56 overflow-y-auto space-y-0.5 pr-0.5">
+                      {POPULAR_LOCAL_CHARGES_QUICK.map((preset) => (
+                        <button
+                          key={preset.code + preset.location}
+                          type="button"
+                          onClick={() => {
+                            handleQuickInsertPreset(preset);
+                            setIsQuickCopyOpen(false);
+                          }}
+                          className="w-full text-left px-2.5 py-1.5 text-xs hover:bg-slate-50 hover:border-slate-200 border border-transparent rounded-lg flex items-center justify-between transition cursor-pointer group"
+                        >
+                          <div className="min-w-0 pr-2">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-slate-900 font-mono text-xs group-hover:text-blue-600 transition-colors">
+                                {preset.code}
+                              </span>
+                              <span className={`text-[9px] font-bold px-1 py-0.2 rounded ${
+                                preset.location === 'POL' 
+                                  ? 'bg-slate-100 text-slate-700' 
+                                  : preset.location === 'POD' 
+                                  ? 'bg-purple-50 text-purple-700' 
+                                  : 'bg-blue-50 text-blue-700'
+                              }`}>
+                                {preset.location}
+                              </span>
+                              <span className="text-slate-600 text-[11px] truncate">
+                                {preset.name}
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-normal mt-0.5">
+                              {preset.basisLabel} · VAT {preset.vatRate}%
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="font-mono text-xs font-bold text-slate-800">
+                              {preset.currency === 'USD' ? `$${preset.unitPrice}` : formatVND(preset.unitPrice)}
+                            </div>
+                            <span className="text-[9px] text-blue-600 font-medium group-hover:underline">
+                              + Chèn
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Section 3: Batch Action - 1-Click Common Standard Set */}
+                  <div className="pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleBatchInsertPopularSet();
+                        setIsQuickCopyOpen(false);
+                      }}
+                      className="w-full py-1.5 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Chèn Bộ 4 Phí Chuẩn (THC, B/L, Seal, Telex)</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Presets Quick Dropdown */}
             <div className="relative" ref={presetDropdownRef}>
@@ -1061,6 +1742,35 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                 <span>Khớp Giá HĐ</span>
               </button>
             )}
+
+            {/* Luminescence Ripple Interactive Test Button */}
+            <button
+              type="button"
+              onClick={triggerLuminescenceDemo}
+              className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-50 via-teal-50 to-emerald-50 hover:from-blue-100 hover:to-emerald-100 text-emerald-800 hover:text-emerald-950 border border-emerald-300/80 font-bold text-xs px-2.5 py-1 rounded-md transition-all cursor-pointer shadow-2xs hover:shadow-xs group"
+              title="Thử nghiệm hiệu ứng sóng ánh quang nhấp nháy gradient (Luminescence Ripple) trên các dòng báo giá"
+              id="btn-test-luminescence-ripple"
+            >
+              <Zap className="w-3.5 h-3.5 text-emerald-600 group-hover:scale-110 group-hover:rotate-12 transition-transform fill-emerald-500/20" />
+              <span>Ánh Quang Cập Nhật Giá</span>
+            </button>
+
+            {/* Shimmer Skeleton Interactive Recompute Trigger */}
+            <button
+              type="button"
+              onClick={handleTriggerRecomputeShimmer}
+              disabled={isBusy}
+              className={`inline-flex items-center gap-1.5 font-bold text-xs px-2.5 py-1 rounded-md transition-all cursor-pointer shadow-2xs group ${
+                isBusy 
+                  ? 'bg-blue-100 text-blue-800 border border-blue-300' 
+                  : 'bg-gradient-to-r from-sky-50 via-blue-50 to-indigo-50 hover:from-sky-100 hover:to-indigo-100 text-blue-900 border border-blue-200/90 hover:shadow-xs'
+              }`}
+              title="Kích hoạt mô phỏng tái tính toán cước với hiệu ứng Shimmer Skeleton mượt mà không chặn thao tác người dùng"
+              id="btn-test-shimmer-skeleton"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-blue-600 transition-transform ${isBusy ? 'animate-spin' : 'group-hover:rotate-180 duration-500'}`} />
+              <span>{isBusy ? 'Đang Tái Tính Toán...' : 'Tái Tính Toán & Shimmer'}</span>
+            </button>
           </div>
 
           {/* Right: Security & Privacy View Controls */}
@@ -1132,13 +1842,21 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             </span>
           </div>
           <div className="flex items-baseline justify-between">
-            <div className="font-mono font-bold text-xs sm:text-sm">
-              {formatUSD(sumLocationUsd(polItems))}
-            </div>
-            {showCostAndProfit && (
-              <div className={`font-mono text-[10px] ${activeLegFilter === 'POL' ? 'text-emerald-300' : 'text-emerald-700 font-semibold'}`}>
-                Lãi: +{formatUSD(sumLocationProfitUsd(polItems))}
+            {isBusy ? (
+              <div className="h-4 w-20 rounded bg-slate-200/80 skeleton-shimmer my-0.5" />
+            ) : (
+              <div className="font-mono font-bold text-xs sm:text-sm">
+                {formatUSD(sumLocationUsd(polItems))}
               </div>
+            )}
+            {showCostAndProfit && (
+              isBusy ? (
+                <div className="h-3.5 w-16 rounded bg-emerald-100/70 skeleton-shimmer my-0.5" />
+              ) : (
+                <div className={`font-mono text-[10px] ${activeLegFilter === 'POL' ? 'text-emerald-300' : 'text-emerald-700 font-semibold'}`}>
+                  Lãi: +{formatUSD(sumLocationProfitUsd(polItems))}
+                </div>
+              )
             )}
           </div>
         </button>
@@ -1165,13 +1883,21 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             </span>
           </div>
           <div className="flex items-baseline justify-between">
-            <div className="font-mono font-bold text-xs sm:text-sm">
-              {formatUSD(sumLocationUsd(freightItems))}
-            </div>
-            {showCostAndProfit && (
-              <div className={`font-mono text-[10px] ${activeLegFilter === 'FREIGHT' ? 'text-emerald-300' : 'text-emerald-700 font-semibold'}`}>
-                Lãi: +{formatUSD(sumLocationProfitUsd(freightItems))}
+            {isBusy ? (
+              <div className="h-4 w-20 rounded bg-slate-200/80 skeleton-shimmer my-0.5" />
+            ) : (
+              <div className="font-mono font-bold text-xs sm:text-sm">
+                {formatUSD(sumLocationUsd(freightItems))}
               </div>
+            )}
+            {showCostAndProfit && (
+              isBusy ? (
+                <div className="h-3.5 w-16 rounded bg-emerald-100/70 skeleton-shimmer my-0.5" />
+              ) : (
+                <div className={`font-mono text-[10px] ${activeLegFilter === 'FREIGHT' ? 'text-emerald-300' : 'text-emerald-700 font-semibold'}`}>
+                  Lãi: +{formatUSD(sumLocationProfitUsd(freightItems))}
+                </div>
+              )
             )}
           </div>
         </button>
@@ -1198,13 +1924,21 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             </span>
           </div>
           <div className="flex items-baseline justify-between">
-            <div className="font-mono font-bold text-xs sm:text-sm">
-              {formatUSD(sumLocationUsd(podItems))}
-            </div>
-            {showCostAndProfit && (
-              <div className={`font-mono text-[10px] ${activeLegFilter === 'POD' ? 'text-emerald-300' : 'text-emerald-700 font-semibold'}`}>
-                Lãi: +{formatUSD(sumLocationProfitUsd(podItems))}
+            {isBusy ? (
+              <div className="h-4 w-20 rounded bg-slate-200/80 skeleton-shimmer my-0.5" />
+            ) : (
+              <div className="font-mono font-bold text-xs sm:text-sm">
+                {formatUSD(sumLocationUsd(podItems))}
               </div>
+            )}
+            {showCostAndProfit && (
+              isBusy ? (
+                <div className="h-3.5 w-16 rounded bg-emerald-100/70 skeleton-shimmer my-0.5" />
+              ) : (
+                <div className={`font-mono text-[10px] ${activeLegFilter === 'POD' ? 'text-emerald-300' : 'text-emerald-700 font-semibold'}`}>
+                  Lãi: +{formatUSD(sumLocationProfitUsd(podItems))}
+                </div>
+              )
             )}
           </div>
         </button>
@@ -1231,13 +1965,21 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             </span>
           </div>
           <div className="flex items-baseline justify-between">
-            <div className="font-mono font-bold text-xs sm:text-sm">
-              {formatUSD(sumLocationUsd(otherItems))}
-            </div>
-            {showCostAndProfit && (
-              <div className={`font-mono text-[10px] ${activeLegFilter === 'OTHER' ? 'text-emerald-300' : 'text-emerald-700 font-semibold'}`}>
-                Lãi: +{formatUSD(sumLocationProfitUsd(otherItems))}
+            {isBusy ? (
+              <div className="h-4 w-20 rounded bg-slate-200/80 skeleton-shimmer my-0.5" />
+            ) : (
+              <div className="font-mono font-bold text-xs sm:text-sm">
+                {formatUSD(sumLocationUsd(otherItems))}
               </div>
+            )}
+            {showCostAndProfit && (
+              isBusy ? (
+                <div className="h-3.5 w-16 rounded bg-emerald-100/70 skeleton-shimmer my-0.5" />
+              ) : (
+                <div className={`font-mono text-[10px] ${activeLegFilter === 'OTHER' ? 'text-emerald-300' : 'text-emerald-700 font-semibold'}`}>
+                  Lãi: +{formatUSD(sumLocationProfitUsd(otherItems))}
+                </div>
+              )
             )}
           </div>
         </button>
@@ -1290,6 +2032,15 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
           {displayedItems.length} mục
         </span>
       </div>
+
+      {/* Non-blocking Shimmer Progress Banner when data is reloading or recomputing */}
+      {isBusy && (
+        <LineItemsTableShimmerBanner
+          message={effectiveLoadingMessage}
+          progressPercent={effectiveProgress}
+          onCancel={handleCancelRecompute}
+        />
+      )}
 
       {/* 3. The Redesigned Quotation Table: No overlapping, multiline wrapping, proportional full-width distribution */}
       <div className="w-full overflow-x-auto border-t border-slate-200/80 [-webkit-overflow-scrolling:touch]">
@@ -1344,8 +2095,15 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
           </thead>
 
           <tbody className="divide-y divide-slate-100 bg-white">
-            {/* Case A: Grouped by 4 Legs */}
-            {viewMode === 'grouped' ? (
+            {/* Case A: Shimmer Skeleton rows when reloading or recomputing */}
+            {isBusy ? (
+              <LineItemsTableSkeletonRows
+                rowsCount={displayedItems.length > 0 ? Math.min(displayedItems.length, 6) : 5}
+                showCostAndProfit={showCostAndProfit}
+                viewMode={viewMode}
+                activeLegFilter={activeLegFilter}
+              />
+            ) : viewMode === 'grouped' ? (
               <>
                 {(['POL', 'FREIGHT', 'POD', 'OTHER'] as ChargeLocation[]).map((loc) => {
                   const groupItems = displayedItems.filter(i => (i.location || (i.category === 'FREIGHT' ? 'FREIGHT' : 'POL')) === loc);
@@ -1419,7 +2177,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             )}
 
             {/* Empty State when no items exist or search returns 0 */}
-            {displayedItems.length === 0 && (
+            {!isBusy && displayedItems.length === 0 && (
               <tr>
                 <td colSpan={showCostAndProfit ? 8 : 7} className="py-12 px-4 text-center">
                   <div className="max-w-md mx-auto space-y-3">
@@ -1469,7 +2227,11 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                   Tổng Cộng Bảng Cước ({items.length} hạng mục)
                 </td>
                 <td className="py-3 px-2.5 text-right font-mono text-xs">
-                  {items.reduce((acc, i) => acc + (Number(i.quantity) || 0), 0)} ĐVT
+                  {isBusy ? (
+                    <div className="h-4 w-12 ml-auto rounded bg-slate-200 skeleton-shimmer" />
+                  ) : (
+                    `${items.reduce((acc, i) => acc + (Number(i.quantity) || 0), 0)} ĐVT`
+                  )}
                 </td>
                 <td className="py-3 px-2.5 text-right bg-blue-100/40 text-blue-950 font-mono text-xs">
                   -
@@ -1477,14 +2239,27 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                 {showCostAndProfit && (
                   <td className="py-3 px-2.5 text-right bg-amber-100/40 text-amber-950 font-mono text-xs border-l border-r border-amber-200">
                     <div className="text-[10px] text-amber-800">Tổng vốn:</div>
-                    <div>{formatUSD(items.reduce((acc, i) => acc + (i.costTotalUsd || 0), 0))}</div>
+                    {isBusy ? (
+                      <div className="h-4 w-16 ml-auto rounded bg-amber-200/70 skeleton-shimmer mt-0.5" />
+                    ) : (
+                      <div>{formatUSD(items.reduce((acc, i) => acc + (i.costTotalUsd || 0), 0))}</div>
+                    )}
                   </td>
                 )}
                 <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
-                  <div className="text-sm">{formatUSD(items.reduce((acc, i) => acc + (i.amountUsd || 0), 0))}</div>
-                  <div className="text-[11px] text-slate-500 font-normal">
-                    ≈ {formatVND(items.reduce((acc, i) => acc + (i.amountVnd || 0), 0))}
-                  </div>
+                  {isBusy ? (
+                    <div className="space-y-1 flex flex-col items-end">
+                      <div className="h-4.5 w-24 rounded bg-slate-300 skeleton-shimmer" />
+                      <div className="h-3 w-28 rounded bg-slate-200 skeleton-shimmer" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-sm">{formatUSD(items.reduce((acc, i) => acc + (i.amountUsd || 0), 0))}</div>
+                      <div className="text-[11px] text-slate-500 font-normal">
+                        ≈ {formatVND(items.reduce((acc, i) => acc + (i.amountVnd || 0), 0))}
+                      </div>
+                    </>
+                  )}
                 </td>
                 <td className="py-3 px-2 text-center" />
               </tr>

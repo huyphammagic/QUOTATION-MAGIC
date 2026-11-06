@@ -40,6 +40,29 @@ function hexToRgb(hex: string, fallback: [number, number, number] = [22, 78, 99]
   return fallback;
 }
 
+// Safely split long uninterrupted strings so they never bleed across columns
+function safeWrapText(text: string, maxChunkLen = 30): string {
+  if (!text) return '';
+  return text
+    .split('\n')
+    .map(line => {
+      const words = line.split(' ');
+      return words
+        .map(w => {
+          if (w.length > maxChunkLen) {
+            const chunks: string[] = [];
+            for (let i = 0; i < w.length; i += maxChunkLen) {
+              chunks.push(w.slice(i, i + maxChunkLen));
+            }
+            return chunks.join(' ');
+          }
+          return w;
+        })
+        .join(' ');
+    })
+    .join('\n');
+}
+
 /**
  * Enterprise PDF Quotation Generation Engine
  * Renders approved snapshots into high-precision corporate PDF documents
@@ -248,8 +271,8 @@ export async function generateQuotationPdf(
         : formatUSD(item.profitUsd || 0);
 
       const descriptionText = item.note 
-        ? `${normalizeUnicode(item.description)}\n(${normalizeUnicode(item.note)})`
-        : normalizeUnicode(item.description);
+        ? `${safeWrapText(normalizeUnicode(item.description))}\n(${safeWrapText(normalizeUnicode(item.note))})`
+        : safeWrapText(normalizeUnicode(item.description));
 
       tableBody.push([
         itemCounter++,
@@ -265,6 +288,20 @@ export async function generateQuotationPdf(
       ]);
     });
 
+    const maxInternalDescLen = (snapshot.items || []).reduce((max, item) => {
+      const len = (item.description || '').length + (item.note ? item.note.length + 4 : 0);
+      return Math.max(max, len);
+    }, 0);
+
+    const isInternalLongDesc = maxInternalDescLen >= 55;
+    const internalDescW = isInternalLongDesc ? 54 : 46;
+    const internalCostW = isInternalLongDesc ? 16 : 18;
+    const internalSellW = isInternalLongDesc ? 16 : 18;
+    const internalProfitW = isInternalLongDesc ? 16 : 18;
+    const internalMarginW = isInternalLongDesc ? 10 : 12;
+    const internalFontSize = isInternalLongDesc ? 6.7 : 7.0;
+    const internalCellPadding = isInternalLongDesc ? 1.6 : 2.0;
+
     autoTable(doc, {
       startY: boxY + boxHeight + 5,
       head: [['STT', 'Hạng Mục Chi Phí', 'SL', 'ĐVT', 'Giá Vốn', 'Giá Bán', 'Tổng Vốn', 'Doanh Thu', 'Lợi Nhuận', 'Margin']],
@@ -273,18 +310,21 @@ export async function generateQuotationPdf(
       styles: {
         font: fontFamily,
         fontStyle: 'normal',
-        cellPadding: 2,
+        fontSize: internalFontSize,
+        cellPadding: internalCellPadding,
+        overflow: 'linebreak',
+        valign: 'middle',
       },
       headStyles: {
         fillColor: [51, 65, 85],
         textColor: [255, 255, 255],
-        fontSize: 7.5,
+        fontSize: isInternalLongDesc ? 7.2 : 7.5,
         font: fontFamily,
         fontStyle: 'bold',
         halign: 'center',
       },
       bodyStyles: {
-        fontSize: 7,
+        fontSize: internalFontSize,
         textColor: [30, 41, 59],
         font: fontFamily,
         fontStyle: 'normal',
@@ -292,17 +332,18 @@ export async function generateQuotationPdf(
       },
       columnStyles: {
         0: { halign: 'center', cellWidth: 8 },
-        1: { cellWidth: 'auto' },
+        1: { halign: 'left', cellWidth: internalDescW, overflow: 'linebreak' },
         2: { halign: 'right', cellWidth: 10 },
         3: { halign: 'center', cellWidth: 14 },
-        4: { halign: 'right', cellWidth: 18 },
-        5: { halign: 'right', cellWidth: 18 },
-        6: { halign: 'right', cellWidth: 20 },
+        4: { halign: 'right', cellWidth: internalCostW },
+        5: { halign: 'right', cellWidth: internalSellW },
+        6: { halign: 'right', cellWidth: 18 },
         7: { halign: 'right', cellWidth: 20 },
-        8: { halign: 'right', cellWidth: 18 },
-        9: { halign: 'center', cellWidth: 14 },
+        8: { halign: 'right', cellWidth: internalProfitW },
+        9: { halign: 'center', cellWidth: internalMarginW },
       },
-      margin: { left: 14, right: 14 },
+      margin: { left: 14, right: 14, top: 16, bottom: 20 },
+      pageBreak: 'auto',
     });
 
   } else {
@@ -351,8 +392,8 @@ export async function generateQuotationPdf(
             : formatUSD(item.amountUsd);
 
           const descriptionText = item.note 
-            ? `${normalizeUnicode(item.description)}\n(${normalizeUnicode(item.note)})`
-            : normalizeUnicode(item.description);
+            ? `${safeWrapText(normalizeUnicode(item.description))}\n(${safeWrapText(normalizeUnicode(item.note))})`
+            : safeWrapText(normalizeUnicode(item.description));
 
           tableBody.push([
             itemCounter++,
@@ -379,8 +420,8 @@ export async function generateQuotationPdf(
           : formatUSD(item.amountUsd);
 
         const descriptionText = item.note 
-          ? `${normalizeUnicode(item.description)}\n(${normalizeUnicode(item.note)})`
-          : normalizeUnicode(item.description);
+          ? `${safeWrapText(normalizeUnicode(item.description))}\n(${safeWrapText(normalizeUnicode(item.note))})`
+          : safeWrapText(normalizeUnicode(item.description));
 
         tableBody.push([
           itemCounter++,
@@ -397,6 +438,32 @@ export async function generateQuotationPdf(
 
     const amountColHeader = isVnd ? 'Thành tiền (VND)' : 'Thành tiền (USD)';
 
+    // Dynamically calculate column widths for long logistics descriptions
+    const maxDescLen = (snapshot.items || []).reduce((max, item) => {
+      const len = (item.description || '').length + (item.note ? item.note.length + 4 : 0);
+      return Math.max(max, len);
+    }, 0);
+
+    const isHighDensityDesc = maxDescLen >= 55;
+    const isUltraLongDesc = maxDescLen >= 100;
+
+    const sttW = isHighDensityDesc ? 7.5 : 8.0;
+    const slW = isHighDensityDesc ? 10.0 : 11.0;
+    const dvtW = isHighDensityDesc ? 13.5 : 15.0;
+    const donGiaW = isVnd ? (isHighDensityDesc ? 21.0 : 23.0) : (isHighDensityDesc ? 18.0 : 20.0);
+    const loaiTienW = isHighDensityDesc ? 12.0 : 13.0;
+    const vatW = isHighDensityDesc ? 10.0 : 11.0;
+    const thanhTienW = isVnd ? (isHighDensityDesc ? 28.0 : 31.0) : (isHighDensityDesc ? 22.0 : 25.0);
+
+    const otherSum = sttW + slW + dvtW + donGiaW + loaiTienW + vatW + thanhTienW;
+    let descW = 182 - otherSum;
+    descW = Math.round(descW * 10) / 10;
+    const diff = Math.round((182 - (otherSum + descW)) * 10) / 10;
+    descW = Math.round((descW + diff) * 10) / 10;
+
+    const tableFontSize = isUltraLongDesc ? 6.8 : (isHighDensityDesc ? 7.0 : 7.5);
+    const tableCellPadding = isUltraLongDesc ? 1.5 : (isHighDensityDesc ? 1.7 : 2.0);
+
     autoTable(doc, {
       startY: boxY + boxHeight + 5,
       head: [['STT', 'Hạng Mục Chi Phí / Description', 'SL', 'ĐVT', 'Đơn Giá', 'Loại Tiền', 'VAT', amountColHeader]],
@@ -405,32 +472,36 @@ export async function generateQuotationPdf(
       styles: {
         font: fontFamily,
         fontStyle: 'normal',
-        cellPadding: 2,
+        fontSize: tableFontSize,
+        cellPadding: tableCellPadding,
+        overflow: 'linebreak',
+        valign: 'middle',
       },
       headStyles: {
         fillColor: primaryRgb,
         textColor: [255, 255, 255],
-        fontSize: 8,
+        fontSize: isHighDensityDesc ? 7.5 : 8,
         font: fontFamily,
         fontStyle: 'bold',
         halign: 'center',
+        valign: 'middle',
       },
       bodyStyles: {
-        fontSize: 7.5,
+        fontSize: tableFontSize,
         textColor: [30, 41, 59],
         font: fontFamily,
         fontStyle: 'normal',
         valign: 'middle',
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 8 },
-        1: { cellWidth: 'auto' },
-        2: { halign: 'right', cellWidth: 12 },
-        3: { halign: 'center', cellWidth: isVnd ? 16 : 18 },
-        4: { halign: 'right', cellWidth: 24 },
-        5: { halign: 'center', cellWidth: 14 },
-        6: { halign: 'center', cellWidth: 12 },
-        7: { halign: 'right', cellWidth: isVnd ? 30 : 26 },
+        0: { halign: 'center', cellWidth: sttW },
+        1: { halign: 'left', cellWidth: descW, overflow: 'linebreak' },
+        2: { halign: 'right', cellWidth: slW },
+        3: { halign: 'center', cellWidth: dvtW },
+        4: { halign: 'right', cellWidth: donGiaW },
+        5: { halign: 'center', cellWidth: loaiTienW },
+        6: { halign: 'center', cellWidth: vatW },
+        7: { halign: 'right', cellWidth: thanhTienW, fontStyle: 'bold' },
       },
       margin: { left: 14, right: 14, top: 16, bottom: 20 },
       pageBreak: 'auto',

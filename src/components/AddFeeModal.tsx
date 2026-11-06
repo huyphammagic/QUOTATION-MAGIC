@@ -89,11 +89,13 @@ export const AddFeeModal: React.FC<AddFeeModalProps> = ({
   initialLocation = 'POL',
   initialCategory = 'LOCAL_CHARGE'
 }) => {
-  // Dropdown open/close & search inside dropdown
+  // Combobox & Dropdown state merged into "Tên chi phí"
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [dropdownSearch, setDropdownSearch] = useState('');
   const [dropdownLocationFilter, setDropdownLocationFilter] = useState<ChargeLocation | 'ALL'>('ALL');
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const codeInputRef = useRef<HTMLInputElement>(null);
 
   // Success indicator when a preset fee is picked
   const [selectedPresetNotice, setSelectedPresetNotice] = useState<string | null>(null);
@@ -133,7 +135,7 @@ export const AddFeeModal: React.FC<AddFeeModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setIsDropdownOpen(false);
-      setDropdownSearch('');
+      setHighlightedIndex(-1);
       setDropdownLocationFilter(initialLocation || 'ALL');
       setSelectedPresetNotice(null);
       setFormData({
@@ -247,9 +249,9 @@ export const AddFeeModal: React.FC<AddFeeModalProps> = ({
     return list;
   }, [isOpen]);
 
-  // Filtered dropdown options
+  // Filtered dropdown options based directly on user's input in "Tên chi phí"
   const filteredDropdownOptions = useMemo(() => {
-    const q = dropdownSearch.trim().toLowerCase();
+    const q = formData.description.trim().toLowerCase();
 
     return allSurcharges.filter((item) => {
       if (dropdownLocationFilter !== 'ALL' && item.location !== dropdownLocationFilter) {
@@ -265,7 +267,53 @@ export const AddFeeModal: React.FC<AddFeeModalProps> = ({
 
       return matchCode || matchNameVi || matchNameEn || matchUnit || matchCategory;
     });
-  }, [allSurcharges, dropdownSearch, dropdownLocationFilter]);
+  }, [allSurcharges, formData.description, dropdownLocationFilter]);
+
+  // Check if current text exactly matches any existing surcharge
+  const isExactMatch = useMemo(() => {
+    const desc = formData.description.trim().toLowerCase();
+    if (!desc) return false;
+    return allSurcharges.some(
+      (s) => s.code.toLowerCase() === desc || s.nameVi.toLowerCase() === desc
+    );
+  }, [allSurcharges, formData.description]);
+
+  // Keyboard navigation when user is typing in "Tên chi phí"
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown') {
+      if (!isDropdownOpen) {
+        setIsDropdownOpen(true);
+        return;
+      }
+      e.preventDefault();
+      setHighlightedIndex((prev) => 
+        prev < filteredDropdownOptions.length - 1 ? prev + 1 : 0
+      );
+    } else if (e.key === 'ArrowUp') {
+      if (!isDropdownOpen) return;
+      e.preventDefault();
+      setHighlightedIndex((prev) => 
+        prev > 0 ? prev - 1 : filteredDropdownOptions.length - 1
+      );
+    } else if (e.key === 'Enter') {
+      if (isDropdownOpen) {
+        if (highlightedIndex >= 0 && highlightedIndex < filteredDropdownOptions.length) {
+          e.preventDefault();
+          handleSelectFromDropdown(filteredDropdownOptions[highlightedIndex]);
+          return;
+        }
+        // If no matching options or 'Add New' is highlighted, use the typed name as new fee
+        e.preventDefault();
+        setIsDropdownOpen(false);
+        codeInputRef.current?.focus();
+      }
+    } else if (e.key === 'Escape') {
+      if (isDropdownOpen) {
+        e.preventDefault();
+        setIsDropdownOpen(false);
+      }
+    }
+  };
 
   // When user picks an item from the dropdown, auto-fill the form fields
   const handleSelectFromDropdown = (item: UnifiedSurchargeOption) => {
@@ -292,6 +340,7 @@ export const AddFeeModal: React.FC<AddFeeModalProps> = ({
     });
 
     setIsDropdownOpen(false);
+    setHighlightedIndex(-1);
     setSelectedPresetNotice(`Đã điền tự động thông tin phí "${item.code} - ${item.nameVi}"`);
     setTimeout(() => setSelectedPresetNotice(null), 3500);
   };
@@ -476,239 +525,299 @@ export const AddFeeModal: React.FC<AddFeeModalProps> = ({
           </div>
         )}
 
-        {/* Modal Scrollable Content: Form + Dropdown Quick Picker */}
+        {/* Modal Scrollable Content: Form with Integrated Smart Combobox */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-50/50">
           
-          {/* SECTION 1: CHỨC NĂNG THẢ XUỐNG CHỌN NHANH PHÍ CÓ SẴN */}
-          <div className="bg-white rounded-xl border border-blue-200 p-3.5 shadow-xs space-y-2.5" ref={dropdownRef}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">
-                  1
-                </span>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                    <span>Chọn Nhanh Bằng Thả Xuống (Dropdown)</span>
-                    <span className="text-[10px] font-normal text-slate-500">
-                      ({allSurcharges.length} phụ phí chuẩn trên hệ thống)
-                    </span>
-                  </h4>
-                  <p className="text-[11px] text-slate-500">
-                    Bấm để mở danh sách, nhấp chọn phí để hệ thống tự động điền toàn bộ bảng bên dưới
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleResetToManual}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition cursor-pointer"
-                  title="Xóa trắng để điền thủ công phí tùy chỉnh"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Xóa Form / Nhập Thủ Công</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Dropdown Trigger Button */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 bg-slate-50 hover:bg-slate-100/80 border rounded-xl text-left text-xs transition cursor-pointer ${
-                  isDropdownOpen 
-                    ? 'border-blue-500 ring-2 ring-blue-500/20 bg-white' 
-                    : formData.code 
-                    ? 'border-blue-300 bg-blue-50/30' 
-                    : 'border-slate-300'
-                }`}
-              >
-                <div className="flex items-center gap-2 min-w-0 pr-2">
-                  <Tag className="w-4 h-4 text-blue-600 shrink-0" />
-                  {formData.code ? (
-                    <div className="truncate">
-                      <span className="font-mono font-bold text-slate-900">{formData.code}</span>
-                      <span className="text-slate-600 ml-1.5"> - {formData.description}</span>
-                      <span className="text-slate-400 text-[11px] ml-2 font-mono">
-                        ({formData.currency === 'USD' ? `$${formData.unitPrice}` : formatVND(formData.unitPrice)}/{formData.unit})
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="text-slate-500 font-medium">
-                      ▼ Nhấp vào đây để thả xuống danh sách phụ phí chuẩn (THC, B/L, Hải Quan, CFS, D/O...)...
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0 text-slate-400">
-                  <span className="text-[11px] font-semibold text-blue-600 hidden sm:inline">
-                    {isDropdownOpen ? 'Đóng danh sách' : 'Thả xuống'}
-                  </span>
-                  {isDropdownOpen ? (
-                    <ChevronUp className="w-4 h-4 text-blue-600" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-slate-500" />
-                  )}
-                </div>
-              </button>
-
-              {/* Dropdown Floating Panel */}
-              {isDropdownOpen && (
-                <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-300 rounded-xl shadow-2xl z-30 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-                  {/* Search and filters inside dropdown */}
-                  <div className="p-2.5 bg-slate-50 border-b border-slate-200 space-y-2">
-                    <div className="relative">
-                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        value={dropdownSearch}
-                        onChange={(e) => setDropdownSearch(e.target.value)}
-                        placeholder="Gõ tìm nhanh theo mã hoặc tên phí (VD: THC, B/L, SEAL, Hải Quan...)..."
-                        className="w-full pl-8 pr-7 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 text-slate-900"
-                        autoFocus
-                      />
-                      {dropdownSearch && (
-                        <button
-                          type="button"
-                          onClick={() => setDropdownSearch('')}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Filter tabs inside dropdown */}
-                    <div className="flex items-center gap-1 overflow-x-auto text-[11px]">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">
-                        Chặng:
-                      </span>
-                      {(['ALL', 'POL', 'FREIGHT', 'POD', 'OTHER'] as const).map((loc) => (
-                        <button
-                          key={loc}
-                          type="button"
-                          onClick={() => setDropdownLocationFilter(loc)}
-                          className={`px-2 py-0.5 rounded-md font-semibold transition cursor-pointer text-[11px] ${
-                            dropdownLocationFilter === loc
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
-                          }`}
-                        >
-                          {loc === 'ALL' ? 'Tất cả' : loc}
-                        </button>
-                      ))}
-                      <span className="ml-auto text-[10px] text-slate-400">
-                        {filteredDropdownOptions.length} kết quả
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Options List */}
-                  <div className="max-h-60 overflow-y-auto p-1 divide-y divide-slate-100">
-                    {filteredDropdownOptions.length > 0 ? (
-                      filteredDropdownOptions.map((opt) => {
-                        const isUsd = opt.currency === 'USD';
-                        const displayPrice = isUsd ? `$${opt.priceUsd}` : formatVND(opt.priceVnd);
-
-                        return (
-                          <button
-                            key={opt.id}
-                            type="button"
-                            onClick={() => handleSelectFromDropdown(opt)}
-                            className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50/70 rounded-lg flex items-center justify-between transition cursor-pointer group"
-                          >
-                            <div className="min-w-0 pr-3">
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-mono font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                                  {opt.code}
-                                </span>
-                                <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${
-                                  opt.location === 'POL' 
-                                    ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                    : opt.location === 'FREIGHT'
-                                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                                    : opt.location === 'POD'
-                                    ? 'bg-purple-50 text-purple-700 border-purple-200'
-                                    : 'bg-amber-50 text-amber-700 border-amber-200'
-                                }`}>
-                                  {opt.location}
-                                </span>
-                                <span className="text-slate-700 font-semibold truncate">
-                                  {opt.nameVi}
-                                </span>
-                              </div>
-                              {opt.nameEn && (
-                                <p className="text-[10px] text-slate-400 truncate italic mt-0.5">
-                                  {opt.nameEn}
-                                </p>
-                              )}
-                            </div>
-
-                            <div className="text-right shrink-0">
-                              <div className="font-mono font-bold text-emerald-700 text-xs">
-                                {displayPrice}
-                              </div>
-                              <div className="text-[10px] text-slate-400">
-                                /{opt.unit} • VAT {opt.vatRate}%
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })
-                    ) : (
-                      <div className="p-4 text-center text-xs text-slate-500">
-                        Không tìm thấy phụ phí nào khớp với "{dropdownSearch}".
-                        <div className="mt-1 text-slate-400 text-[11px]">
-                          Bạn hãy điền thủ công tên và chi phí vào bảng bên dưới.
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* SECTION 2: BẢNG ĐIỀN THÔNG TIN CHI PHÍ (MANUAL ENTRY / FINE-TUNE) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             
             {/* Form Column (2 Cols) */}
             <div className="md:col-span-2 space-y-3.5 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                 <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-bold">
-                    2
+                  <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center text-xs font-bold">
+                    <FileEdit className="w-3.5 h-3.5" />
                   </span>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900">
-                      Bảng Điền Chi Tiết Thông Tin Phí
+                    <h4 className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                      <span>Thông Tin Chi Phí / Phụ Phí Báo Giá</span>
+                      <span className="text-[10px] font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                        {allSurcharges.length} phụ phí chuẩn
+                      </span>
                     </h4>
                     <span className="text-[10px] text-slate-500">
-                      (Có thể tự gõ thủ công nếu phí chưa có sẵn trên hệ thống)
+                      Click ô "Tên chi phí" để chọn nhanh phụ phí hệ thống hoặc gõ phí mới tự do
                     </span>
                   </div>
                 </div>
 
-                <span className="text-[11px] font-medium text-slate-400">
-                  * Các trường có dấu hoa thị là bắt buộc
-                </span>
+                <button
+                  type="button"
+                  onClick={handleResetToManual}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 rounded-lg transition cursor-pointer"
+                  title="Xóa trắng để điền chi phí hoàn toàn mới"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Làm mới form</span>
+                </button>
               </div>
 
-              {/* Row 1: Tên Chi Phí & Mã Chi Phí */}
+              {/* Row 1: Tên Chi Phí (Integrated Smart Combobox) & Mã Chi Phí */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Tên chi phí / Diễn giải <span className="text-red-500">*</span>
+                <div className="sm:col-span-2 relative" ref={dropdownRef}>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <span>Tên chi phí / Diễn giải</span>
+                      <span className="text-red-500">*</span>
+                    </span>
+                    <span className="text-[10px] font-normal text-blue-600 hidden sm:inline">
+                      {isDropdownOpen ? '▲ Đang mở danh sách gợi ý' : '▼ Click để thả xuống hoặc gõ tìm kiếm'}
+                    </span>
                   </label>
-                  <input
-                    type="text"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="VD: Phí xếp dỡ cảng, Phí niêm phong chì, Phí hun trùng..."
-                    className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 text-slate-900 font-medium"
-                    required
-                  />
+
+                  <div className="relative flex items-center">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none flex items-center">
+                      <Tag className="w-3.5 h-3.5 text-blue-500" />
+                    </div>
+                    <input
+                      ref={nameInputRef}
+                      type="text"
+                      value={formData.description}
+                      onChange={(e) => {
+                        setFormData({ ...formData, description: e.target.value });
+                        setIsDropdownOpen(true);
+                        setHighlightedIndex(-1);
+                      }}
+                      onFocus={() => {
+                        setIsDropdownOpen(true);
+                      }}
+                      onClick={() => {
+                        setIsDropdownOpen(true);
+                      }}
+                      onKeyDown={handleNameKeyDown}
+                      placeholder="Click để chọn phí có sẵn (THC, CFS, B/L...) hoặc gõ tên phí mới..."
+                      className={`w-full pl-9 pr-16 py-2 text-xs bg-white border rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 text-slate-900 font-medium transition shadow-2xs ${
+                        isDropdownOpen ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-slate-300 hover:border-slate-400'
+                      }`}
+                      required
+                    />
+
+                    {/* Right-side quick controls */}
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                      {formData.description && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFormData({ ...formData, description: '' });
+                            setIsDropdownOpen(true);
+                            nameInputRef.current?.focus();
+                          }}
+                          className="p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100 transition"
+                          title="Xóa ô nhập"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsDropdownOpen(!isDropdownOpen);
+                          if (!isDropdownOpen) {
+                            nameInputRef.current?.focus();
+                          }
+                        }}
+                        className="p-1 text-slate-500 hover:text-blue-600 rounded-md hover:bg-slate-100 transition"
+                        title={isDropdownOpen ? 'Đóng bảng thả xuống' : 'Mở bảng thả xuống'}
+                      >
+                        {isDropdownOpen ? (
+                          <ChevronUp className="w-4 h-4 text-blue-600" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-slate-500" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Smart Dropdown Autocomplete Panel */}
+                  {isDropdownOpen && (
+                    <div className="absolute left-0 top-full mt-1.5 w-full sm:min-w-[520px] md:min-w-[580px] max-w-[calc(100vw-3rem)] bg-white border border-slate-300 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                      
+                      {/* Dropdown Filter Bar */}
+                      <div className="p-2.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-1 overflow-x-auto text-[11px]">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">
+                            Lọc Chặng:
+                          </span>
+                          {(['ALL', 'POL', 'FREIGHT', 'POD', 'OTHER'] as const).map((loc) => (
+                            <button
+                              key={loc}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDropdownLocationFilter(loc);
+                              }}
+                              className={`px-2 py-0.5 rounded-md font-semibold transition cursor-pointer text-[11px] ${
+                                dropdownLocationFilter === loc
+                                  ? 'bg-blue-600 text-white shadow-2xs'
+                                  : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
+                              }`}
+                            >
+                              {loc === 'ALL' ? 'Tất cả' : loc}
+                            </button>
+                          ))}
+                        </div>
+
+                        <span className="text-[10px] text-slate-500 font-medium">
+                          {filteredDropdownOptions.length} phụ phí trùng khớp
+                        </span>
+                      </div>
+
+                      {/* Custom fee option prompt when user types a non-exact-matching name */}
+                      {formData.description.trim() && !isExactMatch && (
+                        <div
+                          role="option"
+                          aria-selected={filteredDropdownOptions.length === 0 || highlightedIndex === -1}
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            codeInputRef.current?.focus();
+                          }}
+                          className={`px-3.5 py-2.5 border-b flex items-center justify-between cursor-pointer transition group ${
+                            filteredDropdownOptions.length === 0 || highlightedIndex === -1
+                              ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
+                              : 'bg-blue-50/70 hover:bg-blue-100/70 border-blue-100 text-slate-800'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0 pr-2">
+                            <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${
+                              filteredDropdownOptions.length === 0 || highlightedIndex === -1
+                                ? 'bg-white text-blue-600'
+                                : 'bg-blue-600 text-white'
+                            }`}>
+                              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                            </div>
+                            <div className="truncate">
+                              <span className={`text-xs ${
+                                filteredDropdownOptions.length === 0 || highlightedIndex === -1 ? 'text-blue-100' : 'text-slate-600'
+                              }`}>
+                                Sử dụng tên phí mới: 
+                              </span>
+                              <span className={`font-bold text-xs ${
+                                filteredDropdownOptions.length === 0 || highlightedIndex === -1 ? 'text-white' : 'text-blue-700'
+                              }`}>
+                                "{formData.description.trim()}"
+                              </span>
+                              <span className={`text-[10px] block ${
+                                filteredDropdownOptions.length === 0 || highlightedIndex === -1 ? 'text-blue-200' : 'text-slate-400'
+                              }`}>
+                                Tự điền mã, đơn vị tính và đơn giá bên dưới
+                              </span>
+                            </div>
+                          </div>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 transition-all ${
+                            filteredDropdownOptions.length === 0 || highlightedIndex === -1
+                              ? 'bg-white text-blue-700 border-white shadow-xs font-mono'
+                              : 'bg-white text-blue-700 border-blue-200'
+                          }`}>
+                            {filteredDropdownOptions.length === 0 || highlightedIndex === -1 ? 'Nhập phí mới ↵' : 'Dùng tên mới ↵'}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Options List */}
+                      <div className="max-h-60 overflow-y-auto p-1 divide-y divide-slate-100">
+                        {filteredDropdownOptions.length > 0 ? (
+                          filteredDropdownOptions.map((opt, idx) => {
+                            const isUsd = opt.currency === 'USD';
+                            const displayPrice = isUsd ? `$${opt.priceUsd}` : formatVND(opt.priceVnd);
+                            const isHighlighted = highlightedIndex === idx;
+
+                            return (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => handleSelectFromDropdown(opt)}
+                                onMouseEnter={() => setHighlightedIndex(idx)}
+                                className={`w-full text-left px-3 py-2 text-xs rounded-lg flex items-center justify-between transition cursor-pointer group ${
+                                  isHighlighted ? 'bg-blue-50 text-blue-900' : 'hover:bg-slate-50 text-slate-800'
+                                }`}
+                              >
+                                <div className="min-w-0 pr-3">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-mono font-bold text-slate-900 px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 group-hover:border-blue-300 group-hover:bg-blue-100/60 transition-colors">
+                                      {opt.code}
+                                    </span>
+                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+                                      opt.location === 'POL' 
+                                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                        : opt.location === 'FREIGHT'
+                                        ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                        : opt.location === 'POD'
+                                        ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                        : 'bg-amber-50 text-amber-700 border-amber-200'
+                                    }`}>
+                                      {opt.location}
+                                    </span>
+                                    <span className="font-semibold text-slate-900 truncate">
+                                      {opt.nameVi}
+                                    </span>
+                                    {opt.source === 'SAVED' && (
+                                      <span className="text-[9px] font-semibold px-1 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded">
+                                        Tự tạo
+                                      </span>
+                                    )}
+                                  </div>
+                                  {opt.nameEn && (
+                                    <p className="text-[10px] text-slate-400 truncate italic mt-0.5 pl-0.5">
+                                      {opt.nameEn}
+                                    </p>
+                                  )}
+                                </div>
+
+                                <div className="text-right shrink-0">
+                                  <div className="font-mono font-bold text-emerald-700 text-xs">
+                                    {displayPrice}
+                                  </div>
+                                  <div className="text-[10px] text-slate-400">
+                                    /{opt.unit} • VAT {opt.vatRate}%
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <div className="p-4 text-center text-xs text-slate-600 bg-slate-50/50 space-y-2">
+                            <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
+                              <Search className="w-4 h-4" />
+                            </div>
+                            <p className="font-medium text-slate-800">
+                              Không tìm thấy phụ phí mẫu nào khớp với "{formData.description}".
+                            </p>
+                            <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                              Đây là phụ phí mới. Bạn chỉ cần giữ nguyên tên này và điền tiếp <strong>Mã chi phí, Đơn vị tính, Đơn giá</strong> vào các ô bên dưới.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsDropdownOpen(false);
+                                codeInputRef.current?.focus();
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition cursor-pointer"
+                            >
+                              <span>Tiếp tục với tên này & Nhập mã</span>
+                              <span className="font-mono">→</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Dropdown Footer Hint */}
+                      <div className="px-3 py-1.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-400">
+                        <span>Dùng ↑ ↓ để duyệt, Enter để chọn</span>
+                        <span>Bấm Esc hoặc ra ngoài để đóng</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -716,6 +825,7 @@ export const AddFeeModal: React.FC<AddFeeModalProps> = ({
                     Mã chi phí (Code) <span className="text-red-500">*</span>
                   </label>
                   <input
+                    ref={codeInputRef}
                     type="text"
                     value={formData.code}
                     onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
@@ -1029,10 +1139,10 @@ export const AddFeeModal: React.FC<AddFeeModalProps> = ({
               <div className="p-3 bg-blue-50/70 border border-blue-200/80 rounded-xl text-xs text-blue-900 space-y-1">
                 <div className="flex items-center gap-1.5 font-bold text-blue-950">
                   <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Mẹo sử dụng nhanh:</span>
+                  <span>Mẹo sử dụng thông minh:</span>
                 </div>
                 <p className="text-[11px] text-blue-800 leading-relaxed">
-                  Nhấp chọn từ mục thả xuống ở trên để tự động điền các loại phí chuẩn. Nếu là phí mới (như phí nâng hạ riêng, phí khử trùng...), bạn chỉ cần gõ trực tiếp vào các ô bên trái.
+                  Click trực tiếp vào ô <strong>"Tên chi phí"</strong> để mở bảng phụ phí mẫu. Nếu trùng tên/mã, chọn để tự điền tự động; nếu là phí mới, bạn tiếp tục gõ và nhập đơn giá tùy chỉnh.
                 </p>
               </div>
             </div>
