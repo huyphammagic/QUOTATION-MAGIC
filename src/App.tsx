@@ -3871,6 +3871,10 @@ export default function App() {
               setIsSendQuotationOpen(false);
               setIsEmailTemplatesOpen(true);
             }}
+            onOpenGoldenHourRadar={() => {
+              setIsSendQuotationOpen(false);
+              setIsGoldenHourRadarOpen(true);
+            }}
             onSuccess={(msg) => {
               showToast(msg);
               loadQuotationDocuments(quote.id);
@@ -4600,6 +4604,8 @@ export default function App() {
           <GoldenHourFollowUpModal
             isOpen={isGoldenHourRadarOpen}
             onClose={() => setIsGoldenHourRadarOpen(false)}
+            currentQuote={quote}
+            savedQuotes={savedQuotes}
             onSelectQuoteToOpen={(selectedQuoteId) => {
               const matched = savedQuotes.find(q => q.id === selectedQuoteId);
               if (matched) {

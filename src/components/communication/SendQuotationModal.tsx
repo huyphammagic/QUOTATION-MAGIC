@@ -16,14 +16,19 @@ import {
   ChevronDown,
   Sparkles,
   Lock,
-  UserCheck
+  UserCheck,
+  Flame,
+  Zap,
+  Activity
 } from 'lucide-react';
 import { QuoteData } from '../../types/logistics';
 import { QuotationDocumentRecord } from '../../types/quotationDocument';
 import { EmailTemplate, CommunicationLanguage } from '../../types/quotationCommunication';
+import { QuotationReadStats } from '../../types/goldenHourFollowUp';
 import { getEmailTemplates, renderEmailTemplate, validateTemplateVariables } from '../../services/quotation/emailTemplateService';
 import { createQuotationSecureLink } from '../../services/quotation/quotationSecurityService';
 import { dispatchQuotationEmail, validateQuotationEligibleForSend } from '../../services/quotation/quotationCommunicationService';
+import { getQuotationReadStats, simulateCustomerInteraction } from '../../services/goldenHour/goldenHourService';
 import { ALLOWED_EMAIL_VARIABLES } from '../../data/defaultEmailTemplates';
 
 interface SendQuotationModalProps {
@@ -33,6 +38,7 @@ interface SendQuotationModalProps {
   documents: QuotationDocumentRecord[];
   onApproveQuote?: () => void | Promise<void>;
   onOpenTemplateManager?: () => void;
+  onOpenGoldenHourRadar?: () => void;
   onSuccess?: (message: string) => void;
 }
 
@@ -43,6 +49,7 @@ export const SendQuotationModal: React.FC<SendQuotationModalProps> = ({
   documents,
   onApproveQuote,
   onOpenTemplateManager,
+  onOpenGoldenHourRadar,
   onSuccess
 }) => {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
@@ -76,6 +83,24 @@ export const SendQuotationModal: React.FC<SendQuotationModalProps> = ({
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Live Read Receipts & Golden Hour telemetry
+  const [readStats, setReadStats] = useState<QuotationReadStats | null>(null);
+  const [simulatingEvent, setSimulatingEvent] = useState<boolean>(false);
+
+  const refreshReadStats = () => {
+    const stats = getQuotationReadStats(quote.id || quote.quoteNumber, quote.quoteNumber);
+    setReadStats(stats);
+  };
+
+  const handleTriggerTestRead = (eventType: 'LINK_OPENED' | 'PDF_DOWNLOADED') => {
+    setSimulatingEvent(true);
+    simulateCustomerInteraction(quote, eventType);
+    setTimeout(() => {
+      refreshReadStats();
+      setSimulatingEvent(false);
+    }, 350);
+  };
+
   // Find active document
   const selectedDoc = customerDocs.find(d => d.id === selectedDocId) || customerDocs[0] || null;
 
@@ -99,6 +124,7 @@ export const SendQuotationModal: React.FC<SendQuotationModalProps> = ({
     }
     if (isOpen) {
       load();
+      refreshReadStats();
       setToEmails(quote.customer.email || '');
       setBccEmails(quote.company.salesRepEmail || '');
       setErrorMessage(null);
@@ -568,6 +594,85 @@ export const SendQuotationModal: React.FC<SendQuotationModalProps> = ({
               </div>
             </div>
 
+          </div>
+
+          {/* Live Interaction Radar & Read Receipts Status Card */}
+          <div className="p-4 bg-gradient-to-r from-rose-50/80 via-orange-50/60 to-amber-50/50 rounded-2xl border border-rose-200/90 space-y-3 shadow-2xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-rose-500 to-red-600 text-white flex items-center justify-center shadow-xs shrink-0 mt-0.5">
+                  <Flame className="w-4 h-4 fill-white" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-slate-900 text-xs">Radar Tương Tác & Giờ Vàng (Read Receipts & Golden Hour Alert)</span>
+                    {readStats && readStats.totalViews > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300 animate-pulse">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                        {readStats.goldenWindowRemainingMinutes > 0 ? `Còn ${readStats.goldenWindowRemainingMinutes}p Giờ Vàng` : 'Đã Xem Báo Giá'}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Tự động nhận diện khi khách click link, tải file PDF, soi cước & chấm điểm Intent Score (0–100%)
+                  </p>
+                </div>
+              </div>
+
+              {onOpenGoldenHourRadar && (
+                <button
+                  type="button"
+                  onClick={onOpenGoldenHourRadar}
+                  className="px-3 py-1.5 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0 self-start sm:self-center"
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>Mở Radar & Kịch Bản Chốt</span>
+                </button>
+              )}
+            </div>
+
+            {/* Status Content */}
+            {readStats && readStats.totalViews > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-rose-200/60">
+                <div className="bg-white/90 p-2.5 rounded-xl border border-rose-100/80 shadow-2xs">
+                  <div className="text-[10px] text-slate-500 font-medium">Lượt Xem Báo Giá</div>
+                  <div className="text-sm font-bold text-slate-900">{readStats.totalViews} lần</div>
+                  <div className="text-[9px] text-slate-400">Gần nhất: {readStats.lastViewedAt ? new Date(readStats.lastViewedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'Vừa xong'}</div>
+                </div>
+                <div className="bg-white/90 p-2.5 rounded-xl border border-rose-100/80 shadow-2xs">
+                  <div className="text-[10px] text-slate-500 font-medium">Dừng Đọc Cước</div>
+                  <div className="text-sm font-bold text-slate-900">{readStats.totalDwellTimeSeconds} giây</div>
+                  <div className="text-[9px] text-slate-400">{readStats.totalDwellTimeSeconds > 40 ? '🔥 Rất quan tâm giá' : 'Đọc lướt qua'}</div>
+                </div>
+                <div className="bg-white/90 p-2.5 rounded-xl border border-rose-100/80 shadow-2xs">
+                  <div className="text-[10px] text-slate-500 font-medium">Ý Định Mua (Intent)</div>
+                  <div className="text-sm font-bold text-rose-600">{readStats.highestIntentScore}% ({readStats.intentLevel})</div>
+                  <div className="text-[9px] text-slate-400">{readStats.hasDownloadedPdf ? '✓ Đã tải PDF' : 'Chưa tải PDF'}</div>
+                </div>
+                <div className="bg-white/90 p-2.5 rounded-xl border border-rose-100/80 shadow-2xs">
+                  <div className="text-[10px] text-slate-500 font-medium">Hành Động Khuyến Nghị</div>
+                  <div className="text-xs font-bold text-emerald-700">Gọi điện ngay</div>
+                  <div className="text-[9px] text-slate-400">Tỷ lệ chốt cao nhất</div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 bg-white/80 p-2.5 rounded-xl border border-dashed border-rose-200">
+                <span className="text-[11px] text-slate-600">
+                  Chưa có tương tác từ khách. Khi gửi link hoặc tệp PDF, hệ thống sẽ kích hoạt Radar Giờ Vàng ngay khi khách mở.
+                </span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleTriggerTestRead('LINK_OPENED')}
+                    disabled={simulatingEvent}
+                    className="px-2.5 py-1 text-[11px] font-semibold bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-lg shadow-2xs transition-all cursor-pointer"
+                    title="Tạo giả lập khách mở link để kiểm thử radar và kịch bản gọi"
+                  >
+                    {simulatingEvent ? 'Đang mô phỏng...' : 'Mô phỏng khách mở (Test)'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Security Guarantee Notice */}

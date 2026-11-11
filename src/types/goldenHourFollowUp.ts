@@ -60,3 +60,44 @@ export interface FollowUpOutcomePayload {
   notes: string;
   nextFollowUpDate?: string;
 }
+
+export type ReadReceiptEventType =
+  | 'LINK_OPENED'           // Khách mở link báo giá
+  | 'PDF_DOWNLOADED'        // Khách tải file PDF A4 về máy
+  | 'DWELL_PRICING'         // Khách dừng lại đọc kỹ bảng cước (> 45s)
+  | 'SIGNATURE_SECTION'     // Khách cuộn đến phần ký duyệt & điều khoản
+  | 'REVISITED'             // Khách mở lại lần 2, lần 3...
+  | 'FEEDBACK_SUBMITTED';   // Khách để lại phản hồi / đề nghị giảm cước
+
+export interface QuotationReadReceipt {
+  id: string;
+  quotationId: string;
+  quotationNumber: string;
+  customerName: string;
+  contactPerson?: string;
+  customerPhone?: string;
+  eventType: ReadReceiptEventType;
+  eventTitleVi: string;
+  device: 'Mobile (iPhone / Android)' | 'Desktop (Windows / Mac)' | 'Tablet';
+  ipLocation: string;
+  timestamp: string; // ISO format
+  dwellTimeSeconds: number;
+  isCurrentlyOnline: boolean;
+  pageSection: 'Bảng cước chính' | 'Local Charges' | 'Điều khoản thanh toán' | 'Toàn bộ báo giá';
+}
+
+export interface QuotationReadStats {
+  quotationId: string;
+  quotationNumber: string;
+  totalViews: number;
+  lastViewedAt: string | null;
+  firstViewedAt: string | null;
+  isCurrentlyOnline: boolean;
+  hasDownloadedPdf: boolean;
+  totalDwellTimeSeconds: number;
+  isInGoldenWindow: boolean; // Khách vừa xem trong vòng 45 phút gần nhất
+  goldenWindowRemainingMinutes: number;
+  highestIntentScore: number;
+  intentLevel: BuyerIntentLevel;
+}
+
