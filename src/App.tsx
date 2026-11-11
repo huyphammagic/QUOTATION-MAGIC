@@ -232,7 +232,7 @@ import { MultiCompanyManagementModal } from './components/company/MultiCompanyMa
 import { createQuotationCompanySnapshot } from './types/multiCompany';
 import { SYSTEM_FOLDERS, getFolderById, getTableById } from './navigation/tableNavigationRegistry';
 
-import { Check, Ship, ShieldCheck, Sparkles, SlidersHorizontal, LayoutGrid } from 'lucide-react';
+import { Check, Ship, ShieldCheck, Sparkles, SlidersHorizontal, LayoutGrid, Building, Navigation, Layers, ChevronRight } from 'lucide-react';
 
 export default function App() {
   // Phase 50: Firebase Authentication & RBAC Context
@@ -338,6 +338,48 @@ export default function App() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<WorkspaceTab>('DETAILS');
   
+  // Full-width horizontal workspace layout as default & primary standard
+  const [workbenchLayout, setWorkbenchLayout] = useState<'SPLIT' | 'STACKED'>(() => {
+    try {
+      const saved = localStorage.getItem('bogi_workbench_layout_v2') as 'SPLIT' | 'STACKED';
+      if (saved === 'STACKED' || saved === 'SPLIT') return saved;
+      return 'STACKED';
+    } catch {
+      return 'STACKED';
+    }
+  });
+
+  const handleWorkbenchLayoutChange = (mode: 'SPLIT' | 'STACKED') => {
+    setWorkbenchLayout(mode);
+    try {
+      localStorage.setItem('bogi_workbench_layout_v2', mode);
+      localStorage.setItem('bogi_workbench_layout', mode);
+    } catch {}
+  };
+
+  const [isSalesHudCollapsed, setIsSalesHudCollapsed] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('bogi_sales_hud_collapsed');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const handleToggleSalesHud = () => {
+    setIsSalesHudCollapsed(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('bogi_sales_hud_collapsed', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  // Master column form switcher inside Split View: 'ALL' | 'CUSTOMER' | 'SHIPMENT'
+  const [masterFormTab, setMasterFormTab] = useState<'ALL' | 'CUSTOMER' | 'SHIPMENT'>('ALL');
+  const [isSurchargeBannerOpen, setIsSurchargeBannerOpen] = useState<boolean>(true);
+
   // Client-side field validation states for CustomerForm & ShipmentForm
   const [customerFormErrors, setCustomerFormErrors] = useState<CustomerFormErrors>({});
   const [shipmentFormErrors, setShipmentFormErrors] = useState<ShipmentFormErrors>({});
@@ -2570,8 +2612,9 @@ export default function App() {
     showToast(`Đã tải phiên bản mới nhất từ Cloud (v${conflictState.remoteQuote.version || 1})!`);
   };
 
-  // Select Saved Quote
+  // Select Saved Quote & Open in Editor
   const handleSelectQuote = (selected: QuoteData) => {
+    if (!selected) return;
     setCustomerFormErrors({});
     setShipmentFormErrors({});
     const { calculatedQuote } = calculateQuote(selected);
@@ -2579,7 +2622,22 @@ export default function App() {
     const savedTime = saveActiveQuoteDraft(calculatedQuote);
     if (savedTime) setLastAutoSaveTime(savedTime);
     setHasUnsavedChanges(false);
-    showToast(`Đã tải báo giá ${selected.quoteNumber}`);
+
+    // 1. Close Saved Quotes modal and all modal overlays
+    setIsSavedOpen(false);
+    closeAllModals();
+
+    // 2. Switch route back to main Quotation Workbench editor
+    setActiveRouteId('quotation_workbench');
+    setIsFullscreenTable(false);
+    if (window.location.hash) {
+      window.history.pushState(null, '', window.location.pathname);
+    }
+
+    // 3. Scroll to top of the workbench editor smoothly
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    showToast(`Đã mở báo giá ${selected.quoteNumber} để xem và chỉnh sửa!`);
   };
 
   // Clone Saved Quote (100% Cloud Persistence)
@@ -3058,6 +3116,10 @@ export default function App() {
               quote={quote}
               activeTab={activeWorkspaceTab}
               onTabChange={setActiveWorkspaceTab}
+              layoutMode={workbenchLayout}
+              onLayoutModeChange={handleWorkbenchLayoutChange}
+              isSalesHudCollapsed={isSalesHudCollapsed}
+              onToggleSalesHud={handleToggleSalesHud}
               onSaveQuote={handleSaveQuoteAction}
               isSaving={Boolean(isSavingQuote || isAutoSaving)}
               hasUnsavedChanges={hasUnsavedChanges}
@@ -3089,119 +3151,373 @@ export default function App() {
               lastSavedAt={lastAutoSaveTime}
             />
 
-            {/* Dashboard Stats Bar */}
-            <DashboardStats 
-              quotes={savedQuotes} 
-              onOpenAnalytics={() => setIsDashboardOpen(true)}
-            />
+            {/* Collapsible Sales HUD: Dashboard Stats Bar & Smart Sales Roadmap */}
+            {!isSalesHudCollapsed && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                <DashboardStats 
+                  quotes={savedQuotes} 
+                  onOpenAnalytics={() => setIsDashboardOpen(true)}
+                />
 
-            {/* Smart Sales Roadmap HUD (5 Giai đoạn bán hàng: Tiếp cận -> RFQ -> Báo giá -> Đàm phán -> Chốt deal) */}
-            <SmartSalesRoadmap
-              quote={quote}
-              onUpdateSalesStage={handleUpdateSalesStage}
-              onOpenCustomerDna={() => setIsCustomerDnaOpen(true)}
-              onOpenHsCodeTariff={() => setIsHsCodeTariffOpen(true)}
-              onOpenMultiOptionQuote={handleOpenMultiOptionQuote}
-              onOpenCompetitorRadar={() => setIsCompetitorRadarOpen(true)}
-              onOpenConcessionGuard={() => setIsConcessionGuardOpen(true)}
-              onOpenDealCloser={() => handleOpenDealCloser(quote)}
-              onOpenSendModal={() => setIsSendQuotationOpen(true)}
-            />
+                <SmartSalesRoadmap
+                  quote={quote}
+                  onUpdateSalesStage={handleUpdateSalesStage}
+                  onOpenCustomerDna={() => setIsCustomerDnaOpen(true)}
+                  onOpenHsCodeTariff={() => setIsHsCodeTariffOpen(true)}
+                  onOpenMultiOptionQuote={handleOpenMultiOptionQuote}
+                  onOpenCompetitorRadar={() => setIsCompetitorRadarOpen(true)}
+                  onOpenConcessionGuard={() => setIsConcessionGuardOpen(true)}
+                  onOpenDealCloser={() => handleOpenDealCloser(quote)}
+                  onOpenSendModal={() => setIsSendQuotationOpen(true)}
+                />
+              </div>
+            )}
 
             {/* Quantum Fluid View Transition Container */}
             <div key={activeWorkspaceTab} className="quantum-view-enter space-y-4">
               {/* Tab 1: Chi Tiết & Bảng Cước (or ALL) */}
               {(activeWorkspaceTab === 'DETAILS' || activeWorkspaceTab === 'ALL') && (
-              <>
-                {/* Top Section: Customer Info & Shipment Route Forms Side-by-Side */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                  <CustomerForm
-                    customer={quote.customer}
-                    quoteNumber={quote.quoteNumber}
-                    createdDate={quote.createdDate}
-                    validityDate={quote.terms.validityDate}
-                    status={quote.status}
-                    salesRepName={company.salesRepName}
-                    customers={customers}
-                    onChangeCustomer={handleChangeCustomer}
-                    onChangeQuoteMeta={handleChangeQuoteMeta}
-                    onOpenCustomerManager={() => setIsCustomersOpen(true)}
-                    onOpenCustomer360={() => handleOpenCustomer360()}
-                    onSaveToCrm={handleSaveCurrentCustomerToCrm}
-                    onSelectCustomer={handleSelectCustomerForQuote}
-                    isSavingToCrm={isSavingCustomerToCrm}
-                    errors={customerFormErrors}
-                    shakeTrigger={formValidationShakeTrigger}
-                  />
+                workbenchLayout === 'SPLIT' ? (
+                  /* ======================================================== */
+                  /* BỐ CỤC CHIA 2 CỘT HIỆN ĐẠI (SPLIT MASTER-DETAIL LAYOUT)  */
+                  /* ======================================================== */
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-start">
+                    
+                    {/* CỘT TRÁI (MASTER PANEL - 4/12 cols): KHÁCH HÀNG, TUYẾN & TỔNG TIỀN STICKY */}
+                    <div className="lg:col-span-5 xl:col-span-4 space-y-3.5 lg:sticky lg:top-4">
+                      
+                      {/* Master Navigation & Switcher Header */}
+                      <div className="bg-white rounded-2xl border border-slate-200/90 p-3 shadow-2xs space-y-2.5">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                              Hồ Sơ Đơn Hàng (Master)
+                            </span>
+                          </div>
+                          
+                          {/* Form Segmented Tabs */}
+                          <div className="inline-flex items-center bg-slate-100 p-0.5 rounded-lg text-[11px] font-semibold">
+                            <button
+                              type="button"
+                              onClick={() => setMasterFormTab('ALL')}
+                              className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                                masterFormTab === 'ALL'
+                                  ? 'bg-white text-indigo-950 font-bold shadow-2xs'
+                                  : 'text-slate-500 hover:text-slate-900'
+                              }`}
+                            >
+                              Tất Cả
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setMasterFormTab('CUSTOMER')}
+                              className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                                masterFormTab === 'CUSTOMER'
+                                  ? 'bg-white text-indigo-950 font-bold shadow-2xs'
+                                  : 'text-slate-500 hover:text-slate-900'
+                              }`}
+                            >
+                              Khách Hàng
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setMasterFormTab('SHIPMENT')}
+                              className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                                masterFormTab === 'SHIPMENT'
+                                  ? 'bg-white text-indigo-950 font-bold shadow-2xs'
+                                  : 'text-slate-500 hover:text-slate-900'
+                              }`}
+                            >
+                              Tuyến Hàng
+                            </button>
+                          </div>
+                        </div>
 
-                  <ShipmentForm
-                    shipment={quote.shipment}
-                    onChangeShipment={handleChangeShipment}
-                    onOpenHsCodeTariff={() => setIsHsCodeTariffOpen(true)}
-                    onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
-                    savedQuotes={savedQuotes}
-                    currentQuoteId={quote.id}
-                    onOpenHistoricalRateAdvisor={() => setIsHistoricalRateAdvisorOpen(true)}
-                    onOpenSmartSurcharges={() => setIsSmartSurchargeModalOpen(true)}
-                    smartSurchargesCount={smartSurchargeAnalysis.unappliedCount}
-                    errors={shipmentFormErrors}
-                    shakeTrigger={formValidationShakeTrigger}
-                  />
-                </div>
+                        {/* Quick Context Summary when viewing one specific tab */}
+                        {masterFormTab === 'SHIPMENT' && (
+                          <div 
+                            onClick={() => setMasterFormTab('CUSTOMER')}
+                            className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/80 hover:bg-indigo-50/50 hover:border-indigo-200 transition-all cursor-pointer text-xs group"
+                            title="Bấm để chuyển sang chỉnh sửa thông tin khách hàng"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Building className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                              <div className="truncate">
+                                <span className="font-bold text-slate-800 block truncate">
+                                  {quote.customer?.companyName || quote.customer?.customerName || 'Chưa định danh khách hàng'}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  MST: {quote.customer?.taxId || 'N/A'} {quote.customer?.phone ? `· ${quote.customer.phone}` : ''}
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-semibold text-indigo-600 group-hover:underline shrink-0">
+                              Sửa ▾
+                            </span>
+                          </div>
+                        )}
 
-                {/* Smart Surcharge Suggestion Banner (Route & Seasonality Analysis) */}
-                <div className="w-full">
-                  <SmartSurchargeRecommendationBanner
-                    quote={quote}
-                    onApplySuggestion={handleApplySmartSurcharge}
-                    onApplyAllSuggestions={handleApplyAllSmartSurcharges}
-                    customSurcharges={surcharges}
-                  />
-                </div>
+                        {masterFormTab === 'CUSTOMER' && (
+                          <div 
+                            onClick={() => setMasterFormTab('SHIPMENT')}
+                            className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/80 hover:bg-indigo-50/50 hover:border-indigo-200 transition-all cursor-pointer text-xs group"
+                            title="Bấm để chuyển sang chỉnh sửa tuyến đường & hàng hóa"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Navigation className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                              <div className="truncate">
+                                <span className="font-bold text-slate-800 block truncate">
+                                  {quote.shipment?.pol || 'Cảng đi'} ➔ {quote.shipment?.pod || 'Cảng đến'}
+                                </span>
+                                <span className="text-[10px] text-slate-500 font-mono">
+                                  {quote.shipment?.mode} · {quote.shipment?.containerType} x {quote.shipment?.quantity || 1}
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-semibold text-indigo-600 group-hover:underline shrink-0">
+                              Sửa ▾
+                            </span>
+                          </div>
+                        )}
 
-                {/* Line Items Table */}
-                <div className="w-full">
-                  <LineItemsTable
-                    items={quote.items}
-                    exchangeRate={quote.exchangeRate}
-                    onUpdateItems={handleUpdateItems}
-                    pricingWarnings={quote.pricingWarnings}
-                    onOpenSurchargeCatalog={() => setIsSurchargesOpen(true)}
-                    onOpenRateSearch={() => setIsRateSearchOpen(true)}
-                    onOpenSmartAssistant={() => setIsSmartAssistantOpen(true)}
-                    onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
-                    onCheckRateUpdates={() => setIsComparisonModalOpen(true)}
-                    outdatedRatesCount={outdatedRatesDiffs.length}
-                    onResolveContractPricing={handleResolveContractPricing}
-                    onOpenContracts={() => setIsContractsOpen(true)}
-                    onOpenCompetitorRadar={() => setIsCompetitorRadarOpen(true)}
-                    onOpenRoutePresets={() => setIsRoutePresetModalOpen(true)}
-                    onOpenHistoricalRateAdvisor={() => setIsHistoricalRateAdvisorOpen(true)}
-                    onOpenSmartSurcharge={() => setIsSmartSurchargeModalOpen(true)}
-                    smartSurchargesCount={smartSurchargeAnalysis.unappliedCount}
-                  />
-                </div>
+                        {/* Customer Form in Master Column */}
+                        {(masterFormTab === 'ALL' || masterFormTab === 'CUSTOMER') && (
+                          <CustomerForm
+                            customer={quote.customer}
+                            quoteNumber={quote.quoteNumber}
+                            createdDate={quote.createdDate}
+                            validityDate={quote.terms.validityDate}
+                            status={quote.status}
+                            salesRepName={company.salesRepName}
+                            customers={customers}
+                            onChangeCustomer={handleChangeCustomer}
+                            onChangeQuoteMeta={handleChangeQuoteMeta}
+                            onOpenCustomerManager={() => setIsCustomersOpen(true)}
+                            onOpenCustomer360={() => handleOpenCustomer360()}
+                            onSaveToCrm={handleSaveCurrentCustomerToCrm}
+                            onSelectCustomer={handleSelectCustomerForQuote}
+                            isSavingToCrm={isSavingCustomerToCrm}
+                            errors={customerFormErrors}
+                            shakeTrigger={formValidationShakeTrigger}
+                          />
+                        )}
 
-                {/* Summary Card */}
-                <SummaryCard
-                  quote={quote}
-                  onExchangeRateChange={handleExchangeRateChange}
-                  onCurrencyChange={handleQuoteCurrencyChange}
-                  onSaveQuote={handleSaveQuoteAction}
-                  isSaving={isSavingQuote}
-                  hasUnsavedChanges={hasUnsavedChanges}
-                  onExportPdf={(curr) => exportQuoteToPdf(quote, curr)}
-                  onExportExcel={(curr) => exportQuoteToExcel(quote, curr)}
-                  onOpenPreview={() => setIsPreviewOpen(true)}
-                  onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
-                  onOpenSendModal={() => setIsSendQuotationOpen(true)}
-                  onOpenProfitIntelligence={() => setIsProfitIntelligenceOpen(true)}
-                  onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
-                  onOpenDebitNote={() => handleOpenDebitNoteForQuote(quote)}
-                  onOpenExchangeRateModal={() => setIsExchangeRateModalOpen(true)}
-                />
-              </>
-            )}
+                        {/* Shipment Form in Master Column */}
+                        {(masterFormTab === 'ALL' || masterFormTab === 'SHIPMENT') && (
+                          <ShipmentForm
+                            shipment={quote.shipment}
+                            onChangeShipment={handleChangeShipment}
+                            onOpenHsCodeTariff={() => setIsHsCodeTariffOpen(true)}
+                            onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
+                            savedQuotes={savedQuotes}
+                            currentQuoteId={quote.id}
+                            onOpenHistoricalRateAdvisor={() => setIsHistoricalRateAdvisorOpen(true)}
+                            onOpenSmartSurcharges={() => setIsSmartSurchargeModalOpen(true)}
+                            smartSurchargesCount={smartSurchargeAnalysis.unappliedCount}
+                            errors={shipmentFormErrors}
+                            shakeTrigger={formValidationShakeTrigger}
+                          />
+                        )}
+                      </div>
+
+                      {/* Sticky Financial Summary Card in Left Column */}
+                      <div className="w-full">
+                        <SummaryCard
+                          quote={quote}
+                          isSplitView={true}
+                          onExchangeRateChange={handleExchangeRateChange}
+                          onCurrencyChange={handleQuoteCurrencyChange}
+                          onSaveQuote={handleSaveQuoteAction}
+                          isSaving={isSavingQuote}
+                          hasUnsavedChanges={hasUnsavedChanges}
+                          onExportPdf={(curr) => exportQuoteToPdf(quote, curr)}
+                          onExportExcel={(curr) => exportQuoteToExcel(quote, curr)}
+                          onOpenPreview={() => setIsPreviewOpen(true)}
+                          onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
+                          onOpenSendModal={() => setIsSendQuotationOpen(true)}
+                          onOpenProfitIntelligence={() => setIsProfitIntelligenceOpen(true)}
+                          onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
+                          onOpenDebitNote={() => handleOpenDebitNoteForQuote(quote)}
+                          onOpenExchangeRateModal={() => setIsExchangeRateModalOpen(true)}
+                        />
+                      </div>
+                    </div>
+
+                    {/* CỘT PHẢI (DETAIL PANEL - 8/12 cols): BẢNG CƯỚC & GỢI Ý PHỤ PHÍ */}
+                    <div className="lg:col-span-7 xl:col-span-8 space-y-4">
+                      
+                      {/* Surcharge Banner Toggle Header */}
+                      <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-2xl border border-slate-200/90 shadow-2xs text-xs">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                            <Layers className="w-3.5 h-3.5" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wide">
+                              Bảng Phân Rã Chi Tiết Cước & Phụ Phí
+                            </h3>
+                            <span className="text-[11px] text-slate-500">
+                              {quote.items.length} hạng mục cước · Đơn vị: {quote.quoteCurrency || 'USD'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setIsSurchargeBannerOpen(!isSurchargeBannerOpen)}
+                          className={`press-physics-subtle inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                            isSurchargeBannerOpen
+                              ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-2xs'
+                              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                          }`}
+                          title="Thu gọn hoặc mở rộng thanh phân tích phụ phí gợi ý"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>{isSurchargeBannerOpen ? 'Thu gọn gợi ý' : 'Gợi ý phụ phí AI'}</span>
+                          {smartSurchargeAnalysis.unappliedCount > 0 && (
+                            <span className="ml-0.5 px-1.5 py-0.2 bg-indigo-600 text-white rounded-full text-[10px] font-bold">
+                              {smartSurchargeAnalysis.unappliedCount}
+                            </span>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Smart Surcharge Suggestion Banner */}
+                      {isSurchargeBannerOpen && (
+                        <div className="w-full">
+                          <SmartSurchargeRecommendationBanner
+                            quote={quote}
+                            onApplySuggestion={handleApplySmartSurcharge}
+                            onApplyAllSuggestions={handleApplyAllSmartSurcharges}
+                            customSurcharges={surcharges}
+                          />
+                        </div>
+                      )}
+
+                      {/* Line Items Table (Generous Full Width of Right Column) */}
+                      <div className="w-full">
+                        <LineItemsTable
+                          items={quote.items}
+                          exchangeRate={quote.exchangeRate}
+                          onUpdateItems={handleUpdateItems}
+                          pricingWarnings={quote.pricingWarnings}
+                          onOpenSurchargeCatalog={() => setIsSurchargesOpen(true)}
+                          onOpenRateSearch={() => setIsRateSearchOpen(true)}
+                          onOpenSmartAssistant={() => setIsSmartAssistantOpen(true)}
+                          onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
+                          onCheckRateUpdates={() => setIsComparisonModalOpen(true)}
+                          outdatedRatesCount={outdatedRatesDiffs.length}
+                          onResolveContractPricing={handleResolveContractPricing}
+                          onOpenContracts={() => setIsContractsOpen(true)}
+                          onOpenCompetitorRadar={() => setIsCompetitorRadarOpen(true)}
+                          onOpenRoutePresets={() => setIsRoutePresetModalOpen(true)}
+                          onOpenHistoricalRateAdvisor={() => setIsHistoricalRateAdvisorOpen(true)}
+                          onOpenSmartSurcharge={() => setIsSmartSurchargeModalOpen(true)}
+                          smartSurchargesCount={smartSurchargeAnalysis.unappliedCount}
+                        />
+                      </div>
+                    </div>
+
+                  </div>
+                ) : (
+                  /* ======================================================== */
+                  /* BỐ CỤC XẾP CHỒNG TOÀN CHIỀU RỘNG (STACKED LAYOUT)        */
+                  /* ======================================================== */
+                  <>
+                    {/* Section 1: Customer Info & Quotation Metadata: Full Horizontal Width Across Screen */}
+                    <div className="w-full">
+                      <CustomerForm
+                        customer={quote.customer}
+                        quoteNumber={quote.quoteNumber}
+                        createdDate={quote.createdDate}
+                        validityDate={quote.terms.validityDate}
+                        status={quote.status}
+                        salesRepName={company.salesRepName}
+                        customers={customers}
+                        onChangeCustomer={handleChangeCustomer}
+                        onChangeQuoteMeta={handleChangeQuoteMeta}
+                        onOpenCustomerManager={() => setIsCustomersOpen(true)}
+                        onOpenCustomer360={() => handleOpenCustomer360()}
+                        onSaveToCrm={handleSaveCurrentCustomerToCrm}
+                        onSelectCustomer={handleSelectCustomerForQuote}
+                        isSavingToCrm={isSavingCustomerToCrm}
+                        errors={customerFormErrors}
+                        shakeTrigger={formValidationShakeTrigger}
+                      />
+                    </div>
+
+                    {/* Section 2: Shipment Route & Cargo Specifications: Full Horizontal Width Across Screen */}
+                    <div className="w-full">
+                      <ShipmentForm
+                        shipment={quote.shipment}
+                        onChangeShipment={handleChangeShipment}
+                        onOpenHsCodeTariff={() => setIsHsCodeTariffOpen(true)}
+                        onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
+                        savedQuotes={savedQuotes}
+                        currentQuoteId={quote.id}
+                        onOpenHistoricalRateAdvisor={() => setIsHistoricalRateAdvisorOpen(true)}
+                        onOpenSmartSurcharges={() => setIsSmartSurchargeModalOpen(true)}
+                        smartSurchargesCount={smartSurchargeAnalysis.unappliedCount}
+                        errors={shipmentFormErrors}
+                        shakeTrigger={formValidationShakeTrigger}
+                      />
+                    </div>
+
+                    {/* Smart Surcharge Suggestion Banner (Route & Seasonality Analysis) */}
+                    <div className="w-full">
+                      <SmartSurchargeRecommendationBanner
+                        quote={quote}
+                        onApplySuggestion={handleApplySmartSurcharge}
+                        onApplyAllSuggestions={handleApplyAllSmartSurcharges}
+                        customSurcharges={surcharges}
+                      />
+                    </div>
+
+                    {/* Line Items Table */}
+                    <div className="w-full">
+                      <LineItemsTable
+                        items={quote.items}
+                        exchangeRate={quote.exchangeRate}
+                        onUpdateItems={handleUpdateItems}
+                        pricingWarnings={quote.pricingWarnings}
+                        onOpenSurchargeCatalog={() => setIsSurchargesOpen(true)}
+                        onOpenRateSearch={() => setIsRateSearchOpen(true)}
+                        onOpenSmartAssistant={() => setIsSmartAssistantOpen(true)}
+                        onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
+                        onCheckRateUpdates={() => setIsComparisonModalOpen(true)}
+                        outdatedRatesCount={outdatedRatesDiffs.length}
+                        onResolveContractPricing={handleResolveContractPricing}
+                        onOpenContracts={() => setIsContractsOpen(true)}
+                        onOpenCompetitorRadar={() => setIsCompetitorRadarOpen(true)}
+                        onOpenRoutePresets={() => setIsRoutePresetModalOpen(true)}
+                        onOpenHistoricalRateAdvisor={() => setIsHistoricalRateAdvisorOpen(true)}
+                        onOpenSmartSurcharge={() => setIsSmartSurchargeModalOpen(true)}
+                        smartSurchargesCount={smartSurchargeAnalysis.unappliedCount}
+                      />
+                    </div>
+
+                    {/* Summary Card */}
+                    <SummaryCard
+                      quote={quote}
+                      isSplitView={false}
+                      onExchangeRateChange={handleExchangeRateChange}
+                      onCurrencyChange={handleQuoteCurrencyChange}
+                      onSaveQuote={handleSaveQuoteAction}
+                      isSaving={isSavingQuote}
+                      hasUnsavedChanges={hasUnsavedChanges}
+                      onExportPdf={(curr) => exportQuoteToPdf(quote, curr)}
+                      onExportExcel={(curr) => exportQuoteToExcel(quote, curr)}
+                      onOpenPreview={() => setIsPreviewOpen(true)}
+                      onOpenGeneratePdf={() => setIsGeneratePdfOpen(true)}
+                      onOpenSendModal={() => setIsSendQuotationOpen(true)}
+                      onOpenProfitIntelligence={() => setIsProfitIntelligenceOpen(true)}
+                      onOpenFreightRateBenchmarking={() => setIsFreightRateBenchmarkingOpen(true)}
+                      onOpenDebitNote={() => handleOpenDebitNoteForQuote(quote)}
+                      onOpenExchangeRateModal={() => setIsExchangeRateModalOpen(true)}
+                    />
+                  </>
+                )
+              )}
 
             {/* Tab 2: Điều Khoản & Ngân Hàng (or ALL) */}
             {(activeWorkspaceTab === 'TERMS' || activeWorkspaceTab === 'ALL') && (

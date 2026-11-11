@@ -75,6 +75,11 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
     }
   };
 
+  const handleSelectQuoteToEdit = (quote: QuoteData) => {
+    onSelectQuote(quote);
+    onClose();
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
@@ -348,9 +353,14 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                   <div>
                     <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-100">
                       <div>
-                        <span className="font-mono font-bold text-indigo-900 text-sm tracking-tight block">
+                        <button
+                          type="button"
+                          onClick={() => handleSelectQuoteToEdit(quote)}
+                          className="font-mono font-bold text-indigo-900 hover:text-indigo-600 hover:underline text-sm tracking-tight block text-left cursor-pointer transition-colors"
+                          title="Nhấp để xem và chỉnh sửa báo giá"
+                        >
                           {quote.quoteNumber}
-                        </span>
+                        </button>
                         <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
                           <Clock className="w-3 h-3" /> {quote.createdDate}
                         </span>
@@ -422,7 +432,7 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                   <div className="pt-3 flex items-center justify-between gap-1.5">
                     <button
                       type="button"
-                      onClick={() => onSelectQuote(quote)}
+                      onClick={() => handleSelectQuoteToEdit(quote)}
                       className="flex-1 py-1.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
@@ -524,7 +534,14 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                   {paginatedQuotes.map((quote) => (
                     <tr key={quote.id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-3 font-mono font-bold text-indigo-900">
-                        <div>{quote.quoteNumber}</div>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectQuoteToEdit(quote)}
+                          className="hover:text-indigo-600 hover:underline text-left cursor-pointer font-bold font-mono transition-colors"
+                          title="Nhấp để xem và chỉnh sửa báo giá"
+                        >
+                          {quote.quoteNumber}
+                        </button>
                         <div className="text-[10px] text-slate-400 font-normal">{quote.createdDate}</div>
                       </td>
 
@@ -570,9 +587,9 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                         <div className="flex items-center justify-center space-x-1">
                           <button
                             type="button"
-                            onClick={() => onSelectQuote(quote)}
+                            onClick={() => handleSelectQuoteToEdit(quote)}
                             className="p-1 rounded text-indigo-600 hover:bg-indigo-50 transition cursor-pointer"
-                            title="Xem chi tiết báo giá"
+                            title="Xem & Sửa báo giá"
                           >
                             <Edit3 className="w-4 h-4" />
                           </button>

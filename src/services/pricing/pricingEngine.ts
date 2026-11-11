@@ -313,6 +313,7 @@ export function calculateQuote(
 
   // Construct Full Calculated QuoteData
   const calculatedQuote: QuoteData = {
+    ...rawQuote,
     id: rawQuote.id || `quote-${Date.now()}`,
     quoteNumber: rawQuote.quoteNumber || 'LOG-DRAFT',
     createdDate: rawQuote.createdDate || new Date().toISOString().slice(0, 10),

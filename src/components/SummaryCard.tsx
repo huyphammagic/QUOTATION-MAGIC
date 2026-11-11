@@ -37,6 +37,7 @@ interface SummaryCardProps {
   onOpenExchangeRateModal?: () => void;
   isSaving?: boolean;
   hasUnsavedChanges?: boolean;
+  isSplitView?: boolean;
 }
 
 export const SummaryCard: React.FC<SummaryCardProps> = ({
@@ -55,6 +56,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
   onOpenExchangeRateModal,
   isSaving = false,
   hasUnsavedChanges = false,
+  isSplitView = false,
 }) => {
   const margin = quote.overallMarginPercent || 0;
   const markup = quote.markupPercent || 0;
@@ -225,8 +227,206 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
         </div>
       </div>
 
-      {/* Main Grid: 4 Metric Cards (Left) + Grand Total (Center) + Actions (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-stretch">
+      {/* Main Grid: 4 Metric Cards + Grand Total + Actions (Adaptive for Split Mode vs Stacked Mode) */}
+      {isSplitView ? (
+        <div className="space-y-3">
+          {/* 1. Grand Total Cosmic Nebula Card (Hero) */}
+          <div className={`p-4 rounded-xl bg-gradient-to-b from-[#0D1527] to-[#070B14] border border-cyan-500/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_0_20px_rgba(56,189,248,0.15)] flex flex-col justify-center items-center text-center space-y-1 relative overflow-hidden cosmic-card-sheen ${
+            metricDiffGlow === 'emerald'
+              ? 'diff-luminescence-emerald ring-2 ring-emerald-400/80'
+              : metricDiffGlow === 'amber'
+              ? 'diff-luminescence-amber ring-2 ring-amber-400/80'
+              : ''
+          }`}>
+            <span className="text-[10px] font-bold text-cyan-300 uppercase tracking-widest flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#38bdf8]" />
+              Tổng thanh toán ({isVnd ? 'VNĐ' : 'USD'})
+            </span>
+            <div className={`${
+              isVnd ? 'text-2xl sm:text-3xl' : 'text-3xl'
+            } font-extrabold text-white font-mono tracking-tight tabular-nums drop-shadow-[0_2px_12px_rgba(56,189,248,0.4)] whitespace-nowrap`}>
+              <RollingNumberTicker 
+                value={isVnd ? (quote.grandTotalVnd || 0) : (quote.grandTotalUsd || 0)}
+                prefix={isVnd ? '' : '$'}
+                suffix={isVnd ? ' ₫' : ''}
+                decimals={isVnd ? 0 : 2}
+              />
+            </div>
+            <div className="text-xs text-slate-400 font-mono tabular-nums whitespace-nowrap">
+              ≈ {isVnd ? formatUSD(quote.grandTotalUsd) : formatVND(quote.grandTotalVnd)}
+            </div>
+            {isBelowSafeFloor && (
+              <div className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-rose-400">
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                <span>Dưới giá sàn an toàn</span>
+              </div>
+            )}
+          </div>
+
+          {/* 2. 4 Key Financial Metrics (2x2 Grid) */}
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            {/* Doanh thu bán */}
+            <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800/80 flex flex-col justify-between">
+              <span className="text-slate-400 text-[10px] font-medium uppercase tracking-wider block">Doanh thu</span>
+              <div className="font-bold text-white text-sm font-mono tracking-tight tabular-nums mt-0.5 truncate">
+                <RollingNumberTicker 
+                  value={isVnd ? (quote.subtotalVnd || 0) : (quote.subtotalUsd || 0)}
+                  prefix={isVnd ? '' : '$'}
+                  suffix={isVnd ? ' ₫' : ''}
+                  decimals={isVnd ? 0 : 2}
+                />
+              </div>
+              <div className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">
+                {isVnd ? `~ ${formatUSD(quote.subtotalUsd)}` : `~ ${formatVND(quote.subtotalVnd)}`}
+              </div>
+            </div>
+
+            {/* Giá vốn */}
+            <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800/80 flex flex-col justify-between">
+              <span className="text-slate-400 text-[10px] font-medium uppercase tracking-wider block">Giá vốn</span>
+              <div className="font-bold text-slate-300 text-sm font-mono tracking-tight tabular-nums mt-0.5 truncate">
+                <RollingNumberTicker 
+                  value={isVnd ? (quote.totalCostVnd || 0) : (quote.totalCostUsd || 0)}
+                  prefix={isVnd ? '' : '$'}
+                  suffix={isVnd ? ' ₫' : ''}
+                  decimals={isVnd ? 0 : 2}
+                />
+              </div>
+              <div className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">
+                {isVnd ? `~ ${formatUSD(quote.totalCostUsd || 0)}` : `~ ${formatVND(quote.totalCostVnd || 0)}`}
+              </div>
+            </div>
+
+            {/* Lợi nhuận gộp */}
+            <div className={`bg-slate-950/80 p-2.5 rounded-xl border border-slate-800/80 flex flex-col justify-between ${
+              metricDiffGlow === 'emerald'
+                ? 'ring-1 ring-emerald-400/80'
+                : metricDiffGlow === 'amber'
+                ? 'ring-1 ring-amber-400/80'
+                : ''
+            }`}>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400 text-[10px] font-medium uppercase tracking-wider">Lợi nhuận</span>
+                <TrendingUp className="w-3 h-3 text-emerald-400 shrink-0" />
+              </div>
+              <div className={`font-bold text-sm font-mono tracking-tight tabular-nums mt-0.5 truncate ${
+                (quote.totalProfitUsd || 0) < 0 ? 'text-rose-400' : 'text-emerald-400'
+              }`}>
+                <RollingNumberTicker 
+                  value={isVnd ? (quote.totalProfitVnd || 0) : (quote.totalProfitUsd || 0)}
+                  prefix={(quote.totalProfitUsd || 0) >= 0 ? (isVnd ? '+' : '+$') : (isVnd ? '' : '$')}
+                  suffix={isVnd ? ' ₫' : ''}
+                  decimals={isVnd ? 0 : 2}
+                />
+              </div>
+              <div className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">
+                Markup: {formatPercent(markup, 1)}
+              </div>
+            </div>
+
+            {/* Margin % & VAT */}
+            <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800/80 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400 text-[10px] font-medium uppercase tracking-wider">Margin</span>
+                <span className="text-[10px] font-mono font-bold">{renderRiskBadge()}</span>
+              </div>
+              <div className={`font-bold text-sm font-mono tracking-tight mt-0.5 tabular-nums ${
+                isBelowMinimum ? 'text-rose-400' : isBelowTarget ? 'text-amber-400' : 'text-emerald-400'
+              }`}>
+                {formatPercent(margin, 1)}
+              </div>
+              <div className="text-[10px] font-mono mt-0.5 text-slate-500 truncate">
+                VAT: {isVnd ? formatVND(quote.vatTotalVnd) : formatUSD(quote.vatTotalUsd)}
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Action Buttons */}
+          <div className="space-y-2 pt-1">
+            <button
+              type="button"
+              onClick={onSaveQuote}
+              disabled={isSaving}
+              className={`press-physics w-full flex items-center justify-center space-x-2 font-bold text-xs py-2 px-3 rounded-xl transition-all cursor-pointer ${
+                hasUnsavedChanges
+                  ? 'bg-emerald-400 hover:bg-emerald-300 text-slate-950 btn-save-unsaved-pulse font-extrabold shadow-md shadow-emerald-500/30'
+                  : 'bg-white hover:bg-slate-100 text-slate-900 shadow-xs'
+              }`}
+            >
+              {isSaving ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin shrink-0 text-slate-800" />
+                  <span className="truncate">Đang Lưu Lên Cloud...</span>
+                </>
+              ) : (
+                <>
+                  <Save className={`w-3.5 h-3.5 ${hasUnsavedChanges ? 'text-slate-950' : 'text-slate-900'} shrink-0`} />
+                  <span className="truncate">
+                    {hasUnsavedChanges ? 'Lưu Báo Giá (Chưa Lưu)' : 'Lưu Báo Giá Lên Cloud'}
+                  </span>
+                </>
+              )}
+            </button>
+
+            {onOpenSendModal && (
+              <button
+                type="button"
+                onClick={onOpenSendModal}
+                className="press-physics-subtle w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs py-2 px-3 rounded-xl transition-colors cursor-pointer"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Gửi Khách Hàng (Email & Link)</span>
+              </button>
+            )}
+
+            <div className="grid grid-cols-3 gap-1.5">
+              <button
+                type="button"
+                onClick={onOpenPreview}
+                className="press-physics-subtle flex items-center justify-center space-x-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-1.5 px-2 rounded-lg border border-slate-700 transition-colors cursor-pointer"
+                title="Xem trước A4"
+              >
+                <Eye className="w-3 h-3" />
+                <span>Xem</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onOpenGeneratePdf ? onOpenGeneratePdf() : onExportPdf(activeCurrency)}
+                className="press-physics-subtle flex items-center justify-center space-x-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-1.5 px-2 rounded-lg border border-slate-700 transition-colors cursor-pointer"
+                title={`Xuất file PDF (${activeCurrency})`}
+              >
+                <FileDown className="w-3 h-3 text-indigo-400" />
+                <span>PDF</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onExportExcel(activeCurrency)}
+                className="press-physics-subtle flex items-center justify-center space-x-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-1.5 px-2 rounded-lg border border-slate-700 transition-colors cursor-pointer"
+                title={`Xuất Excel (${activeCurrency})`}
+              >
+                <FileSpreadsheet className="w-3 h-3 text-emerald-400" />
+                <span>Excel</span>
+              </button>
+            </div>
+
+            {onOpenDebitNote && (
+              <button
+                type="button"
+                onClick={onOpenDebitNote}
+                className="press-physics-subtle w-full flex items-center justify-center space-x-1.5 bg-blue-950/80 hover:bg-blue-900 text-blue-200 border border-blue-700/60 font-bold text-xs py-1.5 px-3 rounded-xl transition-colors cursor-pointer"
+                title="Lập Debit Note (Giấy Báo Nợ) gửi khách hàng kèm mã VietQR"
+              >
+                <Receipt className="w-3.5 h-3.5 text-blue-400" />
+                <span>Tạo Debit Note Đòi Nợ</span>
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* Main Grid: 4 Metric Cards (Left) + Grand Total (Center) + Actions (Right) */
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-stretch">
         
         {/* Left 5 Cols: Financial Metrics */}
         <div className="lg:col-span-5 grid grid-cols-2 gap-2.5 text-xs">
@@ -235,7 +435,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
           <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800/80 flex flex-col justify-between cosmic-card-sheen card-hover-lift transition-all">
             <div>
               <span className="text-slate-400 text-[11px] font-medium uppercase tracking-wider block">Doanh thu bán</span>
-              <div className="font-bold text-white text-base sm:text-lg font-mono tracking-tight tabular-nums mt-1 whitespace-nowrap truncate">
+              <div className="font-bold text-white text-base sm:text-lg font-mono tracking-tight tabular-nums mt-1 whitespace-nowrap">
                 <RollingNumberTicker 
                   value={isVnd ? (quote.subtotalVnd || 0) : (quote.subtotalUsd || 0)}
                   prefix={isVnd ? '' : '$'}
@@ -244,7 +444,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
                 />
               </div>
             </div>
-            <div className="text-[11px] text-slate-500 font-mono mt-1.5 whitespace-nowrap truncate">
+            <div className="text-[11px] text-slate-500 font-mono mt-1.5 whitespace-nowrap">
               {isVnd ? `~ ${formatUSD(quote.subtotalUsd)}` : `~ ${formatVND(quote.subtotalVnd)}`}
             </div>
           </div>
@@ -253,7 +453,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
           <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800/80 flex flex-col justify-between cosmic-card-sheen card-hover-lift transition-all">
             <div>
               <span className="text-slate-400 text-[11px] font-medium uppercase tracking-wider block">Giá vốn (Cost)</span>
-              <div className="font-bold text-slate-300 text-base sm:text-lg font-mono tracking-tight tabular-nums mt-1 whitespace-nowrap truncate">
+              <div className="font-bold text-slate-300 text-base sm:text-lg font-mono tracking-tight tabular-nums mt-1 whitespace-nowrap">
                 <RollingNumberTicker 
                   value={isVnd ? (quote.totalCostVnd || 0) : (quote.totalCostUsd || 0)}
                   prefix={isVnd ? '' : '$'}
@@ -262,7 +462,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
                 />
               </div>
             </div>
-            <div className="text-[11px] text-slate-500 font-mono mt-1.5 whitespace-nowrap truncate">
+            <div className="text-[11px] text-slate-500 font-mono mt-1.5 whitespace-nowrap">
               {isVnd ? `~ ${formatUSD(quote.totalCostUsd || 0)}` : `~ ${formatVND(quote.totalCostVnd || 0)}`}
             </div>
           </div>
@@ -279,7 +479,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
               <span className="text-slate-400 text-[11px] font-medium uppercase tracking-wider">Lợi nhuận gộp</span>
               <TrendingUp className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             </div>
-            <div className={`font-bold text-base sm:text-lg font-mono tracking-tight tabular-nums mt-1 whitespace-nowrap truncate ${
+            <div className={`font-bold text-base sm:text-lg font-mono tracking-tight tabular-nums mt-1 whitespace-nowrap ${
               (quote.totalProfitUsd || 0) < 0 ? 'text-rose-400' : 'text-emerald-400'
             }`}>
               <RollingNumberTicker 
@@ -317,7 +517,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
             }`}>
               {formatPercent(margin, 1)}
             </div>
-            <div className="flex items-center justify-between text-[11px] font-mono mt-1.5 text-slate-500 whitespace-nowrap truncate">
+            <div className="flex items-center justify-between text-[11px] font-mono mt-1.5 text-slate-500 whitespace-nowrap">
               <span>VAT: {isVnd ? formatVND(quote.vatTotalVnd) : formatUSD(quote.vatTotalUsd)}</span>
             </div>
           </div>
@@ -463,6 +663,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
         </div>
 
       </div>
+      )}
 
     </div>
   );

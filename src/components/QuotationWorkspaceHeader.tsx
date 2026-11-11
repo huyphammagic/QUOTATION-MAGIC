@@ -31,7 +31,10 @@ import {
   BarChart3,
   Receipt,
   History,
-  Trophy
+  Trophy,
+  Columns2,
+  Rows,
+  BarChart2
 } from 'lucide-react';
 import { PaymentStatusBadge } from './payment/PaymentStatusBadge';
 
@@ -67,6 +70,10 @@ interface QuotationWorkspaceHeaderProps {
   onOpenMultiOptionQuote?: () => void;
   onOpenRoutePresets?: () => void;
   onOpenHistoricalRateAdvisor?: () => void;
+  layoutMode?: 'SPLIT' | 'STACKED';
+  onLayoutModeChange?: (mode: 'SPLIT' | 'STACKED') => void;
+  isSalesHudCollapsed?: boolean;
+  onToggleSalesHud?: () => void;
   isSaving?: boolean;
   hasUnsavedChanges?: boolean;
   lastSavedAt?: string | null;
@@ -102,6 +109,10 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
   onOpenMultiOptionQuote,
   onOpenRoutePresets,
   onOpenHistoricalRateAdvisor,
+  layoutMode = 'STACKED',
+  onLayoutModeChange,
+  isSalesHudCollapsed = true,
+  onToggleSalesHud,
   isSaving = false,
   hasUnsavedChanges = false,
   lastSavedAt,
@@ -804,19 +815,72 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
           </button>
         </div>
 
-        {/* Clean Context Figures */}
-        <div className="flex items-center gap-3 text-xs text-slate-500 tabular-nums">
-          <span className="font-medium text-slate-700">
-            {quote.items.length} hạng mục cước
-          </span>
-          <span className="text-slate-300">·</span>
-          <span>Đơn vị: <strong className="text-slate-900">{quote.quoteCurrency || 'USD'}</strong></span>
-          {quote.terms.validityDate && (
-            <>
-              <span className="text-slate-300">·</span>
-              <span className="hidden sm:inline">Hạn: {quote.terms.validityDate}</span>
-            </>
+        {/* Right Section: Layout Switcher, HUD Toggle & Context Figures */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {/* HUD Toggle (Show/Hide Sales Roadmap & Stats) */}
+          {onToggleSalesHud && (
+            <button
+              type="button"
+              onClick={onToggleSalesHud}
+              className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
+                !isSalesHudCollapsed
+                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-2xs'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+              title={isSalesHudCollapsed ? "Hiện thanh thống kê & 5 bước lộ trình bán hàng (HUD)" : "Ẩn thanh thống kê để màn hình làm việc tinh gọn nhất"}
+            >
+              <BarChart2 className="w-3.5 h-3.5 text-indigo-600" />
+              <span>{isSalesHudCollapsed ? 'Hiện Thống Kê / HUD' : 'Ẩn HUD'}</span>
+            </button>
           )}
+
+          {/* Layout Switcher: Toàn Màn Hình (Mặc định) vs Chia 2 Cột */}
+          {onLayoutModeChange && (
+            <div className="inline-flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+              <button
+                type="button"
+                onClick={() => onLayoutModeChange('STACKED')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md transition-all cursor-pointer whitespace-nowrap ${
+                  layoutMode === 'STACKED'
+                    ? 'bg-white text-indigo-950 font-bold shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 font-medium'
+                }`}
+                title="Bố cục Toàn Chiều Rộng: Tất cả các bảng và form trải ngang 100% màn hình, không đè chữ, không '...'"
+              >
+                <Rows className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Toàn Màn Hình</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onLayoutModeChange('SPLIT')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md transition-all cursor-pointer whitespace-nowrap ${
+                  layoutMode === 'SPLIT'
+                    ? 'bg-white text-indigo-950 font-bold shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 font-medium'
+                }`}
+                title="Bố cục Chia 2 Cột (Split View): Cột trái (Master), Cột phải (Detail)"
+              >
+                <Columns2 className="w-3.5 h-3.5 text-slate-600" />
+                <span>2 Cột</span>
+              </button>
+            </div>
+          )}
+
+          {/* Clean Context Figures */}
+          <div className="hidden xl:flex items-center gap-2 text-xs text-slate-500 tabular-nums ml-1">
+            <span className="text-slate-300">·</span>
+            <span className="font-medium text-slate-700">
+              {quote.items.length} hạng mục cước
+            </span>
+            <span className="text-slate-300">·</span>
+            <span>Đơn vị: <strong className="text-slate-900">{quote.quoteCurrency || 'USD'}</strong></span>
+            {quote.terms.validityDate && (
+              <>
+                <span className="text-slate-300">·</span>
+                <span className="hidden 2xl:inline">Hạn: {quote.terms.validityDate}</span>
+              </>
+            )}
+          </div>
         </div>
 
       </div>

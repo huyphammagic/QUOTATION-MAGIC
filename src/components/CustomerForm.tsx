@@ -379,26 +379,26 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
     <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col justify-between">
       
       {/* Header Bar */}
-      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-2.5 flex-wrap">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-            <Building className="w-3.5 h-3.5 text-slate-800" />
+      <div className="px-4 py-3.5 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-700 shrink-0">
+            <Building className="w-4 h-4 text-indigo-700" />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="text-xs font-bold text-slate-900 tracking-tight truncate">
-                Khách Hàng & Báo Giá
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-xs font-bold text-slate-900 tracking-tight whitespace-nowrap">
+                Khách Hàng & Thông Tin Báo Giá
               </h2>
               <span className="text-slate-300">·</span>
-              <span className="text-[11px] text-slate-500 font-mono truncate">
-                {customers.length} KH CRM
+              <span className="text-[11px] text-slate-600 font-mono font-medium whitespace-nowrap">
+                {customers.length} Khách hàng CRM
               </span>
             </div>
           </div>
         </div>
 
         {/* Header Right Actions */}
-        <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           {/* Quick CRM Dropdown */}
           {customers.length > 0 && (
             <select
@@ -408,7 +408,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
                 const found = customers.find(c => c.id === targetId || c.code === targetId);
                 if (found) handleSelectSuggestion(found);
               }}
-              className="text-xs font-medium pl-2 pr-6 py-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 transition-colors cursor-pointer max-w-[130px] sm:max-w-[160px] truncate"
+              className="text-xs font-medium pl-2.5 pr-8 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 transition-colors cursor-pointer max-w-[220px] sm:max-w-xs"
               title="Chọn nhanh từ danh sách khách hàng Cloud CRM"
             >
               <option value="">Chọn từ CRM ({customers.length})...</option>
@@ -424,7 +424,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
             <button
               type="button"
               onClick={onOpenCustomer360}
-              className="press-physics-subtle inline-flex items-center gap-1 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-1 rounded-lg transition-colors cursor-pointer shrink-0"
+              className="press-physics-subtle inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shrink-0 whitespace-nowrap"
               title="Mở hồ sơ khách hàng 360°"
             >
               <Users className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
