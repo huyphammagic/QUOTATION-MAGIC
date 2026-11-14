@@ -58,6 +58,21 @@ import {
   syncAllDataFromFirebaseStorage, 
   triggerDebouncedStorageSync 
 } from './services/firebase/storageSyncService';
+import { runFirestoreSchemaMigration } from './services/firebase/schemaMigrationService';
+import {
+  markCloudPullCompleted,
+  flushOfflineOutboxQueue,
+} from './services/firebase/dataVaultService';
+import {
+  hydrateCloudVault,
+  subscribeToVaultManifest,
+} from './services/firebase/cloudStorageVaultService';
+import {
+  loadSavedWorkbenchLayout,
+  persistWorkbenchLayout,
+  loadSavedSalesHudCollapsed,
+  persistSalesHudCollapsed,
+} from './utils/userPreferences';
 import { getActiveQuotationDraft } from './services/repository/quotationRepository';
 import { 
   fetchCustomers, 
@@ -122,7 +137,7 @@ const AdvancedAnalyticsDashboard = lazyWithRetry(() => import('./components/anal
 const ContractHubModal = lazyWithRetry(() => import('./components/contract/ContractHubModal').then(m => ({ default: m.ContractHubModal })), 'ContractHubModal');
 const ProfitIntelligenceModal = lazyWithRetry(() => import('./components/pricing/ProfitIntelligenceModal').then(m => ({ default: m.ProfitIntelligenceModal })), 'ProfitIntelligenceModal');
 const PricingPolicyManagementModal = lazyWithRetry(() => import('./components/pricing/PricingPolicyManagementModal').then(m => ({ default: m.PricingPolicyManagementModal })), 'PricingPolicyManagementModal');
-const ConflictResolutionModal = lazyWithRetry(() => import('./components/ConflictResolutionModal').then(m => ({ default: m.ConflictResolutionModal })), 'ConflictResolutionModal');
+const ConcurrencyConflictModal = lazyWithRetry(() => import('./components/integrity/ConcurrencyConflictModal').then(m => ({ default: m.ConcurrencyConflictModal })), 'ConcurrencyConflictModal');
 const MasterDataReferenceModal = lazyWithRetry(() => import('./components/MasterDataReferenceModal').then(m => ({ default: m.MasterDataReferenceModal })), 'MasterDataReferenceModal');
 const SmartQuotationWorkspace = lazyWithRetry(() => import('./components/smartQuotation/SmartQuotationWorkspace').then(m => ({ default: m.SmartQuotationWorkspace })), 'SmartQuotationWorkspace');
 const DataIntegrityDashboardModal = lazyWithRetry(() => import('./components/integrity/DataIntegrityDashboardModal').then(m => ({ default: m.DataIntegrityDashboardModal })), 'DataIntegrityDashboardModal');
@@ -157,7 +172,6 @@ const MultiOptionQuoteModal = lazyWithRetry(() => import('./components/pricing/M
 const RoutePresetModal = lazyWithRetry(() => import('./components/routePreset/RoutePresetModal').then(m => ({ default: m.RoutePresetModal })), 'RoutePresetModal');
 const HistoricalRateAdvisorModal = lazyWithRetry(() => import('./components/pricing/HistoricalRateAdvisorModal').then(m => ({ default: m.HistoricalRateAdvisorModal })), 'HistoricalRateAdvisorModal');
 const SmartSurchargeAssistantModal = lazyWithRetry(() => import('./components/surcharge/SmartSurchargeAssistantModal').then(m => ({ default: m.SmartSurchargeAssistantModal })), 'SmartSurchargeAssistantModal');
-import { SmartSurchargeRecommendationBanner } from './components/surcharge/SmartSurchargeRecommendationBanner';
 import { SmartSurchargeEngine } from './services/surcharge/smartSurchargeEngine';
 import type { SmartSurchargeSuggestion } from './types/smartSurcharge';
 import { CommandPaletteModal } from './components/command/CommandPaletteModal';
@@ -338,47 +352,41 @@ export default function App() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<WorkspaceTab>('DETAILS');
   
-  // Full-width horizontal workspace layout as default & primary standard
-  const [workbenchLayout, setWorkbenchLayout] = useState<'SPLIT' | 'STACKED'>(() => {
-    try {
-      const saved = localStorage.getItem('bogi_workbench_layout_v2') as 'SPLIT' | 'STACKED';
-      if (saved === 'STACKED' || saved === 'SPLIT') return saved;
-      return 'STACKED';
-    } catch {
-      return 'STACKED';
-    }
-  });
+  // Full-width horizontal workspace layout as default & primary standard (Zero-LocalStorage: Cloud Vault backed)
+  const [workbenchLayout, setWorkbenchLayout] = useState<'SPLIT' | 'STACKED'>(() => loadSavedWorkbenchLayout());
 
   const handleWorkbenchLayoutChange = (mode: 'SPLIT' | 'STACKED') => {
     setWorkbenchLayout(mode);
-    try {
-      localStorage.setItem('bogi_workbench_layout_v2', mode);
-      localStorage.setItem('bogi_workbench_layout', mode);
-    } catch {}
+    persistWorkbenchLayout(mode);
   };
 
-  const [isSalesHudCollapsed, setIsSalesHudCollapsed] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem('bogi_sales_hud_collapsed');
-      return saved !== null ? saved === 'true' : true;
-    } catch {
-      return true;
-    }
-  });
+  const [isSalesHudCollapsed, setIsSalesHudCollapsed] = useState<boolean>(() => loadSavedSalesHudCollapsed());
 
   const handleToggleSalesHud = () => {
     setIsSalesHudCollapsed(prev => {
       const next = !prev;
-      try {
-        localStorage.setItem('bogi_sales_hud_collapsed', String(next));
-      } catch {}
+      persistSalesHudCollapsed(next);
       return next;
     });
   };
 
+  useEffect(() => {
+    const handleVaultUiPrefSync = (e: any) => {
+      if (!e.detail || e.detail.key === 'ui_preferences' || Array.isArray(e.detail.updatedKeys)) {
+        setWorkbenchLayout(loadSavedWorkbenchLayout());
+        setIsSalesHudCollapsed(loadSavedSalesHudCollapsed());
+      }
+    };
+    window.addEventListener('cloud-vault-module-updated', handleVaultUiPrefSync);
+    window.addEventListener('cloud-vault-hydrated', handleVaultUiPrefSync);
+    return () => {
+      window.removeEventListener('cloud-vault-module-updated', handleVaultUiPrefSync);
+      window.removeEventListener('cloud-vault-hydrated', handleVaultUiPrefSync);
+    };
+  }, []);
+
   // Master column form switcher inside Split View: 'ALL' | 'CUSTOMER' | 'SHIPMENT'
   const [masterFormTab, setMasterFormTab] = useState<'ALL' | 'CUSTOMER' | 'SHIPMENT'>('ALL');
-  const [isSurchargeBannerOpen, setIsSurchargeBannerOpen] = useState<boolean>(true);
 
   // Client-side field validation states for CustomerForm & ShipmentForm
   const [customerFormErrors, setCustomerFormErrors] = useState<CustomerFormErrors>({});
@@ -1498,6 +1506,7 @@ export default function App() {
           fetchRateMasters(true),
           getChargeMastersFromFirestore(),
           getRateHistoriesFromFirestore(),
+          hydrateCloudVault(currentCompId),
         ]);
 
         // Cross-device recovery: if Firestore is empty on this device, check Firebase Storage!
@@ -1525,6 +1534,9 @@ export default function App() {
         if (cloudChargeMasters && cloudChargeMasters.length > 0) setChargeMasters(cloudChargeMasters);
         if (cloudHistories && cloudHistories.length > 0) setRateHistories(cloudHistories);
 
+        // Unlock Storage backup sync ONLY after initial Cloud pull finishes
+        markCloudPullCompleted();
+
         // Keep Firebase Storage in sync with current state for multi-device access
         if (cloudQuotes && cloudQuotes.length > 0) {
           triggerDebouncedStorageSync({
@@ -1535,6 +1547,18 @@ export default function App() {
             chargeMasters: cloudChargeMasters,
             companyProfile: cloudCompany || undefined,
           });
+        }
+
+        // Auto-flush any queued offline edits safely on startup
+        if (typeof navigator === 'undefined' || navigator.onLine !== false) {
+          flushOfflineOutboxQueue().then((res) => {
+            if (res.flushedCount > 0) {
+              fetchQuotations({ forceRefresh: true }).then((fresh) => {
+                if (fresh && fresh.length > 0) setSavedQuotes(fresh);
+              });
+              showToast(`Đã tự động đồng bộ ${res.flushedCount} thay đổi Offline lên Cloud!`);
+            }
+          }).catch(() => {});
         }
 
         // Auto-recover any missing customers from historical quotations into Cloud CRM
@@ -1551,6 +1575,17 @@ export default function App() {
         // Sync Phase 15 Pricing Policies
         await loadPricingPoliciesData();
         setLastCloudSyncedAt(new Date());
+
+        // Non-blocking Schema Version Registry check & zero-loss auto-migration for legacy documents
+        runFirestoreSchemaMigration({ actor: authUser?.email || authUser?.uid || 'auto_sync' })
+          .then((migrationRes) => {
+            if (migrationRes.totalMigratedDocuments > 0) {
+              showToast(`🛡️ Đã tự động chuẩn hóa & nâng cấp Schema (${migrationRes.totalMigratedDocuments} bản ghi cũ được bảo toàn 100%).`);
+            }
+          })
+          .catch((migErr) => {
+            console.warn('[schemaMigration] Background check notice:', migErr);
+          });
       } catch (err) {
         console.warn('Firestore initial background sync notice:', err);
       } finally {
@@ -1618,6 +1653,8 @@ export default function App() {
       }
     });
 
+    const unsubVaultManifest = subscribeToVaultManifest(currentCompId);
+
     return () => {
       window.removeEventListener('customers-synchronized', handleCustomerSyncEvent);
       unsubQuotes();
@@ -1626,8 +1663,28 @@ export default function App() {
       unsubSurcharges();
       unsubCharges();
       unsubCompany();
+      unsubVaultManifest();
     };
   }, [authUser?.uid, activeCompanyId]);
+
+  // Auto-flush Offline Outbox Queue immediately when network reconnects
+  useEffect(() => {
+    const handleBackOnline = async () => {
+      try {
+        const res = await flushOfflineOutboxQueue();
+        if (res.flushedCount > 0) {
+          const fresh = await fetchQuotations({ forceRefresh: true });
+          if (fresh && fresh.length > 0) setSavedQuotes(fresh);
+          setLastCloudSyncedAt(new Date());
+          showToast(`Kết nối lại mạng: Đã đồng bộ an toàn ${res.flushedCount} thay đổi Offline lên Cloud!`);
+        }
+      } catch (err) {
+        console.warn('[dataVault] Auto-flush outbox notice:', err);
+      }
+    };
+    window.addEventListener('online', handleBackOnline);
+    return () => window.removeEventListener('online', handleBackOnline);
+  }, []);
 
   // Continuous 100% Real-Time Auto-Save & Cloud Synchronization (1200ms debounce on any quote edit)
   useEffect(() => {
@@ -2413,6 +2470,8 @@ export default function App() {
       if (cloudSurcharges && cloudSurcharges.length > 0) setSurcharges(cloudSurcharges);
       if (cloudCharges && cloudCharges.length > 0) setChargeMasters(cloudCharges);
 
+      markCloudPullCompleted();
+
       // Push full unified state to Firebase Storage
       syncAllDataToFirebaseStorage({
         quotes: cloudQuotes && cloudQuotes.length > 0 ? cloudQuotes : savedQuotes,
@@ -2610,6 +2669,43 @@ export default function App() {
     setQuote(calculatedQuote);
     setConflictState({ isOpen: false });
     showToast(`Đã tải phiên bản mới nhất từ Cloud (v${conflictState.remoteQuote.version || 1})!`);
+  };
+
+  const handleCloneAsNewRevisionConflict = async () => {
+    if (!conflictState.localQuote) return;
+    let newRef: string;
+    try {
+      newRef = await generateNextQuoteNumber();
+    } catch {
+      newRef = generateQuoteNumber();
+    }
+    const currentCompany = activeCompanyRecord || company;
+    const clonedQuote: QuoteData = {
+      ...JSON.parse(JSON.stringify(conflictState.localQuote)),
+      id: `quote-${Date.now()}`,
+      quoteNumber: newRef,
+      companyId: activeCompanyId,
+      companySnapshot: createQuotationCompanySnapshot(currentCompany),
+      version: 1,
+      createdDate: new Date().toISOString().slice(0, 10),
+      updatedDate: new Date().toISOString().slice(0, 10),
+      status: 'DRAFT',
+    };
+    const { calculatedQuote } = calculateQuote(clonedQuote);
+    const res = await saveQuotation(calculatedQuote, {
+      userId: company.salesRepName || 'User',
+      userName: company.salesRepName || 'User',
+    });
+    if (!res.success) {
+      showToast(res.message || 'Không thể tách bản báo giá mới!', 'error');
+      return;
+    }
+    setQuote(res.savedQuote || calculatedQuote);
+    setConflictState({ isOpen: false });
+    const updated = await fetchQuotations({ forceRefresh: true });
+    setSavedQuotes(updated);
+    setLastCloudSyncedAt(new Date());
+    showToast(`Đã tách bản chỉnh sửa của bạn thành báo giá mới ${calculatedQuote.quoteNumber} (Bảo toàn cả 2 phiên bản)!`);
   };
 
   // Select Saved Quote & Open in Editor
@@ -2897,10 +2993,13 @@ export default function App() {
         return;
       }
 
-      // 13. BI Dashboard: Ctrl + Shift + D
-      if (isCtrlOrCmd && e.shiftKey && (e.key === 'd' || e.key === 'D')) {
+      // 13. BI Dashboard: Ctrl + D (or Cmd + D) & Ctrl + Shift + D quick toggle
+      if (isCtrlOrCmd && !e.altKey && (e.key === 'd' || e.key === 'D')) {
         e.preventDefault();
-        setIsDashboardOpen(true);
+        setIsCommandPaletteOpen(false);
+        setIsKeyboardShortcutsOpen(false);
+        setDashboardInitialTab('executive_cockpit');
+        setIsDashboardOpen(prev => !prev);
         return;
       }
     };
@@ -3157,6 +3256,7 @@ export default function App() {
                 <DashboardStats 
                   quotes={savedQuotes} 
                   onOpenAnalytics={() => setIsDashboardOpen(true)}
+                  onOpenGoldenHourRadar={() => setIsGoldenHourRadarOpen(true)}
                 />
 
                 <SmartSalesRoadmap
@@ -3343,57 +3443,8 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* CỘT PHẢI (DETAIL PANEL - 8/12 cols): BẢNG CƯỚC & GỢI Ý PHỤ PHÍ */}
+                    {/* CỘT PHẢI (DETAIL PANEL - 8/12 cols): BẢNG CƯỚC & PHỤ PHÍ */}
                     <div className="lg:col-span-7 xl:col-span-8 space-y-4">
-                      
-                      {/* Surcharge Banner Toggle Header */}
-                      <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-2xl border border-slate-200/90 shadow-2xs text-xs">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
-                            <Layers className="w-3.5 h-3.5" />
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wide">
-                              Bảng Phân Rã Chi Tiết Cước & Phụ Phí
-                            </h3>
-                            <span className="text-[11px] text-slate-500">
-                              {quote.items.length} hạng mục cước · Đơn vị: {quote.quoteCurrency || 'USD'}
-                            </span>
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => setIsSurchargeBannerOpen(!isSurchargeBannerOpen)}
-                          className={`press-physics-subtle inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                            isSurchargeBannerOpen
-                              ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-2xs'
-                              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                          }`}
-                          title="Thu gọn hoặc mở rộng thanh phân tích phụ phí gợi ý"
-                        >
-                          <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                          <span>{isSurchargeBannerOpen ? 'Thu gọn gợi ý' : 'Gợi ý phụ phí AI'}</span>
-                          {smartSurchargeAnalysis.unappliedCount > 0 && (
-                            <span className="ml-0.5 px-1.5 py-0.2 bg-indigo-600 text-white rounded-full text-[10px] font-bold">
-                              {smartSurchargeAnalysis.unappliedCount}
-                            </span>
-                          )}
-                        </button>
-                      </div>
-
-                      {/* Smart Surcharge Suggestion Banner */}
-                      {isSurchargeBannerOpen && (
-                        <div className="w-full">
-                          <SmartSurchargeRecommendationBanner
-                            quote={quote}
-                            onApplySuggestion={handleApplySmartSurcharge}
-                            onApplyAllSuggestions={handleApplyAllSmartSurcharges}
-                            customSurcharges={surcharges}
-                          />
-                        </div>
-                      )}
-
                       {/* Line Items Table (Generous Full Width of Right Column) */}
                       <div className="w-full">
                         <LineItemsTable
@@ -3460,16 +3511,6 @@ export default function App() {
                         smartSurchargesCount={smartSurchargeAnalysis.unappliedCount}
                         errors={shipmentFormErrors}
                         shakeTrigger={formValidationShakeTrigger}
-                      />
-                    </div>
-
-                    {/* Smart Surcharge Suggestion Banner (Route & Seasonality Analysis) */}
-                    <div className="w-full">
-                      <SmartSurchargeRecommendationBanner
-                        quote={quote}
-                        onApplySuggestion={handleApplySmartSurcharge}
-                        onApplyAllSuggestions={handleApplyAllSmartSurcharges}
-                        customSurcharges={surcharges}
                       />
                     </div>
 
@@ -4160,16 +4201,17 @@ export default function App() {
         </RouteErrorBoundary>
       )}
 
-      {/* Phase 17: Cross-Device Concurrency Conflict Resolution Modal */}
+      {/* Phase 17 & Data Vault: Cross-Device Concurrency Conflict Resolution Modal */}
       {conflictState.isOpen && conflictState.localQuote && conflictState.remoteQuote && (
         <RouteErrorBoundary routeName="Xử Lý Xung Đột Dữ Liệu" onReset={() => setConflictState({ isOpen: false })} onNavigateHome={handleModalClose}>
-          <ConflictResolutionModal
+          <ConcurrencyConflictModal
             isOpen={conflictState.isOpen}
             onClose={() => setConflictState({ isOpen: false })}
             localQuote={conflictState.localQuote}
             remoteQuote={conflictState.remoteQuote}
             onForceOverwrite={handleForceOverwriteConflict}
             onReloadRemote={handleReloadRemoteConflict}
+            onCloneAsNewRevision={handleCloneAsNewRevisionConflict}
           />
         </RouteErrorBoundary>
       )}
@@ -4215,10 +4257,12 @@ export default function App() {
             onClose={handleModalClose}
             quotes={savedQuotes}
             customers={customers}
+            activeQuote={quote}
             company={company}
             onRefreshData={handleForceCloudSync}
             onApplyFixedQuotes={(fixed) => setSavedQuotes(fixed)}
             onApplyFixedCustomers={(fixed) => setCustomers(fixed)}
+            onRestoreQuote={handleSelectQuote}
             lang={appLanguage}
           />
         </RouteErrorBoundary>

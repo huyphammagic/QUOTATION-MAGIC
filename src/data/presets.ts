@@ -1,4 +1,5 @@
 import { CompanyProfile, IncotermCode, FeeCategory, TransportMode, CustomerRecord, SurchargeItem, SurchargeTransportMode, ChargeLocation, QuoteData } from '../types/logistics';
+import { getModuleData } from '../services/firebase/cloudStorageVaultService';
 
 export const EMPTY_COMPANY_PROFILE: CompanyProfile = {
   name: '',
@@ -154,12 +155,9 @@ export const INCOTERMS_LIST: {
 const getLiveExchangeRateOrDefault = (): number => {
   if (typeof window !== 'undefined') {
     try {
-      const raw = localStorage.getItem('bogi_usd_live_exchange_rate');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed.rate === 'number' && parsed.rate > 0) {
-          return parsed.rate;
-        }
+      const parsed = getModuleData<any>('exchange_rate', null);
+      if (parsed && typeof parsed.rate === 'number' && parsed.rate > 0) {
+        return parsed.rate;
       }
     } catch {}
   }

@@ -296,7 +296,7 @@ export const SAMPLE_ENTERPRISE_TENDERS: EnterpriseTenderProject[] = [
   }
 ];
 
-let memoryTenders: EnterpriseTenderProject[] = [...SAMPLE_ENTERPRISE_TENDERS];
+let memoryTenders: EnterpriseTenderProject[] = typeof window === 'undefined' ? [...SAMPLE_ENTERPRISE_TENDERS] : [];
 
 /**
  * Lấy toàn bộ danh sách gói thầu nhà máy

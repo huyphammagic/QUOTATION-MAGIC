@@ -380,6 +380,58 @@
         "createdAt": { "type": "string" },
         "updatedAt": { "type": "string" }
       }
+    },
+    "SchemaRegistryMetadata": {
+      "collection": "_schema_registry",
+      "fields": {
+        "collectionName": { "type": "string" },
+        "currentSchemaVersion": { "type": "number" },
+        "minSupportedVersion": { "type": "number" },
+        "lastMigratedAt": { "type": "string" },
+        "lastMigratedBy": { "type": "string" },
+        "migrationStatus": { "type": "string" },
+        "totalDocumentsScanned": { "type": "number" },
+        "totalDocumentsMigrated": { "type": "number" },
+        "changelog": { "type": "array" }
+      }
+    },
+    "RecycleBinEntry": {
+      "collection": "_recycle_bin",
+      "fields": {
+        "id": { "type": "string" },
+        "collectionName": { "type": "string" },
+        "docId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "secondaryLabel": { "type": "string" },
+        "deletedAt": { "type": "string" },
+        "deletedBy": { "type": "string" },
+        "restoreBefore": { "type": "string" },
+        "rev": { "type": "number" },
+        "snapshotData": { "type": "object" }
+      }
+    },
+    "ImmutableSnapshot": {
+      "collection": "_snapshots",
+      "fields": {
+        "id": { "type": "string" },
+        "collectionName": { "type": "string" },
+        "docId": { "type": "string" },
+        "rev": { "type": "number" },
+        "snapshotAt": { "type": "string" },
+        "actor": { "type": "string" },
+        "reason": { "type": "string" },
+        "summaryLabel": { "type": "string" },
+        "data": { "type": "object" }
+      }
+    },
+    "CloudVaultManifest": {
+      "collection": "_vault_manifest",
+      "fields": {
+        "workspaceId": { "type": "string" },
+        "schemaVersion": { "type": "number" },
+        "updatedAt": { "type": "string" },
+        "modules": { "type": "object" }
+      }
     }
   }
 }

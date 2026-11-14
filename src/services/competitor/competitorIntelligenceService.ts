@@ -6,6 +6,7 @@
 
 import { collection, doc, setDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
+import { getModuleData, setModuleData } from '../firebase/cloudStorageVaultService';
 import { 
   LaneMarketBenchmark, 
   CompetitorProfile, 
@@ -118,8 +119,6 @@ import {
   QuoteTearDownResult
 } from '../../types/competitorIntelligence';
 
-const STORAGE_KEY_CUSTOM_COMPETITORS = 'bogi_custom_competitor_profiles';
-
 // ============================================================================
 // 2. COMPETITOR PROFILES & BATTLE TACTICS (Hồ sơ đối thủ cạnh tranh Việt Nam)
 // ============================================================================
@@ -130,9 +129,8 @@ export const STANDARD_COMPETITORS: CompetitorProfile[] = VIETNAM_FORWARDER_COMPE
  */
 export function getStoredCompetitors(): CompetitorProfile[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_CUSTOM_COMPETITORS);
-    if (!raw) return STANDARD_COMPETITORS;
-    const customList: CompetitorProfile[] = JSON.parse(raw);
+    const customList = getModuleData<CompetitorProfile[]>('competitor_intel', []);
+    if (!Array.isArray(customList) || customList.length === 0) return STANDARD_COMPETITORS;
     
     // Merge: custom items override or prepend standard ones
     const map = new Map<string, CompetitorProfile>();
@@ -141,13 +139,13 @@ export function getStoredCompetitors(): CompetitorProfile[] {
     
     return Array.from(map.values());
   } catch (err) {
-    console.warn('Error reading stored competitors from localStorage:', err);
+    console.warn('Error reading stored competitors from cloud vault:', err);
     return STANDARD_COMPETITORS;
   }
 }
 
 /**
- * Lưu hoặc cập nhật hồ sơ đối thủ vào bộ nhớ cục bộ và Firestore
+ * Lưu hoặc cập nhật hồ sơ đối thủ vào Cloud Vault và Firestore
  */
 export async function saveStoredCompetitor(profile: CompetitorProfile): Promise<void> {
   try {
@@ -161,16 +159,16 @@ export async function saveStoredCompetitor(profile: CompetitorProfile): Promise<
       updated = [{ ...profile, lastScannedAt: new Date().toISOString() }, ...current];
     }
     
-    // Save to localStorage
+    // Save custom/AI profiles to Modular Firebase Storage Vault
     const customOnly = updated.filter(c => c.isCustomAdded || c.isAiGenerated);
-    localStorage.setItem(STORAGE_KEY_CUSTOM_COMPETITORS, JSON.stringify(customOnly));
+    setModuleData('competitor_intel', customOnly);
 
     // Async sync to Firestore
     try {
       const docRef = doc(db, 'competitorProfiles', profile.id);
       await setDoc(docRef, profile, { merge: true });
     } catch (fErr) {
-      console.warn('Notice saving competitor to Firestore (cached locally):', fErr);
+      console.warn('Notice saving competitor to Firestore:', fErr);
     }
   } catch (err) {
     console.error('Failed to save competitor profile:', err);
@@ -182,11 +180,9 @@ export async function saveStoredCompetitor(profile: CompetitorProfile): Promise<
  */
 export function deleteStoredCompetitor(id: string): void {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_CUSTOM_COMPETITORS);
-    if (!raw) return;
-    const list: CompetitorProfile[] = JSON.parse(raw);
+    const list = getModuleData<CompetitorProfile[]>('competitor_intel', []);
     const filtered = list.filter(c => c.id !== id);
-    localStorage.setItem(STORAGE_KEY_CUSTOM_COMPETITORS, JSON.stringify(filtered));
+    setModuleData('competitor_intel', filtered);
   } catch (err) {
     console.error('Failed to delete competitor:', err);
   }
@@ -197,7 +193,7 @@ export function deleteStoredCompetitor(id: string): void {
  */
 export function resetToStandardCompetitors(): CompetitorProfile[] {
   try {
-    localStorage.removeItem(STORAGE_KEY_CUSTOM_COMPETITORS);
+    setModuleData('competitor_intel', []);
   } catch {}
   return STANDARD_COMPETITORS;
 }

@@ -17,6 +17,7 @@ import {
   onSnapshot
 } from 'firebase/firestore';
 import { db, auth } from '../firebase/firebaseConfig';
+import { getVaultActiveCompanyId } from '../firebase/cloudStorageVaultService';
 import { syncHealthService } from '../integrity/syncHealthService';
 import { CANONICAL_DEFAULT_COMPANY_ID } from '../../types/multiCompany';
 import { 
@@ -77,7 +78,7 @@ export async function fetchContracts(
   options: FetchContractsOptions = {}
 ): Promise<FetchContractsResult> {
   const targetCompany = (options.companyId && options.companyId.trim()) || 
-    localStorage.getItem('logistics_active_company_id') || 
+    getVaultActiveCompanyId() || 
     CANONICAL_DEFAULT_COMPANY_ID;
   const {
     contractType,
@@ -198,7 +199,7 @@ export async function saveContract(
 ): Promise<void> {
   if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
 
-  const effectiveCompanyId = contract.companyId || localStorage.getItem('logistics_active_company_id') || CANONICAL_DEFAULT_COMPANY_ID;
+  const effectiveCompanyId = contract.companyId || getVaultActiveCompanyId() || CANONICAL_DEFAULT_COMPANY_ID;
   const docRef = doc(db, COLLECTIONS.CONTRACTS, contract.id);
   const now = new Date().toISOString();
   const isNew = !contract.createdAt;

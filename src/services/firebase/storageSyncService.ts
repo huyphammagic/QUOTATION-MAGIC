@@ -17,6 +17,7 @@ import {
   getCompanyProfileFromFirestore,
   batchRestoreSystemDataToFirestore
 } from './firestoreService';
+import { getSyncEpochStatus, isSyntheticRecord } from './dataVaultService';
 import { 
   saveQuotesList, 
   saveCustomersList, 
@@ -49,19 +50,29 @@ export async function syncAllDataToFirebaseStorage(customPayload?: Partial<Stora
     return { success: false, message: 'Firebase Storage chưa sẵn sàng.' };
   }
 
+  // Sync Epoch Guard: never overwrite Storage backup from an un-pulled stale device
+  if (!customPayload && !getSyncEpochStatus().hasCompletedInitialCloudPull) {
+    return { success: false, message: 'Chờ hoàn tất đồng bộ Cloud ban đầu trước khi đẩy backup Storage.' };
+  }
+
   try {
     let payload: StorageSystemState;
 
     if (customPayload?.quotes && customPayload?.customers) {
+      const cleanQuotes = customPayload.quotes.filter(q => !isSyntheticRecord(q) && !(q as any)._deleted);
+      const cleanCustomers = customPayload.customers.filter(c => !isSyntheticRecord(c) && !(c as any)._deleted);
+      if (cleanQuotes.length === 0 && cleanCustomers.length === 0) {
+        return { success: false, message: 'Từ chối ghi đè backup Storage bằng tập dữ liệu rỗng.' };
+      }
       payload = {
         version: 1,
         syncedAt: new Date().toISOString(),
         sourceDevice: typeof navigator !== 'undefined' ? navigator.userAgent : 'Server',
-        quotes: customPayload.quotes,
-        customers: customPayload.customers,
-        rates: customPayload.rates || [],
-        surcharges: customPayload.surcharges || [],
-        chargeMasters: customPayload.chargeMasters || [],
+        quotes: cleanQuotes,
+        customers: cleanCustomers,
+        rates: (customPayload.rates || []).filter(r => !isSyntheticRecord(r) && !(r as any)._deleted),
+        surcharges: (customPayload.surcharges || []).filter(s => !isSyntheticRecord(s) && !(s as any)._deleted),
+        chargeMasters: (customPayload.chargeMasters || []).filter(c => !isSyntheticRecord(c) && !(c as any)._deleted),
         companyProfile: customPayload.companyProfile,
       };
     } else {
@@ -75,15 +86,21 @@ export async function syncAllDataToFirebaseStorage(customPayload?: Partial<Stora
         getCompanyProfileFromFirestore().catch(() => null),
       ]);
 
+      const cleanQuotes = (quotes || []).filter(q => !isSyntheticRecord(q) && !(q as any)._deleted);
+      const cleanCustomers = (customers || []).filter(c => !isSyntheticRecord(c) && !(c as any)._deleted);
+      if (cleanQuotes.length === 0 && cleanCustomers.length === 0) {
+        return { success: false, message: 'Bỏ qua đồng bộ Storage khi Firestore chưa có dữ liệu thật.' };
+      }
+
       payload = {
         version: 1,
         syncedAt: new Date().toISOString(),
         sourceDevice: typeof navigator !== 'undefined' ? navigator.userAgent : 'Client',
-        quotes: quotes || [],
-        customers: customers || [],
-        rates: rates || [],
-        surcharges: surcharges || [],
-        chargeMasters: chargeMasters || [],
+        quotes: cleanQuotes,
+        customers: cleanCustomers,
+        rates: (rates || []).filter(r => !isSyntheticRecord(r) && !(r as any)._deleted),
+        surcharges: (surcharges || []).filter(s => !isSyntheticRecord(s) && !(s as any)._deleted),
+        chargeMasters: (chargeMasters || []).filter(c => !isSyntheticRecord(c) && !(c as any)._deleted),
         companyProfile: companyProfile || undefined,
       };
     }

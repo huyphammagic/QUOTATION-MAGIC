@@ -5,8 +5,7 @@ import {
   MultiOptionTier, 
   MultiOptionPitchDecks 
 } from '../../types/multiOptionQuote';
-
-const LOCAL_STORAGE_KEY = 'bogi_multi_option_quotation_packages';
+import { getModuleData, setModuleData } from '../firebase/cloudStorageVaultService';
 
 export class MultiOptionService {
 
@@ -456,7 +455,7 @@ export class MultiOptionService {
   }
 
   /**
-   * Lưu trữ cục bộ các gói đa phương án
+   * Lưu trữ các gói đa phương án trên Firebase Storage Cloud Vault (0ms RAM cache + Cloud Sync)
    */
   public static savePackage(pkg: MultiOptionQuotationPackage): void {
     try {
@@ -467,9 +466,9 @@ export class MultiOptionService {
       } else {
         existing.unshift(pkg);
       }
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(existing));
+      setModuleData('multi_options', existing);
     } catch (e) {
-      console.error('Failed to save multi-option package to local storage', e);
+      console.error('Failed to save multi-option package to cloud vault', e);
     }
   }
 
@@ -491,9 +490,7 @@ export class MultiOptionService {
 
   public static getAllPackages(): MultiOptionQuotationPackage[] {
     try {
-      const data = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (!data) return [];
-      return JSON.parse(data);
+      return [...getModuleData<MultiOptionQuotationPackage[]>('multi_options', [])];
     } catch {
       return [];
     }
@@ -507,7 +504,7 @@ export class MultiOptionService {
   public static deletePackage(id: string): void {
     try {
       const all = this.getAllPackages().filter(p => p.id !== id);
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(all));
+      setModuleData('multi_options', all);
     } catch (e) {
       console.error('Failed to delete package', e);
     }

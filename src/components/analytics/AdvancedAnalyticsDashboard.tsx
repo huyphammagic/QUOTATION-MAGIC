@@ -44,7 +44,9 @@ import {
   Globe,
   Shield,
   FileSpreadsheet,
-  X
+  X,
+  Tv,
+  Sparkles
 } from 'lucide-react';
 
 interface AdvancedAnalyticsDashboardProps {
@@ -92,6 +94,7 @@ export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProp
   const [activeTab, setActiveTab] = useState<DashboardTab>(initialTab);
   const [language, setLanguage] = useState<AnalyticsLanguage>('vi');
   const [userRole, setUserRole] = useState<UserRole>(currentUserRole);
+  const [isPresentationMode, setIsPresentationMode] = useState<boolean>(false);
 
   useEffect(() => {
     if (initialTab) {
@@ -284,6 +287,45 @@ export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProp
               </select>
             </div>
 
+            {/* Quick Date Range Filter Presets */}
+            <div className="hidden lg:flex items-center gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700 text-[11px]">
+              {([
+                { id: 'this_week' as const, vi: '7 Ngày', en: '7 Days' },
+                { id: 'this_month' as const, vi: '30 Ngày', en: '30 Days' },
+                { id: 'this_quarter' as const, vi: 'Quý Này', en: 'Quarter' },
+                { id: 'all' as const, vi: 'Tất Cả', en: 'All' },
+              ]).map(preset => {
+                const isActive = filters.dateRange === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => setFilters(prev => ({ ...prev, dateRange: preset.id }))}
+                    className={`px-2 py-0.5 rounded-md font-semibold transition-all cursor-pointer ${
+                      isActive ? 'bg-indigo-600 text-white shadow-2xs font-bold' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {isVi ? preset.vi : preset.en}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* TV Presentation Mode Button */}
+            <button
+              type="button"
+              onClick={() => setIsPresentationMode(!isPresentationMode)}
+              className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+                isPresentationMode 
+                  ? 'bg-amber-500 text-slate-950 font-bold border-amber-400 shadow-xs' 
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+              }`}
+              title={isVi ? 'Chế độ Trình Chiếu / Màn hình TV Ban Giám Đốc' : 'Boardroom TV Presentation Mode'}
+            >
+              <Tv className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">{isPresentationMode ? (isVi ? 'Thoát TV' : 'Exit TV') : (isVi ? 'Chế Độ TV' : 'TV Mode')}</span>
+            </button>
+
             {/* Language Toggle */}
             <button
               type="button"
@@ -312,11 +354,14 @@ export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProp
                 type="button"
                 id="btn-close-analytics-dashboard"
                 onClick={onClose}
-                className="flex items-center space-x-1 px-3 py-1.5 text-white bg-rose-600 hover:bg-rose-700 font-bold rounded-lg transition-colors cursor-pointer shadow-xs"
-                title={isVi ? 'Đóng Dashboard' : 'Close Dashboard'}
+                className="flex items-center space-x-1.5 px-3 py-1.5 text-white bg-rose-600 hover:bg-rose-700 font-bold rounded-lg transition-colors cursor-pointer shadow-xs"
+                title={isVi ? 'Đóng Dashboard (Esc hoặc Ctrl + D)' : 'Close Dashboard (Esc or Ctrl + D)'}
               >
                 <X className="w-4 h-4" />
                 <span>{isVi ? 'Đóng' : 'Close'}</span>
+                <kbd className="hidden md:inline-block text-[10px] font-mono font-semibold bg-rose-800/70 text-rose-100 px-1.5 py-0.2 rounded border border-rose-400/30">
+                  Ctrl+D
+                </kbd>
               </button>
             )}
 
@@ -492,6 +537,7 @@ export const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProp
             language={language}
             onSelectQuote={onSelectQuote}
             onSwitchTab={(targetTab) => setActiveTab(targetTab)}
+            funnelStages={analytics.funnelStages}
           />
         )}
 

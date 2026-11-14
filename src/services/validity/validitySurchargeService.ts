@@ -204,7 +204,7 @@ export const SAMPLE_AUDIT_QUOTES: QuotationValidityAudit[] = [
   }
 ];
 
-let memoryAuditList: QuotationValidityAudit[] = [...SAMPLE_AUDIT_QUOTES];
+let memoryAuditList: QuotationValidityAudit[] = typeof window === 'undefined' ? [...SAMPLE_AUDIT_QUOTES] : [];
 let memorySurchargeAlerts: SurchargeMarketAlert[] = [...STANDARD_SURCHARGE_ALERTS];
 
 /**

@@ -3,8 +3,7 @@ import { CustomerInfo, CompanyProfile } from '../../types/logistics';
 import { SoaRecord, SoaEntry, SoaAgingSummary, SoaAgingBracket, SoaEntryStatus } from '../../types/soa';
 import { DebitNoteService, DEFAULT_DEBIT_NOTE_BANKS, generateVietQrUrl } from '../debitNote/debitNoteService';
 import { numberToVietnameseWords, numberToEnglishWords } from '../../utils/numberToWords';
-
-const SOA_STORAGE_KEY = 'bogi_soa_records_store_v1';
+import { getModuleData, setModuleData } from '../firebase/cloudStorageVaultService';
 
 /**
  * Calculates overdue days and aging bracket for a given due date
@@ -250,16 +249,14 @@ export function buildSoaForCustomer(
 }
 
 /**
- * Service to manage Statements of Account (SOA) in persistence
+ * Service to manage Statements of Account (SOA) in Firebase Storage Cloud Vault
  */
 export const SoaService = {
   getAllSoaRecords(): SoaRecord[] {
     try {
-      const raw = localStorage.getItem(SOA_STORAGE_KEY);
-      if (!raw) return [];
-      return JSON.parse(raw);
+      return [...getModuleData<SoaRecord[]>('soa_records', [])];
     } catch (e) {
-      console.error('Failed to read SOA records from storage:', e);
+      console.error('Failed to read SOA records from cloud vault:', e);
       return [];
     }
   },
@@ -278,13 +275,13 @@ export const SoaService = {
     } else {
       list.unshift(updated);
     }
-    localStorage.setItem(SOA_STORAGE_KEY, JSON.stringify(list));
+    setModuleData('soa_records', list);
     return updated;
   },
 
   deleteSoa(id: string): void {
     const list = this.getAllSoaRecords().filter(s => s.id !== id);
-    localStorage.setItem(SOA_STORAGE_KEY, JSON.stringify(list));
+    setModuleData('soa_records', list);
   },
 
   /**

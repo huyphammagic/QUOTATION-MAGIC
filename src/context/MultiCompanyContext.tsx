@@ -1,7 +1,7 @@
 /**
  * Phase 50.1: Hardened Multi-Company Active Context & Isolation Provider
  * Manages activeCompany, companyList, company switching, and isolated state synchronization.
- * Guarantees that activeCompanyId in localStorage is NEVER a security boundary.
+ * Guarantees that activeCompanyId is resolved from Cloud Vault & Firebase memberships, never localStorage.
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
@@ -33,8 +33,10 @@ import {
 } from '../services/repository/companyMemberRepository';
 import { useAuth } from './AuthContext';
 import { syncHealthService } from '../services/integrity/syncHealthService';
-
-const ACTIVE_COMPANY_STORAGE_KEY = 'logistics_active_company_id';
+import {
+  getVaultActiveCompanyId,
+  setVaultActiveCompanyId,
+} from '../services/firebase/cloudStorageVaultService';
 
 interface MultiCompanyContextType {
   // Current Active Company
@@ -71,9 +73,9 @@ export const MultiCompanyProvider: React.FC<{
 }> = ({ children, initialLegacyProfile, onCompanyChanged }) => {
   const { user } = useAuth();
   
-  // UI preference only - NOT a security boundary
+  // UI preference only - NOT a security boundary (stored in Cloud Vault RAM + Firebase Storage)
   const [activeCompanyId, setActiveCompanyId] = useState<string>(() => {
-    return localStorage.getItem(ACTIVE_COMPANY_STORAGE_KEY) || 'company_profile';
+    return getVaultActiveCompanyId();
   });
   
   const [companies, setCompanies] = useState<CompanyRecord[]>([]);
@@ -128,7 +130,7 @@ export const MultiCompanyProvider: React.FC<{
           console.info(`[MultiCompanyContext] Realigning activeCompanyId from ${targetCompany} to user-authorized company: ${legitimateCompany}`);
           if (isMounted) {
             setActiveCompanyId(legitimateCompany);
-            localStorage.setItem(ACTIVE_COMPANY_STORAGE_KEY, legitimateCompany);
+            setVaultActiveCompanyId(legitimateCompany);
             setActiveMemberRecord(allMemberships[0]);
           }
           return;
@@ -219,7 +221,7 @@ export const MultiCompanyProvider: React.FC<{
         matched = list.find(c => c.status === 'ACTIVE') || list[0];
         targetId = matched.companyId;
         setActiveCompanyId(targetId);
-        localStorage.setItem(ACTIVE_COMPANY_STORAGE_KEY, targetId);
+        setVaultActiveCompanyId(targetId);
       }
       setActiveCompanyRecord(matched || null);
     } catch (err) {
@@ -276,7 +278,7 @@ export const MultiCompanyProvider: React.FC<{
 
     setActiveCompanyId(newCompanyId);
     setActiveCompanyRecord(target);
-    localStorage.setItem(ACTIVE_COMPANY_STORAGE_KEY, newCompanyId);
+    setVaultActiveCompanyId(newCompanyId);
 
     const newProfile = mapCompanyRecordToProfile(target);
     if (onCompanyChanged) {

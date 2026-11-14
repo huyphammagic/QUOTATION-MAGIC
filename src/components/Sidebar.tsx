@@ -9,9 +9,11 @@ import {
   persistExpandedGroups,
   loadSavedSidebarCollapsed,
   persistSidebarCollapsed,
-  STORAGE_KEY_PINNED_FAVORITES,
+  loadSavedSidebarMinimalMode,
+  persistSidebarMinimalMode,
 } from '../utils/userPreferences';
 import { subscribeToUserPreferences } from '../services/firebase/firestoreService';
+import { updateUiPreferences } from '../services/firebase/cloudStorageVaultService';
 import { 
   ChevronDown, 
   ChevronRight, 
@@ -253,14 +255,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenAuthModal,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => loadSavedSidebarCollapsed());
-  const [isMinimalMode, setIsMinimalMode] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem('LOGISTICS_SIDEBAR_MINIMAL_MODE');
-      return saved !== null ? saved === 'true' : true;
-    } catch {
-      return true;
-    }
-  });
+  const [isMinimalMode, setIsMinimalMode] = useState<boolean>(() => loadSavedSidebarMinimalMode());
   const [searchQuery, setSearchQuery] = useState('');
   const [activeRole, setActiveRole] = useState<UserRole>(currentUserRole);
   const [activeLang, setActiveLang] = useState<NavigationLanguage>(language);
@@ -270,9 +265,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const toggleMinimalMode = () => {
     setIsMinimalMode(prev => {
       const next = !prev;
-      try {
-        localStorage.setItem('LOGISTICS_SIDEBAR_MINIMAL_MODE', String(next));
-      } catch {}
+      persistSidebarMinimalMode(next);
       return next;
     });
   };
@@ -304,7 +297,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         };
   });
 
-  // Listen for favorite updates across tabs and cloud sync
+  // Listen for favorite and UI preference updates across Cloud Vault & Firestore
   useEffect(() => {
     const handleFavoritesChanged = (e: any) => {
       if (Array.isArray(e.detail)) {
@@ -312,39 +305,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }
     };
 
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY_PINNED_FAVORITES && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          if (Array.isArray(parsed)) {
-            setPinnedIds(parsed);
-          }
-        } catch {}
+    const handleVaultHydratedOrUpdated = (e: any) => {
+      if (!e.detail || e.detail.key === 'ui_preferences' || Array.isArray(e.detail.updatedKeys)) {
+        setPinnedIds(loadSavedPinnedFavorites());
+        setExpandedGroups(loadSavedExpandedGroups());
+        setIsMinimalMode(loadSavedSidebarMinimalMode());
       }
     };
 
     window.addEventListener('logistics_pinned_favorites_changed', handleFavoritesChanged);
-    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('cloud-vault-module-updated', handleVaultHydratedOrUpdated);
+    window.addEventListener('cloud-vault-hydrated', handleVaultHydratedOrUpdated);
 
     const unsubCloud = subscribeToUserPreferences((prefs) => {
-      if (prefs && Array.isArray(prefs.pinnedNavIds)) {
+      if (!prefs) return;
+      if (Array.isArray(prefs.pinnedNavIds)) {
         setPinnedIds(current => {
           const isDiff = current.length !== prefs.pinnedNavIds!.length ||
             !current.every((id, idx) => id === prefs.pinnedNavIds![idx]);
           if (isDiff) {
-            try {
-              localStorage.setItem(STORAGE_KEY_PINNED_FAVORITES, JSON.stringify(prefs.pinnedNavIds));
-            } catch {}
+            updateUiPreferences({ pinnedNavIds: prefs.pinnedNavIds });
             return prefs.pinnedNavIds!;
           }
           return current;
         });
       }
+      if (prefs.sidebarMinimalMode !== undefined) {
+        setIsMinimalMode(prefs.sidebarMinimalMode);
+      }
+      if (prefs.expandedGroups) {
+        setExpandedGroups(prev => ({ ...prev, ...prefs.expandedGroups }));
+      }
     });
 
     return () => {
       window.removeEventListener('logistics_pinned_favorites_changed', handleFavoritesChanged);
-      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('cloud-vault-module-updated', handleVaultHydratedOrUpdated);
+      window.removeEventListener('cloud-vault-hydrated', handleVaultHydratedOrUpdated);
       unsubCloud();
     };
   }, []);
@@ -908,8 +905,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Compass,
       group: 'system',
       action: () => onOpenDashboard && onOpenDashboard('COCKPIT'),
-      badge: 'C-Level',
+      badge: 'Ctrl+D',
       badgeTone: 'sky',
+      shortcut: 'Ctrl+D',
       isCore: true,
     },
     {

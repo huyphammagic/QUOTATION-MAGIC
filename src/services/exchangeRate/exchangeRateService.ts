@@ -1,9 +1,7 @@
 import { ExchangeRateDetail, ExchangeRateConfig } from '../../types/exchangeRate';
 import { db } from '../firebase/firebaseConfig';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-
-const STORAGE_KEY_RATE = 'bogi_usd_live_exchange_rate';
-const STORAGE_KEY_CONFIG = 'bogi_usd_exchange_rate_config';
+import { getModuleData, setModuleData } from '../firebase/cloudStorageVaultService';
 
 export const DEFAULT_EXCHANGE_RATE_CONFIG: ExchangeRateConfig = {
   autoSyncEnabled: true,
@@ -46,51 +44,48 @@ export const DEFAULT_FALLBACK_RATE: ExchangeRateDetail = {
 };
 
 /**
- * Lấy tỷ giá đã lưu trữ trong LocalStorage
+ * Lấy tỷ giá từ bộ nhớ Cloud Vault (0ms RAM cache)
  */
 export function getStoredExchangeRate(): ExchangeRateDetail {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_RATE);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed.rate === 'number' && parsed.rate > 0) {
-        return parsed;
-      }
+    const parsed = getModuleData<ExchangeRateDetail | null>('exchange_rate', null);
+    if (parsed && typeof parsed.rate === 'number' && parsed.rate > 0) {
+      return parsed;
     }
   } catch {}
   return DEFAULT_FALLBACK_RATE;
 }
 
 /**
- * Lưu tỷ giá vào LocalStorage
+ * Lưu tỷ giá vào Modular Firebase Storage Vault
  */
 export function saveStoredExchangeRate(detail: ExchangeRateDetail): void {
   try {
-    localStorage.setItem(STORAGE_KEY_RATE, JSON.stringify(detail));
+    setModuleData('exchange_rate', detail);
   } catch {}
 }
 
 /**
- * Lấy cấu hình tự động đồng bộ tỷ giá
+ * Lấy cấu hình tự động đồng bộ tỷ giá từ Cloud Vault
  */
 export function getStoredExchangeRateConfig(): ExchangeRateConfig {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_CONFIG);
-    if (raw) {
-      return { ...DEFAULT_EXCHANGE_RATE_CONFIG, ...JSON.parse(raw) };
+    const parsed = getModuleData<Partial<ExchangeRateConfig> | null>('exchange_config', null);
+    if (parsed && typeof parsed === 'object') {
+      return { ...DEFAULT_EXCHANGE_RATE_CONFIG, ...parsed };
     }
   } catch {}
   return DEFAULT_EXCHANGE_RATE_CONFIG;
 }
 
 /**
- * Lưu cấu hình tự động đồng bộ tỷ giá
+ * Lưu cấu hình tự động đồng bộ tỷ giá vào Modular Firebase Storage Vault
  */
 export function saveStoredExchangeRateConfig(config: Partial<ExchangeRateConfig>): ExchangeRateConfig {
   const current = getStoredExchangeRateConfig();
   const updated = { ...current, ...config };
   try {
-    localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(updated));
+    setModuleData('exchange_config', updated);
   } catch {}
   return updated;
 }

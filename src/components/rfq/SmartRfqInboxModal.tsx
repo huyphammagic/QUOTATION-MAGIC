@@ -85,56 +85,12 @@ export const SmartRfqInboxModal: React.FC<SmartRfqInboxModalProps> = ({
   const [isGeneratingQuote, setIsGeneratingQuote] = useState(false);
   const [conversionSuccessQuote, setConversionSuccessQuote] = useState<QuoteData | null>(null);
 
-  // Initialize samples if empty
+  // Strict Real-Data Mode: auto-select first real RFQ when available, never auto-seed sample data
   useEffect(() => {
-    if (rfqList.length === 0) {
-      const initialItems: SmartRfqItem[] = SAMPLE_REAL_WORLD_RFQS.map((sample, idx) => {
-        const id = `rfq_sample_${idx + 1}`;
-        const item: SmartRfqItem = {
-          id,
-          companyId: companyProfile.companyId || 'company_profile',
-          rfqNumber: `RFQ-2026-00${idx + 1}`,
-          source: sample.source,
-          rawText: sample.rawText,
-          status: idx === 2 ? 'QUOTED' : (idx === 1 ? 'NEW' : 'MATCHED'),
-          urgency: idx === 0 ? 'URGENT' : 'NORMAL',
-          customer: {
-            customerName: idx === 0 ? 'Anh Tuấn' : (idx === 1 ? 'Chị Mai (XNK)' : 'Anh Hoàng'),
-            companyName: idx === 0 ? 'Cty CP May Sài Gòn' : (idx === 1 ? 'Cty TNHH Thủy Sản Biển Đông' : 'Cty Mỹ Nghệ Á Châu'),
-            phone: idx === 0 ? '0912.345.678' : (idx === 1 ? '0988.765.432' : '0903.888.999'),
-            email: idx === 1 ? 'mai.tran@biendongseafood.com.vn' : undefined,
-          },
-          shipment: {
-            mode: idx === 2 ? 'SEA_LCL' : 'SEA_FCL',
-            pol: idx === 2 ? 'Hai Phong Port, Vietnam' : 'Cat Lai Port, Ho Chi Minh',
-            pod: idx === 0 ? 'Long Beach, USA' : (idx === 1 ? 'Tokyo, Japan' : 'Hamburg, Germany'),
-            commodity: idx === 0 ? 'Hàng may mặc xuất khẩu' : (idx === 1 ? 'Tôm sú đông lạnh (-18C)' : 'Đồ thủ công mỹ nghệ mây tre'),
-            containerType: idx === 0 ? "40'HC" : (idx === 1 ? "20'RF" : "LCL (CBM/KGS)"),
-            quantity: idx === 0 ? 2 : 1,
-            grossWeightKg: idx === 0 ? 32000 : (idx === 1 ? 18500 : 1450),
-            volumeCbm: idx === 2 ? 5.2 : 68,
-            incoterm: idx === 1 ? 'CIF' : 'FOB',
-            freeTimeRequired: idx === 0 ? '14 Days Free DEM/DET' : '7 Days',
-            specialNotes: idx === 0 ? ['Cần tàu chạy thẳng (Direct)', 'Xin 14 ngày free time'] : []
-          },
-          confidenceScore: 94,
-          extractedAt: new Date(Date.now() - idx * 3600000).toISOString(),
-          missingFields: idx === 0 ? [] : ['Chưa có ngày đóng hàng cụ thể'],
-          suggestedFollowUpQuestions: idx === 1 ? ['Anh/chị dự kiến xuất hàng vào thứ mấy để bên em giữ chỗ cont lạnh?'] : [],
-          createdAt: new Date(Date.now() - idx * 3600000).toISOString(),
-          updatedAt: new Date(Date.now() - idx * 3600000).toISOString(),
-        };
-        item.matchedRates = matchRfqWithMasterRates(item);
-        item.selectedMatchIndex = 0;
-        return item;
-      });
-      setRfqList(initialItems);
-      saveLocalRfqList(initialItems);
-      setSelectedRfqId(initialItems[0].id);
-    } else if (!selectedRfqId && rfqList.length > 0) {
+    if (!selectedRfqId && rfqList.length > 0) {
       setSelectedRfqId(rfqList[0].id);
     }
-  }, [companyProfile.companyId, rfqList.length, selectedRfqId]);
+  }, [rfqList, selectedRfqId]);
 
   // Selected Active RFQ
   const activeRfq = useMemo(() => {

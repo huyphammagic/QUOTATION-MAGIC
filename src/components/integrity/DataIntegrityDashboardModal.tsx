@@ -42,6 +42,13 @@ import {
   IntegrityScanReport 
 } from '../../services/integrity/dataIntegrityEngine';
 import { fetchHealthAudits } from '../../services/audit/systemHealthAuditService';
+import {
+  getAllCollectionSchemaMetadata,
+  runFirestoreSchemaMigration,
+  CollectionSchemaMetadata,
+  COLLECTION_SCHEMA_VERSIONS,
+  VersionedCollectionName,
+} from '../../services/firebase/schemaMigrationService';
 import { 
   IntegrityIssueRecord, 
   IssueStatus, 
@@ -55,32 +62,37 @@ import { QuoteData, CustomerRecord, CompanyProfile } from '../../types/logistics
 import { ContractItem } from '../../types/contract';
 import { INTEGRITY_I18N, IntegrityLanguage } from '../../i18n/integrity';
 import { QuotationCustomerOrphanTab } from './QuotationCustomerOrphanTab';
+import { DataVaultPanel } from './DataVaultModal';
 
 interface DataIntegrityDashboardModalProps {
   isOpen: boolean;
   onClose: () => void;
   quotes: QuoteData[];
   customers: CustomerRecord[];
+  activeQuote?: QuoteData | null;
   company?: CompanyProfile | null;
   contracts?: ContractItem[];
   onRefreshData?: () => Promise<void>;
   onApplyFixedQuotes?: (fixed: QuoteData[]) => void;
   onApplyFixedCustomers?: (fixed: CustomerRecord[]) => void;
+  onRestoreQuote?: (restored: QuoteData) => void;
   lang?: IntegrityLanguage;
 }
 
-type ActiveTab = 'HEALTH' | 'ORPHAN_VALIDATOR' | 'ISSUES' | 'SCAN' | 'STORAGE' | 'AUDIT' | 'REGRESSION';
+type ActiveTab = 'HEALTH' | 'DATA_VAULT' | 'ORPHAN_VALIDATOR' | 'ISSUES' | 'SCAN' | 'STORAGE' | 'AUDIT' | 'REGRESSION';
 
 export const DataIntegrityDashboardModal: React.FC<DataIntegrityDashboardModalProps> = ({
   isOpen,
   onClose,
   quotes,
   customers,
+  activeQuote = null,
   company = null,
   contracts = [],
   onRefreshData,
   onApplyFixedQuotes,
   onApplyFixedCustomers,
+  onRestoreQuote,
   lang = 'vi',
 }) => {
   const t = INTEGRITY_I18N[lang] || INTEGRITY_I18N.vi;
@@ -107,6 +119,11 @@ export const DataIntegrityDashboardModal: React.FC<DataIntegrityDashboardModalPr
   const [auditLogs, setAuditLogs] = useState<SystemHealthAuditEntry[]>([]);
   const [storageItems, setStorageItems] = useState<StorageHealthItem[]>([]);
 
+  // Firestore Schema Registry & Migration state
+  const [schemaMetadata, setSchemaMetadata] = useState<CollectionSchemaMetadata[]>([]);
+  const [isMigratingSchema, setIsMigratingSchema] = useState(false);
+  const [schemaNotice, setSchemaNotice] = useState<string | null>(null);
+
   // Subscriptions & initial data fetch
   useEffect(() => {
     if (!isOpen) return;
@@ -124,8 +141,31 @@ export const DataIntegrityDashboardModal: React.FC<DataIntegrityDashboardModalPr
       setAuditLogs(logs);
     });
 
+    getAllCollectionSchemaMetadata().then((meta) => {
+      setSchemaMetadata(meta);
+    });
+
     return () => unsub();
   }, [isOpen]);
+
+  const handleRunSchemaMigrationCheck = async () => {
+    setIsMigratingSchema(true);
+    setSchemaNotice(null);
+    try {
+      const res = await runFirestoreSchemaMigration({ forceScan: true });
+      const freshMeta = await getAllCollectionSchemaMetadata();
+      setSchemaMetadata(freshMeta);
+      if (res.totalMigratedDocuments > 0) {
+        setSchemaNotice(`Đã nâng cấp an toàn ${res.totalMigratedDocuments} bản ghi cũ lên phiên bản Schema mới nhất.`);
+      } else {
+        setSchemaNotice('Toàn bộ collection đã đạt chuẩn Schema Version mới nhất (0 bản ghi cần migrate).');
+      }
+    } catch (err: any) {
+      setSchemaNotice(`Lỗi kiểm tra Schema: ${err?.message || 'Unknown error'}`);
+    } finally {
+      setIsMigratingSchema(false);
+    }
+  };
 
   // Handle escape key
   useEffect(() => {
@@ -279,6 +319,20 @@ export const DataIntegrityDashboardModal: React.FC<DataIntegrityDashboardModalPr
             <Activity className="w-3.5 h-3.5 text-emerald-600" />
             <span>{t.tabSystemHealth}</span>
             <span className={`w-2 h-2 rounded-full ${snapshot.globalStatus === 'HEALTHY' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+          </button>
+
+          <button
+            id="tab-data-vault"
+            type="button"
+            onClick={() => setActiveTab('DATA_VAULT')}
+            className={`px-3.5 py-2.5 border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+              activeTab === 'DATA_VAULT'
+                ? 'border-emerald-600 text-emerald-800 bg-white font-bold'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Két Sắt &amp; Thùng Rác 90 Ngày</span>
           </button>
 
           <button
@@ -486,6 +540,66 @@ export const DataIntegrityDashboardModal: React.FC<DataIntegrityDashboardModalPr
                 </div>
               </div>
 
+              {/* Firestore Data Schema Version Registry Card */}
+              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h4 className="font-bold text-xs text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+                      <Layers className="w-4 h-4 text-indigo-600" />
+                      Quản Lý Phiên Bản Schema Firestore (_schema_registry)
+                    </h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Tách biệt Data Schema Version trong metadata từng collection, tự động migrate an toàn mà không làm mất dữ liệu cũ.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRunSchemaMigrationCheck}
+                    disabled={isMigratingSchema}
+                    className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-60"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isMigratingSchema ? 'animate-spin' : ''}`} />
+                    <span>{isMigratingSchema ? 'Đang quét Schema...' : 'Kiểm Tra & Migrate Schema'}</span>
+                  </button>
+                </div>
+
+                {schemaNotice && (
+                  <div className="px-3 py-2 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-lg text-[11px] font-semibold">
+                    {schemaNotice}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                  {(Object.keys(COLLECTION_SCHEMA_VERSIONS) as VersionedCollectionName[]).map((colName) => {
+                    const meta = schemaMetadata.find((m) => m.collectionName === colName);
+                    const targetVer = COLLECTION_SCHEMA_VERSIONS[colName];
+                    const currentVer = meta?.currentSchemaVersion ?? targetVer;
+                    const isSynced = currentVer >= targetVer;
+
+                    return (
+                      <div key={colName} className="p-2.5 rounded-lg border border-slate-200 bg-slate-50/70 flex flex-col justify-between gap-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-mono font-bold text-[11px] text-slate-800">{colName}</span>
+                          <span className={`px-1.5 py-0.2 rounded font-mono text-[10px] font-bold border ${
+                            isSynced
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : 'bg-amber-50 text-amber-700 border-amber-200'
+                          }`}>
+                            v{currentVer} / v{targetVer}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] text-slate-500">
+                          <span>{isSynced ? 'Chuẩn hóa' : 'Chờ nâng cấp'}</span>
+                          <span className="font-mono">
+                            {meta?.totalDocumentsMigrated ? `${meta.totalDocumentsMigrated} đã migrate` : 'Bảo toàn 100%'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Orphan Validator Quick Launcher Card */}
               <div className="p-4 bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 rounded-xl border border-indigo-700/40 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
                 <div className="flex items-center gap-3">
@@ -514,6 +628,16 @@ export const DataIntegrityDashboardModal: React.FC<DataIntegrityDashboardModalPr
                 </button>
               </div>
             </div>
+          )}
+
+          {/* TAB: DATA VAULT (RECYCLE BIN + TIME TRAVEL + OFFLINE OUTBOX) */}
+          {activeTab === 'DATA_VAULT' && (
+            <DataVaultPanel
+              quotes={quotes}
+              activeQuote={activeQuote}
+              onRefreshData={onRefreshData}
+              onRestoreQuote={onRestoreQuote}
+            />
           )}
 
           {/* TAB: QUOTATION CUSTOMER ID <-> CRM ORPHAN VALIDATOR & 1-CLICK REPAIR */}

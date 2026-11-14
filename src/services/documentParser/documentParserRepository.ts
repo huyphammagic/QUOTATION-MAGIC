@@ -1,25 +1,12 @@
 import { ParsedDocumentData } from '../../types/documentParser';
-import { SAMPLE_REAL_LOGISTICS_DOCUMENTS } from '../../data/sampleDocuments';
-
-const STORAGE_KEY = 'logistics_parsed_documents_v1';
+import { getModuleData, setModuleData } from '../firebase/cloudStorageVaultService';
 
 export function getAllParsedDocuments(): ParsedDocumentData[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      // Seed with samples
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(SAMPLE_REAL_LOGISTICS_DOCUMENTS));
-      return SAMPLE_REAL_LOGISTICS_DOCUMENTS;
-    }
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed;
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(SAMPLE_REAL_LOGISTICS_DOCUMENTS));
-    return SAMPLE_REAL_LOGISTICS_DOCUMENTS;
+    return [...getModuleData<ParsedDocumentData[]>('parsed_documents', [])];
   } catch (e) {
-    console.error('Error reading parsed documents from localStorage:', e);
-    return SAMPLE_REAL_LOGISTICS_DOCUMENTS;
+    console.error('Error reading parsed documents from cloud vault:', e);
+    return [];
   }
 }
 
@@ -34,8 +21,7 @@ export function saveParsedDocument(doc: ParsedDocumentData): void {
     } else {
       updated = [doc, ...list];
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    window.dispatchEvent(new CustomEvent('logistics_parsed_documents_changed', { detail: updated }));
+    setModuleData('parsed_documents', updated);
   } catch (e) {
     console.error('Error saving parsed document:', e);
   }
@@ -45,8 +31,7 @@ export function deleteParsedDocument(id: string): void {
   try {
     const list = getAllParsedDocuments();
     const updated = list.filter(item => item.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    window.dispatchEvent(new CustomEvent('logistics_parsed_documents_changed', { detail: updated }));
+    setModuleData('parsed_documents', updated);
   } catch (e) {
     console.error('Error deleting parsed document:', e);
   }

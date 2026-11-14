@@ -14,10 +14,19 @@ import {
   onSnapshot
 } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
+import { getVaultActiveCompanyId } from '../firebase/cloudStorageVaultService';
 import { CustomerRecord, CustomerInfo, QuoteData } from '../../types/logistics';
 import { saveCustomersList, getSavedCustomers } from '../../utils/storage';
 import { syncHealthService } from '../integrity/syncHealthService';
 import { moduleSyncMonitor } from '../integrity/moduleSyncMonitorService';
+import { COLLECTION_SCHEMA_VERSIONS, normalizeDocumentOnRead } from '../firebase/schemaMigrationService';
+import {
+  STRICT_REAL_DATA_ONLY,
+  isSyntheticRecord,
+  stampRealDataOrigin,
+  createImmutableSnapshot,
+  softDeleteRecord,
+} from '../firebase/dataVaultService';
 
 const COLLECTION_NAME = 'customers';
 
@@ -110,7 +119,7 @@ export function sanitizeCustomerRecord(customer: Partial<CustomerRecord>): Custo
  * Optionally filter by companyId for strict company isolation.
  */
 export async function fetchCustomers(forceRefresh = false, companyId?: string): Promise<CustomerRecord[]> {
-  const targetCompany = companyId || (typeof localStorage !== 'undefined' ? localStorage.getItem('logistics_active_company_id') : null) || undefined;
+  const targetCompany = companyId || getVaultActiveCompanyId() || undefined;
   const now = Date.now();
   if (!forceRefresh && !targetCompany && memoryCustomersCache && (now - memoryCustomersCache.cachedAt < CACHE_TTL_MS)) {
     return memoryCustomersCache.data;
@@ -144,8 +153,11 @@ export async function fetchCustomers(forceRefresh = false, companyId?: string): 
 
     const items: CustomerRecord[] = [];
     snap.forEach((d: any) => {
-      const data = d.data();
-      const sanitized = sanitizeCustomerRecord({ ...data, id: d.id });
+      const raw = d.data();
+      if (raw?._deleted === true) return;
+      if (STRICT_REAL_DATA_ONLY && isSyntheticRecord(raw)) return;
+      const normalized = normalizeDocumentOnRead('customers', { ...raw, id: d.id });
+      const sanitized = sanitizeCustomerRecord(normalized);
       items.push(sanitized);
     });
 
@@ -190,10 +202,14 @@ export async function saveCustomer(customer: Partial<CustomerRecord>, fallbackCo
       opKey,
       async () => {
         const docRef = doc(db, COLLECTION_NAME, record.id);
+        const stamped = stampRealDataOrigin(record);
         await setDoc(docRef, {
-          ...record,
+          ...stamped,
+          _deleted: false,
+          _schemaVersion: COLLECTION_SCHEMA_VERSIONS.customers,
           _updatedAt: serverTimestamp(),
         }, { merge: true });
+        createImmutableSnapshot(COLLECTION_NAME, record.id, stamped, 'UPDATE').catch(() => {});
 
         // Update in-memory state only after Firebase confirmation
         const currentList = getSavedCustomers();
@@ -234,8 +250,9 @@ export async function deleteCustomer(id: string): Promise<boolean> {
   if (!id) return false;
   if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
 
-  const docRef = doc(db, COLLECTION_NAME, id);
-  await deleteDoc(docRef);
+  const existing = getSavedCustomers().find(c => c.id === id);
+  const res = await softDeleteRecord(COLLECTION_NAME, id, existing);
+  if (!res.success) return false;
 
   const currentList = getSavedCustomers().filter(c => c.id !== id);
   saveCustomersList(currentList);
@@ -246,7 +263,7 @@ export async function deleteCustomer(id: string): Promise<boolean> {
     window.dispatchEvent(new CustomEvent('customer-deleted', { detail: { id } }));
   }
 
-  console.log(`[customerRepository] Deleted customer ${id} from Firestore.`);
+  console.log(`[customerRepository] Soft-deleted customer ${id} into _recycle_bin.`);
   return true;
 }
 
@@ -261,7 +278,10 @@ export function subscribeToCustomerCollection(onUpdate: (customers: CustomerReco
     return onSnapshot(collRef, (snapshot) => {
       const items: CustomerRecord[] = [];
       snapshot.forEach(docSnap => {
-        items.push(sanitizeCustomerRecord({ ...docSnap.data(), id: docSnap.id }));
+        const raw = docSnap.data();
+        if (raw?._deleted === true) return;
+        if (STRICT_REAL_DATA_ONLY && isSyntheticRecord(raw)) return;
+        items.push(sanitizeCustomerRecord(normalizeDocumentOnRead('customers', { ...raw, id: docSnap.id })));
       });
 
       items.sort((a, b) => (a.companyName || a.customerName || '').localeCompare(b.companyName || b.customerName || ''));

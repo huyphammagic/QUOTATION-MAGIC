@@ -232,8 +232,8 @@ export const SAMPLE_GOLDEN_HOUR_LEADS: GoldenHourLeadEvent[] = [
   }
 ];
 
-let memoryReadReceipts: QuotationReadReceipt[] = [...SAMPLE_READ_RECEIPTS];
-let memoryGoldenLeads: GoldenHourLeadEvent[] = [...SAMPLE_GOLDEN_HOUR_LEADS];
+let memoryReadReceipts: QuotationReadReceipt[] = typeof window === 'undefined' ? [...SAMPLE_READ_RECEIPTS] : [];
+let memoryGoldenLeads: GoldenHourLeadEvent[] = typeof window === 'undefined' ? [...SAMPLE_GOLDEN_HOUR_LEADS] : [];
 
 /**
  * Lấy toàn bộ nhật ký đọc báo giá (hoặc lọc theo mã báo giá)

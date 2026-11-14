@@ -9,9 +9,11 @@ import {
   ExpiringQuoteItem, 
   FollowUpAnalyticsSummary, 
   UserRole, 
-  AnalyticsLanguage 
+  AnalyticsLanguage,
+  QuotationFunnelStage 
 } from '../../types/analytics';
 import { QuoteData } from '../../types/logistics';
+import { getGoldenHourLeads } from '../../services/goldenHour/goldenHourService';
 import { 
   Compass, 
   TrendingUp, 
@@ -38,7 +40,10 @@ import {
   Award,
   BarChart3,
   Flame,
-  ArrowRight
+  ArrowRight,
+  GitCommit,
+  Check,
+  CheckCheck
 } from 'lucide-react';
 
 interface ExecutiveCockpitViewProps {
@@ -61,6 +66,8 @@ interface ExecutiveCockpitViewProps {
   language: AnalyticsLanguage;
   onSelectQuote?: (quoteId: string) => void;
   onSwitchTab?: (tab: any) => void;
+  funnelStages?: QuotationFunnelStage[];
+  onOpenGoldenHourRadar?: () => void;
 }
 
 export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
@@ -78,6 +85,8 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
   language,
   onSelectQuote,
   onSwitchTab,
+  funnelStages = [],
+  onOpenGoldenHourRadar,
 }) => {
   const isVi = language === 'vi';
 
@@ -86,6 +95,9 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
   const [simWinRateDelta, setSimWinRateDelta] = useState<number>(3); // +3%
   const [simBuyCostDelta, setSimBuyCostDelta] = useState<number>(25); // +$25/TEU saved
   const [simCycleDelta, setSimCycleDelta] = useState<number>(2); // -2 days cycle
+  const [simVolumeDelta, setSimVolumeDelta] = useState<number>(10); // +10% RFQ volume
+  const [appliedScenarioToast, setAppliedScenarioToast] = useState<string | null>(null);
+
   const [selectedLaneMatrixCategory, setSelectedLaneMatrixCategory] = useState<'ALL' | 'STAR' | 'COW' | 'QUESTION' | 'RISK'>('ALL');
   const [showPrintBriefing, setShowPrintBriefing] = useState<boolean>(false);
 
@@ -98,12 +110,15 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
 
   const wonUsd = kpis?.wonValueByCurrency?.['USD'] || 0;
   const wonVnd = kpis?.wonValueByCurrency?.['VND'] || 0;
-  const totalUsd = kpis?.totalValueByCurrency?.['USD'] || 0;
-  const totalVnd = kpis?.totalValueByCurrency?.['VND'] || 0;
   const avgUsd = kpis?.avgQuoteValueByCurrency?.['USD'] || 0;
 
+  // Golden Hour Telemetry Leads
+  const goldenLeads = useMemo(() => {
+    return getGoldenHourLeads();
+  }, []);
+  const activeGoldenLeads = goldenLeads.filter(l => l.isCurrentlyOnline || l.goldenWindowRemainingMinutes > 0);
+
   // 1. Sales Velocity ($ / Day)
-  // Formula: Velocity = (Won Quotes * Avg Won USD * Win Rate %) / Avg Sales Cycle Days
   const salesVelocity = useMemo(() => {
     const cycleDays = Math.max(kpis.avgSalesCycleDays || 5, 1);
     const winRateFrac = Math.min(Math.max((kpis.winRatePercent || 0) / 100, 0.05), 1);
@@ -116,7 +131,6 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
     const currentActual = wonUsd;
     const pendingQuotes = quotes.filter(q => q.status === 'PENDING_APPROVAL' || q.status === 'SENT' || q.status === 'VIEWED');
     const pendingPipelineUsd = pendingQuotes.reduce((sum, q) => sum + (q.grandTotalUsd || 0), 0);
-    // Weighted forecast: 35% probability of closing pending deals
     const weightedForecastUsd = currentActual + (pendingPipelineUsd * 0.35);
     const quotaAchievementPercent = targetQuotaUsd > 0 ? Math.min(Math.round((currentActual / targetQuotaUsd) * 100), 200) : 0;
     const projectedQuotaPercent = targetQuotaUsd > 0 ? Math.min(Math.round((weightedForecastUsd / targetQuotaUsd) * 100), 250) : 0;
@@ -135,7 +149,6 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
   const laneMatrix = useMemo(() => {
     if (!laneAnalytics || laneAnalytics.length === 0) return [];
     
-    const avgMargin = 14; // benchmark 14%
     const totalVolume = laneAnalytics.reduce((acc, l) => acc + (l.totalQuotes || 0), 0);
     const avgVolumePerLane = totalVolume / Math.max(laneAnalytics.length, 1);
 
@@ -195,7 +208,6 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
   const winLossRootCauses = useMemo(() => {
     const totalLost = Math.max(kpis.lostQuotesCount || 0, 1);
     
-    // Categorize reasons based on real logistics market dynamics
     return [
       {
         reasonVi: 'Giá cước biển/hàng không cao hơn thị trường',
@@ -266,7 +278,7 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
       });
   }, [salesPerformance, quotes]);
 
-  // 6. High-Stakes Quotes At Risk (Value > $2,000 or Expiring in 48h)
+  // 6. High-Stakes Quotes At Risk (Value > $1,500 or Expiring in 48h)
   const highStakesAtRiskQuotes = useMemo(() => {
     return quotes.filter(q => {
       const isPending = q.status === 'PENDING_APPROVAL' || q.status === 'SENT' || q.status === 'VIEWED' || q.status === 'DRAFT';
@@ -275,7 +287,7 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
     }).slice(0, 5);
   }, [quotes]);
 
-  // 7. Executive What-If Growth Simulator Calculations
+  // 7. Executive What-If Growth Simulator Calculations (4 Levers)
   const simulationResults = useMemo(() => {
     const baseWinRate = Math.max(kpis.winRatePercent || 30, 10);
     const newWinRate = Math.min(baseWinRate + simWinRateDelta, 95);
@@ -292,26 +304,51 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
     const currentCycle = Math.max(kpis.avgSalesCycleDays || 6, 2);
     const newCycle = Math.max(currentCycle - simCycleDelta, 1);
     const velocityGainPercent = Math.round(((currentCycle - newCycle) / currentCycle) * 100);
+
+    // Incremental revenue from volume expansion
+    const incrementalVolumeRevenueUsd = Math.round(wonUsd * (simVolumeDelta / 100));
     
-    // Total estimated net monthly bottom-line profit increase
-    const totalExtraNetProfitUsd = Math.round((incrementalRevenueFromWinRateUsd * 0.15) + incrementalCostSavingsUsd);
+    // Total estimated net monthly bottom-line profit increase (Avg margin ~14%)
+    const totalExtraNetProfitUsd = Math.round(
+      (incrementalRevenueFromWinRateUsd * 0.15) + 
+      incrementalCostSavingsUsd + 
+      (incrementalVolumeRevenueUsd * 0.14)
+    );
     const totalExtraNetProfitVnd = totalExtraNetProfitUsd * 25400;
+
+    // Projected new total revenue
+    const projectedNewRevenueUsd = wonUsd + incrementalRevenueFromWinRateUsd + incrementalVolumeRevenueUsd;
+    const extraWonDeals = Math.round(kpis.wonQuotesCount * (extraWinRateMultiplier + (simVolumeDelta / 100) * 0.4));
 
     return {
       baseWinRate,
       newWinRate,
       incrementalRevenueFromWinRateUsd,
       incrementalCostSavingsUsd,
+      incrementalVolumeRevenueUsd,
       velocityGainPercent,
       totalExtraNetProfitUsd,
-      totalExtraNetProfitVnd
+      totalExtraNetProfitVnd,
+      projectedNewRevenueUsd,
+      extraWonDeals
     };
-  }, [kpis, wonUsd, simWinRateDelta, simBuyCostDelta, simCycleDelta]);
+  }, [kpis, wonUsd, simWinRateDelta, simBuyCostDelta, simCycleDelta, simVolumeDelta]);
 
-  // 8. C-Level Executive Action Directives (Synthesized Leadership Insights)
+  // Handle Apply Scenario Target
+  const handleApplyScenario = () => {
+    const newTarget = Math.round(wonUsd + simulationResults.totalExtraNetProfitUsd * 2);
+    setTargetQuotaUsd(newTarget);
+    setAppliedScenarioToast(
+      isVi 
+        ? `⚡ Đã cập nhật mục tiêu quý mới: $${formatMoney(newTarget)} USD (+${simWinRateDelta}% Win Rate, -$${simBuyCostDelta}/TEU cước mua)!`
+        : `⚡ Target quota updated: $${formatMoney(newTarget)} USD!`
+    );
+    setTimeout(() => setAppliedScenarioToast(null), 4000);
+  };
+
+  // 8. C-Level Executive Action Directives
   const executiveDirectives = useMemo(() => {
     const topLane = laneMatrix.find(l => l.classification === 'STAR') || laneMatrix[0];
-    const riskLane = laneMatrix.find(l => l.classification === 'COW' || l.classification === 'RISK');
     const topRep = salesLeague[0];
 
     return [
@@ -320,7 +357,7 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
         titleVi: `Khoá Allocation Tuyến Vàng: ${topLane ? `${topLane.origin} ➔ ${topLane.destination}` : 'Cát Lái ➔ Los Angeles'}`,
         titleEn: `Lock Allocation on Golden Lane: ${topLane ? `${topLane.origin} ➔ ${topLane.destination}` : 'Cat Lai ➔ Los Angeles'}`,
         descVi: `Tuyến này đang có Win Rate ${topLane?.winRate || 68}% và khối lượng dẫn đầu. Đề nghị Giám đốc Vận tải làm việc trực tiếp với hãng tàu (ONE, COSCO, Maersk) để giữ cố định 20 FEU/tuần với giá cước ưu đãi.`,
-        descEn: `This lane generates ${topLane?.winRate || 68}% win rate. Operations Director should secure 20 FEU/week fixed contract with ocean carriers.`,
+        descEn: `This lane generates ${topLane?.winRate || 68}% win rate. Secure 20 FEU/week fixed contract with ocean carriers.`,
         priority: 'URGENT',
         targetRoleVi: 'Trưởng Phòng Pricing & Ops',
         targetRoleEn: 'Pricing & Ops Head'
@@ -513,7 +550,7 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
         </div>
       </div>
 
-      {/* PRINTABLE EXECUTIVE BRIEFING MODAL / ACCORDION */}
+      {/* PRINTABLE EXECUTIVE BRIEFING ACCORDION */}
       {showPrintBriefing && (
         <div className="bg-white rounded-2xl border-2 border-indigo-500/40 p-6 shadow-xl space-y-4 animate-in fade-in duration-200">
           <div className="flex items-center justify-between border-b border-slate-200 pb-3">
@@ -568,6 +605,168 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* BENTO ROW: LIVE CONVERSION FUNNEL & RADAR GIỜ VÀNG */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* LEFT (7 COLS): QUOTATION CONVERSION FUNNEL */}
+        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold">
+                  <GitCommit className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    {isVi ? 'Phễu Chuyển Đổi Báo Giá Thời Gian Thực (Quotation Funnel)' : 'Real-Time Quotation Conversion Funnel'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    {isVi ? 'Theo dõi tỷ lệ rớt deal qua từng bước từ RFQ đến Chốt hợp đồng' : 'Conversion efficiency from draft creation to closed booking'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onSwitchTab && onSwitchTab('FUNNEL')}
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+              >
+                <span>{isVi ? 'Chi tiết phễu' : 'Full Funnel'}</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Funnel Visual Steps */}
+            <div className="mt-4 space-y-2.5">
+              {(funnelStages.length > 0 ? funnelStages : [
+                { id: '1', labelVi: '1. Khởi Tạo (Draft)', count: quotes.length, conversionRateFromPrev: 100, dropOffCount: 0 },
+                { id: '2', labelVi: '2. Phê Duyệt Nội Bộ', count: Math.round(quotes.length * 0.88), conversionRateFromPrev: 88, dropOffCount: Math.round(quotes.length * 0.12) },
+                { id: '3', labelVi: '3. Đã Phát Hành Gửi Khách', count: Math.round(quotes.length * 0.76), conversionRateFromPrev: 86, dropOffCount: Math.round(quotes.length * 0.12) },
+                { id: '4', labelVi: '4. Khách Xem & Đàm Phán', count: Math.round(quotes.length * 0.54), conversionRateFromPrev: 71, dropOffCount: Math.round(quotes.length * 0.22) },
+                { id: '5', labelVi: '5. Chốt Đơn (Won Booking) 🏆', count: kpis.wonQuotesCount || Math.round(quotes.length * 0.35), conversionRateFromPrev: 65, dropOffCount: Math.round(quotes.length * 0.19) },
+              ]).map((stage, idx) => {
+                const isFinal = idx === 4;
+                const widthPercent = Math.max(20, 100 - (idx * 16));
+                return (
+                  <div key={stage.id} className="relative">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-semibold text-slate-700">
+                        {stage.labelVi || stage.id}
+                      </span>
+                      <div className="flex items-center gap-2 font-mono">
+                        <span className="font-bold text-slate-900">{stage.count} hồ sơ</span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${isFinal ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
+                          {stage.conversionRateFromPrev}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          isFinal 
+                            ? 'bg-gradient-to-r from-emerald-500 to-teal-500' 
+                            : idx === 0 
+                            ? 'bg-slate-400' 
+                            : 'bg-indigo-500'
+                        }`}
+                        style={{ width: `${widthPercent}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+            <span>Tỷ lệ chuyển đổi tổng thể (End-to-End): <strong className="text-emerald-700 font-bold font-mono">{kpis.winRatePercent}%</strong></span>
+            <span className="text-slate-400">Thời gian trung bình: <strong className="text-slate-700 font-mono">{kpis.avgSalesCycleDays || 5} ngày</strong></span>
+          </div>
+        </div>
+
+        {/* RIGHT (5 COLS): RADAR GIỜ VÀNG & HOT LEADS TELEMETRY */}
+        <div className="lg:col-span-5 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 rounded-2xl border border-rose-200/90 p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between border-b border-rose-200/60 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-rose-600 text-white flex items-center justify-center font-bold shadow-xs">
+                  <Flame className="w-4 h-4 fill-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    {isVi ? 'Radar Giờ Vàng (Hot Leads Telemetry)' : 'Golden Hour Real-Time Radar'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    {isVi ? 'Bắt nhịp khách đang đọc báo giá & đếm ngược 45 phút' : 'Active prospects reviewing quotes right now'}
+                  </p>
+                </div>
+              </div>
+
+              <span className="text-[10px] font-mono font-bold bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 rounded-full animate-pulse">
+                {activeGoldenLeads.length} online
+              </span>
+            </div>
+
+            {/* Leads Feed */}
+            <div className="mt-3 space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
+              {activeGoldenLeads.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400">
+                  {isVi ? 'Hiện không có khách nào trong khung giờ vàng' : 'No prospects currently in golden window'}
+                </div>
+              ) : (
+                activeGoldenLeads.slice(0, 3).map((lead) => (
+                  <div 
+                    key={lead.id}
+                    className="p-3 bg-white rounded-xl border border-rose-100 shadow-2xs hover:border-rose-300 transition-all"
+                  >
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-900 truncate max-w-[180px]">
+                        {lead.customerName}
+                      </span>
+                      <span className="text-[10px] font-mono font-bold text-rose-700 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200">
+                        Còn {lead.goldenWindowRemainingMinutes}p
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
+                      <span className="truncate">{lead.pol} ➔ {lead.pod} ({lead.carrier})</span>
+                      <strong className="text-slate-800 font-mono">${formatMoney(lead.grandTotalUsd)}</strong>
+                    </div>
+                    <div className="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                      <span className="text-emerald-700 font-semibold">{lead.contactPerson || 'Phụ trách XNK'}</span>
+                      <button
+                        type="button"
+                        onClick={() => onOpenGoldenHourRadar && onOpenGoldenHourRadar()}
+                        className="text-rose-700 font-bold hover:underline cursor-pointer flex items-center gap-1"
+                      >
+                        <span>Mở Kịch Bản Gọi</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="mt-3 pt-2.5 border-t border-rose-200/60 flex items-center justify-between">
+            <span className="text-[11px] text-slate-500">
+              {isVi ? 'Gọi trong 45 phút tăng tỷ lệ chốt x3.2' : 'Calling within 45m triples win rate'}
+            </span>
+            {onOpenGoldenHourRadar && (
+              <button
+                type="button"
+                onClick={onOpenGoldenHourRadar}
+                className="px-2.5 py-1 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
+              >
+                <Zap className="w-3 h-3" />
+                <span>Xem Radar</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+      </div>
 
       {/* 2. C-LEVEL STRATEGIC ACTION DIRECTIVES (3 KEY DECISIONS) */}
       <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
@@ -749,60 +948,47 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
             {winLossRootCauses.map((rc, idx) => (
               <div 
                 key={idx}
-                className="p-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-all space-y-2"
+                className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300 transition-all space-y-2"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-900">
-                    {isVi ? rc.reasonVi : rc.reasonEn}
-                  </span>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-rose-600">
-                      {rc.sharePercent}%
-                    </span>
-                    <span className="text-[10px] text-slate-400">
-                      ({rc.impactCount} {isVi ? 'vụ' : 'deals'})
+                    <span className={`w-2 h-2 rounded-full ${rc.severity === 'HIGH' ? 'bg-rose-500' : 'bg-amber-500'}`} />
+                    <span className="text-xs font-bold text-slate-800">
+                      {isVi ? rc.reasonVi : rc.reasonEn}
                     </span>
                   </div>
+                  <span className="font-mono font-bold text-xs text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
+                    {rc.sharePercent}% ({rc.impactCount} đơn)
+                  </span>
                 </div>
 
-                {/* Bar */}
-                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-rose-500 rounded-full"
+                    className={`h-full rounded-full ${rc.severity === 'HIGH' ? 'bg-rose-500' : 'bg-amber-500'}`} 
                     style={{ width: `${rc.sharePercent}%` }}
                   />
                 </div>
 
-                <div className="pt-1.5 border-t border-slate-100 flex items-start gap-1.5 text-[11px] text-slate-600">
-                  <span className="font-semibold text-indigo-700 shrink-0">
-                    {isVi ? 'Đối sách đề xuất:' : 'Action plan:'}
-                  </span>
+                <div className="text-[11px] text-slate-600 bg-white p-2 rounded-lg border border-slate-100 flex items-start gap-1.5">
+                  <span className="font-bold text-indigo-700 shrink-0">{isVi ? 'Đối sách:' : 'Action:'}</span>
                   <span>{isVi ? rc.counterMeasureVi : rc.counterMeasureEn}</span>
                 </div>
               </div>
             ))}
           </div>
-
-          {/* Quick link to Competitor Radar */}
-          <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-            <span className="text-slate-500">
-              {isVi ? 'Muốn xem dữ liệu cước của đối thủ VN?' : 'Need Vietnamese competitor rate intelligence?'}
-            </span>
-            <button
-              type="button"
-              onClick={() => onSwitchTab && onSwitchTab('WIN_LOSS')}
-              className="font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 cursor-pointer"
-            >
-              <span>{isVi ? 'Xem Phân Tích Thắng / Thua Chi Tiết' : 'Open Full Win/Loss Analytics'}</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
         </div>
 
       </div>
 
-      {/* 4. EXECUTIVE WHAT-IF PROFIT GROWTH SIMULATOR (SLIDERS) */}
-      <div className="bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 text-white rounded-2xl p-6 border border-indigo-800/60 shadow-xl">
+      {/* 4. EXECUTIVE WHAT-IF PROFIT GROWTH SIMULATOR (4 LEVERS) */}
+      <div className="bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 text-white rounded-2xl p-6 border border-indigo-800/60 shadow-xl relative overflow-hidden">
+        {appliedScenarioToast && (
+          <div className="absolute top-4 right-4 z-20 bg-emerald-500 text-slate-950 px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-lg animate-in fade-in duration-150 flex items-center gap-1.5">
+            <CheckCheck className="w-4 h-4" />
+            <span>{appliedScenarioToast}</span>
+          </div>
+        )}
+
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-indigo-800/40 pb-4">
           <div>
             <div className="flex items-center gap-2">
@@ -813,14 +999,14 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
                 {isVi ? 'MÔ PHỎNG KỊCH BẢN TĂNG TRƯỞNG LỢI NHUẬN (EXECUTIVE WHAT-IF SIMULATOR)' : 'EXECUTIVE WHAT-IF PROFIT GROWTH SIMULATOR'}
               </h3>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-400 mt-1 max-w-2xl">
               {isVi 
-                ? 'Điều chỉnh các đòn bẩy quản trị (Tỷ lệ thắng, Đàm phán cước mua hãng tàu, Rút ngắn chu kỳ bán hàng) để tính ngay lợi nhuận ròng tăng thêm.'
-                : 'Adjust strategic levers to forecast incremental bottom-line net profit impact in real-time.'}
+                ? 'Điều chỉnh 4 đòn bẩy quản trị (Tỷ lệ thắng, Đàm phán cước mua hãng tàu, Rút ngắn chu kỳ, Mở rộng RFQ) để tính ngay mức tăng lợi nhuận ròng hàng tháng.'
+                : 'Adjust 4 strategic levers to forecast incremental bottom-line net profit impact in real-time.'}
             </p>
           </div>
 
-          <div className="text-right">
+          <div className="text-right shrink-0">
             <span className="text-[11px] text-slate-400 block">{isVi ? 'Lợi nhuận ròng tăng thêm dự kiến:' : 'Projected Extra Net Profit:'}</span>
             <div className="text-2xl font-black font-mono text-emerald-400">
               +${formatMoney(simulationResults.totalExtraNetProfitUsd)}
@@ -831,14 +1017,14 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
           </div>
         </div>
 
-        {/* Interactive Sliders */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+        {/* 4 Interactive Levers Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
           
           {/* SLIDER 1: WIN RATE BOOST */}
-          <div className="bg-slate-800/60 p-4 rounded-xl border border-slate-700/80 space-y-3">
+          <div className="bg-slate-800/60 p-4 rounded-xl border border-slate-700/80 space-y-2.5">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-slate-300">
-                {isVi ? 'Tăng Tỷ Lệ Thắng (Win Rate)' : 'Win Rate Boost'}
+                {isVi ? '1. Tăng Tỷ Lệ Thắng (Win Rate)' : '1. Win Rate Boost'}
               </span>
               <span className="font-mono font-bold text-emerald-400 text-sm">
                 +{simWinRateDelta}% ({simulationResults.newWinRate}%)
@@ -859,15 +1045,15 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
               <span>+15%</span>
             </div>
             <p className="text-[11px] text-slate-400">
-              {isVi ? `Đóng góp doanh số thêm: +$${formatMoney(simulationResults.incrementalRevenueFromWinRateUsd)}` : `Revenue contribution: +$${formatMoney(simulationResults.incrementalRevenueFromWinRateUsd)}`}
+              {isVi ? `Doanh thu thêm: +$${formatMoney(simulationResults.incrementalRevenueFromWinRateUsd)}` : `Revenue: +$${formatMoney(simulationResults.incrementalRevenueFromWinRateUsd)}`}
             </p>
           </div>
 
           {/* SLIDER 2: BUY COST REDUCTION */}
-          <div className="bg-slate-800/60 p-4 rounded-xl border border-slate-700/80 space-y-3">
+          <div className="bg-slate-800/60 p-4 rounded-xl border border-slate-700/80 space-y-2.5">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-slate-300">
-                {isVi ? 'Đàm Phán Hạ Cước Mua Hãng Tàu' : 'Carrier Buy Cost Savings'}
+                {isVi ? '2. Đàm Phán Hạ Cước Hãng Tàu' : '2. Carrier Cost Savings'}
               </span>
               <span className="font-mono font-bold text-indigo-400 text-sm">
                 -${simBuyCostDelta}/TEU
@@ -876,7 +1062,7 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
             <input 
               type="range"
               min="0"
-              max="60"
+              max="80"
               step="5"
               value={simBuyCostDelta}
               onChange={(e) => setSimBuyCostDelta(Number(e.target.value))}
@@ -884,19 +1070,19 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
             />
             <div className="flex justify-between text-[10px] text-slate-400">
               <span>$0</span>
-              <span>-$30/TEU</span>
-              <span>-$60/TEU</span>
+              <span>-$40/TEU</span>
+              <span>-$80/TEU</span>
             </div>
             <p className="text-[11px] text-slate-400">
-              {isVi ? `Tiết kiệm chi phí trực tiếp: +$${formatMoney(simulationResults.incrementalCostSavingsUsd)}` : `Direct bottom-line savings: +$${formatMoney(simulationResults.incrementalCostSavingsUsd)}`}
+              {isVi ? `Tiết kiệm trực tiếp: +$${formatMoney(simulationResults.incrementalCostSavingsUsd)}` : `Direct savings: +$${formatMoney(simulationResults.incrementalCostSavingsUsd)}`}
             </p>
           </div>
 
           {/* SLIDER 3: SALES CYCLE REDUCTION */}
-          <div className="bg-slate-800/60 p-4 rounded-xl border border-slate-700/80 space-y-3">
+          <div className="bg-slate-800/60 p-4 rounded-xl border border-slate-700/80 space-y-2.5">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-slate-300">
-                {isVi ? 'Rút Ngắn Chu Kỳ Chốt Deal' : 'Sales Cycle Reduction'}
+                {isVi ? '3. Rút Ngắn Chu Kỳ Chốt Deal' : '3. Sales Cycle Speed'}
               </span>
               <span className="font-mono font-bold text-amber-400 text-sm">
                 -{simCycleDelta} {isVi ? 'ngày' : 'days'}
@@ -917,10 +1103,60 @@ export const ExecutiveCockpitView: React.FC<ExecutiveCockpitViewProps> = ({
               <span>-5d</span>
             </div>
             <p className="text-[11px] text-slate-400">
-              {isVi ? `Tốc độ luân chuyển vốn tăng: +${simulationResults.velocityGainPercent}%` : `Capital velocity boost: +${simulationResults.velocityGainPercent}%`}
+              {isVi ? `Vòng quay vốn tăng: +${simulationResults.velocityGainPercent}%` : `Velocity gain: +${simulationResults.velocityGainPercent}%`}
             </p>
           </div>
 
+          {/* SLIDER 4: QUOTATION VOLUME EXPANSION */}
+          <div className="bg-slate-800/60 p-4 rounded-xl border border-slate-700/80 space-y-2.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-slate-300">
+                {isVi ? '4. Tăng Số Báo Giá (RFQ)' : '4. RFQ Volume Boost'}
+              </span>
+              <span className="font-mono font-bold text-sky-400 text-sm">
+                +{simVolumeDelta}%
+              </span>
+            </div>
+            <input 
+              type="range"
+              min="0"
+              max="50"
+              step="5"
+              value={simVolumeDelta}
+              onChange={(e) => setSimVolumeDelta(Number(e.target.value))}
+              className="w-full accent-sky-500 cursor-pointer"
+            />
+            <div className="flex justify-between text-[10px] text-slate-400">
+              <span>0%</span>
+              <span>+25%</span>
+              <span>+50%</span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              {isVi ? `Doanh số mở rộng: +$${formatMoney(simulationResults.incrementalVolumeRevenueUsd)}` : `Volume gain: +$${formatMoney(simulationResults.incrementalVolumeRevenueUsd)}`}
+            </p>
+          </div>
+
+        </div>
+
+        {/* Action Bar & Sensitivity Insight */}
+        <div className="mt-6 pt-4 border-t border-indigo-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="text-xs text-slate-300 flex items-center gap-2">
+            <Info className="w-4 h-4 text-indigo-400 shrink-0" />
+            <span>
+              {isVi 
+                ? 'Đòn bẩy lợi nhuận cao nhất: Đàm phán giảm -$25/TEU giá cước hãng tàu mang lại lợi nhuận ròng trực tiếp cao gấp 2.4 lần so với chỉ giảm giá bán.'
+                : 'Highest ROI lever: Ocean carrier rate negotiation produces ~2.4x more net margin than price cuts.'}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleApplyScenario}
+            className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2 shrink-0 self-start sm:self-auto"
+          >
+            <Target className="w-4 h-4 text-slate-950" />
+            <span>{isVi ? 'Áp Dụng Kịch Bản Này Vào Mục Tiêu Quý' : 'Apply Scenario as Quarterly Target'}</span>
+          </button>
         </div>
       </div>
 

@@ -36,6 +36,11 @@ service firebase.storage {
       allow read, write: if true;
     }
 
+    // Modular per-workspace Firebase Storage Cloud Vault (14+ logistics subsystems)
+    match /cloudVault/{workspaceId}/{allPaths=**} {
+      allow read, write: if true;
+    }
+
     // Default open access for application assets across all devices
     match /{allPaths=**} {
       allow read, write: if true;

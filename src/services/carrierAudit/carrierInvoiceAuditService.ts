@@ -9,8 +9,7 @@ import {
   ProfitLeakageGuardMetrics,
   DisputeResolutionStatus
 } from '../../types/carrierInvoiceAudit';
-
-const STORAGE_KEY = 'bogi_carrier_invoice_audits_v1';
+import { getModuleData, setModuleData } from '../firebase/cloudStorageVaultService';
 
 export const PRESEEDED_CARRIER_INVOICE_AUDITS: CarrierInvoiceAuditRecord[] = [
   {
@@ -274,21 +273,14 @@ export class CarrierInvoiceAuditService {
    * Lấy danh sách toàn bộ hồ sơ đối soát hóa đơn hãng tàu
    */
   static getAuditRecords(): CarrierInvoiceAuditRecord[] {
-    try {
-      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
-          }
-        }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(PRESEEDED_CARRIER_INVOICE_AUDITS));
-      }
-    } catch {
-      // fallback
+    if (typeof window === 'undefined') {
+      return PRESEEDED_CARRIER_INVOICE_AUDITS;
     }
-    return PRESEEDED_CARRIER_INVOICE_AUDITS;
+    try {
+      return [...getModuleData<CarrierInvoiceAuditRecord[]>('carrier_audits', [])];
+    } catch {
+      return [];
+    }
   }
 
   static getAuditRecordById(id: string): CarrierInvoiceAuditRecord | undefined {
@@ -311,12 +303,12 @@ export class CarrierInvoiceAuditService {
       updatedRecords = [record, ...records];
     }
 
-    try {
-      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedRecords));
+    if (typeof window !== 'undefined') {
+      try {
+        setModuleData('carrier_audits', updatedRecords);
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore storage quota
     }
     return record;
   }

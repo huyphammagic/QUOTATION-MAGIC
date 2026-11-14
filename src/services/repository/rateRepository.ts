@@ -12,8 +12,11 @@ import {
   where
 } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
+import { getVaultActiveCompanyId } from '../firebase/cloudStorageVaultService';
 import { RateMasterItem, ChargeMasterItem, RateHistoryItem } from '../../types/masterRate';
 import { SurchargeItem } from '../../types/logistics';
+import { COLLECTION_SCHEMA_VERSIONS, normalizeDocumentOnRead } from '../firebase/schemaMigrationService';
+import { softDeleteRecord } from '../firebase/dataVaultService';
 
 const COLLECTIONS = {
   RATE_MASTERS: 'rateMasters',
@@ -47,7 +50,7 @@ export function invalidateRateCaches(): void {
  * ============================================================================
  */
 export async function fetchRateMasters(forceRefresh = false, companyId?: string): Promise<RateMasterItem[]> {
-  const targetCompany = companyId || localStorage.getItem('logistics_active_company_id') || undefined;
+  const targetCompany = companyId || getVaultActiveCompanyId() || undefined;
   const now = Date.now();
   if (!forceRefresh && !targetCompany && memoryRatesCache && (now - memoryRatesCache.cachedAt < CACHE_TTL_MS)) {
     return memoryRatesCache.data;
@@ -83,7 +86,9 @@ export async function fetchRateMasters(forceRefresh = false, companyId?: string)
     const items: RateMasterItem[] = [];
     if (snap && !snap.empty) {
       snap.forEach((d: any) => {
-        items.push({ ...d.data() as RateMasterItem, id: d.id });
+        const raw = d.data();
+        if (raw?._deleted === true) return;
+        items.push(normalizeDocumentOnRead('rateMasters', { ...raw, id: d.id }) as RateMasterItem);
       });
     }
 
@@ -114,6 +119,7 @@ export async function saveRateMaster(rate: RateMasterItem): Promise<RateMasterIt
     const docRef = doc(db, COLLECTIONS.RATE_MASTERS, rateId);
     await setDoc(docRef, {
       ...record,
+      _schemaVersion: COLLECTION_SCHEMA_VERSIONS.rateMasters,
       _updatedAt: serverTimestamp(),
     }, { merge: true });
 
@@ -129,20 +135,23 @@ export async function deleteRateMaster(id: string, softDelete = true): Promise<b
   if (!db || !id) return false;
 
   try {
-    const docRef = doc(db, COLLECTIONS.RATE_MASTERS, id);
     if (softDelete) {
+      const docRef = doc(db, COLLECTIONS.RATE_MASTERS, id);
       await setDoc(docRef, {
         status: 'INACTIVE',
+        _deleted: true,
+        _deletedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString().slice(0, 10),
         _updatedAt: serverTimestamp(),
       }, { merge: true });
+      await softDeleteRecord(COLLECTIONS.RATE_MASTERS, id);
     } else {
-      await deleteDoc(docRef);
+      await softDeleteRecord(COLLECTIONS.RATE_MASTERS, id);
     }
     invalidateRateCaches();
     return true;
   } catch (err) {
-    console.error(`[rateRepository] Error deleting rate master ${id}:`, err);
+    console.error(`[rateRepository] Error soft-deleting rate master ${id}:`, err);
     return false;
   }
 }
@@ -169,7 +178,9 @@ export async function fetchChargeMasters(forceRefresh = false): Promise<ChargeMa
     const snap = await getDocs(q);
     const items: ChargeMasterItem[] = [];
     snap.forEach((d) => {
-      items.push({ ...d.data() as ChargeMasterItem, id: d.id });
+      const raw = d.data();
+      if (raw?._deleted === true) return;
+      items.push(normalizeDocumentOnRead('chargeMasters', { ...raw, id: d.id }) as ChargeMasterItem);
     });
 
     memoryChargesCache = { data: items, cachedAt: now };
@@ -197,6 +208,7 @@ export async function saveChargeMaster(charge: ChargeMasterItem): Promise<Charge
     const docRef = doc(db, COLLECTIONS.CHARGE_MASTERS, chargeId);
     await setDoc(docRef, {
       ...record,
+      _schemaVersion: COLLECTION_SCHEMA_VERSIONS.chargeMasters,
       _updatedAt: serverTimestamp(),
     }, { merge: true });
 
@@ -236,7 +248,9 @@ export async function fetchSurcharges(forceRefresh = false): Promise<SurchargeIt
 
     const items: SurchargeItem[] = [];
     snap.forEach((d) => {
-      items.push({ ...d.data() as SurchargeItem, id: d.id });
+      const raw = d.data();
+      if (raw?._deleted === true) return;
+      items.push(normalizeDocumentOnRead('surcharges', { ...raw, id: d.id }) as SurchargeItem);
     });
 
     memorySurchargesCache = { data: items, cachedAt: now };
@@ -263,6 +277,7 @@ export async function saveSurcharge(item: SurchargeItem): Promise<SurchargeItem>
     const docRef = doc(db, COLLECTIONS.SURCHARGES, itemId);
     await setDoc(docRef, {
       ...record,
+      _schemaVersion: COLLECTION_SCHEMA_VERSIONS.surcharges,
       _updatedAt: serverTimestamp(),
     }, { merge: true });
 
@@ -278,12 +293,11 @@ export async function deleteSurcharge(id: string): Promise<boolean> {
   if (!db || !id) return false;
 
   try {
-    const docRef = doc(db, COLLECTIONS.SURCHARGES, id);
-    await deleteDoc(docRef);
+    const res = await softDeleteRecord(COLLECTIONS.SURCHARGES, id);
     invalidateRateCaches();
-    return true;
+    return res.success;
   } catch (err) {
-    console.error(`[rateRepository] Error deleting surcharge ${id}:`, err);
+    console.error(`[rateRepository] Error soft-deleting surcharge ${id}:`, err);
     return false;
   }
 }

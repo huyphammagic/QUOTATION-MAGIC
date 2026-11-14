@@ -53,6 +53,21 @@ import {
   deleteCustomer as repoDeleteCustomer, 
   sanitizeCustomerRecord 
 } from '../repository/customerRepository';
+import {
+  COLLECTION_SCHEMA_VERSIONS,
+  normalizeDocumentOnRead,
+  handleFirestoreError,
+  OperationType,
+} from './schemaMigrationService';
+import {
+  STRICT_REAL_DATA_ONLY,
+  isSyntheticRecord,
+  stampRealDataOrigin,
+  createImmutableSnapshot,
+  softDeleteRecord,
+} from './dataVaultService';
+
+export { handleFirestoreError, OperationType };
 
 const COLLECTIONS = {
   QUOTES: 'quotes',
@@ -78,13 +93,24 @@ const COLLECTIONS = {
 
 export async function saveQuoteToFirestore(quote: QuoteData): Promise<void> {
   if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
+  if (STRICT_REAL_DATA_ONLY && isSyntheticRecord(quote)) {
+    throw new Error('STRICT_REAL_DATA_GUARD: Dữ liệu mẫu/giả lập không được phép lưu lên Firestore.');
+  }
 
   try {
+    const stamped = stampRealDataOrigin(quote);
+    const nextRev = Math.max(Number((quote as any)._rev || 0), Number(quote.version || 1));
     const docRef = doc(db, COLLECTIONS.QUOTES, quote.id);
     await setDoc(docRef, {
-      ...quote,
+      ...stamped,
+      _deleted: false,
+      _rev: nextRev,
+      _schemaVersion: COLLECTION_SCHEMA_VERSIONS.quotes,
       _updatedAt: serverTimestamp(),
     }, { merge: true });
+
+    // Non-blocking append-only snapshot
+    createImmutableSnapshot(COLLECTIONS.QUOTES, quote.id, { ...stamped, _rev: nextRev }, 'UPDATE').catch(() => {});
 
     // Update in-memory cache only after confirmed write
     const localQuotes = loadSavedQuotes();
@@ -104,6 +130,9 @@ export async function saveQuoteToFirestore(quote: QuoteData): Promise<void> {
     });
   } catch (error) {
     console.error('Firestore quote save error:', error);
+    if (String((error as any)?.message || '').toLowerCase().includes('permission')) {
+      handleFirestoreError(error, OperationType.WRITE, `${COLLECTIONS.QUOTES}/${quote.id}`);
+    }
     throw error;
   }
 }
@@ -119,8 +148,11 @@ export async function getQuotesFromFirestore(): Promise<QuoteData[]> {
     if (!snapshot.empty) {
       const items: QuoteData[] = [];
       snapshot.forEach(docSnap => {
-        const data = docSnap.data() as QuoteData;
-        items.push({ ...data, id: docSnap.id });
+        const raw = docSnap.data() as Record<string, any>;
+        if (raw?._deleted === true) return;
+        if (STRICT_REAL_DATA_ONLY && isSyntheticRecord(raw)) return;
+        const data = normalizeDocumentOnRead('quotes', { ...raw, id: docSnap.id }) as QuoteData;
+        items.push(data);
       });
       // Sort by updatedDate or createdDate desc, secondary sort by id/quoteNumber desc
       items.sort((a, b) => {
@@ -143,11 +175,15 @@ export async function deleteQuoteFromFirestore(id: string): Promise<void> {
   if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
 
   try {
-    await deleteDoc(doc(db, COLLECTIONS.QUOTES, id));
+    const localMatch = loadSavedQuotes().find(q => q.id === id);
+    const res = await softDeleteRecord(COLLECTIONS.QUOTES, id, localMatch);
+    if (!res.success) {
+      throw new Error(res.message);
+    }
     const localQuotes = loadSavedQuotes().filter(q => q.id !== id);
     saveQuotesList(localQuotes);
   } catch (error) {
-    console.error('Firestore delete quote error:', error);
+    console.error('Firestore soft-delete quote error:', error);
     throw error;
   }
 }
@@ -178,11 +214,17 @@ export async function deleteCustomerFromFirestore(id: string): Promise<void> {
 
 export async function saveSurchargeToFirestore(item: SurchargeItem): Promise<void> {
   if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
+  if (STRICT_REAL_DATA_ONLY && isSyntheticRecord(item)) {
+    throw new Error('STRICT_REAL_DATA_GUARD: Phụ phí mẫu không được phép ghi lên Firestore.');
+  }
 
   try {
+    const stamped = stampRealDataOrigin(item);
     const docRef = doc(db, COLLECTIONS.SURCHARGES, item.id);
     await setDoc(docRef, {
-      ...item,
+      ...stamped,
+      _deleted: false,
+      _schemaVersion: COLLECTION_SCHEMA_VERSIONS.surcharges,
       _updatedAt: serverTimestamp(),
     }, { merge: true });
 
@@ -207,7 +249,10 @@ export async function getSurchargesFromFirestore(): Promise<SurchargeItem[]> {
     if (!snapshot.empty) {
       const items: SurchargeItem[] = [];
       snapshot.forEach(docSnap => {
-        items.push({ ...docSnap.data() as SurchargeItem, id: docSnap.id });
+        const raw = docSnap.data() as Record<string, any>;
+        if (raw?._deleted === true) return;
+        if (STRICT_REAL_DATA_ONLY && isSyntheticRecord(raw)) return;
+        items.push(normalizeDocumentOnRead('surcharges', { ...raw, id: docSnap.id }) as SurchargeItem);
       });
       saveSurchargesList(items);
       return items;
@@ -223,11 +268,15 @@ export async function deleteSurchargeFromFirestore(id: string): Promise<void> {
   if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
 
   try {
-    await deleteDoc(doc(db, COLLECTIONS.SURCHARGES, id));
+    const localMatch = loadSavedSurcharges().find(s => s.id === id);
+    const res = await softDeleteRecord(COLLECTIONS.SURCHARGES, id, localMatch);
+    if (!res.success) {
+      throw new Error(res.message);
+    }
     const local = loadSavedSurcharges().filter(s => s.id !== id);
     saveSurchargesList(local);
   } catch (error) {
-    console.error('Firestore delete surcharge error:', error);
+    console.error('Firestore soft-delete surcharge error:', error);
     throw error;
   }
 }
@@ -245,9 +294,12 @@ export async function saveCompanyProfileToFirestore(profile: CompanyProfile): Pr
     const docRef = doc(db, COLLECTIONS.SETTINGS, 'company_profile');
     await setDoc(docRef, {
       ...profile,
+      _deleted: false,
+      _schemaVersion: COLLECTION_SCHEMA_VERSIONS.settings,
       _updatedAt: serverTimestamp(),
     }, { merge: true });
 
+    createImmutableSnapshot(COLLECTIONS.SETTINGS, 'company_profile', profile, 'UPDATE', profile.salesRepName).catch(() => {});
     saveCompanyProfile(profile);
   } catch (error) {
     console.error('Firestore save company profile error:', error);
@@ -268,7 +320,7 @@ export async function getCompanyProfileFromFirestore(): Promise<CompanyProfile> 
       docSnap = await getDoc(legacyRef);
     }
     if (docSnap.exists()) {
-      const data = docSnap.data() as CompanyProfile;
+      const data = normalizeDocumentOnRead('settings', docSnap.data()) as CompanyProfile;
       saveCompanyProfile(data);
       return data;
     }
@@ -286,6 +338,9 @@ export async function getCompanyProfileFromFirestore(): Promise<CompanyProfile> 
  */
 
 export async function saveRateMasterToFirestore(rate: RateMasterItem, actor: string = 'admin'): Promise<void> {
+  if (STRICT_REAL_DATA_ONLY && isSyntheticRecord(rate)) {
+    throw new Error('STRICT_REAL_DATA_GUARD: Biểu cước mẫu không được phép ghi lên Firestore.');
+  }
   // Update local storage first
   saveRateMasterItem(rate);
 
@@ -304,9 +359,12 @@ export async function saveRateMasterToFirestore(rate: RateMasterItem, actor: str
 
   moduleSyncMonitor.setModuleSyncing('rates');
   try {
+    const stamped = stampRealDataOrigin(rate);
     const docRef = doc(db, COLLECTIONS.RATE_MASTERS, rate.id);
     await setDoc(docRef, {
-      ...rate,
+      ...stamped,
+      _deleted: false,
+      _schemaVersion: COLLECTION_SCHEMA_VERSIONS.rateMasters,
       _updatedAt: serverTimestamp(),
     }, { merge: true });
 
@@ -339,7 +397,10 @@ export async function getRateMastersFromFirestore(): Promise<RateMasterItem[]> {
     if (!snapshot.empty) {
       const items: RateMasterItem[] = [];
       snapshot.forEach(docSnap => {
-        items.push({ ...docSnap.data() as RateMasterItem, id: docSnap.id });
+        const raw = docSnap.data() as Record<string, any>;
+        if (raw?._deleted === true) return;
+        if (STRICT_REAL_DATA_ONLY && isSyntheticRecord(raw)) return;
+        items.push(normalizeDocumentOnRead('rateMasters', { ...raw, id: docSnap.id }) as RateMasterItem);
       });
       // Save to memory cache
       items.forEach(it => saveRateMasterItem(it));
@@ -366,7 +427,11 @@ export async function deleteRateMasterFromFirestore(id: string, softDelete: bool
         _updatedAt: serverTimestamp(),
       }, { merge: true });
     } else {
-      await deleteDoc(doc(db, COLLECTIONS.RATE_MASTERS, id));
+      const localMatch = getSavedRateMasters().find(r => r.id === id);
+      const res = await softDeleteRecord(COLLECTIONS.RATE_MASTERS, id, localMatch);
+      if (!res.success) {
+        throw new Error(res.message);
+      }
     }
     deleteRateMasterItem(id, softDelete);
   } catch (error) {
@@ -383,11 +448,17 @@ export async function deleteRateMasterFromFirestore(id: string, softDelete: bool
 
 export async function saveChargeMasterToFirestore(charge: ChargeMasterItem): Promise<void> {
   if (!db) throw new Error('Cơ sở dữ liệu Firestore chưa sẵn sàng (OFFLINE).');
+  if (STRICT_REAL_DATA_ONLY && isSyntheticRecord(charge)) {
+    throw new Error('STRICT_REAL_DATA_GUARD: Danh mục phí mẫu không được phép ghi lên Firestore.');
+  }
 
   try {
+    const stamped = stampRealDataOrigin(charge);
     const docRef = doc(db, COLLECTIONS.CHARGE_MASTERS, charge.id);
     await setDoc(docRef, {
-      ...charge,
+      ...stamped,
+      _deleted: false,
+      _schemaVersion: COLLECTION_SCHEMA_VERSIONS.chargeMasters,
       _updatedAt: serverTimestamp(),
     }, { merge: true });
 
@@ -409,7 +480,10 @@ export async function getChargeMastersFromFirestore(): Promise<ChargeMasterItem[
     if (!snapshot.empty) {
       const items: ChargeMasterItem[] = [];
       snapshot.forEach(docSnap => {
-        items.push({ ...docSnap.data() as ChargeMasterItem, id: docSnap.id });
+        const raw = docSnap.data() as Record<string, any>;
+        if (raw?._deleted === true) return;
+        if (STRICT_REAL_DATA_ONLY && isSyntheticRecord(raw)) return;
+        items.push(normalizeDocumentOnRead('chargeMasters', { ...raw, id: docSnap.id }) as ChargeMasterItem);
       });
       items.forEach(it => saveChargeMasterItem(it));
       return items;
@@ -643,9 +717,9 @@ export async function getRateRequestsFromFirestore(): Promise<RateRequestItem[]>
 export async function deleteRateRequestFromFirestore(id: string): Promise<void> {
   if (!db) return;
   try {
-    await deleteDoc(doc(db, COLLECTIONS.RATE_REQUESTS, id));
+    await softDeleteRecord(COLLECTIONS.RATE_REQUESTS, id);
   } catch (error) {
-    console.warn('Firestore delete rate request error:', error);
+    console.warn('Firestore soft-delete rate request error:', error);
   }
 }
 
@@ -663,26 +737,30 @@ export async function batchSaveMasterRatesToFirestore(
   importJobId?: string,
   actor: string = 'BULK_IMPORT'
 ): Promise<void> {
-  if (!rates || rates.length === 0) return;
+  const realRates = (rates || []).filter((r) => !(STRICT_REAL_DATA_ONLY && isSyntheticRecord(r)));
+  if (realRates.length === 0) return;
 
   // 1. Update memory cache immediately for responsive UI
-  rates.forEach(r => saveRateMasterItem(r));
+  realRates.forEach(r => saveRateMasterItem(r));
 
   // 2. Persist to Firestore in safe chunks
   if (!db) return;
 
   const CHUNK_SIZE = 400; // Well below 500 Firestore limit
-  for (let i = 0; i < rates.length; i += CHUNK_SIZE) {
-    const chunk = rates.slice(i, i + CHUNK_SIZE);
+  for (let i = 0; i < realRates.length; i += CHUNK_SIZE) {
+    const chunk = realRates.slice(i, i + CHUNK_SIZE);
     const batch = writeBatch(db);
 
     for (const rate of chunk) {
       const rateId = rate.id || `rate-imp-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
       const docRef = doc(db, COLLECTIONS.RATE_MASTERS, rateId);
       const nowIso = new Date().toISOString();
+      const stamped = stampRealDataOrigin(rate, 'IMPORTED');
       batch.set(docRef, {
-        ...rate,
+        ...stamped,
         id: rateId,
+        _deleted: false,
+        _schemaVersion: COLLECTION_SCHEMA_VERSIONS.rateMasters,
         updatedAt: rate.updatedAt || nowIso,
         createdAt: rate.createdAt || nowIso,
         importJobId: importJobId || rate.importJobId || null,
@@ -831,7 +909,10 @@ export function subscribeToQuotations(onUpdate: (quotes: QuoteData[]) => void, _
     return onSnapshot(q, (snapshot) => {
       const items: QuoteData[] = [];
       snapshot.forEach(docSnap => {
-        items.push({ ...docSnap.data() as QuoteData, id: docSnap.id });
+        const raw = docSnap.data() as Record<string, any>;
+        if (raw?._deleted === true) return;
+        if (STRICT_REAL_DATA_ONLY && isSyntheticRecord(raw)) return;
+        items.push(normalizeDocumentOnRead('quotes', { ...raw, id: docSnap.id }) as QuoteData);
       });
       items.sort((a, b) => {
         const dateA = a.updatedDate || a.createdDate || '';
@@ -870,7 +951,10 @@ export function subscribeToCustomers(onUpdate: (customers: CustomerRecord[]) => 
     return onSnapshot(q, (snapshot) => {
       const items: CustomerRecord[] = [];
       snapshot.forEach(docSnap => {
-        items.push(sanitizeCustomerRecord({ ...docSnap.data(), id: docSnap.id }));
+        const raw = docSnap.data() as Record<string, any>;
+        if (raw?._deleted === true) return;
+        if (STRICT_REAL_DATA_ONLY && isSyntheticRecord(raw)) return;
+        items.push(sanitizeCustomerRecord({ ...raw, id: docSnap.id }));
       });
       items.sort((a, b) => (a.customerName || a.companyName || '').localeCompare(b.customerName || b.companyName || ''));
       saveCustomersList(items);
@@ -904,7 +988,10 @@ export function subscribeToRateMasters(onUpdate: (rates: RateMasterItem[]) => vo
     return onSnapshot(q, (snapshot) => {
       const items: RateMasterItem[] = [];
       snapshot.forEach(docSnap => {
-        items.push({ ...docSnap.data() as RateMasterItem, id: docSnap.id });
+        const raw = docSnap.data() as Record<string, any>;
+        if (raw?._deleted === true) return;
+        if (STRICT_REAL_DATA_ONLY && isSyntheticRecord(raw)) return;
+        items.push(normalizeDocumentOnRead('rateMasters', { ...raw, id: docSnap.id }) as RateMasterItem);
       });
       items.sort((a, b) => (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || ''));
       items.forEach(it => saveRateMasterItem(it));
@@ -938,7 +1025,10 @@ export function subscribeToSurcharges(onUpdate: (surcharges: SurchargeItem[]) =>
     return onSnapshot(q, (snapshot) => {
       const items: SurchargeItem[] = [];
       snapshot.forEach(docSnap => {
-        items.push({ ...docSnap.data() as SurchargeItem, id: docSnap.id });
+        const raw = docSnap.data() as Record<string, any>;
+        if (raw?._deleted === true) return;
+        if (STRICT_REAL_DATA_ONLY && isSyntheticRecord(raw)) return;
+        items.push(normalizeDocumentOnRead('surcharges', { ...raw, id: docSnap.id }) as SurchargeItem);
       });
       saveSurchargesList(items);
       syncHealthService.reportListenerEvent(listenerId, 'Surcharge', items.length);
@@ -966,7 +1056,10 @@ export function subscribeToChargeMasters(onUpdate: (charges: ChargeMasterItem[])
     return onSnapshot(q, (snapshot) => {
       const items: ChargeMasterItem[] = [];
       snapshot.forEach(docSnap => {
-        items.push({ ...docSnap.data() as ChargeMasterItem, id: docSnap.id });
+        const raw = docSnap.data() as Record<string, any>;
+        if (raw?._deleted === true) return;
+        if (STRICT_REAL_DATA_ONLY && isSyntheticRecord(raw)) return;
+        items.push(normalizeDocumentOnRead('chargeMasters', { ...raw, id: docSnap.id }) as ChargeMasterItem);
       });
       items.forEach(it => saveChargeMasterItem(it));
       syncHealthService.reportListenerEvent(listenerId, undefined, items.length);
@@ -993,7 +1086,7 @@ export function subscribeToCompanyProfile(onUpdate: (company: CompanyProfile) =>
     const docRef = doc(db, COLLECTIONS.SETTINGS, 'company_profile');
     return onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
-        const data = docSnap.data() as CompanyProfile;
+        const data = normalizeDocumentOnRead('settings', docSnap.data()) as CompanyProfile;
         saveCompanyProfile(data);
         syncHealthService.reportListenerEvent(listenerId, 'Company', 1);
         syncHealthService.updateEntityHealth('Company', {
@@ -1027,15 +1120,18 @@ export async function batchRestoreSystemDataToFirestore(data: {
 }): Promise<void> {
   if (!db) return;
 
-  // 1. Batch quotes
-  if (data.quotes && data.quotes.length > 0) {
+  // 1. Batch quotes (reject synthetic records)
+  const realQuotes = (data.quotes || []).filter((q) => !isSyntheticRecord(q));
+  if (realQuotes.length > 0) {
     const CHUNK_SIZE = 400;
-    for (let i = 0; i < data.quotes.length; i += CHUNK_SIZE) {
-      const chunk = data.quotes.slice(i, i + CHUNK_SIZE);
+    for (let i = 0; i < realQuotes.length; i += CHUNK_SIZE) {
+      const chunk = realQuotes.slice(i, i + CHUNK_SIZE);
       const batch = writeBatch(db);
       for (const q of chunk) {
         batch.set(doc(db, COLLECTIONS.QUOTES, q.id), {
-          ...q,
+          ...stampRealDataOrigin(q, 'IMPORTED'),
+          _deleted: false,
+          _schemaVersion: COLLECTION_SCHEMA_VERSIONS.quotes,
           _updatedAt: serverTimestamp(),
         }, { merge: true });
       }
@@ -1047,15 +1143,18 @@ export async function batchRestoreSystemDataToFirestore(data: {
     }
   }
 
-  // 2. Batch customers
-  if (data.customers && data.customers.length > 0) {
+  // 2. Batch customers (reject synthetic records)
+  const realCustomers = (data.customers || []).filter((c) => !isSyntheticRecord(c));
+  if (realCustomers.length > 0) {
     const CHUNK_SIZE = 400;
-    for (let i = 0; i < data.customers.length; i += CHUNK_SIZE) {
-      const chunk = data.customers.slice(i, i + CHUNK_SIZE);
+    for (let i = 0; i < realCustomers.length; i += CHUNK_SIZE) {
+      const chunk = realCustomers.slice(i, i + CHUNK_SIZE);
       const batch = writeBatch(db);
       for (const c of chunk) {
         batch.set(doc(db, COLLECTIONS.CUSTOMERS, c.id), {
-          ...c,
+          ...stampRealDataOrigin(c, 'IMPORTED'),
+          _deleted: false,
+          _schemaVersion: COLLECTION_SCHEMA_VERSIONS.customers,
           _updatedAt: serverTimestamp(),
         }, { merge: true });
       }
@@ -1067,15 +1166,18 @@ export async function batchRestoreSystemDataToFirestore(data: {
     }
   }
 
-  // 3. Batch surcharges
-  if (data.surcharges && data.surcharges.length > 0) {
+  // 3. Batch surcharges (reject synthetic records)
+  const realSurcharges = (data.surcharges || []).filter((s) => !isSyntheticRecord(s));
+  if (realSurcharges.length > 0) {
     const CHUNK_SIZE = 400;
-    for (let i = 0; i < data.surcharges.length; i += CHUNK_SIZE) {
-      const chunk = data.surcharges.slice(i, i + CHUNK_SIZE);
+    for (let i = 0; i < realSurcharges.length; i += CHUNK_SIZE) {
+      const chunk = realSurcharges.slice(i, i + CHUNK_SIZE);
       const batch = writeBatch(db);
       for (const s of chunk) {
         batch.set(doc(db, COLLECTIONS.SURCHARGES, s.id), {
-          ...s,
+          ...stampRealDataOrigin(s, 'IMPORTED'),
+          _deleted: false,
+          _schemaVersion: COLLECTION_SCHEMA_VERSIONS.surcharges,
           _updatedAt: serverTimestamp(),
         }, { merge: true });
       }
@@ -1088,8 +1190,9 @@ export async function batchRestoreSystemDataToFirestore(data: {
   }
 
   // 4. Batch rate masters
-  if (data.rateMasters && data.rateMasters.length > 0) {
-    await batchSaveMasterRatesToFirestore(data.rateMasters, 'BACKUP_RESTORE', 'BACKUP_RESTORE');
+  const realRates = (data.rateMasters || []).filter((r) => !isSyntheticRecord(r));
+  if (realRates.length > 0) {
+    await batchSaveMasterRatesToFirestore(realRates, 'BACKUP_RESTORE', 'BACKUP_RESTORE');
   }
 
   // 5. Company settings
@@ -1108,6 +1211,10 @@ export interface UserUiPreferences {
   pinnedNavIds?: string[];
   expandedGroups?: Record<string, boolean>;
   sidebarCollapsed?: boolean;
+  sidebarMinimalMode?: boolean;
+  workbenchLayout?: 'SPLIT' | 'STACKED';
+  salesHudCollapsed?: boolean;
+  activeCompanyId?: string;
   _updatedAt?: any;
 }
 

@@ -2,9 +2,107 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Global instant-save and sync access without authentication barriers or permission delays across all machines
+    // Reject synthetic/sample/mock documents from ever persisting to Firestore
+    function isRealDataRecord() {
+      return request.resource.data.get('_isSample', false) != true
+        && request.resource.data.get('_isSynthetic', false) != true;
+    }
+
+    // 1. Append-only Immutable Snapshot Vault (`{collection}/{docId}/_snapshots/{snapId}`)
+    match /{col}/{docId}/_snapshots/{snapId} {
+      allow read: if true;
+      allow create: if isRealDataRecord();
+      allow update, delete: if false;
+    }
+
+    // 2. Schema Registry & Rate Audit Histories: Zero hard-delete
+    match /_schema_registry/{docId} {
+      allow read: if true;
+      allow create, update: if isRealDataRecord();
+      allow delete: if false;
+    }
+
+    match /_vault_manifest/{docId} {
+      allow read: if true;
+      allow create, update: if isRealDataRecord();
+      allow delete: if false;
+    }
+
+    match /rateHistories/{docId} {
+      allow read: if true;
+      allow create: if isRealDataRecord();
+      allow update, delete: if false;
+    }
+
+    // 3. 90-Day Recycle Bin: Entries removed only upon 1-click restoration
+    match /_recycle_bin/{docId} {
+      allow read: if true;
+      allow create, update: if isRealDataRecord();
+      allow delete: if true;
+    }
+
+    // 4. Quotations: Monotonic version guard + anti-synthetic + zero hard-delete
+    match /quotes/{quoteId} {
+      allow read: if true;
+      allow create: if isRealDataRecord();
+      allow update: if isRealDataRecord()
+        && request.resource.data.get('version', 1) >= resource.data.get('version', 1);
+      allow delete: if false;
+    }
+
+    // 5. Core Business Collections: Anti-synthetic + mandatory soft-delete (zero hard-delete)
+    match /customers/{docId} {
+      allow read: if true;
+      allow create, update: if isRealDataRecord();
+      allow delete: if false;
+    }
+
+    match /contracts/{docId} {
+      allow read: if true;
+      allow create, update: if isRealDataRecord();
+      allow delete: if false;
+    }
+
+    match /settings/{docId} {
+      allow read: if true;
+      allow create, update: if isRealDataRecord();
+      allow delete: if false;
+    }
+
+    match /rateMasters/{docId} {
+      allow read: if true;
+      allow create, update: if isRealDataRecord();
+      allow delete: if false;
+    }
+
+    match /surcharges/{docId} {
+      allow read: if true;
+      allow create, update: if isRealDataRecord();
+      allow delete: if false;
+    }
+
+    match /chargeMasters/{docId} {
+      allow read: if true;
+      allow create, update: if isRealDataRecord();
+      allow delete: if false;
+    }
+
+    match /rateRequests/{docId} {
+      allow read: if true;
+      allow create, update: if isRealDataRecord();
+      allow delete: if false;
+    }
+
+    match /shipments/{docId} {
+      allow read: if true;
+      allow create, update: if isRealDataRecord();
+      allow delete: if false;
+    }
+
+    // Fallback for auxiliary workspace collections (still rejects synthetic records on write)
     match /{document=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if request.method == 'delete' || isRealDataRecord();
     }
   }
 }

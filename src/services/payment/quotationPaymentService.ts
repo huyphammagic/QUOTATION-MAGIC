@@ -10,8 +10,7 @@ import {
   PaymentHubMetrics
 } from '../../types/quotationPayment';
 import { QuoteData } from '../../types/logistics';
-
-const STORAGE_KEY = 'bogi_quotation_payments_v1';
+import { getModuleData, setModuleData } from '../firebase/cloudStorageVaultService';
 
 // Dữ liệu mẫu chuẩn nghiệp vụ Logistics Việt Nam
 export const PRESEEDED_PAYMENT_RECORDS: QuotationPaymentRecord[] = [
@@ -169,23 +168,17 @@ export class QuotationPaymentService {
   /**
    * Lấy danh sách toàn bộ hồ sơ thanh toán công nợ báo giá
    */
-  static getPaymentRecords(companyId?: string): QuotationPaymentRecord[] {
-    try {
-      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored) as QuotationPaymentRecord[];
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            // Cập nhật lại trạng thái quá hạn động theo thời gian thực
-            return parsed.map(r => this.refreshOverdueStatus(r));
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('Error reading quotation payments from storage, falling back to preseeded:', e);
+  static getPaymentRecords(_companyId?: string): QuotationPaymentRecord[] {
+    if (typeof window === 'undefined') {
+      return PRESEEDED_PAYMENT_RECORDS.map(r => this.refreshOverdueStatus(r));
     }
-
-    return PRESEEDED_PAYMENT_RECORDS.map(r => this.refreshOverdueStatus(r));
+    try {
+      const stored = getModuleData<QuotationPaymentRecord[]>('payments', []);
+      return stored.map(r => this.refreshOverdueStatus(r));
+    } catch (e) {
+      console.warn('Error reading quotation payments from cloud vault:', e);
+      return [];
+    }
   }
 
   /**
@@ -216,11 +209,11 @@ export class QuotationPaymentService {
       updated = [refreshed, ...all];
     }
 
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        setModuleData('payments', updated);
       } catch (e) {
-        console.error('Error saving quotation payment record:', e);
+        console.error('Error saving quotation payment record to cloud vault:', e);
       }
     }
 

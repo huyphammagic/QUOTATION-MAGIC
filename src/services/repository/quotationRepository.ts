@@ -14,12 +14,22 @@ import {
   where
 } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
+import { getVaultActiveCompanyId } from '../firebase/cloudStorageVaultService';
 import { QuoteData } from '../../types/logistics';
 import { syncHealthService, classifyErrorToSaveState } from '../integrity/syncHealthService';
 import { moduleSyncMonitor } from '../integrity/moduleSyncMonitorService';
 import { recordHealthAudit } from '../audit/systemHealthAuditService';
 
 import { validateQuotationIntegrity, isQuotationLocked } from '../integrity/quotationIntegrityEngine';
+import { COLLECTION_SCHEMA_VERSIONS, normalizeDocumentOnRead } from '../firebase/schemaMigrationService';
+import {
+  STRICT_REAL_DATA_ONLY,
+  isSyntheticRecord,
+  stampRealDataOrigin,
+  createImmutableSnapshot,
+  softDeleteRecord,
+  enqueueOfflineMutation,
+} from '../firebase/dataVaultService';
 
 const COLLECTION_NAME = 'quotes';
 const DRAFT_COLLECTION = 'quotationDrafts';
@@ -59,7 +69,7 @@ export interface SaveQuotationResult {
  * Does NOT scan entire database blindly; uses limits and sorting.
  */
 export async function fetchQuotations(options: FetchQuotationsOptions = {}): Promise<QuoteData[]> {
-  const targetCompany = options.companyId || (typeof localStorage !== 'undefined' ? localStorage.getItem('logistics_active_company_id') : null) || undefined;
+  const targetCompany = options.companyId || getVaultActiveCompanyId() || undefined;
   const { status, customerId, limitCount = 50, forceRefresh = false } = options;
 
   // 1. Check in-memory cache if no specific filters
@@ -121,7 +131,10 @@ export async function fetchQuotations(options: FetchQuotationsOptions = {}): Pro
     const items: QuoteData[] = [];
     if (snap) {
       snap.forEach((d: any) => {
-        items.push({ ...d.data() as QuoteData, id: d.id });
+        const raw = d.data();
+        if (raw?._deleted === true) return;
+        if (STRICT_REAL_DATA_ONLY && isSyntheticRecord(raw)) return;
+        items.push(normalizeDocumentOnRead('quotes', { ...raw, id: d.id }) as QuoteData);
       });
     }
 
@@ -176,7 +189,11 @@ export async function getQuotationById(id: string, forceRefresh = false): Promis
       return cached ? cached.data : null;
     }
 
-    const data = { ...snap.data() as QuoteData, id: snap.id };
+    const raw = snap.data() as Record<string, any>;
+    if (raw?._deleted === true) {
+      return null;
+    }
+    const data = normalizeDocumentOnRead('quotes', { ...raw, id: snap.id }) as QuoteData;
     memorySingleQuoteCache.set(id, { data, cachedAt: now });
     return data;
   } catch (err) {
@@ -233,55 +250,53 @@ export async function saveQuotation(
   try {
     const docRef = doc(db, COLLECTION_NAME, quoteId);
 
-    // 1. Conflict Detection & Integrity Verification
+    // 1. Conflict Detection, Pre-Overwrite Snapshot Capture & Integrity Verification
     let existingQuoteData: QuoteData | null = null;
-    if (!options?.forceOverwrite) {
-      let existingSnap: DocumentSnapshot | null = null;
+    let existingSnap: DocumentSnapshot | null = null;
+    try {
+      existingSnap = await getDoc(docRef);
+    } catch (getErr: any) {
+      // When client is offline or network is disconnected, getDoc throws:
+      // "Failed to get document because the client is offline."
+      // Gracefully attempt reading from local offline cache
       try {
-        existingSnap = await getDoc(docRef);
-      } catch (getErr: any) {
-        // When client is offline or network is disconnected, getDoc throws:
-        // "Failed to get document because the client is offline."
-        // Gracefully attempt reading from local offline cache
-        try {
-          existingSnap = await getDocFromCache(docRef);
-        } catch {
-          existingSnap = null;
-        }
+        existingSnap = await getDocFromCache(docRef);
+      } catch {
+        existingSnap = null;
+      }
+    }
+
+    if (existingSnap && existingSnap.exists()) {
+      const remoteData = existingSnap.data() as QuoteData;
+      existingQuoteData = remoteData;
+      const remoteVersion = Math.max(Number((remoteData as any)._rev || 0), Number(remoteData.version || 1));
+      const localVersion = Math.max(Number((quote as any)._rev || 0), Number(quote.version || 1));
+
+      if (!options?.forceOverwrite && remoteVersion > localVersion) {
+        console.warn(`[quotationRepository] Concurrency conflict on quote ${quoteId}. Cloud v${remoteVersion} > Local v${localVersion}`);
+        syncHealthService.setSaveState('CONFLICT', `Xung đột phiên bản: Cloud v${remoteVersion} > Máy này v${localVersion}`);
+        syncHealthService.endOperation(opKey, false, new Error('Xung đột phiên bản'));
+
+        await recordHealthAudit({
+          userId: options?.userId || 'Sales User',
+          companyId: 'company_profile',
+          entityType: 'Quotation',
+          entityId: quoteId,
+          action: 'CONFLICT_DETECTED',
+          result: 'WARNING',
+          correlationId: opKey,
+          details: `Xung đột đa thiết bị: Cloud v${remoteVersion} vs Local v${localVersion}`,
+        });
+
+        return {
+          success: false,
+          conflict: true,
+          remoteQuote: { ...remoteData, id: existingSnap.id },
+          message: `Xung đột dữ liệu đa thiết bị: Bản ghi này đã được cập nhật từ thiết bị khác (Phiên bản Cloud: v${remoteVersion}, Thiết bị này: v${localVersion}).`,
+        };
       }
 
-      if (existingSnap && existingSnap.exists()) {
-        const remoteData = existingSnap.data() as QuoteData;
-        existingQuoteData = remoteData;
-        const remoteVersion = remoteData.version || 1;
-        const localVersion = quote.version || 1;
-
-        if (remoteVersion > localVersion) {
-          console.warn(`[quotationRepository] Concurrency conflict on quote ${quoteId}. Cloud v${remoteVersion} > Local v${localVersion}`);
-          syncHealthService.setSaveState('CONFLICT', `Xung đột phiên bản: Cloud v${remoteVersion} > Máy này v${localVersion}`);
-          syncHealthService.endOperation(opKey, false, new Error('Xung đột phiên bản'));
-
-          await recordHealthAudit({
-            userId: options?.userId || 'Sales User',
-            companyId: 'company_profile',
-            entityType: 'Quotation',
-            entityId: quoteId,
-            action: 'CONFLICT_DETECTED',
-            result: 'WARNING',
-            correlationId: opKey,
-            details: `Xung đột đa thiết bị: Cloud v${remoteVersion} vs Local v${localVersion}`,
-          });
-
-          return {
-            success: false,
-            conflict: true,
-            remoteQuote: { ...remoteData, id: existingSnap.id },
-            message: `Xung đột dữ liệu đa thiết bị: Bản ghi này đã được cập nhật từ thiết bị khác (Phiên bản Cloud: v${remoteVersion}, Thiết bị này: v${localVersion}).`,
-          };
-        }
-
-        newVersion = Math.max(remoteVersion, localVersion) + 1;
-      }
+      newVersion = Math.max(remoteVersion, localVersion) + 1;
     }
 
     // Integrity & State Transition Validation (Phase 32)
@@ -302,29 +317,62 @@ export async function saveQuotation(
       };
     }
 
+    if (STRICT_REAL_DATA_ONLY && isSyntheticRecord(quote)) {
+      return {
+        success: false,
+        conflict: false,
+        message: 'STRICT_REAL_DATA_GUARD: Từ chối lưu báo giá mẫu/giả lập lên hệ thống.',
+      };
+    }
+
+    const stampedQuote = stampRealDataOrigin(quote);
     const payload: QuoteData = {
-      ...quote,
+      ...stampedQuote,
       id: quoteId,
       companyId: effectiveCompanyId,
+      _deleted: false,
+      _rev: newVersion,
       version: newVersion,
       updatedDate: new Date().toISOString().slice(0, 10),
+      _schemaVersion: COLLECTION_SCHEMA_VERSIONS.quotes,
       _updatedAt: serverTimestamp(),
       _updatedBy: options?.userId || quote._updatedBy || 'Sales User',
-    };
+    } as QuoteData;
 
-    // 2. Offline check prior to write
+    // 2. Offline check prior to write — queue into Offline Outbox so edits are never lost
     if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-      syncHealthService.setSaveState('OFFLINE', 'Không thể lưu lên Cloud khi mất kết nối mạng.');
+      enqueueOfflineMutation({
+        collectionName: COLLECTION_NAME,
+        docId: quoteId,
+        payload,
+        label: payload.quoteNumber || quoteId,
+      });
+      syncHealthService.setSaveState('OFFLINE', 'Mất mạng — Đã xếp vào Hàng Đợi Đồng Bộ An Toàn.');
       syncHealthService.endOperation(opKey, false, new Error('Offline'));
       return {
         success: false,
         conflict: false,
-        message: 'Thiết bị đang ngoại tuyến. Dữ liệu chưa thể lưu lên Cloud.',
+        savedQuote: payload,
+        message: 'Thiết bị đang ngoại tuyến. Báo giá đã được giữ trong Hàng Đợi Offline và sẽ tự đồng bộ khi có mạng.',
       };
     }
 
-    // 3. Perform write to Firestore (Strict confirmation before reporting success)
+    // 3. If forceOverwrite was selected, capture an immutable snapshot of remote before overwriting
+    if (options?.forceOverwrite && existingQuoteData) {
+      createImmutableSnapshot(COLLECTION_NAME, quoteId, existingQuoteData, 'PRE_OVERWRITE', options?.userId).catch(() => {});
+    }
+
+    // 4. Perform write to Firestore (Strict confirmation before reporting success)
     await setDoc(docRef, payload, { merge: true });
+
+    // 5. Fire-and-forget immutable append-only snapshot (0ms UI impact)
+    createImmutableSnapshot(
+      COLLECTION_NAME,
+      quoteId,
+      payload,
+      existingQuoteData ? 'UPDATE' : 'CREATE',
+      options?.userId
+    ).catch(() => {});
 
     // Confirm write was acknowledged and client is online
     if (typeof navigator !== 'undefined' && navigator.onLine === false) {
@@ -374,18 +422,19 @@ export async function saveQuotation(
 export async function deleteQuotation(id: string): Promise<boolean> {
   if (!id) return false;
   if (!db) {
-    syncHealthService.setSaveState('OFFLINE', 'Không thể xóa báo giá khi mất kết nối Cloud');
+    syncHealthService.setSaveState('OFFLINE', 'Không thể chuyển báo giá vào Thùng Rác khi mất kết nối Cloud');
     return false;
   }
 
   try {
-    const docRef = doc(db, COLLECTION_NAME, id);
-    await deleteDoc(docRef);
+    const cached = memorySingleQuoteCache.get(id)?.data;
+    const res = await softDeleteRecord(COLLECTION_NAME, id, cached);
+    if (!res.success) return false;
     invalidateQuotationCache();
     memorySingleQuoteCache.delete(id);
     return true;
   } catch (error: any) {
-    console.error(`[quotationRepository] Notice deleting quotation ${id}:`, error);
+    console.error(`[quotationRepository] Notice soft-deleting quotation ${id}:`, error);
     const classified = classifyErrorToSaveState(error);
     syncHealthService.setSaveState(classified.state, classified.messageVi);
     return false;

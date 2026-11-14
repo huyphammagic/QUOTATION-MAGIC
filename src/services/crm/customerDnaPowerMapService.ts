@@ -13,8 +13,7 @@ import {
 } from '../../types/customerDnaPowerMap';
 import { CustomerRecord, QuoteData } from '../../types/logistics';
 import { getSavedCustomers, getSavedQuotes } from '../../utils/storage';
-
-const STORAGE_KEY = 'bogi_customer_dna_profiles_v1';
+import { getModuleData, setModuleData } from '../firebase/cloudStorageVaultService';
 
 // Dữ liệu mẫu thực chiến cho các tập đoàn / nhà máy xuất khẩu tiêu biểu tại Việt Nam
 export const PRESEEDED_CUSTOMER_DNA_PROFILES: CustomerDnaPowerMapProfile[] = [
@@ -396,14 +395,8 @@ export class CustomerDnaPowerMapService {
 
     let savedProfiles: CustomerDnaPowerMapProfile[] = [];
     try {
-      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) {
-            savedProfiles = parsed;
-          }
-        }
+      if (typeof window !== 'undefined') {
+        savedProfiles = getModuleData<CustomerDnaPowerMapProfile[]>('customer_dna', []);
       }
     } catch {
       savedProfiles = [];
@@ -533,21 +526,14 @@ export class CustomerDnaPowerMapService {
    * Lấy danh sách toàn bộ hồ sơ Customer DNA & Power Map
    */
   static getProfiles(): CustomerDnaPowerMapProfile[] {
-    try {
-      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
-          }
-        }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(PRESEEDED_CUSTOMER_DNA_PROFILES));
-      }
-    } catch {
-      // fallback to preseeded
+    if (typeof window === 'undefined') {
+      return PRESEEDED_CUSTOMER_DNA_PROFILES;
     }
-    return PRESEEDED_CUSTOMER_DNA_PROFILES;
+    try {
+      return [...getModuleData<CustomerDnaPowerMapProfile[]>('customer_dna', [])];
+    } catch {
+      return [];
+    }
   }
 
   /**
@@ -585,12 +571,12 @@ export class CustomerDnaPowerMapService {
       updatedProfiles = [profile, ...profiles];
     }
 
-    try {
-      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedProfiles));
+    if (typeof window !== 'undefined') {
+      try {
+        setModuleData('customer_dna', updatedProfiles);
+      } catch {
+        // ignore
       }
-    } catch {
-      // storage quota error ignore
     }
     return profile;
   }

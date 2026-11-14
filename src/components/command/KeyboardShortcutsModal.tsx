@@ -123,8 +123,8 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
           icon: Radar,
         },
         {
-          keys: ['Ctrl', 'Shift', 'D'],
-          description: 'Mở Cockpit Phân Tích BI (Doanh thu, lợi nhuận, tuyến tàu bán chạy)',
+          keys: ['Ctrl', 'D'],
+          description: 'Mở / đóng nhanh Cockpit & BI Dashboard (hỗ trợ thêm Ctrl + Shift + D)',
           icon: TrendingUp,
         },
       ],

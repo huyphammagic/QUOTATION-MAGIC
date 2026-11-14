@@ -7,8 +7,7 @@ import {
   DebitNoteCurrency 
 } from '../../types/debitNote';
 import { numberToVietnameseWords, numberToEnglishWords } from '../../utils/numberToWords';
-
-const STORAGE_KEY = 'bogi_debit_notes_store_v1';
+import { getModuleData, setModuleData } from '../firebase/cloudStorageVaultService';
 
 // Default Forwarder Bank Accounts (Vietcombank & Techcombank & USD)
 export const DEFAULT_DEBIT_NOTE_BANKS: { vnd: DebitNoteBankAccount; usd: DebitNoteBankAccount } = {
@@ -248,16 +247,14 @@ export function createDebitNoteFromQuote(
 }
 
 /**
- * Service to manage Debit Notes in local persistence
+ * Service to manage Debit Notes in Firebase Storage Cloud Vault (0ms RAM cache + Cloud Sync)
  */
 export const DebitNoteService = {
   getAllDebitNotes(): DebitNoteRecord[] {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return [];
-      return JSON.parse(raw);
+      return [...getModuleData<DebitNoteRecord[]>('debit_notes', [])];
     } catch (e) {
-      console.error('Failed to read debit notes from storage:', e);
+      console.error('Failed to read debit notes from cloud vault:', e);
       return [];
     }
   },
@@ -282,9 +279,9 @@ export const DebitNoteService = {
       list.unshift(recalculated);
     }
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+      setModuleData('debit_notes', list);
     } catch (e) {
-      console.error('Failed to save debit note to storage:', e);
+      console.error('Failed to save debit note to cloud vault:', e);
     }
     return recalculated;
   },
@@ -293,7 +290,7 @@ export const DebitNoteService = {
     const list = this.getAllDebitNotes();
     const filtered = list.filter(dn => dn.id !== id);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+      setModuleData('debit_notes', filtered);
       return true;
     } catch (e) {
       console.error('Failed to delete debit note:', e);

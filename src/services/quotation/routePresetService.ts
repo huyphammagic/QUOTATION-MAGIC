@@ -8,55 +8,37 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
+import { getModuleData, setModuleData } from '../firebase/cloudStorageVaultService';
 import { RoutePreset, PresetApplyMode, TradeLane } from '../../types/routePreset';
 import { DEFAULT_ROUTE_PRESETS } from '../../data/defaultRoutePresets';
 import { QuoteData, LineItem, CompanyProfile } from '../../types/logistics';
 import { calculateQuote } from '../pricing';
 import { generateQuoteNumber } from '../../utils/formatters';
 
-const STORAGE_KEY_CUSTOM_PRESETS = 'bogi_custom_route_presets_v1';
-const STORAGE_KEY_FAVORITES = 'bogi_route_preset_favorites_v1';
 const FIRESTORE_COLLECTION = 'routePresets';
-
-// In-memory cache
-let memoryCustomPresets: RoutePreset[] = [];
-let memoryFavorites: string[] = [];
-let isLoaded = false;
 
 function getStoredCustomPresets(): RoutePreset[] {
   if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_CUSTOM_PRESETS);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return [];
+  return [...getModuleData<RoutePreset[]>('route_presets', [])];
 }
 
 function saveStoredCustomPresets(presets: RoutePreset[]) {
   if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(STORAGE_KEY_CUSTOM_PRESETS, JSON.stringify(presets));
-  } catch {}
+  setModuleData('route_presets', presets);
 }
 
 function getStoredFavorites(): string[] {
   if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_FAVORITES);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return [];
+  return [...getModuleData<string[]>('route_preset_favorites', [])];
 }
 
 function saveStoredFavorites(favs: string[]) {
   if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(STORAGE_KEY_FAVORITES, JSON.stringify(favs));
-  } catch {}
+  setModuleData('route_preset_favorites', favs);
 }
 
 /**
- * Get all Route Presets (Built-in + Custom from Firestore & LocalStorage)
+ * Get all Route Presets (Built-in + Custom from Firestore & Firebase Storage Vault)
  */
 export async function getAllRoutePresets(): Promise<RoutePreset[]> {
   const localCustom = getStoredCustomPresets();
