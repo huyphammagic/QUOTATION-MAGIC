@@ -151,7 +151,21 @@ const KNOWN_SYNTHETIC_SAMPLE_IDS = new Set([
 // ============================================================================
 // IN-MEMORY RAM CACHE (0ms synchronous read/write across all 14+ modules)
 // ============================================================================
-let activeWorkspaceId: string = DEFAULT_WORKSPACE_ID;
+function resolveInitialWorkspaceFromUrl(): string {
+  if (typeof window === 'undefined') return DEFAULT_WORKSPACE_ID;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const ws = params.get('workspace')?.trim();
+    if (ws && ws.length > 0 && ws.length <= 120) {
+      return ws.replace(/[^a-zA-Z0-9_-]/g, '_') || DEFAULT_WORKSPACE_ID;
+    }
+  } catch {
+    // ignore URL parse error
+  }
+  return DEFAULT_WORKSPACE_ID;
+}
+
+let activeWorkspaceId: string = resolveInitialWorkspaceFromUrl();
 const memoryModuleStore = new Map<VaultModuleKey, MemoryModuleEntry>();
 const hydratedWorkspaces = new Set<string>();
 const inFlightHydrations = new Map<string, Promise<void>>();

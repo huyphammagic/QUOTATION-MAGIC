@@ -4,6 +4,7 @@ import {
   setDoc, 
   getDoc, 
   getDocs, 
+  getDocsFromServer,
   deleteDoc, 
   query, 
   where, 
@@ -16,9 +17,10 @@ import {
   updateDoc,
   onSnapshot
 } from 'firebase/firestore';
-import { db, auth } from '../firebase/firebaseConfig';
+import { db } from '../firebase/firebaseConfig';
 import { getVaultActiveCompanyId } from '../firebase/cloudStorageVaultService';
 import { syncHealthService } from '../integrity/syncHealthService';
+import { isSyntheticRecord } from '../firebase/dataVaultService';
 import { CANONICAL_DEFAULT_COMPANY_ID } from '../../types/multiCompany';
 import { 
   ContractItem, 
@@ -66,6 +68,7 @@ export interface FetchContractsOptions {
   searchQuery?: string;
   limitCount?: number;
   lastDoc?: DocumentSnapshot;
+  forceRefresh?: boolean;
 }
 
 export interface FetchContractsResult {
@@ -85,20 +88,32 @@ export async function fetchContracts(
     status,
     partyId,
     searchQuery,
-    limitCount = 20,
+    limitCount = 200,
     lastDoc,
+    forceRefresh = false,
   } = options;
 
-  if (!db || !auth?.currentUser || !targetCompany) {
+  if (!db) {
     return { contracts: [], hasMore: false };
   }
 
+  const runQuery = async (q: any) => {
+    if (forceRefresh) {
+      try {
+        return await getDocsFromServer(q);
+      } catch {
+        return await getDocs(q);
+      }
+    }
+    return await getDocs(q);
+  };
+
   try {
     const collRef = collection(db, COLLECTIONS.CONTRACTS);
-    // Explicit mandatory companyId filter — prevents any unscoped collection query
-    const queryConstraints: any[] = [
-      where('companyId', '==', targetCompany)
-    ];
+    const queryConstraints: any[] = [];
+    if (targetCompany) {
+      queryConstraints.push(where('companyId', '==', targetCompany));
+    }
 
     // Filter by Contract Type (CUSTOMER vs SUPPLIER)
     if (contractType) {
@@ -128,26 +143,48 @@ export async function fetchContracts(
     let snap: any;
     try {
       const q = query(collRef, ...queryConstraints);
-      snap = await getDocs(q);
+      snap = await runQuery(q);
     } catch (_orderErr) {
-      // Graceful fallback with mandatory companyId constraint preserved
-      const fallbackConstraints: any[] = [
-        where('companyId', '==', targetCompany)
-      ];
-      if (contractType) fallbackConstraints.push(where('contractType', '==', contractType));
-      if (status && status !== 'ALL') fallbackConstraints.push(where('status', '==', status));
-      if (partyId) fallbackConstraints.push(where('partyId', '==', partyId));
-      fallbackConstraints.push(limit(limitCount));
-      const fallbackQ = query(collRef, ...fallbackConstraints);
-      snap = await getDocs(fallbackQ);
+      try {
+        const fallbackConstraints: any[] = [];
+        if (targetCompany) fallbackConstraints.push(where('companyId', '==', targetCompany));
+        if (contractType) fallbackConstraints.push(where('contractType', '==', contractType));
+        if (status && status !== 'ALL') fallbackConstraints.push(where('status', '==', status));
+        if (partyId) fallbackConstraints.push(where('partyId', '==', partyId));
+        fallbackConstraints.push(limit(limitCount));
+        const fallbackQ = query(collRef, ...fallbackConstraints);
+        snap = await runQuery(fallbackQ);
+      } catch {
+        snap = null;
+      }
     }
 
-    let contracts = (snap?.docs || []).map((d: any) => d.data() as ContractItem);
+    // Cross-device fallback: if company-scoped query returned 0 contracts, check unscoped collection
+    if ((!snap || snap.empty) && !lastDoc) {
+      try {
+        const unscopedConstraints: any[] = [];
+        if (contractType) unscopedConstraints.push(where('contractType', '==', contractType));
+        if (status && status !== 'ALL') unscopedConstraints.push(where('status', '==', status));
+        if (partyId) unscopedConstraints.push(where('partyId', '==', partyId));
+        unscopedConstraints.push(limit(limitCount));
+        snap = await runQuery(query(collRef, ...unscopedConstraints));
+      } catch {
+        try {
+          snap = await runQuery(query(collRef, limit(limitCount)));
+        } catch {
+          snap = null;
+        }
+      }
+    }
+
+    let contracts = (snap?.docs || [])
+      .map((d: any) => ({ ...(d.data() as ContractItem), id: d.id }))
+      .filter((c: any) => c?._deleted !== true && !isSyntheticRecord(c));
 
     // Client-side quick search for text matching contract number or party name
     if (searchQuery && searchQuery.trim()) {
       const qLower = searchQuery.toLowerCase().trim();
-      contracts = contracts.filter(c => 
+      contracts = contracts.filter((c: ContractItem) => 
         c.contractNumber?.toLowerCase().includes(qLower) ||
         c.partyName?.toLowerCase().includes(qLower) ||
         c.contractName?.toLowerCase().includes(qLower) ||
@@ -156,7 +193,7 @@ export async function fetchContracts(
     }
 
     // Sort in memory by updatedAt descending
-    contracts.sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime());
+    contracts.sort((a: ContractItem, b: ContractItem) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime());
 
     const newLastDoc = snap?.docs && snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : undefined;
     const hasMore = snap?.docs ? snap.docs.length === limitCount : false;

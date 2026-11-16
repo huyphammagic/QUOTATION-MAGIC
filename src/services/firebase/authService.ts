@@ -12,7 +12,8 @@ import {
   signOut, 
   updateProfile,
   signInAnonymously,
-  NextOrObserver
+  GoogleAuthProvider,
+  signInWithPopup,
 } from 'firebase/auth';
 import { auth } from './firebaseConfig';
 import { recordHealthAudit } from '../audit/systemHealthAuditService';
@@ -45,6 +46,28 @@ export function subscribeToAuth(callback: (user: User | null) => void): () => vo
     return () => {};
   }
   return onAuthStateChanged(auth, callback);
+}
+
+/**
+ * Sign in with Google account (1-Click Cross-Device Identity)
+ */
+export async function loginWithGoogle(): Promise<User> {
+  if (!auth) throw new Error('Firebase Auth chưa được khởi tạo.');
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  const cred = await signInWithPopup(auth, provider);
+
+  recordHealthAudit({
+    userId: cred.user.uid,
+    companyId: 'AUTH_SYSTEM',
+    entityType: 'System' as any,
+    entityId: cred.user.uid,
+    action: 'USER_LOGIN_GOOGLE' as any,
+    result: 'SUCCESS',
+    details: `Google user logged in: ${cred.user.email} (${cred.user.uid})`,
+  }).catch(() => {});
+
+  return cred.user;
 }
 
 /**

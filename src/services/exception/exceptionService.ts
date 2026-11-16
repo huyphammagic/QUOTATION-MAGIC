@@ -44,9 +44,9 @@ export async function getExceptions(
   options: ExceptionFilterOptions = {}
 ): Promise<{ exceptions: ShipmentException[]; lastDoc?: DocumentSnapshot }> {
   const effectiveCompanyId = companyId || 'company_profile';
-  const pageLimit = options.pageLimit || 50;
+  const pageLimit = options.pageLimit || 150;
 
-  if (!db || !auth?.currentUser) {
+  if (!db) {
     let list = Array.from(exceptionMemoryCache.values())
       .filter(e => e.companyId === effectiveCompanyId);
 
@@ -71,44 +71,65 @@ export async function getExceptions(
 
   try {
     const collRef = collection(db, EXCEPTIONS_COLLECTION);
-    
-    // Construct indexed query
-    let q = query(
-      collRef,
-      where('companyId', '==', effectiveCompanyId),
-      orderBy('createdAt', 'desc'),
-      limit(pageLimit)
-    );
+    let snap: any = null;
 
-    if (options.status && options.status !== 'ALL' && options.status !== 'ACTIVE') {
-      q = query(
+    try {
+      let q = query(
         collRef,
         where('companyId', '==', effectiveCompanyId),
-        where('status', '==', options.status),
         orderBy('createdAt', 'desc'),
         limit(pageLimit)
       );
-    } else if (options.shipmentId) {
-      q = query(
-        collRef,
-        where('companyId', '==', effectiveCompanyId),
-        where('shipmentId', '==', options.shipmentId),
-        orderBy('createdAt', 'desc'),
-        limit(pageLimit)
-      );
+
+      if (options.status && options.status !== 'ALL' && options.status !== 'ACTIVE') {
+        q = query(
+          collRef,
+          where('companyId', '==', effectiveCompanyId),
+          where('status', '==', options.status),
+          orderBy('createdAt', 'desc'),
+          limit(pageLimit)
+        );
+      } else if (options.shipmentId) {
+        q = query(
+          collRef,
+          where('companyId', '==', effectiveCompanyId),
+          where('shipmentId', '==', options.shipmentId),
+          orderBy('createdAt', 'desc'),
+          limit(pageLimit)
+        );
+      }
+
+      snap = await getDocs(q);
+    } catch {
+      snap = null;
     }
 
-    const snap = await getDocs(q);
-    const exceptions: ShipmentException[] = [];
+    // Cross-device fallback if scoped query returned empty
+    if (!snap || snap.empty) {
+      try {
+        snap = await getDocs(query(collRef, limit(pageLimit)));
+      } catch {
+        snap = null;
+      }
+    }
 
-    snap.forEach((docSnap) => {
-      const data = docSnap.data() as ShipmentException;
-      const record = { ...data, id: docSnap.id };
-      exceptions.push(record);
-      exceptionMemoryCache.set(record.id, record);
-    });
+    const exceptions: ShipmentException[] = [];
+    if (snap) {
+      snap.forEach((docSnap: any) => {
+        const data = docSnap.data() as ShipmentException;
+        const record = { ...data, id: docSnap.id };
+        exceptions.push(record);
+        exceptionMemoryCache.set(record.id, record);
+      });
+    }
 
     let filtered = exceptions;
+    if (options.status && options.status !== 'ALL' && options.status !== 'ACTIVE') {
+      filtered = filtered.filter(e => e.status === options.status);
+    }
+    if (options.shipmentId) {
+      filtered = filtered.filter(e => e.shipmentId === options.shipmentId);
+    }
 
     // In-memory filter for composite options not covered by simple index
     if (options.status === 'ACTIVE') {

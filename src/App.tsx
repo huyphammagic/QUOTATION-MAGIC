@@ -73,7 +73,7 @@ import {
   loadSavedSalesHudCollapsed,
   persistSalesHudCollapsed,
 } from './utils/userPreferences';
-import { getActiveQuotationDraft } from './services/repository/quotationRepository';
+import { getSharedActiveQuotationDraft } from './services/repository/quotationRepository';
 import { 
   fetchCustomers, 
   saveCustomer, 
@@ -241,6 +241,7 @@ import { SupplierItem, CarrierItem } from './types/masterRate';
 import { useMultiCompany } from './context/MultiCompanyContext';
 import { useAuth } from './context/AuthContext';
 import { AuthModal } from './components/auth/AuthModal';
+import { CrossDeviceSyncModal } from './components/CrossDeviceSyncModal';
 import { useFinancialConfig } from './context/FinancialConfigContext';
 import { MultiCompanyManagementModal } from './components/company/MultiCompanyManagementModal';
 import { createQuotationCompanySnapshot } from './types/multiCompany';
@@ -252,6 +253,7 @@ export default function App() {
   // Phase 50: Firebase Authentication & RBAC Context
   const { user: authUser, isAuthenticated } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isCrossDeviceModalOpen, setIsCrossDeviceModalOpen] = useState(false);
 
   // Phase 37: Multi-Company Active Context
   const { 
@@ -879,6 +881,7 @@ export default function App() {
     setIsMultiOptionQuoteModalOpen(false);
     setIsCustomer360Open(false);
     setIsAuthModalOpen(false);
+    setIsCrossDeviceModalOpen(false);
     setSelectedPaymentQuoteId(undefined);
     setSelectedClosingQuote(null);
     setSelectedRadarSession(null);
@@ -911,9 +914,9 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
-  const loadPricingPoliciesData = async () => {
+  const loadPricingPoliciesData = async (forceRefresh = false) => {
     try {
-      const list = await getPricingPoliciesFromFirestore();
+      const list = await getPricingPoliciesFromFirestore(forceRefresh);
       setPricingPolicies(list);
       const resolved = resolvePricingPolicy(list, quote.customer?.id, (quote.customer as any)?.segment, quote.shipment?.mode);
       setActivePricingPolicy(resolved);
@@ -922,11 +925,10 @@ export default function App() {
     }
   };
 
-  const loadContractsCount = async () => {
-    if (!authUser) return;
+  const loadContractsCount = async (forceRefresh = false) => {
     try {
       const compId = activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'company_profile';
-      const res = await fetchContracts({ companyId: compId, limitCount: 100 });
+      const res = await fetchContracts({ companyId: compId, limitCount: 200, forceRefresh });
       setContractsCount(res.contracts ? res.contracts.length : 0);
     } catch (e) {
       console.warn('Error loading contracts count:', e);
@@ -937,13 +939,12 @@ export default function App() {
     loadContractsCount();
   }, [isContractsOpen, authUser, activeCompanyId]);
 
-  const loadOperationsCounts = async () => {
-    if (!authUser) return;
+  const loadOperationsCounts = async (forceRefresh = false) => {
     try {
       const compId = activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'company_profile';
       const [{ shipments }, { exceptions }, metrics] = await Promise.all([
-        getShipments(compId, { pageLimit: 100 }),
-        getExceptions(compId, { status: 'ACTIVE', pageLimit: 100 }),
+        getShipments(compId, { pageLimit: 150, forceRefresh }),
+        getExceptions(compId, { status: 'ACTIVE', pageLimit: 150 }),
         getDeadlineMetrics(compId).catch(() => ({ overdue: 0, dueToday: 0 } as any)),
       ]);
       setShipmentsCount(shipments ? shipments.length : 0);
@@ -1595,8 +1596,8 @@ export default function App() {
 
     syncFirestoreData();
 
-    // Restore active quote draft from Cloud Firestore (cross-device continuity)
-    getActiveQuotationDraft(authUser.uid).then((cloudDraft) => {
+    // Restore shared workspace draft from Cloud Firestore (true cross-device continuity)
+    getSharedActiveQuotationDraft(currentCompId, authUser.uid).then((cloudDraft) => {
       if (cloudDraft && cloudDraft.quote && cloudDraft.quote.quoteNumber) {
         const { calculatedQuote } = calculateQuote(cloudDraft.quote);
         setQuote(calculatedQuote);
@@ -2440,14 +2441,19 @@ export default function App() {
   // Manual Cloud Sync Function for Navbar Trigger (Firestore + Firebase Storage 100% Multi-Device Sync)
   const handleForceCloudSync = async () => {
     setIsCloudSyncing(true);
+    const currentCompId = activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'company_profile';
     try {
       let [cloudQuotes, cloudCustomers, cloudRates, cloudCompany, cloudSurcharges, cloudCharges] = await Promise.all([
-        fetchQuotations({ forceRefresh: true }),
+        fetchQuotations({ forceRefresh: true, limitCount: 1000 }),
         fetchCustomers(true),
         fetchRateMasters(true),
         getCompanyProfileFromFirestore(),
         getSurchargesFromFirestore(),
         getChargeMastersFromFirestore(),
+        hydrateCloudVault(currentCompId, true),
+        loadPricingPoliciesData(true),
+        loadContractsCount(true),
+        loadOperationsCounts(true),
       ]);
 
       // If quotes are empty on this device, immediately recover from Firebase Storage snapshot
@@ -2470,6 +2476,16 @@ export default function App() {
       if (cloudSurcharges && cloudSurcharges.length > 0) setSurcharges(cloudSurcharges);
       if (cloudCharges && cloudCharges.length > 0) setChargeMasters(cloudCharges);
 
+      // Recover shared draft if current canvas is blank and clean
+      if (!hasUnsavedChanges && !quote.customer?.companyName && quote.items.length === 0) {
+        const sharedDraft = await getSharedActiveQuotationDraft(currentCompId, authUser?.uid).catch(() => ({ quote: null, savedAt: null }));
+        if (sharedDraft?.quote && sharedDraft.quote.quoteNumber) {
+          const { calculatedQuote } = calculateQuote(sharedDraft.quote);
+          setQuote(calculatedQuote);
+          if (sharedDraft.savedAt) setLastAutoSaveTime(sharedDraft.savedAt);
+        }
+      }
+
       markCloudPullCompleted();
 
       // Push full unified state to Firebase Storage
@@ -2483,7 +2499,7 @@ export default function App() {
       }).catch(() => {});
 
       setLastCloudSyncedAt(new Date());
-      showToast('Đã đồng bộ 100% dữ liệu qua Firebase Storage & Cloud cho mọi thiết bị!');
+      showToast('Đã đồng bộ 100% dữ liệu trực tiếp từ Cloud Server & Storage cho mọi thiết bị!');
     } catch (e) {
       console.warn('Manual cloud sync notice:', e);
     } finally {
@@ -3176,6 +3192,10 @@ export default function App() {
             quoteCount={savedQuotes.length}
             customerCount={customers.length}
             rateCount={rates.length}
+            contractsCount={contractsCount}
+            shipmentsCount={shipmentsCount}
+            workspaceId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'company_profile'}
+            onOpenCrossDeviceModal={() => setIsCrossDeviceModalOpen(true)}
             onOpenIntegrityDashboard={() => setIsIntegrityDashboardOpen(true)}
             onOpenDashboard={handleOpenDashboard}
             onOpenSavedQuotes={() => {
@@ -3829,6 +3849,20 @@ export default function App() {
             isFullscreen={isFullscreenTable}
             onToggleFullscreen={handleToggleFullscreenTable}
             onNavigateToTable={handleOpenTableDirectly}
+            isLoadingFromCloud={isCloudSyncing}
+            onLoadAllFromCloud={async () => {
+              setIsCloudSyncing(true);
+              try {
+                const allQuotes = await fetchQuotations({ forceRefresh: true, limitCount: 2000 });
+                if (allQuotes && allQuotes.length > 0) {
+                  setSavedQuotes(allQuotes);
+                  showToast(`Đã tải toàn bộ ${allQuotes.length} báo giá thật từ Cloud Server.`);
+                }
+                setLastCloudSyncedAt(new Date());
+              } finally {
+                setIsCloudSyncing(false);
+              }
+            }}
           />
         </RouteErrorBoundary>
       )}
@@ -4455,6 +4489,24 @@ export default function App() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         isVi={appLanguage === 'vi'}
+      />
+
+      {/* Cross-Device Pairing & Real-Data Sync Modal */}
+      <CrossDeviceSyncModal
+        isOpen={isCrossDeviceModalOpen}
+        onClose={() => setIsCrossDeviceModalOpen(false)}
+        workspaceId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'company_profile'}
+        workspaceName={activeCompanyRecord?.displayName || activeCompanyRecord?.legalName || company.name}
+        isSyncing={isCloudSyncing}
+        lastSyncedAt={lastCloudSyncedAt}
+        counts={{
+          quotes: savedQuotes.length,
+          customers: customers.length,
+          rates: rates.length,
+          contracts: contractsCount,
+          shipments: shipmentsCount,
+        }}
+        onForceSync={handleForceCloudSync}
       />
 
       {/* Phase 54: Real-time Live Lead Toast Notifier */}

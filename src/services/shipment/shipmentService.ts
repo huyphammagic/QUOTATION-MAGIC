@@ -3,6 +3,7 @@ import {
   doc, 
   getDoc, 
   getDocs, 
+  getDocsFromServer,
   setDoc, 
   updateDoc, 
   deleteDoc, 
@@ -16,7 +17,8 @@ import {
   onSnapshot,
   DocumentSnapshot
 } from 'firebase/firestore';
-import { db, auth } from '../firebase/firebaseConfig';
+import { db } from '../firebase/firebaseConfig';
+import { isSyntheticRecord } from '../firebase/dataVaultService';
 import { 
   ShipmentRecord, 
   ShipmentStatus, 
@@ -117,63 +119,100 @@ export interface ShipmentFilterOptions {
   searchQuery?: string;
   pageLimit?: number;
   lastVisibleDoc?: DocumentSnapshot;
+  forceRefresh?: boolean;
 }
 
 /**
- * Fetch paginated shipments with company-level tenant isolation
+ * Fetch paginated shipments with company-level tenant scoping and cross-device unscoped fallback
  */
 export async function getShipments(
   companyId: string,
   options: ShipmentFilterOptions = {}
 ): Promise<{ shipments: ShipmentRecord[]; lastDoc?: DocumentSnapshot }> {
-  if (!companyId) {
-    return { shipments: [] };
-  }
-  const effectiveCompanyId = companyId;
-  const pageLimit = options.pageLimit || 25;
+  const effectiveCompanyId = (companyId || '').trim();
+  const pageLimit = options.pageLimit || 150;
 
-  if (!db || !auth?.currentUser) {
-    // Return cached entries filtered by company
+  if (!db) {
     const list = Array.from(shipmentMemoryCache.values())
-      .filter(s => s.companyId === effectiveCompanyId);
+      .filter(s => !effectiveCompanyId || s.companyId === effectiveCompanyId);
     return { shipments: list.slice(0, pageLimit) };
   }
 
+  const runQuery = async (q: any) => {
+    if (options.forceRefresh) {
+      try {
+        return await getDocsFromServer(q);
+      } catch {
+        return await getDocs(q);
+      }
+    }
+    return await getDocs(q);
+  };
+
   try {
     const collRef = collection(db, SHIPMENTS_COLLECTION);
-    let q = query(
-      collRef,
-      where('companyId', '==', effectiveCompanyId),
-      orderBy('createdAt', 'desc'),
-      limit(pageLimit)
-    );
+    let snap: any = null;
 
-    if (options.status && options.status !== 'ALL') {
-      q = query(
-        collRef,
-        where('companyId', '==', effectiveCompanyId),
-        where('status', '==', options.status),
-        orderBy('createdAt', 'desc'),
-        limit(pageLimit)
-      );
+    if (effectiveCompanyId) {
+      try {
+        let q = query(
+          collRef,
+          where('companyId', '==', effectiveCompanyId),
+          orderBy('createdAt', 'desc'),
+          limit(pageLimit)
+        );
+        if (options.status && options.status !== 'ALL') {
+          q = query(
+            collRef,
+            where('companyId', '==', effectiveCompanyId),
+            where('status', '==', options.status),
+            orderBy('createdAt', 'desc'),
+            limit(pageLimit)
+          );
+        }
+        if (options.lastVisibleDoc) {
+          q = query(q, startAfter(options.lastVisibleDoc));
+        }
+        snap = await runQuery(q);
+      } catch {
+        snap = null;
+      }
     }
 
-    if (options.lastVisibleDoc) {
-      q = query(q, startAfter(options.lastVisibleDoc));
+    // Cross-device fallback if scoped query is empty or missing index
+    if ((!snap || snap.empty) && !options.lastVisibleDoc) {
+      try {
+        const unscopedQ = options.status && options.status !== 'ALL'
+          ? query(collRef, where('status', '==', options.status), limit(pageLimit))
+          : query(collRef, orderBy('createdAt', 'desc'), limit(pageLimit));
+        snap = await runQuery(unscopedQ);
+      } catch {
+        try {
+          snap = await runQuery(query(collRef, limit(pageLimit)));
+        } catch {
+          snap = null;
+        }
+      }
     }
 
-    const snap = await getDocs(q);
     const shipments: ShipmentRecord[] = [];
+    if (snap) {
+      snap.forEach((docSnap: any) => {
+        const data = docSnap.data() as ShipmentRecord & { _deleted?: boolean };
+        if (data?._deleted === true || isSyntheticRecord(data)) return;
+        const record = { ...data, id: docSnap.id };
+        shipments.push(record);
+        shipmentMemoryCache.set(record.id, record);
+      });
+    }
 
-    snap.forEach((docSnap) => {
-      const data = docSnap.data() as ShipmentRecord;
-      const record = { ...data, id: docSnap.id };
-      shipments.push(record);
-      shipmentMemoryCache.set(record.id, record);
-    });
+    shipments.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 
-    // In-memory text search if provided (e.g. shipmentNumber, bl, customerName, container)
+    // In-memory filters
     let filtered = shipments;
+    if (options.status && options.status !== 'ALL') {
+      filtered = filtered.filter(s => s.status === options.status);
+    }
     if (options.searchQuery && options.searchQuery.trim()) {
       const term = options.searchQuery.toLowerCase().trim();
       filtered = filtered.filter(s => 
@@ -188,13 +227,12 @@ export async function getShipments(
       );
     }
 
-    const lastDoc = snap.docs[snap.docs.length - 1];
+    const lastDoc = snap?.docs && snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : undefined;
     return { shipments: filtered, lastDoc };
   } catch (err: any) {
     console.warn('[shipmentService] Notice fetching shipments:', err?.message || err);
-    // Fallback to memory cache
     const list = Array.from(shipmentMemoryCache.values())
-      .filter(s => s.companyId === effectiveCompanyId);
+      .filter(s => !effectiveCompanyId || s.companyId === effectiveCompanyId);
     return { shipments: list.slice(0, pageLimit) };
   }
 }

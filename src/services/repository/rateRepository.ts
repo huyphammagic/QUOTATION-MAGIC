@@ -4,6 +4,7 @@ import {
   setDoc, 
   getDoc, 
   getDocs, 
+  getDocsFromServer,
   deleteDoc, 
   query, 
   orderBy, 
@@ -17,6 +18,7 @@ import { RateMasterItem, ChargeMasterItem, RateHistoryItem } from '../../types/m
 import { SurchargeItem } from '../../types/logistics';
 import { COLLECTION_SCHEMA_VERSIONS, normalizeDocumentOnRead } from '../firebase/schemaMigrationService';
 import { softDeleteRecord } from '../firebase/dataVaultService';
+import { moduleSyncMonitor } from '../integrity/moduleSyncMonitorService';
 
 const COLLECTIONS = {
   RATE_MASTERS: 'rateMasters',
@@ -58,6 +60,17 @@ export async function fetchRateMasters(forceRefresh = false, companyId?: string)
 
   if (!db) return memoryRatesCache ? memoryRatesCache.data : [];
 
+  const runQuery = async (q: any) => {
+    if (forceRefresh) {
+      try {
+        return await getDocsFromServer(q);
+      } catch {
+        return await getDocs(q);
+      }
+    }
+    return await getDocs(q);
+  };
+
   try {
     let snap: any = null;
     const collRef = collection(db, COLLECTIONS.RATE_MASTERS);
@@ -69,17 +82,20 @@ export async function fetchRateMasters(forceRefresh = false, companyId?: string)
           where('companyId', '==', targetCompany),
           orderBy('updatedAt', 'desc')
         );
-        snap = await getDocs(q);
+        snap = await runQuery(q);
       } catch {
         const fallbackQ = query(collRef, where('companyId', '==', targetCompany));
-        snap = await getDocs(fallbackQ);
+        snap = await runQuery(fallbackQ);
       }
-    } else {
+    }
+
+    // Cross-device fallback: if company-scoped query returned 0 records, fetch all master rates
+    if (!snap || snap.empty) {
       try {
         const q = query(collRef, orderBy('updatedAt', 'desc'));
-        snap = await getDocs(q);
+        snap = await runQuery(q);
       } catch {
-        snap = await getDocs(collRef);
+        snap = await runQuery(collRef);
       }
     }
 
@@ -96,8 +112,10 @@ export async function fetchRateMasters(forceRefresh = false, companyId?: string)
     items.sort((a, b) => (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || ''));
 
     memoryRatesCache = { data: items, cachedAt: now };
+    moduleSyncMonitor.setModuleSynced('rates', items.length);
     return items;
   } catch (err: any) {
+    moduleSyncMonitor.setModuleError('rates', err);
     return memoryRatesCache ? memoryRatesCache.data : [];
   }
 }

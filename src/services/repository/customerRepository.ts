@@ -138,7 +138,15 @@ export async function fetchCustomers(forceRefresh = false, companyId?: string): 
     const collRef = collection(db, COLLECTION_NAME);
 
     try {
-      snap = await getDocs(collRef);
+      if (forceRefresh) {
+        try {
+          snap = await getDocsFromServer(collRef);
+        } catch {
+          snap = await getDocs(collRef);
+        }
+      } else {
+        snap = await getDocs(collRef);
+      }
     } catch {
       snap = null;
     }

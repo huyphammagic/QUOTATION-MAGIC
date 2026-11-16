@@ -4,6 +4,7 @@ import {
   setDoc, 
   getDoc, 
   getDocs, 
+  getDocsFromServer,
   getDocFromCache,
   deleteDoc, 
   query, 
@@ -70,7 +71,7 @@ export interface SaveQuotationResult {
  */
 export async function fetchQuotations(options: FetchQuotationsOptions = {}): Promise<QuoteData[]> {
   const targetCompany = options.companyId || getVaultActiveCompanyId() || undefined;
-  const { status, customerId, limitCount = 50, forceRefresh = false } = options;
+  const { status, customerId, limitCount = 500, forceRefresh = false } = options;
 
   // 1. Check in-memory cache if no specific filters
   const now = Date.now();
@@ -81,6 +82,17 @@ export async function fetchQuotations(options: FetchQuotationsOptions = {}): Pro
   if (!db) {
     return memoryQuotesCache ? memoryQuotesCache.data : [];
   }
+
+  const runQuery = async (q: any) => {
+    if (forceRefresh) {
+      try {
+        return await getDocsFromServer(q);
+      } catch {
+        return await getDocs(q);
+      }
+    }
+    return await getDocs(q);
+  };
 
   try {
     const collRef = collection(db, COLLECTION_NAME);
@@ -103,7 +115,7 @@ export async function fetchQuotations(options: FetchQuotationsOptions = {}): Pro
     let snap: any = null;
     try {
       const q = query(collRef, ...constraints);
-      snap = await getDocs(q);
+      snap = await runQuery(q);
     } catch {
       snap = null;
     }
@@ -112,10 +124,10 @@ export async function fetchQuotations(options: FetchQuotationsOptions = {}): Pro
     if (!snap || snap.empty) {
       try {
         const unscopedQ = query(collRef, orderBy('updatedDate', 'desc'), limit(limitCount));
-        snap = await getDocs(unscopedQ);
+        snap = await runQuery(unscopedQ);
       } catch {
         try {
-          snap = await getDocs(query(collRef, limit(limitCount)));
+          snap = await runQuery(query(collRef, limit(limitCount)));
         } catch {
           if (memoryQuotesCache) return memoryQuotesCache.data;
           return [];
@@ -525,4 +537,35 @@ export async function clearActiveQuotationDraft(userId: string): Promise<void> {
   } catch (err) {
     console.warn('[quotationRepository] Error clearing active draft from Firestore:', err);
   }
+}
+
+/**
+ * Resolves a shared workspace draft ID so any device inside the same workspace opens the exact active draft.
+ */
+export function resolveSharedDraftId(workspaceId?: string): string {
+  const raw = (workspaceId || getVaultActiveCompanyId() || 'company_profile').trim();
+  return `workspace_${raw.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+}
+
+/**
+ * Cross-device draft recovery: tries workspace-shared draft first, then user-specific UID & legacy draft IDs.
+ */
+export async function getSharedActiveQuotationDraft(
+  workspaceId?: string,
+  fallbackUserId?: string
+): Promise<{ quote: QuoteData | null; savedAt: string | null }> {
+  const candidates = [
+    resolveSharedDraftId(workspaceId),
+    fallbackUserId,
+    'current_user',
+  ].filter((c): c is string => Boolean(c && c.trim()));
+
+  const uniqueCandidates = Array.from(new Set(candidates));
+  for (const candidateId of uniqueCandidates) {
+    const res = await getActiveQuotationDraft(candidateId);
+    if (res.quote && res.quote.quoteNumber) {
+      return res;
+    }
+  }
+  return { quote: null, savedAt: null };
 }

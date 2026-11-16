@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronRight, Loader2, SlidersHorizontal, Sparkles, 
   CreditCard, Receipt, LayoutGrid, Table as TableIcon, Ship, Plane, 
   Truck, ArrowRight, CheckCircle2, AlertCircle, Clock, Send, TrendingUp, DollarSign,
-  Trophy
+  Trophy, RefreshCw
 } from 'lucide-react';
 import { FolderFullscreenHeader } from './tables/TableFullscreenHeader';
 import { PaymentStatusBadge } from './payment/PaymentStatusBadge';
@@ -29,6 +29,8 @@ interface SavedQuotesModalProps {
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
   onNavigateToTable?: (targetTableId: string) => void;
+  onLoadAllFromCloud?: () => Promise<void>;
+  isLoadingFromCloud?: boolean;
 }
 
 export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
@@ -47,6 +49,8 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
   isFullscreen,
   onToggleFullscreen,
   onNavigateToTable,
+  onLoadAllFromCloud,
+  isLoadingFromCloud = false,
 }) => {
   const [localFullscreen, setLocalFullscreen] = useState(true);
   const effectiveFullscreen = isFullscreen !== undefined ? isFullscreen : localFullscreen;
@@ -204,7 +208,20 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
           onClose={onClose}
           onNavigateToFolder={onNavigateToTable}
           actions={
-            <div className="flex items-center gap-1.5 mr-2">
+            <div className="flex items-center gap-2 mr-2">
+              {onLoadAllFromCloud && (
+                <button
+                  type="button"
+                  onClick={onLoadAllFromCloud}
+                  disabled={isLoadingFromCloud}
+                  className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                  title="Tải toàn bộ lịch sử báo giá từ Cloud Server"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingFromCloud ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">{isLoadingFromCloud ? 'Đang tải Cloud...' : 'Tải Toàn Bộ Lịch Sử'}</span>
+                </button>
+              )}
+
               {/* View Switcher: Dạng Thẻ Thư Mục vs Dạng Bảng */}
               <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
                 <button

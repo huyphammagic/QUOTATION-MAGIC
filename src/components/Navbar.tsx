@@ -1,11 +1,10 @@
 import React from 'react';
-import { Menu, Plus, Search, Keyboard } from 'lucide-react';
+import { Menu, Plus, Search, Keyboard, QrCode } from 'lucide-react';
 import { CompanyProfile } from '../types/logistics';
 import { ExchangeRateDetail } from '../types/exchangeRate';
 import { ExchangeRateBadge } from './exchangeRate/ExchangeRateBadge';
 import { CloudSyncStatusBadge } from './CloudSyncStatusBadge';
 import { CompanySwitcher } from './company/CompanySwitcher';
-import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
   company: CompanyProfile;
@@ -22,7 +21,11 @@ interface NavbarProps {
   quoteCount?: number;
   customerCount?: number;
   rateCount?: number;
+  contractsCount?: number;
+  shipmentsCount?: number;
+  workspaceId?: string;
   onOpenIntegrityDashboard?: () => void;
+  onOpenCrossDeviceModal?: () => void;
   onOpenCompanyProfile?: (tab?: 'directory' | 'profile' | 'branding' | 'sales' | 'bank' | 'preview' | 'financial') => void;
   onOpenCreateCompany?: () => void;
   onOpenAuthModal?: () => void;
@@ -55,7 +58,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   quoteCount = 0,
   customerCount = 0,
   rateCount = 0,
+  contractsCount = 0,
+  shipmentsCount = 0,
+  workspaceId = 'company_profile',
   onOpenIntegrityDashboard,
+  onOpenCrossDeviceModal,
   onOpenCompanyProfile,
   onOpenCreateCompany,
   onOpenAuthModal,
@@ -72,7 +79,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCommandPalette,
   onOpenShortcutsHelp,
 }) => {
-  const { user, isAuthenticated } = useAuth();
 
   return (
     <header className="h-14 bg-white border-b border-slate-200/80 sticky top-0 z-30 flex items-center justify-between px-3 sm:px-6 lg:px-8">
@@ -157,8 +163,26 @@ export const Navbar: React.FC<NavbarProps> = ({
           quoteCount={quoteCount}
           customerCount={customerCount}
           rateCount={rateCount}
+          contractsCount={contractsCount}
+          shipmentsCount={shipmentsCount}
+          workspaceId={workspaceId}
           onOpenIntegrityDashboard={onOpenIntegrityDashboard}
+          onOpenCrossDeviceModal={onOpenCrossDeviceModal}
         />
+
+        {/* Cross-Device Pairing Quick Button */}
+        {onOpenCrossDeviceModal && (
+          <button
+            id="cross-device-pairing-trigger"
+            type="button"
+            onClick={onOpenCrossDeviceModal}
+            className="hidden md:flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            title="Mở & Đồng Bộ Trên Thiết Bị Khác (QR Code, Link & Google)"
+          >
+            <QrCode className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <span className="hidden xl:inline">Đa Thiết Bị</span>
+          </button>
+        )}
 
         {/* Real-time USD Exchange Rate Live Badge */}
         {liveRateDetail ? (
@@ -172,15 +196,12 @@ export const Navbar: React.FC<NavbarProps> = ({
         ) : (
           <div 
             onClick={onOpenExchangeRateModal}
-            className="hidden sm:flex items-center bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs text-slate-600 space-x-1.5 cursor-pointer hover:border-blue-400 hover:bg-white transition-all press-physics-subtle focus-ring-physics-light"
+            className="hidden sm:flex items-center bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs text-slate-600 space-x-1.5 cursor-pointer hover:border-blue-400 hover:bg-white transition-all whitespace-nowrap shrink-0"
             title="Bấm để mở Trung tâm Tỷ giá USD Realtime Vietcombank"
           >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-            </span>
+            <span className="inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500 shrink-0" />
             <span className="text-[11px] font-semibold text-slate-500">USD:</span>
-            <span className="font-mono font-bold text-slate-900">{exchangeRate.toLocaleString()}</span>
+            <span className="font-mono font-bold tabular-nums text-slate-900">{exchangeRate.toLocaleString()}</span>
             <span className="text-[10px] text-slate-400">₫</span>
           </div>
         )}
@@ -190,7 +211,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onNewQuote}
-            className="flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs px-3.5 py-1.5 rounded-lg shadow-sm hover:shadow transition-all cursor-pointer press-physics focus-ring-physics-light"
+            className="flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs px-3.5 py-1.5 rounded-lg shadow-sm hover:shadow transition-all cursor-pointer press-physics focus-ring-physics-light whitespace-nowrap shrink-0"
             title="Tạo báo giá mới sạch"
           >
             <Plus className="w-3.5 h-3.5" />

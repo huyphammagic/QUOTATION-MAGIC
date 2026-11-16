@@ -3,6 +3,7 @@ import {
   doc, 
   getDoc, 
   getDocs, 
+  getDocsFromServer,
   setDoc, 
   deleteDoc, 
   query, 
@@ -163,15 +164,24 @@ export const BUILT_IN_POLICIES: PricingPolicyItem[] = [
 /**
  * Fetches all pricing policies from Firestore with in-memory caching
  */
-export async function getPricingPoliciesFromFirestore(): Promise<PricingPolicyItem[]> {
+export async function getPricingPoliciesFromFirestore(forceRefresh = false): Promise<PricingPolicyItem[]> {
   const now = Date.now();
-  if (policiesCache && (now - policiesCache.timestamp < CACHE_TTL_MS)) {
+  if (!forceRefresh && policiesCache && (now - policiesCache.timestamp < CACHE_TTL_MS)) {
     return policiesCache.data;
   }
 
   try {
     const q = query(collection(db, COLLECTION_NAME), orderBy('priority', 'desc'));
-    const snapshot = await getDocs(q);
+    let snapshot: any;
+    if (forceRefresh) {
+      try {
+        snapshot = await getDocsFromServer(q);
+      } catch {
+        snapshot = await getDocs(q);
+      }
+    } else {
+      snapshot = await getDocs(q);
+    }
 
     if (snapshot.empty) {
       // If collection is empty in Firestore, seed standard defaults and return
@@ -180,8 +190,8 @@ export async function getPricingPoliciesFromFirestore(): Promise<PricingPolicyIt
     }
 
     const items: PricingPolicyItem[] = [];
-    snapshot.forEach(docSnap => {
-      items.push(docSnap.data() as PricingPolicyItem);
+    snapshot.forEach((docSnap: any) => {
+      items.push({ ...(docSnap.data() as PricingPolicyItem), id: docSnap.id });
     });
 
     policiesCache = { data: items, timestamp: now };

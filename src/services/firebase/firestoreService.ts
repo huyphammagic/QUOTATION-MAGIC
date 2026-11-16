@@ -1117,85 +1117,71 @@ export async function batchRestoreSystemDataToFirestore(data: {
   surcharges?: SurchargeItem[];
   rateMasters?: RateMasterItem[];
   chargeMasters?: ChargeMasterItem[];
+  contracts?: any[];
+  shipments?: any[];
+  pricingPolicies?: any[];
+  communications?: any[];
+  followUps?: any[];
 }): Promise<void> {
   if (!db) return;
 
-  // 1. Batch quotes (reject synthetic records)
-  const realQuotes = (data.quotes || []).filter((q) => !isSyntheticRecord(q));
-  if (realQuotes.length > 0) {
+  const commitCollectionChunked = async (
+    collectionName: string,
+    records: any[],
+    schemaVersion?: number
+  ) => {
+    const clean = (records || []).filter((r) => r && r.id && !isSyntheticRecord(r) && !r._deleted);
+    if (clean.length === 0) return;
     const CHUNK_SIZE = 400;
-    for (let i = 0; i < realQuotes.length; i += CHUNK_SIZE) {
-      const chunk = realQuotes.slice(i, i + CHUNK_SIZE);
+    for (let i = 0; i < clean.length; i += CHUNK_SIZE) {
+      const chunk = clean.slice(i, i + CHUNK_SIZE);
       const batch = writeBatch(db);
-      for (const q of chunk) {
-        batch.set(doc(db, COLLECTIONS.QUOTES, q.id), {
-          ...stampRealDataOrigin(q, 'IMPORTED'),
+      for (const item of chunk) {
+        const stamped = stampRealDataOrigin(item, 'IMPORTED');
+        const payload: Record<string, any> = {
+          ...stamped,
           _deleted: false,
-          _schemaVersion: COLLECTION_SCHEMA_VERSIONS.quotes,
           _updatedAt: serverTimestamp(),
-        }, { merge: true });
+        };
+        if (schemaVersion !== undefined) {
+          payload._schemaVersion = schemaVersion;
+        }
+        batch.set(doc(db, collectionName, String(item.id)), payload, { merge: true });
       }
       try {
         await batch.commit();
       } catch (e) {
-        console.warn('Restore quotes batch notice:', e);
+        console.warn(`Restore ${collectionName} batch notice:`, e);
       }
     }
-  }
+  };
+
+  // 1. Batch quotes (reject synthetic records)
+  await commitCollectionChunked(COLLECTIONS.QUOTES, data.quotes || [], COLLECTION_SCHEMA_VERSIONS.quotes);
 
   // 2. Batch customers (reject synthetic records)
-  const realCustomers = (data.customers || []).filter((c) => !isSyntheticRecord(c));
-  if (realCustomers.length > 0) {
-    const CHUNK_SIZE = 400;
-    for (let i = 0; i < realCustomers.length; i += CHUNK_SIZE) {
-      const chunk = realCustomers.slice(i, i + CHUNK_SIZE);
-      const batch = writeBatch(db);
-      for (const c of chunk) {
-        batch.set(doc(db, COLLECTIONS.CUSTOMERS, c.id), {
-          ...stampRealDataOrigin(c, 'IMPORTED'),
-          _deleted: false,
-          _schemaVersion: COLLECTION_SCHEMA_VERSIONS.customers,
-          _updatedAt: serverTimestamp(),
-        }, { merge: true });
-      }
-      try {
-        await batch.commit();
-      } catch (e) {
-        console.warn('Restore customers batch notice:', e);
-      }
-    }
-  }
+  await commitCollectionChunked(COLLECTIONS.CUSTOMERS, data.customers || [], COLLECTION_SCHEMA_VERSIONS.customers);
 
   // 3. Batch surcharges (reject synthetic records)
-  const realSurcharges = (data.surcharges || []).filter((s) => !isSyntheticRecord(s));
-  if (realSurcharges.length > 0) {
-    const CHUNK_SIZE = 400;
-    for (let i = 0; i < realSurcharges.length; i += CHUNK_SIZE) {
-      const chunk = realSurcharges.slice(i, i + CHUNK_SIZE);
-      const batch = writeBatch(db);
-      for (const s of chunk) {
-        batch.set(doc(db, COLLECTIONS.SURCHARGES, s.id), {
-          ...stampRealDataOrigin(s, 'IMPORTED'),
-          _deleted: false,
-          _schemaVersion: COLLECTION_SCHEMA_VERSIONS.surcharges,
-          _updatedAt: serverTimestamp(),
-        }, { merge: true });
-      }
-      try {
-        await batch.commit();
-      } catch (e) {
-        console.warn('Restore surcharges batch notice:', e);
-      }
-    }
-  }
+  await commitCollectionChunked(COLLECTIONS.SURCHARGES, data.surcharges || [], COLLECTION_SCHEMA_VERSIONS.surcharges);
 
-  // 4. Batch rate masters
+  // 4. Batch rate masters & charge masters
   const realRates = (data.rateMasters || []).filter((r) => !isSyntheticRecord(r));
   if (realRates.length > 0) {
     await batchSaveMasterRatesToFirestore(realRates, 'BACKUP_RESTORE', 'BACKUP_RESTORE');
   }
+  await commitCollectionChunked(COLLECTIONS.CHARGE_MASTERS, data.chargeMasters || [], COLLECTION_SCHEMA_VERSIONS.chargeMasters);
 
-  // 5. Company settings
+  // 5. Batch contracts, shipments, pricingPolicies, communications, and followUps
+  await Promise.all([
+    commitCollectionChunked('contracts', data.contracts || []),
+    commitCollectionChunked('shipments', data.shipments || []),
+    commitCollectionChunked('pricingPolicies', data.pricingPolicies || []),
+    commitCollectionChunked('quotationCommunications', data.communications || []),
+    commitCollectionChunked('quotationFollowUps', data.followUps || []),
+  ]);
+
+  // 6. Company settings
   if (data.companySettings) {
     await saveCompanyProfileToFirestore(data.companySettings);
   }

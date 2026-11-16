@@ -9,6 +9,7 @@ import { User } from 'firebase/auth';
 import { 
   subscribeToAuth, 
   loginWithEmail, 
+  loginWithGoogle as loginWithGoogleService,
   registerWithEmail, 
   logoutUser, 
   loginAnonymously,
@@ -21,7 +22,9 @@ interface AuthContextType {
   firebaseUser: User | null;
   loading: boolean;
   isAuthenticated: boolean;
+  hasSignedInAccount: boolean;
   login: (email: string, pass: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   register: (email: string, pass: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -50,7 +53,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ...DEFAULT_SYSTEM_USER,
           uid: fUser.uid,
           email: fUser.email || DEFAULT_SYSTEM_USER.email,
-          displayName: fUser.displayName || DEFAULT_SYSTEM_USER.displayName,
+          displayName: fUser.displayName || (fUser.email ? fUser.email.split('@')[0] : DEFAULT_SYSTEM_USER.displayName),
+          photoURL: fUser.photoURL || null,
           isAnonymous: fUser.isAnonymous,
         });
       } else {
@@ -81,6 +85,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const loginWithGoogle = useCallback(async () => {
+    setLoading(true);
+    try {
+      const u = await loginWithGoogleService();
+      setFirebaseUser(u);
+      setUser(formatAuthUser(u) || DEFAULT_SYSTEM_USER);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const register = useCallback(async (email: string, pass: string, displayName: string) => {
     setLoading(true);
     try {
@@ -100,12 +115,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(DEFAULT_SYSTEM_USER);
   }, []);
 
+  const hasSignedInAccount = Boolean(firebaseUser && !firebaseUser.isAnonymous && firebaseUser.email);
+
   const value: AuthContextType = {
     user,
     firebaseUser,
-    loading: false,
+    loading,
     isAuthenticated: true,
+    hasSignedInAccount,
     login,
+    loginWithGoogle,
     register,
     logout,
   };

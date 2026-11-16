@@ -74,14 +74,38 @@ export const MultiCompanyProvider: React.FC<{
   const { user } = useAuth();
   
   // UI preference only - NOT a security boundary (stored in Cloud Vault RAM + Firebase Storage)
+  const [urlWorkspaceParam] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const ws = new URLSearchParams(window.location.search).get('workspace')?.trim();
+      return ws ? ws : null;
+    } catch {
+      return null;
+    }
+  });
+
   const [activeCompanyId, setActiveCompanyId] = useState<string>(() => {
-    return getVaultActiveCompanyId();
+    return urlWorkspaceParam || getVaultActiveCompanyId();
   });
   
   const [companies, setCompanies] = useState<CompanyRecord[]>([]);
   const [companyMetadataList, setCompanyMetadataList] = useState<CompanyMetadataItem[]>([]);
   const [activeCompanyRecord, setActiveCompanyRecord] = useState<CompanyRecord | null>(null);
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
+
+  // Clean ?workspace= param smoothly once captured so reloads don't hold stale query string
+  useEffect(() => {
+    if (urlWorkspaceParam && typeof window !== 'undefined') {
+      setVaultActiveCompanyId(urlWorkspaceParam);
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('workspace');
+        window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+      } catch {
+        // ignore URL rewrite errors
+      }
+    }
+  }, [urlWorkspaceParam]);
 
   // Real RBAC Membership States
   const [activeMemberRecord, setActiveMemberRecord] = useState<CompanyMemberRecord | null>(null);
@@ -124,8 +148,8 @@ export const MultiCompanyProvider: React.FC<{
         }
 
         // Security boundary validation: if stored company is not in user's memberships,
-        // and user has other valid memberships, switch to their legitimate company!
-        if (!mRecord && allMemberships.length > 0) {
+        // and user has other valid memberships, switch to their legitimate company unless explicitly paired via URL!
+        if (!urlWorkspaceParam && !mRecord && allMemberships.length > 0) {
           const legitimateCompany = allMemberships[0].companyId;
           console.info(`[MultiCompanyContext] Realigning activeCompanyId from ${targetCompany} to user-authorized company: ${legitimateCompany}`);
           if (isMounted) {

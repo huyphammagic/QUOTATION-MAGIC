@@ -232,18 +232,35 @@ export async function getDeadlines(
   try {
     let list: DeadlineEntity[] = [];
 
-    if (db && auth?.currentUser) {
-      const q = query(
-        collection(db, DEADLINES_COLLECTION),
-        where('companyId', '==', effectiveCompanyId),
-        limit(pageLimit)
-      );
-      const snap = await getDocs(q);
-      snap.forEach(docSnap => {
-        const item = docSnap.data() as DeadlineEntity;
-        deadlineMemoryCache.set(item.id, item);
-        list.push(item);
-      });
+    if (db) {
+      const collRef = collection(db, DEADLINES_COLLECTION);
+      let snap: any = null;
+      try {
+        const q = query(
+          collRef,
+          where('companyId', '==', effectiveCompanyId),
+          limit(pageLimit)
+        );
+        snap = await getDocs(q);
+      } catch {
+        snap = null;
+      }
+
+      if (!snap || snap.empty) {
+        try {
+          snap = await getDocs(query(collRef, limit(pageLimit)));
+        } catch {
+          snap = null;
+        }
+      }
+
+      if (snap) {
+        snap.forEach((docSnap: any) => {
+          const item = { ...(docSnap.data() as DeadlineEntity), id: docSnap.id };
+          deadlineMemoryCache.set(item.id, item);
+          list.push(item);
+        });
+      }
     } else {
       list = Array.from(deadlineMemoryCache.values()).filter(d => d.companyId === effectiveCompanyId);
     }

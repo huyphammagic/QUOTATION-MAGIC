@@ -5,7 +5,8 @@ import {
   saveQuotation as repoSaveQuotation, 
   deleteQuotation as repoDeleteQuotation,
   saveActiveQuotationDraft as repoSaveDraft,
-  clearActiveQuotationDraft as repoClearDraft
+  clearActiveQuotationDraft as repoClearDraft,
+  resolveSharedDraftId
 } from '../services/repository/quotationRepository';
 import { 
   saveCustomer as repoSaveCustomer, 
@@ -254,7 +255,8 @@ export function saveActiveQuoteDraft(quote: QuoteData): string {
   const now = new Date();
   const timeString = now.toLocaleTimeString('vi-VN', { hour12: false });
   memoryActiveDraft = { quote, savedAt: timeString };
-  repoSaveDraft('current_user', quote).catch(() => {});
+  const sharedDraftId = resolveSharedDraftId(quote.companyId || (quote.company as any)?.companyId);
+  repoSaveDraft(sharedDraftId, quote).catch(() => {});
   return timeString;
 }
 
@@ -264,7 +266,8 @@ export function getActiveQuoteDraft(): { quote: QuoteData | null; savedAt: strin
 
 export function clearActiveQuoteDraft() {
   memoryActiveDraft = { quote: null, savedAt: null };
-  repoClearDraft('current_user').catch(() => {});
+  const sharedDraftId = resolveSharedDraftId();
+  repoClearDraft(sharedDraftId).catch(() => {});
 }
 
 // ================= SYNC UPDATE HELPER (WHEN CLOUD DATA ARRIVES) =================
