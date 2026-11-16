@@ -123,6 +123,7 @@ export async function saveQuoteToFirestore(quote: QuoteData): Promise<void> {
       updatedList = [quote, ...localQuotes];
     }
     saveQuotesList(updatedList);
+    moduleSyncMonitor.setModuleSynced('quotes', updatedList.length);
 
     // Phase 44: Sync quotation validity deadline
     syncQuotationDeadlines(quote, { uid: (quote as any).creatorId || (quote as any).userId || 'operator' }).catch(err => {
@@ -130,6 +131,7 @@ export async function saveQuoteToFirestore(quote: QuoteData): Promise<void> {
     });
   } catch (error) {
     console.error('Firestore quote save error:', error);
+    moduleSyncMonitor.setModuleError('quotes', error);
     if (String((error as any)?.message || '').toLowerCase().includes('permission')) {
       handleFirestoreError(error, OperationType.WRITE, `${COLLECTIONS.QUOTES}/${quote.id}`);
     }
@@ -139,7 +141,9 @@ export async function saveQuoteToFirestore(quote: QuoteData): Promise<void> {
 
 export async function getQuotesFromFirestore(): Promise<QuoteData[]> {
   if (!db) {
-    return loadSavedQuotes();
+    const local = loadSavedQuotes();
+    moduleSyncMonitor.setModuleSynced('quotes', local.length);
+    return local;
   }
 
   try {
@@ -162,13 +166,16 @@ export async function getQuotesFromFirestore(): Promise<QuoteData[]> {
         return (b.id || b.quoteNumber || '').localeCompare(a.id || a.quoteNumber || '');
       });
       saveQuotesList(items);
+      moduleSyncMonitor.setModuleSynced('quotes', items.length);
       return items;
     }
   } catch (error) {
     console.warn('Firestore load quotes fallback to local storage:', error);
   }
 
-  return loadSavedQuotes();
+  const local = loadSavedQuotes();
+  moduleSyncMonitor.setModuleSynced('quotes', local.length);
+  return local;
 }
 
 export async function deleteQuoteFromFirestore(id: string): Promise<void> {
@@ -182,8 +189,10 @@ export async function deleteQuoteFromFirestore(id: string): Promise<void> {
     }
     const localQuotes = loadSavedQuotes().filter(q => q.id !== id);
     saveQuotesList(localQuotes);
+    moduleSyncMonitor.setModuleSynced('quotes', localQuotes.length);
   } catch (error) {
     console.error('Firestore soft-delete quote error:', error);
+    moduleSyncMonitor.setModuleError('quotes', error);
     throw error;
   }
 }

@@ -38,6 +38,8 @@ class ModuleSyncMonitorService {
   private subscribers = new Set<SyncSubscriber>();
   private isOnline: boolean = typeof navigator !== 'undefined' ? navigator.onLine : true;
   private lastGlobalSyncAt: Date | null = new Date();
+  private syncWatchdogs: Partial<Record<'quotes' | 'customers' | 'rates', ReturnType<typeof setTimeout>>> = {};
+  private readonly SYNC_WATCHDOG_TIMEOUT_MS = 10000;
 
   private modules: {
     quotes: ModuleSyncInfo;
@@ -80,18 +82,31 @@ class ModuleSyncMonitorService {
     if (typeof window !== 'undefined') {
       window.addEventListener('online', () => {
         this.isOnline = true;
+        (['quotes', 'customers', 'rates'] as const).forEach((mod) => {
+          if (this.modules[mod].status === 'Error') {
+            this.modules[mod].status = 'Synced';
+            this.modules[mod].errorMessage = undefined;
+          }
+        });
         this.notify();
       });
       window.addEventListener('offline', () => {
         this.isOnline = false;
-        this.modules.quotes.status = 'Error';
-        this.modules.quotes.errorMessage = 'Mất kết nối Internet';
-        this.modules.customers.status = 'Error';
-        this.modules.customers.errorMessage = 'Mất kết nối Internet';
-        this.modules.rates.status = 'Error';
-        this.modules.rates.errorMessage = 'Mất kết nối Internet';
+        (['quotes', 'customers', 'rates'] as const).forEach((mod) => {
+          this.clearWatchdog(mod);
+          this.modules[mod].status = 'Error';
+          this.modules[mod].errorMessage = 'Mất kết nối Internet';
+        });
         this.notify();
       });
+    }
+  }
+
+  private clearWatchdog(moduleId: 'quotes' | 'customers' | 'rates'): void {
+    const existing = this.syncWatchdogs[moduleId];
+    if (existing) {
+      clearTimeout(existing);
+      delete this.syncWatchdogs[moduleId];
     }
   }
 
@@ -146,8 +161,23 @@ class ModuleSyncMonitorService {
   }
 
   public setModuleSyncing(moduleId: 'quotes' | 'customers' | 'rates'): void {
+    this.clearWatchdog(moduleId);
     this.modules[moduleId].status = 'Syncing';
     this.modules[moduleId].errorMessage = undefined;
+    this.syncWatchdogs[moduleId] = setTimeout(() => {
+      if (this.modules[moduleId].status === 'Syncing') {
+        if (this.isOnline) {
+          this.modules[moduleId].status = 'Synced';
+          this.modules[moduleId].lastSyncedAt = new Date();
+          this.modules[moduleId].errorMessage = undefined;
+        } else {
+          this.modules[moduleId].status = 'Error';
+          this.modules[moduleId].errorMessage = 'Mất kết nối Internet';
+        }
+        delete this.syncWatchdogs[moduleId];
+        this.notify();
+      }
+    }, this.SYNC_WATCHDOG_TIMEOUT_MS);
     this.notify();
   }
 
@@ -156,6 +186,7 @@ class ModuleSyncMonitorService {
     count?: number,
     latencyMs?: number
   ): void {
+    this.clearWatchdog(moduleId);
     const now = new Date();
     this.modules[moduleId].status = 'Synced';
     this.modules[moduleId].lastSyncedAt = now;
@@ -172,6 +203,7 @@ class ModuleSyncMonitorService {
   }
 
   public setModuleError(moduleId: 'quotes' | 'customers' | 'rates', error: any): void {
+    this.clearWatchdog(moduleId);
     const msg = error?.message || (typeof error === 'string' ? error : 'Lỗi đồng bộ Firebase');
     this.modules[moduleId].status = 'Error';
     this.modules[moduleId].errorMessage = msg;

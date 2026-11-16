@@ -80,11 +80,11 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
     return () => unsub();
   }, [quoteCount, customerCount, rateCount]);
 
-  // Overall effective status factoring in external isSyncing / isAutoSaving
-  const isGlobalSyncing = isSyncing || isAutoSaving || syncSnapshot.overallStatus === 'Syncing';
+  // Overall effective status factoring in external isSyncing & moduleSyncMonitor
+  const isGlobalSyncing = isSyncing || syncSnapshot.overallStatus === 'Syncing';
   const effectiveOverallStatus: ModuleSyncStatus = !syncSnapshot.isOnline 
     ? 'Error' 
-    : isGlobalSyncing 
+    : isGlobalSyncing || isAutoSaving
       ? 'Syncing' 
       : syncSnapshot.overallStatus;
 
@@ -146,22 +146,30 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({
     }
   };
 
-  // Sync All Modules handler
+  // Sync All Modules handler (always clickable unless explicit manual full sync is in flight)
   const handleSyncAll = async () => {
-    if (isGlobalSyncing) return;
+    if (isSyncing) return;
     setSyncingModules({ quotes: true, customers: true, rates: true });
 
     try {
       if (onForceSync) {
         await onForceSync();
       } else {
-        await Promise.allSettled([
+        const [quotesRes, custRes, ratesRes] = await Promise.allSettled([
           fetchQuotations({ forceRefresh: true }),
           fetchCustomers(true),
           fetchRateMasters(true),
         ]);
+        if (quotesRes.status === 'fulfilled') moduleSyncMonitor.setModuleSynced('quotes', quotesRes.value.length);
+        if (custRes.status === 'fulfilled') moduleSyncMonitor.setModuleSynced('customers', custRes.value.length);
+        if (ratesRes.status === 'fulfilled') moduleSyncMonitor.setModuleSynced('rates', ratesRes.value.length);
       }
     } finally {
+      // Guarantee no module remains stranded in Syncing after a forced full sync
+      const current = moduleSyncMonitor.getSnapshot().modules;
+      if (current.quotes.status === 'Syncing') moduleSyncMonitor.setModuleSynced('quotes', current.quotes.count);
+      if (current.customers.status === 'Syncing') moduleSyncMonitor.setModuleSynced('customers', current.customers.count);
+      if (current.rates.status === 'Syncing') moduleSyncMonitor.setModuleSynced('rates', current.rates.count);
       setSyncingModules({ quotes: false, customers: false, rates: false });
     }
   };

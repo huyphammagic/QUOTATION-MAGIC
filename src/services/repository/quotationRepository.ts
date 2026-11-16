@@ -76,11 +76,14 @@ export async function fetchQuotations(options: FetchQuotationsOptions = {}): Pro
   // 1. Check in-memory cache if no specific filters
   const now = Date.now();
   if (!forceRefresh && !targetCompany && !status && !customerId && memoryQuotesCache && (now - memoryQuotesCache.cachedAt < CACHE_TTL_MS)) {
+    moduleSyncMonitor.setModuleSynced('quotes', memoryQuotesCache.data.length);
     return memoryQuotesCache.data;
   }
 
   if (!db) {
-    return memoryQuotesCache ? memoryQuotesCache.data : [];
+    const fallback = memoryQuotesCache ? memoryQuotesCache.data : [];
+    moduleSyncMonitor.setModuleSynced('quotes', fallback.length);
+    return fallback;
   }
 
   const runQuery = async (q: any) => {
@@ -94,6 +97,7 @@ export async function fetchQuotations(options: FetchQuotationsOptions = {}): Pro
     return await getDocs(q);
   };
 
+  let syncResolved = false;
   try {
     const collRef = collection(db, COLLECTION_NAME);
     const constraints: any[] = [];
@@ -129,15 +133,19 @@ export async function fetchQuotations(options: FetchQuotationsOptions = {}): Pro
         try {
           snap = await runQuery(query(collRef, limit(limitCount)));
         } catch {
-          if (memoryQuotesCache) return memoryQuotesCache.data;
-          return [];
+          const fallback = memoryQuotesCache ? memoryQuotesCache.data : [];
+          moduleSyncMonitor.setModuleSynced('quotes', fallback.length);
+          syncResolved = true;
+          return fallback;
         }
       }
     }
 
     if (snap && snap.empty) {
-      if (memoryQuotesCache && memoryQuotesCache.data.length > 0) return memoryQuotesCache.data;
-      return [];
+      const fallback = memoryQuotesCache && memoryQuotesCache.data.length > 0 ? memoryQuotesCache.data : [];
+      moduleSyncMonitor.setModuleSynced('quotes', fallback.length);
+      syncResolved = true;
+      return fallback;
     }
 
     const items: QuoteData[] = [];
@@ -161,12 +169,19 @@ export async function fetchQuotations(options: FetchQuotationsOptions = {}): Pro
       };
     }
 
-    moduleSyncMonitor.setModuleSynced('quotes', items.length);
-    return items.length > 0 ? items : (memoryQuotesCache ? memoryQuotesCache.data : []);
+    const result = items.length > 0 ? items : (memoryQuotesCache ? memoryQuotesCache.data : []);
+    moduleSyncMonitor.setModuleSynced('quotes', result.length);
+    syncResolved = true;
+    return result;
   } catch (error: any) {
     moduleSyncMonitor.setModuleError('quotes', error);
+    syncResolved = true;
     if (memoryQuotesCache) return memoryQuotesCache.data;
     return [];
+  } finally {
+    if (!syncResolved && moduleSyncMonitor.getSnapshot().modules.quotes.status === 'Syncing') {
+      moduleSyncMonitor.setModuleSynced('quotes');
+    }
   }
 }
 
@@ -222,6 +237,7 @@ export async function saveQuotation(
   quote: QuoteData,
   options?: {
     forceOverwrite?: boolean;
+    isAutoSave?: boolean;
     userId?: string;
     userName?: string;
     companyId?: string;
@@ -230,6 +246,14 @@ export async function saveQuotation(
   const quoteId = quote.id || `quote-${Date.now()}`;
   let newVersion = quote.version || 1;
   const effectiveCompanyId = quote.companyId || (quote.company as any)?.companyId || options?.companyId || 'company_profile';
+
+  if (STRICT_REAL_DATA_ONLY && isSyntheticRecord(quote)) {
+    return {
+      success: false,
+      conflict: false,
+      message: 'STRICT_REAL_DATA_GUARD: Từ chối lưu báo giá mẫu/giả lập lên hệ thống.',
+    };
+  }
 
   if (!db) {
     const fallbackPayload: QuoteData = {
@@ -244,6 +268,7 @@ export async function saveQuotation(
       data: fallbackPayload,
       cachedAt: Date.now(),
     });
+    moduleSyncMonitor.setModuleSynced('quotes');
     return {
       success: true,
       savedQuote: fallbackPayload,
@@ -257,7 +282,12 @@ export async function saveQuotation(
     entityId: quoteId,
     action: 'UPDATE',
   });
-  moduleSyncMonitor.setModuleSyncing('quotes');
+
+  // Only show Syncing indicator during explicit/validated writes; always release in finally
+  let terminalStatusRecorded = false;
+  if (!options?.isAutoSave) {
+    moduleSyncMonitor.setModuleSyncing('quotes');
+  }
 
   try {
     const docRef = doc(db, COLLECTION_NAME, quoteId);
@@ -267,10 +297,8 @@ export async function saveQuotation(
     let existingSnap: DocumentSnapshot | null = null;
     try {
       existingSnap = await getDoc(docRef);
-    } catch (getErr: any) {
-      // When client is offline or network is disconnected, getDoc throws:
-      // "Failed to get document because the client is offline."
-      // Gracefully attempt reading from local offline cache
+    } catch {
+      // When client is offline or network is disconnected, gracefully check local offline cache
       try {
         existingSnap = await getDocFromCache(docRef);
       } catch {
@@ -284,7 +312,7 @@ export async function saveQuotation(
       const remoteVersion = Math.max(Number((remoteData as any)._rev || 0), Number(remoteData.version || 1));
       const localVersion = Math.max(Number((quote as any)._rev || 0), Number(quote.version || 1));
 
-      if (!options?.forceOverwrite && remoteVersion > localVersion) {
+      if (!options?.forceOverwrite && !options?.isAutoSave && remoteVersion > localVersion) {
         console.warn(`[quotationRepository] Concurrency conflict on quote ${quoteId}. Cloud v${remoteVersion} > Local v${localVersion}`);
         syncHealthService.setSaveState('CONFLICT', `Xung đột phiên bản: Cloud v${remoteVersion} > Máy này v${localVersion}`);
         syncHealthService.endOperation(opKey, false, new Error('Xung đột phiên bản'));
@@ -300,6 +328,8 @@ export async function saveQuotation(
           details: `Xung đột đa thiết bị: Cloud v${remoteVersion} vs Local v${localVersion}`,
         });
 
+        moduleSyncMonitor.setModuleSynced('quotes');
+        terminalStatusRecorded = true;
         return {
           success: false,
           conflict: true,
@@ -320,20 +350,14 @@ export async function saveQuotation(
 
     if (!integrityCheck.canSave) {
       const criticalMsg = integrityCheck.issues.filter(i => i.severity === 'CRITICAL').map(i => i.messageVi).join('; ');
-      syncHealthService.setSaveState('SAVE_FAILED', criticalMsg || 'Vi phạm toàn vẹn dữ liệu.');
-      syncHealthService.endOperation(opKey, false, new Error(criticalMsg));
+      syncHealthService.setSaveState(options?.isAutoSave ? 'SAVED_TO_CLOUD' : 'SAVE_FAILED', criticalMsg || 'Vi phạm toàn vẹn dữ liệu.');
+      syncHealthService.endOperation(opKey, Boolean(options?.isAutoSave), options?.isAutoSave ? undefined : new Error(criticalMsg));
+      moduleSyncMonitor.setModuleSynced('quotes');
+      terminalStatusRecorded = true;
       return {
         success: false,
         conflict: false,
         message: `Không thể lưu báo giá: ${criticalMsg}`,
-      };
-    }
-
-    if (STRICT_REAL_DATA_ONLY && isSyntheticRecord(quote)) {
-      return {
-        success: false,
-        conflict: false,
-        message: 'STRICT_REAL_DATA_GUARD: Từ chối lưu báo giá mẫu/giả lập lên hệ thống.',
       };
     }
 
@@ -361,6 +385,8 @@ export async function saveQuotation(
       });
       syncHealthService.setSaveState('OFFLINE', 'Mất mạng — Đã xếp vào Hàng Đợi Đồng Bộ An Toàn.');
       syncHealthService.endOperation(opKey, false, new Error('Offline'));
+      moduleSyncMonitor.setModuleError('quotes', 'Thiết bị đang ngoại tuyến');
+      terminalStatusRecorded = true;
       return {
         success: false,
         conflict: false,
@@ -390,6 +416,8 @@ export async function saveQuotation(
     if (typeof navigator !== 'undefined' && navigator.onLine === false) {
       syncHealthService.setSaveState('OFFLINE', 'Đã ghi nhận ngoại tuyến, chưa được xác nhận bởi Cloud.');
       syncHealthService.endOperation(opKey, false, new Error('Offline'));
+      moduleSyncMonitor.setModuleError('quotes', 'Đang ngoại tuyến');
+      terminalStatusRecorded = true;
       return {
         success: false,
         conflict: false,
@@ -407,6 +435,7 @@ export async function saveQuotation(
     syncHealthService.setSaveState('SAVED_TO_CLOUD', `Đã lưu thành công lên Cloud (v${newVersion})`);
     syncHealthService.endOperation(opKey, true);
     moduleSyncMonitor.setModuleSynced('quotes');
+    terminalStatusRecorded = true;
 
     return {
       success: true,
@@ -420,11 +449,16 @@ export async function saveQuotation(
     syncHealthService.setSaveState(classified.state, classified.messageVi);
     syncHealthService.endOperation(opKey, false, error);
     moduleSyncMonitor.setModuleError('quotes', error);
+    terminalStatusRecorded = true;
     return {
       success: false,
       conflict: false,
       message: classified.messageVi || error?.message || 'Lỗi khi lưu báo giá lên Firebase.',
     };
+  } finally {
+    if (!terminalStatusRecorded && moduleSyncMonitor.getSnapshot().modules.quotes.status === 'Syncing') {
+      moduleSyncMonitor.setModuleSynced('quotes');
+    }
   }
 }
 

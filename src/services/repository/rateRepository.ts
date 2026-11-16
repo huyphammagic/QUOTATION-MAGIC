@@ -55,10 +55,15 @@ export async function fetchRateMasters(forceRefresh = false, companyId?: string)
   const targetCompany = companyId || getVaultActiveCompanyId() || undefined;
   const now = Date.now();
   if (!forceRefresh && !targetCompany && memoryRatesCache && (now - memoryRatesCache.cachedAt < CACHE_TTL_MS)) {
+    moduleSyncMonitor.setModuleSynced('rates', memoryRatesCache.data.length);
     return memoryRatesCache.data;
   }
 
-  if (!db) return memoryRatesCache ? memoryRatesCache.data : [];
+  if (!db) {
+    const fallback = memoryRatesCache ? memoryRatesCache.data : [];
+    moduleSyncMonitor.setModuleSynced('rates', fallback.length);
+    return fallback;
+  }
 
   const runQuery = async (q: any) => {
     if (forceRefresh) {

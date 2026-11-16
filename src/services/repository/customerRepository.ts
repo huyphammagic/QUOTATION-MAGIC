@@ -122,15 +122,15 @@ export async function fetchCustomers(forceRefresh = false, companyId?: string): 
   const targetCompany = companyId || getVaultActiveCompanyId() || undefined;
   const now = Date.now();
   if (!forceRefresh && !targetCompany && memoryCustomersCache && (now - memoryCustomersCache.cachedAt < CACHE_TTL_MS)) {
+    moduleSyncMonitor.setModuleSynced('customers', memoryCustomersCache.data.length);
     return memoryCustomersCache.data;
   }
 
   if (!db) {
     const local = getSavedCustomers();
-    if (targetCompany) {
-      return local.filter(c => !c.companyId || c.companyId === targetCompany);
-    }
-    return local;
+    const res = targetCompany ? local.filter(c => !c.companyId || c.companyId === targetCompany) : local;
+    moduleSyncMonitor.setModuleSynced('customers', res.length);
+    return res;
   }
 
   try {
@@ -153,10 +153,9 @@ export async function fetchCustomers(forceRefresh = false, companyId?: string): 
 
     if (!snap || snap.empty) {
       const currentList = getSavedCustomers();
-      if (currentList && currentList.length > 0) {
-        return currentList;
-      }
-      return [];
+      const res = currentList && currentList.length > 0 ? currentList : [];
+      moduleSyncMonitor.setModuleSynced('customers', res.length);
+      return res;
     }
 
     const items: CustomerRecord[] = [];

@@ -310,6 +310,7 @@ export default function App() {
   const [lastAutoSaveTime, setLastAutoSaveTime] = useState<string | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const quoteRef = useRef(quote);
+  const syncedQuoteVersionMapRef = useRef<Map<string, number>>(new Map());
   const isInitialMount = useRef(true);
 
   // Keep quoteRef in sync with latest quote state
@@ -1711,15 +1712,25 @@ export default function App() {
       return [quote, ...prev];
     });
 
-    setIsAutoSaving(true);
     // Instant Cloud synchronization with short 200ms debounce
     const debounceTimer = setTimeout(async () => {
+      setIsAutoSaving(true);
       try {
+        const trackedVer = syncedQuoteVersionMapRef.current.get(quote.id) || 0;
+        const effectiveVer = Math.max(Number(quote.version || 1), Number((quote as any)._rev || 0), trackedVer);
+        const quoteToSave: QuoteData = effectiveVer > Number(quote.version || 0)
+          ? { ...quote, version: effectiveVer, _rev: effectiveVer } as QuoteData
+          : quote;
+
         // 100% Immediate Persistence to Firestore Cloud
-        await saveQuotation(quote, {
+        const res = await saveQuotation(quoteToSave, {
+          isAutoSave: true,
           userId: company.salesRepName || 'User',
           userName: company.salesRepName || 'User',
         });
+        if (res.savedQuote?.version) {
+          syncedQuoteVersionMapRef.current.set(quote.id, res.savedQuote.version);
+        }
 
         // Continuous sync customer into Cloud CRM so other computers immediately have access to this customer
         if (quote.customer && (quote.customer.companyName || quote.customer.taxId)) {
@@ -1730,7 +1741,7 @@ export default function App() {
 
         // Multi-device sync to Firebase Storage
         triggerDebouncedStorageSync({
-          quotes: [quote, ...savedQuotes.filter((q) => q.id !== quote.id)],
+          quotes: [quoteToSave, ...savedQuotes.filter((q) => q.id !== quote.id)],
           customers,
           companyProfile: company,
         });
@@ -1743,7 +1754,10 @@ export default function App() {
       }
     }, 200);
 
-    return () => clearTimeout(debounceTimer);
+    return () => {
+      clearTimeout(debounceTimer);
+      setIsAutoSaving(false);
+    };
   }, [quote, company.salesRepName]);
 
   // Window unload listener to flush unsaved changes immediately
@@ -1752,6 +1766,7 @@ export default function App() {
       if (quoteRef.current && quoteRef.current.id) {
         saveActiveQuoteDraft(quoteRef.current);
         saveQuotation(quoteRef.current, {
+          isAutoSave: true,
           userId: company.salesRepName || 'User',
           userName: company.salesRepName || 'User',
         }).catch(() => {});
