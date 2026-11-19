@@ -123,15 +123,15 @@ export const PricingPolicyManagementModal: React.FC<PricingPolicyManagementModal
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#0B1324]/80 backdrop-blur-sm overflow-y-auto">
       <div 
         id="pricing-policy-mgmt-modal"
-        className="bg-slate-900 text-slate-100 w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-800 overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-[#111C33] text-slate-100 w-full max-w-4xl rounded-2xl shadow-2xl border border-white/10 overflow-hidden flex flex-col max-h-[90vh]"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/60">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#0B1324]">
           <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+            <div className="p-2 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400">
               <Layers className="w-5 h-5" />
             </div>
             <div>
@@ -157,9 +157,9 @@ export const PricingPolicyManagementModal: React.FC<PricingPolicyManagementModal
           
           {editingPolicy ? (
             /* Editing / Creating Form */
-            <div className="bg-slate-950 p-5 rounded-2xl border border-cyan-500/40 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="font-bold text-sm text-cyan-300 flex items-center gap-2">
+            <div className="bg-[#0B1324] p-5 rounded-2xl border border-blue-500/40 space-y-4">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="font-bold text-sm text-blue-300 flex items-center gap-2">
                   <Edit3 className="w-4 h-4" />
                   <span>{isCreatingNew ? 'Thêm Mới Chính Sách Định Giá' : `Chỉnh Sửa: ${editingPolicy.policyCode}`}</span>
                 </div>
@@ -179,7 +179,7 @@ export const PricingPolicyManagementModal: React.FC<PricingPolicyManagementModal
                     type="text"
                     value={editingPolicy.policyCode}
                     onChange={(e) => setEditingPolicy({ ...editingPolicy, policyCode: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-900 text-white font-mono px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-900 text-white font-mono px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500"
                     placeholder="VD: POL-CUST-VINATEX"
                   />
                 </div>
@@ -190,7 +190,7 @@ export const PricingPolicyManagementModal: React.FC<PricingPolicyManagementModal
                     type="text"
                     value={editingPolicy.policyName}
                     onChange={(e) => setEditingPolicy({ ...editingPolicy, policyName: e.target.value })}
-                    className="w-full bg-slate-900 text-white px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-900 text-white px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500"
                     placeholder="VD: Chính sách áp dụng riêng cho Vinatex..."
                   />
                 </div>
@@ -219,7 +219,7 @@ export const PricingPolicyManagementModal: React.FC<PricingPolicyManagementModal
                     type="text"
                     value={editingPolicy.targetId || ''}
                     onChange={(e) => setEditingPolicy({ ...editingPolicy, targetId: e.target.value })}
-                    className="w-full bg-slate-900 text-white px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-900 text-white px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500"
                     placeholder="Mã KH, SEA_FCL, AIR, VIP..."
                   />
                 </div>
@@ -375,7 +375,7 @@ export const PricingPolicyManagementModal: React.FC<PricingPolicyManagementModal
                   type="button"
                   onClick={handleSavePolicy}
                   disabled={isSaving}
-                  className="px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold flex items-center space-x-2"
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center space-x-2"
                 >
                   <Save className="w-4 h-4" />
                   <span>{isSaving ? 'Đang lưu...' : 'Lưu Chính Sách'}</span>
@@ -385,12 +385,12 @@ export const PricingPolicyManagementModal: React.FC<PricingPolicyManagementModal
           ) : (
             <div className="flex justify-between items-center">
               <span className="text-xs text-slate-400">
-                Hiện có <span className="text-cyan-400 font-bold">{policies.length}</span> chính sách đang được quản lý.
+                Hiện có <span className="text-blue-400 font-bold">{policies.length}</span> chính sách đang được quản lý.
               </span>
               <button
                 type="button"
                 onClick={handleStartCreate}
-                className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold flex items-center space-x-2 shadow-md"
+                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center space-x-2 shadow-md"
               >
                 <Plus className="w-4 h-4" />
                 <span>Thêm Chính Sách Mới</span>
@@ -404,7 +404,7 @@ export const PricingPolicyManagementModal: React.FC<PricingPolicyManagementModal
               return (
                 <div 
                   key={p.id}
-                  className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 hover:border-slate-700 transition-all"
+                  className="p-4 rounded-xl bg-[#0B1324] border border-white/10 space-y-3 hover:border-white/20 transition-all"
                 >
                   <div className="flex items-start justify-between">
                     <div>
@@ -418,7 +418,7 @@ export const PricingPolicyManagementModal: React.FC<PricingPolicyManagementModal
                           {p.status}
                         </span>
                       </div>
-                      <div className="text-[11px] font-mono text-cyan-400 mt-0.5">
+                      <div className="text-[11px] font-mono text-blue-400 mt-0.5">
                         {p.policyCode} | Phạm vi: <span className="text-slate-300">{p.scope}</span>
                         {p.targetId ? ` (${p.targetId})` : ''}
                       </div>
@@ -428,7 +428,7 @@ export const PricingPolicyManagementModal: React.FC<PricingPolicyManagementModal
                       <button
                         type="button"
                         onClick={() => { setEditingPolicy(p); setIsCreatingNew(false); }}
-                        className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-cyan-400 border border-slate-800"
+                        className="p-1.5 rounded-lg bg-[#16233F] hover:bg-[#1D2D50] text-slate-300 hover:text-blue-400 border border-white/10"
                         title="Chỉnh sửa"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
@@ -436,7 +436,7 @@ export const PricingPolicyManagementModal: React.FC<PricingPolicyManagementModal
                       <button
                         type="button"
                         onClick={() => handleDeletePolicy(p.id, p.policyCode)}
-                        className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-rose-400 border border-slate-800"
+                        className="p-1.5 rounded-lg bg-[#16233F] hover:bg-[#1D2D50] text-slate-300 hover:text-rose-400 border border-white/10"
                         title="Xóa"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -444,7 +444,7 @@ export const PricingPolicyManagementModal: React.FC<PricingPolicyManagementModal
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 bg-slate-900/60 p-2.5 rounded-lg text-xs font-mono">
+                  <div className="grid grid-cols-3 gap-2 bg-[#16233F]/70 p-2.5 rounded-lg text-xs font-mono">
                     <div>
                       <span className="text-slate-400 text-[10px] block">Mục Tiêu:</span>
                       <span className="text-emerald-400 font-bold">{p.targetMarginPercent}%</span>
@@ -472,11 +472,11 @@ export const PricingPolicyManagementModal: React.FC<PricingPolicyManagementModal
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-slate-800 bg-slate-950 flex justify-end text-xs">
+        <div className="px-6 py-3 border-t border-white/10 bg-[#0B1324] flex justify-end text-xs">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold"
+            className="px-4 py-2 rounded-xl bg-[#16233F] hover:bg-[#1D2D50] text-slate-200 font-semibold border border-white/10"
           >
             Đóng
           </button>

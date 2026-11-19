@@ -148,10 +148,10 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
     switch (status) {
       case 'APPROVED': return { label: 'Đã duyệt', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' };
       case 'SENT': return { label: 'Đã gửi', color: 'text-blue-700 bg-blue-50 border-blue-200' };
-      case 'ACCEPTED': return { label: 'Chấp thuận', color: 'text-indigo-700 bg-indigo-50 border-indigo-200' };
+      case 'ACCEPTED': return { label: 'Chấp thuận', color: 'text-emerald-800 bg-emerald-50 border-emerald-200' };
       case 'REJECTED': return { label: 'Từ chối', color: 'text-rose-700 bg-rose-50 border-rose-200' };
       case 'EXPIRED': return { label: 'Hết hạn', color: 'text-amber-700 bg-amber-50 border-amber-200' };
-      case 'PENDING_APPROVAL': return { label: 'Chờ duyệt', color: 'text-purple-700 bg-purple-50 border-purple-200' };
+      case 'PENDING_APPROVAL': return { label: 'Chờ duyệt', color: 'text-amber-700 bg-amber-50 border-amber-200' };
       default: return { label: 'Bản nháp', color: 'text-slate-700 bg-slate-100 border-slate-200' };
     }
   };
@@ -193,8 +193,8 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
           </span>
 
           {/* Smart Sales Roadmap Stage Badge */}
-          <span className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-[11px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200/80 shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-ping" />
+          <span className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-200/80 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
             <span>
               {quote.salesStage === 'PROSPECTING' ? '1. Tiếp Cận' :
                quote.salesStage === 'RFQ' ? '2. RFQ' :
@@ -238,8 +238,8 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
           <div className="flex items-center gap-1 text-[11px] text-slate-400 ml-0.5 shrink-0">
             {isSaving ? (
               <>
-                <RotateCcw className="w-3 h-3 animate-spin text-indigo-600" />
-                <span className="text-indigo-600 font-medium">Đang lưu...</span>
+                <RotateCcw className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                <span className="text-blue-600 font-medium">Đang lưu...</span>
               </>
             ) : (
               <>
@@ -359,7 +359,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
                       className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
-                        <Building2 className="w-3.5 h-3.5 text-indigo-600" />
+                        <Building2 className="w-3.5 h-3.5 text-blue-600" />
                         <div>
                           <div className="font-semibold text-slate-900">Đấu Thầu Nhà Máy (Tender)</div>
                           <div className="text-[10px] text-slate-400">Ma trận nhiều tuyến quy mô lớn</div>
@@ -487,7 +487,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
                       className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
-                        <Inbox className="w-3.5 h-3.5 text-indigo-600" />
+                        <Inbox className="w-3.5 h-3.5 text-blue-600" />
                         <div>
                           <div className="font-semibold text-slate-900">Hộp Thư RFQ (5s)</div>
                           <div className="text-[10px] text-slate-400">Bóc tách yêu cầu chào giá tự động</div>
@@ -504,7 +504,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
                       className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
-                        <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                        <FileText className="w-3.5 h-3.5 text-blue-600" />
                         <div>
                           <div className="font-semibold text-slate-900">Trích Xuất Chứng Từ (OCR AI)</div>
                           <div className="text-[10px] text-slate-400">Bóc tách B/L, Booking, Invoice & Tờ khai</div>
@@ -617,7 +617,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
                       className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                        <Sparkles className="w-3.5 h-3.5 text-blue-600" />
                         <div>
                           <div className="font-semibold text-slate-900 flex items-center gap-1">
                             <span>Báo Giá Đa Phương Án (Good - Better - Best)</span>
@@ -637,11 +637,11 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
                       className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
-                        <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                        <FileText className="w-3.5 h-3.5 text-blue-600" />
                         <div>
                           <div className="font-semibold text-slate-900 flex items-center gap-1">
                             <span>Bảng Đối Soát Công Nợ (SOA)</span>
-                            <span className="text-[9px] bg-indigo-600 text-white px-1.5 py-0.2 rounded font-bold">MỚI</span>
+                            <span className="text-[9px] bg-blue-600 text-white px-1.5 py-0.2 rounded font-bold">MỚI</span>
                           </div>
                           <div className="text-[10px] text-slate-500">Statement of Account, phân tích tuổi nợ & QR gộp</div>
                         </div>
@@ -656,7 +656,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
                     className="w-full flex items-center justify-between p-2 rounded-xl text-xs hover:bg-slate-50 transition text-left cursor-pointer"
                   >
                     <div className="flex items-center gap-2">
-                      <SlidersHorizontal className="w-3.5 h-3.5 text-purple-600" />
+                      <SlidersHorizontal className="w-3.5 h-3.5 text-teal-600" />
                       <div>
                         <div className="font-semibold text-slate-900">Phòng Quyết Định (What-If)</div>
                         <div className="text-[10px] text-slate-400">Mô phỏng kịch bản cước & rủi ro</div>
@@ -692,22 +692,20 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
             >
               <span className="relative flex items-center justify-center">
                 <Flame className="w-3.5 h-3.5 text-rose-600 fill-rose-500 shrink-0" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full animate-ping opacity-75" />
-                <span className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-rose-600 rounded-full" />
               </span>
               <span>Radar Giờ Vàng</span>
             </button>
           )}
 
-          {/* Deal Closer Quick Action (Hiệu ứng 7) */}
+          {/* Deal Closer Quick Action */}
           {onOpenDealCloser && (
             <button
               type="button"
               onClick={onOpenDealCloser}
               className={`inline-flex items-center gap-1.5 h-8 px-3 text-xs font-bold rounded-lg border transition-all cursor-pointer shrink-0 press-physics ${
                 quote.status === 'ACCEPTED'
-                  ? 'bg-amber-50 text-amber-900 border-amber-300 ring-1 ring-amber-400/50'
-                  : 'bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 border-amber-400 hover:brightness-105 shadow-xs'
+                  ? 'bg-emerald-50 text-emerald-900 border-emerald-300 ring-1 ring-emerald-400/40'
+                  : 'bg-amber-400 hover:bg-amber-300 text-slate-950 border-amber-400 shadow-xs'
               }`}
               title="Mở Bàn đàm phán, Kịch bản đối kháng & Ký chốt deal thành công (Deal Won)"
             >
@@ -734,27 +732,22 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
             disabled={isSaving}
             className={`inline-flex items-center gap-1.5 h-8 px-3.5 text-xs font-bold rounded-lg shadow-2xs transition-all cursor-pointer shrink-0 press-physics ${
               hasUnsavedChanges
-                ? 'bg-slate-900 text-white ring-2 ring-emerald-500/70 btn-save-unsaved-pulse'
-                : 'bg-slate-900 hover:bg-slate-800 text-white disabled:opacity-50'
+                ? 'bg-blue-600 hover:bg-blue-700 text-white ring-2 ring-emerald-400/70'
+                : 'bg-[#0B1324] hover:bg-[#111C33] text-white disabled:opacity-50'
             }`}
             title={hasUnsavedChanges ? "Có thay đổi chưa lưu - Bấm để lưu báo giá lên Firestore Cloud" : "Lưu báo giá lên Firestore Cloud"}
           >
             {isSaving ? (
               <>
-                <RotateCcw className="w-3.5 h-3.5 animate-spin shrink-0 text-emerald-400" />
+                <RotateCcw className="w-3.5 h-3.5 animate-spin shrink-0 text-emerald-300" />
                 <span>Đang lưu...</span>
               </>
             ) : (
               <>
-                <span className="relative flex items-center justify-center">
-                  <Save className={`w-3.5 h-3.5 text-emerald-400 shrink-0 ${hasUnsavedChanges ? 'drop-shadow-[0_0_6px_rgba(52,211,153,0.8)]' : ''}`} />
-                  {hasUnsavedChanges && (
-                    <span className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
-                  )}
-                </span>
+                <Save className={`w-3.5 h-3.5 shrink-0 ${hasUnsavedChanges ? 'text-emerald-300' : 'text-emerald-400'}`} />
                 <span>Lưu Báo Giá</span>
                 {hasUnsavedChanges && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_6px_#34d399]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 shrink-0" />
                 )}
               </>
             )}
@@ -777,10 +770,10 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Layers className="w-3.5 h-3.5 text-indigo-600" />
+            <Layers className="w-3.5 h-3.5 text-blue-600" />
             <span>Chi Tiết Bảng Cước</span>
             {activeTab === 'DETAILS' && (
-              <span className="absolute bottom-0 left-2 right-2 h-0.5 cosmic-laser-rail rounded-full shadow-[0_0_8px_rgba(56,189,248,0.8)]" />
+              <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-blue-600 rounded-full" />
             )}
           </button>
 
@@ -796,7 +789,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
             <FileText className="w-3.5 h-3.5 text-amber-600" />
             <span>Điều Khoản & Ngân Hàng</span>
             {activeTab === 'TERMS' && (
-              <span className="absolute bottom-0 left-2 right-2 h-0.5 cosmic-laser-rail rounded-full shadow-[0_0_8px_rgba(56,189,248,0.8)]" />
+              <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-blue-600 rounded-full" />
             )}
           </button>
 
@@ -809,10 +802,10 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <MessageSquare className="w-3.5 h-3.5 text-purple-600" />
+            <MessageSquare className="w-3.5 h-3.5 text-teal-600" />
             <span>Giao Tiếp & Lịch Sử</span>
             {activeTab === 'COMMUNICATION' && (
-              <span className="absolute bottom-0 left-2 right-2 h-0.5 cosmic-laser-rail rounded-full shadow-[0_0_8px_rgba(56,189,248,0.8)]" />
+              <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-blue-600 rounded-full" />
             )}
           </button>
 
@@ -827,7 +820,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
           >
             <span>Toàn Bộ Trang</span>
             {activeTab === 'ALL' && (
-              <span className="absolute bottom-0 left-2 right-2 h-0.5 cosmic-laser-rail rounded-full shadow-[0_0_8px_rgba(56,189,248,0.8)]" />
+              <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-blue-600 rounded-full" />
             )}
           </button>
         </div>
@@ -841,12 +834,12 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
               onClick={onToggleSalesHud}
               className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
                 !isSalesHudCollapsed
-                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-2xs'
+                  ? 'bg-blue-50 text-blue-700 border-blue-200 shadow-2xs'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
               }`}
               title={isSalesHudCollapsed ? "Hiện thanh thống kê & 5 bước lộ trình bán hàng (HUD)" : "Ẩn thanh thống kê để màn hình làm việc tinh gọn nhất"}
             >
-              <BarChart2 className="w-3.5 h-3.5 text-indigo-600" />
+              <BarChart2 className="w-3.5 h-3.5 text-blue-600" />
               <span>{isSalesHudCollapsed ? 'Hiện Thống Kê / HUD' : 'Ẩn HUD'}</span>
             </button>
           )}
@@ -859,12 +852,12 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
                 onClick={() => onLayoutModeChange('STACKED')}
                 className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md transition-all cursor-pointer whitespace-nowrap ${
                   layoutMode === 'STACKED'
-                    ? 'bg-white text-indigo-950 font-bold shadow-2xs'
+                    ? 'bg-white text-blue-950 font-bold shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 font-medium'
                 }`}
                 title="Bố cục Toàn Chiều Rộng: Tất cả các bảng và form trải ngang 100% màn hình, không đè chữ, không '...'"
               >
-                <Rows className="w-3.5 h-3.5 text-indigo-600" />
+                <Rows className="w-3.5 h-3.5 text-blue-600" />
                 <span>Toàn Màn Hình</span>
               </button>
               <button
@@ -872,7 +865,7 @@ export const QuotationWorkspaceHeader: React.FC<QuotationWorkspaceHeaderProps> =
                 onClick={() => onLayoutModeChange('SPLIT')}
                 className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md transition-all cursor-pointer whitespace-nowrap ${
                   layoutMode === 'SPLIT'
-                    ? 'bg-white text-indigo-950 font-bold shadow-2xs'
+                    ? 'bg-white text-blue-950 font-bold shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 font-medium'
                 }`}
                 title="Bố cục Chia 2 Cột (Split View): Cột trái (Master), Cột phải (Detail)"

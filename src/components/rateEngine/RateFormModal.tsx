@@ -161,16 +161,16 @@ export const RateFormModal: React.FC<RateFormModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-xs overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1324]/80 backdrop-blur-xs overflow-y-auto">
       <div 
         className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150 my-auto"
         id="rate-form-modal-container"
       >
         {/* Header */}
-        <div className="px-6 py-4 bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-800 text-white flex items-center justify-between">
+        <div className="px-6 py-4 bg-[#0B1324] border-b border-white/10 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/10 rounded-xl">
-              <DollarSign className="w-6 h-6 text-yellow-300" />
+            <div className="p-2 bg-blue-600/20 border border-blue-500/30 rounded-xl">
+              <DollarSign className="w-6 h-6 text-blue-300" />
             </div>
             <div>
               <h2 className="text-lg font-bold">
@@ -178,7 +178,7 @@ export const RateFormModal: React.FC<RateFormModalProps> = ({
                   ? `Chỉnh Sửa Phiên Bản Bảng Giá v${formData.version}` 
                   : rate?.id ? 'Chỉnh Sửa Bảng Giá Master' : 'Thêm Mới Bảng Giá Cước (Master Rate)'}
               </h2>
-              <p className="text-xs text-blue-100">
+              <p className="text-xs text-slate-300">
                 Thiết lập giá vốn (Buy Rate), giá bán (Sell Rate), hiệu lực và quy cách vận chuyển
               </p>
             </div>
@@ -503,7 +503,7 @@ export const RateFormModal: React.FC<RateFormModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
               {/* Cost Amount */}
               <div>
-                <label className="block text-xs font-bold text-purple-900 mb-1">
+                <label className="block text-xs font-bold text-amber-900 mb-1">
                   GIÁ VỐN ĐẦU VÀO (BUY RATE) <span className="text-rose-500">*</span>
                 </label>
                 <div className="flex gap-2">
@@ -513,18 +513,18 @@ export const RateFormModal: React.FC<RateFormModalProps> = ({
                     step="any"
                     value={formData.costAmount ?? 0}
                     onChange={(e) => handleChange('costAmount', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 text-sm border border-purple-300 rounded-lg font-mono font-bold text-purple-900 focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 text-sm border border-amber-300 rounded-lg font-mono font-bold text-amber-900 focus:ring-2 focus:ring-amber-500"
                   />
                   <select
                     value={formData.costCurrency || 'USD'}
                     onChange={(e) => handleChange('costCurrency', e.target.value as Currency)}
-                    className="w-24 px-2 py-2 text-sm font-bold bg-white border border-purple-300 rounded-lg"
+                    className="w-24 px-2 py-2 text-sm font-bold bg-white border border-amber-300 rounded-lg"
                   >
                     <option value="USD">USD</option>
                     <option value="VND">VND</option>
                   </select>
                 </div>
-                <p className="text-[11px] text-purple-700 mt-1">Chi phí Forwarder trả cho NCC</p>
+                <p className="text-[11px] text-amber-700 mt-1">Chi phí Forwarder trả cho NCC</p>
               </div>
 
               {/* Selling Amount */}
@@ -652,7 +652,7 @@ export const RateFormModal: React.FC<RateFormModalProps> = ({
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
           <div className="text-xs text-slate-500">
             {formData.previousVersionId ? (
-              <span className="text-indigo-600 font-semibold">
+              <span className="text-blue-600 font-semibold">
                 Đang tạo phiên bản mới v{formData.version} từ ID: {formData.previousVersionId}
               </span>
             ) : (

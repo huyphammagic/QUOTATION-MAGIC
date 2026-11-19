@@ -224,29 +224,29 @@ export const ContractRateFormModal: React.FC<ContractRateFormModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+    <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-[#0B1324]/80 backdrop-blur-xs overflow-y-auto">
       <div 
         className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150 my-8"
         id="contract-rate-form-modal"
       >
         {/* Header */}
-        <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <div className="px-6 py-4 bg-[#0B1324] border-b border-white/10 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-500/20 border border-blue-400/30 rounded-lg">
+            <div className="p-2 bg-blue-600/20 border border-blue-500/30 rounded-lg">
               <DollarSign className="w-5 h-5 text-blue-400" />
             </div>
             <div>
               <h3 className="text-base font-bold">
                 {editingRate ? 'Chỉnh Sửa Biểu Cước Hợp Đồng' : 'Thêm Biểu Cước Vào Hợp Đồng'}
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-300">
                 Hợp đồng: <span className="font-mono text-white font-bold">{contract.contractNumber}</span> (V{contract.currentVersion}) - Đối tác: {contract.partyName}
               </p>
             </div>
           </div>
           <button 
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-white hover:bg-[#16233F] rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -477,7 +477,7 @@ export const ContractRateFormModal: React.FC<ContractRateFormModalProps> = ({
               <select
                 value={priority}
                 onChange={(e) => setPriority(parseInt(e.target.value) || 100)}
-                className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg font-bold text-indigo-700"
+                className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg font-bold text-blue-700"
               >
                 <option value={100}>100 - Khớp chính xác POL & POD</option>
                 <option value={90}>90 - Khớp cấp Quốc Gia / Khu Vực</option>
@@ -488,14 +488,14 @@ export const ContractRateFormModal: React.FC<ContractRateFormModalProps> = ({
 
           {/* Air Weight Breaks (if Air) */}
           {serviceMode === 'AIR' && (
-            <div className="p-3 bg-indigo-50/50 border border-indigo-200 rounded-xl space-y-2">
-              <label className="block text-xs font-bold text-indigo-900 flex items-center gap-1.5">
-                <Plane className="w-3.5 h-3.5 text-indigo-600" /> Bảng Cước Nấc Tải Trọng (Air Weight Breaks)
+            <div className="p-3 bg-sky-50/50 border border-sky-200 rounded-xl space-y-2">
+              <label className="block text-xs font-bold text-sky-900 flex items-center gap-1.5">
+                <Plane className="w-3.5 h-3.5 text-sky-600" /> Bảng Cước Nấc Tải Trọng (Air Weight Breaks)
               </label>
               <div className="grid grid-cols-5 gap-2">
                 {weightBreaks.map((wb, idx) => (
-                  <div key={idx} className="bg-white p-2 border border-indigo-200 rounded-lg">
-                    <span className="block text-[11px] font-bold text-indigo-700">{wb.label}</span>
+                  <div key={idx} className="bg-white p-2 border border-sky-200 rounded-lg">
+                    <span className="block text-[11px] font-bold text-sky-700">{wb.label}</span>
                     <input
                       type="number"
                       step="0.01"

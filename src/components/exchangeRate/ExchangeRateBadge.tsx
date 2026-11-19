@@ -28,11 +28,8 @@ export const ExchangeRateBadge: React.FC<ExchangeRateBadgeProps> = ({
       title="Bấm để xem Trung tâm Quản lý Tỷ giá USD Realtime & Cập nhật tự động"
       className={`group flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:border-blue-400 hover:shadow-xs transition-all cursor-pointer select-none text-xs ${className}`}
     >
-      {/* Live Pulsing Dot */}
-      <div className="relative flex items-center justify-center w-2 h-2">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-      </div>
+      {/* Clean Live Status Dot */}
+      <span className="inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500 shrink-0" />
 
       {/* Label & Source */}
       <span className="text-[10px] font-semibold tracking-wide text-slate-500 flex items-center gap-0.5">

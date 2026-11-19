@@ -46,8 +46,8 @@ export const ContractHubModal: React.FC<ContractHubModalProps> = ({
   return (
     <div 
       className={effectiveFullscreen
-        ? "fixed inset-0 z-50 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden bg-slate-950"
-        : "fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/60 backdrop-blur-xs overflow-y-auto"
+        ? "fixed inset-0 z-50 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden bg-[#0B1324]"
+        : "fixed inset-0 z-50 flex items-center justify-center p-3 bg-[#0B1324]/80 backdrop-blur-xs overflow-y-auto"
       }
     >
       <div 
@@ -70,17 +70,17 @@ export const ContractHubModal: React.FC<ContractHubModalProps> = ({
         />
 
         {/* Main Banner */}
-        <div className="px-6 py-3.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between shrink-0">
+        <div className="px-6 py-3.5 bg-[#111C33] border-b border-white/10 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3.5">
-            <div className="p-2 bg-indigo-500/20 border border-indigo-400/30 rounded-xl shadow-inner">
-              <FileText className="w-5 h-5 text-indigo-400" />
+            <div className="p-2 bg-blue-600/20 border border-blue-500/30 rounded-xl shadow-inner">
+              <FileText className="w-5 h-5 text-blue-400" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-sm sm:text-base font-bold tracking-tight">
                   Quản Lý Hợp Đồng Khách Hàng & Hãng Vận Chuyển (Contracts)
                 </h2>
-                <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-indigo-500/30 text-indigo-200 rounded border border-indigo-400/30">
+                <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-teal-500/20 text-teal-200 rounded border border-teal-400/30">
                   Rate Engine
                 </span>
               </div>

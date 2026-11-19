@@ -122,9 +122,9 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
               <button
                 type="button"
                 onClick={() => { onOpenGeneratePdf(); setIsActionsSheetOpen(false); }}
-                className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 hover:bg-indigo-50 border border-slate-200 text-left transition"
+                className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 text-left transition"
               >
-                <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
                   <FileDown className="w-4 h-4" />
                 </div>
                 <div>
@@ -170,14 +170,14 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
               <button
                 type="button"
                 onClick={() => { onOpenCustomer360(); setIsActionsSheetOpen(false); }}
-                className="flex items-center gap-2.5 p-3 rounded-xl bg-indigo-50/70 hover:bg-indigo-100/70 border border-indigo-200 text-left transition"
+                className="flex items-center gap-2.5 p-3 rounded-xl bg-blue-50/70 hover:bg-blue-100/70 border border-blue-200 text-left transition"
               >
-                <div className="w-8 h-8 rounded-lg bg-indigo-200 text-indigo-900 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center shrink-0">
                   <Users className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="font-bold text-indigo-950">Khách Hàng 360°</div>
-                  <div className="text-[10px] text-indigo-800">Hồ sơ & lịch sử giao dịch</div>
+                  <div className="font-bold text-blue-950">Khách Hàng 360°</div>
+                  <div className="text-[10px] text-blue-800">Hồ sơ & lịch sử giao dịch</div>
                 </div>
               </button>
             )}
@@ -188,7 +188,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
                 onClick={() => { onOpenMultiOption(); setIsActionsSheetOpen(false); }}
                 className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition"
               >
-                <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
@@ -270,7 +270,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
           <button
             type="button"
             onClick={onOpenAddFee}
-            className="flex flex-col items-center justify-center -mt-4 py-1.5 px-1 rounded-2xl bg-linear-to-b from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/30 active:scale-90 transition transform cursor-pointer border-2 border-white"
+            className="flex flex-col items-center justify-center -mt-4 py-1.5 px-1 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/25 active:scale-90 transition transform cursor-pointer border-2 border-white"
             aria-label="Thêm chi phí vào báo giá"
           >
             <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center mb-0.5">
@@ -286,21 +286,18 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
             disabled={isSaving}
             className={`flex flex-col items-center justify-center py-1 px-1 rounded-xl active:scale-95 disabled:opacity-50 transition cursor-pointer relative ${
               hasUnsavedChanges
-                ? 'text-emerald-700 bg-emerald-50/80 btn-save-unsaved-pulse'
+                ? 'text-emerald-700 bg-emerald-50/80'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
             aria-label="Lưu báo giá"
           >
             {isSaving ? (
-              <RotateCcw className="w-5 h-5 text-indigo-600 animate-spin" />
+              <RotateCcw className="w-5 h-5 text-blue-600 animate-spin" />
             ) : (
               <div className="relative">
-                <Save className={`w-5 h-5 ${hasUnsavedChanges ? 'text-emerald-600 drop-shadow-[0_0_4px_rgba(16,185,129,0.5)]' : 'text-emerald-600'}`} />
+                <Save className="w-5 h-5 text-emerald-600" />
                 {hasUnsavedChanges && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-xs" />
-                  </span>
+                  <span className="absolute -top-0.5 -right-0.5 inline-flex rounded-full h-2 w-2 bg-emerald-500 ring-2 ring-white" />
                 )}
               </div>
             )}

@@ -99,7 +99,7 @@ export const FieldInfoTooltip: React.FC<FieldInfoTooltipProps> = ({
         onMouseLeave={() => setIsOpen(false)}
         onFocus={() => setIsOpen(true)}
         onBlur={() => setIsOpen(false)}
-        className="text-slate-400 hover:text-indigo-600 focus:text-indigo-600 p-0.5 rounded-full hover:bg-slate-100 transition-colors cursor-help focus:outline-none"
+        className="text-slate-400 hover:text-blue-600 focus:text-blue-600 p-0.5 rounded-full hover:bg-slate-100 transition-colors cursor-help focus:outline-none"
         title={title}
         aria-label={`Trợ giúp: ${title}`}
       >
@@ -109,15 +109,15 @@ export const FieldInfoTooltip: React.FC<FieldInfoTooltipProps> = ({
       {isOpen && (
         <span
           role="tooltip"
-          className={`absolute ${positionClass} ${alignClasses[align]} pointer-events-none w-64 sm:w-72 p-2.5 bg-slate-900 text-white text-[11px] leading-relaxed rounded-xl shadow-2xl backdrop-blur-md border border-slate-700/80 animate-in fade-in zoom-in-95 duration-150 z-50`}
+          className={`absolute ${positionClass} ${alignClasses[align]} pointer-events-none w-64 sm:w-72 p-2.5 bg-[#0B1324] text-white text-[11px] leading-relaxed rounded-xl shadow-2xl backdrop-blur-md border border-white/10 animate-in fade-in zoom-in-95 duration-150 z-50`}
         >
-          <span className="flex items-center justify-between gap-1.5 mb-1 pb-1 border-b border-slate-800">
+          <span className="flex items-center justify-between gap-1.5 mb-1 pb-1 border-b border-white/10">
             <span className="font-bold text-amber-300 flex items-center gap-1.5 text-[11px]">
               <Info className="w-3 h-3 text-amber-400 shrink-0" />
               <span>{title}</span>
             </span>
             {badge && (
-              <span className="text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-700/50 shrink-0">
+              <span className="text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded bg-blue-950/90 text-blue-300 border border-blue-700/50 shrink-0">
                 {badge}
               </span>
             )}
@@ -381,8 +381,8 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
       {/* Header Bar */}
       <div className="px-4 py-3.5 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-700 shrink-0">
-            <Building className="w-4 h-4 text-indigo-700" />
+          <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center text-blue-700 shrink-0">
+            <Building className="w-4 h-4 text-blue-700" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -408,7 +408,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
                 const found = customers.find(c => c.id === targetId || c.code === targetId);
                 if (found) handleSelectSuggestion(found);
               }}
-              className="text-xs font-medium pl-2.5 pr-8 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 transition-colors cursor-pointer max-w-[220px] sm:max-w-xs"
+              className="text-xs font-medium pl-2.5 pr-8 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-colors cursor-pointer max-w-[220px] sm:max-w-xs"
               title="Chọn nhanh từ danh sách khách hàng Cloud CRM"
             >
               <option value="">Chọn từ CRM ({customers.length})...</option>
@@ -424,10 +424,10 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
             <button
               type="button"
               onClick={onOpenCustomer360}
-              className="press-physics-subtle inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+              className="press-physics-subtle inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shrink-0 whitespace-nowrap"
               title="Mở hồ sơ khách hàng 360°"
             >
-              <Users className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <Users className="w-3.5 h-3.5 text-blue-600 shrink-0" />
               <span>360°</span>
             </button>
           )}
@@ -469,7 +469,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
             <select
               value={status}
               onChange={(e) => onChangeQuoteMeta('status', e.target.value)}
-              className={`text-xs font-bold px-2 py-1 rounded-lg border focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer shrink-0 transition-colors ${
+              className={`text-xs font-bold px-2 py-1 rounded-lg border focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 cursor-pointer shrink-0 transition-colors ${
                 status === 'APPROVED' 
                   ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                   : status === 'SENT'
@@ -534,7 +534,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               className={`w-full px-3 py-1.5 rounded-lg border font-mono font-bold text-xs transition-all ${
                 errors?.quoteNumber
                   ? 'border-rose-400 bg-rose-50/60 text-rose-950 ring-2 ring-rose-200 focus:border-rose-500 focus:ring-rose-400 ' + (isShaking ? 'animate-field-shake' : '')
-                  : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900'
+                  : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600'
               }`}
               placeholder="LOG-2026-001"
             />
@@ -585,7 +585,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               className={`w-full px-3 py-1.5 rounded-lg border font-semibold text-xs transition-all ${
                 errors?.companyName
                   ? 'border-rose-400 bg-rose-50/60 text-rose-950 ring-2 ring-rose-200 focus:border-rose-500 focus:ring-rose-400 ' + (isShaking ? 'animate-field-shake' : '')
-                  : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900'
+                  : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600'
               }`}
               placeholder="Nhập tên doanh nghiệp hoặc tìm kiếm..."
             />
@@ -656,7 +656,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               type="text"
               value={customer.taxId}
               onChange={(e) => onChangeCustomer('taxId', e.target.value)}
-              className="w-full px-3 py-1.5 rounded-lg border border-slate-200 font-mono text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs transition-colors"
+              className="w-full px-3 py-1.5 rounded-lg border border-slate-200 font-mono text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 text-xs transition-colors"
               placeholder="0312345678"
             />
           </div>
@@ -677,7 +677,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               type="text"
               value={customer.contactPerson}
               onChange={(e) => onChangeCustomer('contactPerson', e.target.value)}
-              className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs transition-colors"
+              className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 text-xs transition-colors"
               placeholder="Anh / Chị phụ trách XNK"
             />
           </div>
@@ -698,7 +698,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               type="text"
               value={customer.phone}
               onChange={(e) => onChangeCustomer('phone', e.target.value)}
-              className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs font-mono transition-colors"
+              className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 text-xs font-mono transition-colors"
               placeholder="0901 234 567"
             />
           </div>
@@ -762,7 +762,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               className={`w-full px-3 py-1.5 rounded-lg border font-mono font-medium text-xs transition-all ${
                 errors?.validityDate
                   ? 'border-rose-400 bg-rose-50/60 text-rose-950 ring-2 ring-rose-200 focus:border-rose-500 focus:ring-rose-400 ' + (isShaking ? 'animate-field-shake' : '')
-                  : 'border-slate-200 bg-slate-50/70 text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900'
+                  : 'border-slate-200 bg-slate-50/70 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600'
               }`}
             />
           </div>
@@ -795,10 +795,10 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
         {showAdditionalDetails && (
           <div className="pt-2 border-t border-slate-100 space-y-3 animate-in fade-in duration-150">
             {/* Credit Limit & Terms Guidance Card */}
-            <div className="p-3 bg-gradient-to-r from-slate-50 to-indigo-50/40 rounded-xl border border-indigo-100/80 space-y-2">
+            <div className="p-3 bg-slate-50/90 rounded-xl border border-slate-200/90 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <CreditCard className="w-3.5 h-3.5 text-indigo-600" />
+                  <CreditCard className="w-3.5 h-3.5 text-blue-600" />
                   <span className="text-xs font-bold text-slate-800">Hạn Mức & Chính Sách Tín Dụng Khách Hàng</span>
                   <FieldInfoTooltip
                     title="Chính Sách Tín Dụng & Công Nợ"
@@ -845,7 +845,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
                       step="1000000"
                       value={customer.creditLimitVnd ?? ''}
                       onChange={(e) => onChangeCustomer('creditLimitVnd', Number(e.target.value) || 0)}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-slate-900 transition-colors"
+                      className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-colors"
                       placeholder="0 (Trả ngay)"
                     />
                     <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono font-semibold text-slate-400 pointer-events-none">
@@ -874,7 +874,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
                       max="180"
                       value={customer.creditTermDays ?? ''}
                       onChange={(e) => onChangeCustomer('creditTermDays', Number(e.target.value) || 0)}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-slate-900 transition-colors"
+                      className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-colors"
                       placeholder="30 (ngày)"
                     />
                     <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-slate-400 pointer-events-none">
@@ -902,7 +902,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
                   type="email"
                   value={customer.email}
                   onChange={(e) => onChangeCustomer('email', e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs transition-colors"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 text-xs transition-colors"
                   placeholder="contact@company.com"
                 />
               </div>
@@ -922,7 +922,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
                   type="date"
                   value={createdDate}
                   onChange={(e) => onChangeQuoteMeta('createdDate', e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs font-mono transition-colors"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 text-xs font-mono transition-colors"
                 />
               </div>
             </div>
@@ -963,7 +963,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
                       className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer text-[10px] font-medium"
                       title="Chuẩn hóa khoảng trắng và dấu phẩy ngăn cách"
                     >
-                      <Wand2 className="w-2.5 h-2.5 text-indigo-600" />
+                      <Wand2 className="w-2.5 h-2.5 text-blue-600" />
                       <span>Chuẩn hóa</span>
                     </button>
                   </div>
@@ -982,7 +982,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
                       ? addressValidation.statusType === 'VALID'
                         ? 'border-emerald-300 bg-emerald-50/20 text-slate-900 focus:bg-white focus:ring-1 focus:ring-emerald-500'
                         : 'border-amber-300 bg-amber-50/20 text-slate-900 focus:bg-white focus:ring-1 focus:ring-amber-500'
-                      : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900'
+                      : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600'
                   }`}
                   placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố (VD: 720A Điện Biên Phủ, P.22, Q. Bình Thạnh, TP.HCM)"
                 />
@@ -1028,7 +1028,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
                           onChangeCustomer('address', `${current}, ${city.value}`);
                         }
                       }}
-                      className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 transition-colors cursor-pointer text-[9.5px] font-semibold"
+                      className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 transition-colors cursor-pointer text-[9.5px] font-semibold"
                       title={`Thêm ${city.value} vào cuối địa chỉ`}
                     >
                       +{city.label}

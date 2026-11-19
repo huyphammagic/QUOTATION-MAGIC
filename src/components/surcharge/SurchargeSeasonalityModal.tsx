@@ -109,7 +109,7 @@ export const SurchargeSeasonalityModal: React.FC<SurchargeSeasonalityModalProps>
     blue: 'bg-blue-50 text-blue-800 border-blue-300 ring-blue-200',
     amber: 'bg-amber-50 text-amber-800 border-amber-300 ring-amber-200',
     rose: 'bg-rose-50 text-rose-800 border-rose-300 ring-rose-200',
-    purple: 'bg-purple-50 text-purple-800 border-purple-300 ring-purple-200',
+    purple: 'bg-teal-50 text-teal-800 border-teal-300 ring-teal-200',
   }[analysis.ratingColor];
 
   // SVG Chart Dimensions & Calculations
@@ -143,23 +143,21 @@ export const SurchargeSeasonalityModal: React.FC<SurchargeSeasonalityModalProps>
   const areaD = `${pathD} L ${points[points.length - 1].x} ${chartHeight - paddingY} L ${points[0].x} ${chartHeight - paddingY} Z`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/75 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-[#0B1324]/80 backdrop-blur-xs animate-in fade-in duration-200">
       <div 
         className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden text-slate-800"
         role="dialog"
         aria-modal="true"
       >
         {/* Modal Top Header */}
-        <div className="px-5 sm:px-6 py-4 bg-linear-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between shrink-0 border-b border-indigo-900/50">
+        <div className="px-5 sm:px-6 py-4 bg-[#0B1324] text-white flex items-center justify-between shrink-0 border-b border-white/10">
           <div className="flex items-center space-x-3.5 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-linear-to-tr from-indigo-500 to-sky-400 p-0.5 shadow-md shrink-0">
-              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-amber-300">
-                <TrendingUp className="w-5 h-5 text-indigo-400 animate-pulse" />
-              </div>
+            <div className="w-10 h-10 rounded-2xl bg-blue-600/20 border border-blue-500/35 flex items-center justify-center shrink-0">
+              <TrendingUp className="w-5 h-5 text-blue-300" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-mono font-bold text-xs uppercase px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
+                <span className="font-mono font-bold text-xs uppercase px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-200 border border-blue-400/30">
                   {surcharge.code}
                 </span>
                 <h2 className="text-base sm:text-lg font-bold tracking-tight truncate">
@@ -228,7 +226,7 @@ export const SurchargeSeasonalityModal: React.FC<SurchargeSeasonalityModalProps>
           <div className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-1">
             <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium">
               <span>Độ cạnh tranh giá</span>
-              <span className="font-mono font-bold text-xs text-indigo-600">{analysis.competitivenessScore}/100</span>
+              <span className="font-mono font-bold text-xs text-blue-600">{analysis.competitivenessScore}/100</span>
             </div>
             <div className="pt-0.5">
               <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border ${ratingColorClasses}`}>
@@ -269,7 +267,7 @@ export const SurchargeSeasonalityModal: React.FC<SurchargeSeasonalityModalProps>
             <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium">
               <span>Tháng {analysis.currentSeasonality.currentMonth} (Mùa vụ)</span>
               {analysis.currentSeasonality.isPeakActive ? (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.2 rounded animate-pulse">
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.2 rounded">
                   <Flame className="w-2.5 h-2.5" />
                   <span>Cao điểm</span>
                 </span>
@@ -297,7 +295,7 @@ export const SurchargeSeasonalityModal: React.FC<SurchargeSeasonalityModalProps>
             onClick={() => setActiveTab('SEASONALITY')}
             className={`inline-flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'SEASONALITY'
-                ? 'border-indigo-600 text-indigo-700'
+                ? 'border-blue-600 text-blue-700'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -310,7 +308,7 @@ export const SurchargeSeasonalityModal: React.FC<SurchargeSeasonalityModalProps>
             onClick={() => setActiveTab('HISTORICAL_COST')}
             className={`inline-flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'HISTORICAL_COST'
-                ? 'border-indigo-600 text-indigo-700'
+                ? 'border-blue-600 text-blue-700'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -323,7 +321,7 @@ export const SurchargeSeasonalityModal: React.FC<SurchargeSeasonalityModalProps>
             onClick={() => setActiveTab('PRICING_TIERS')}
             className={`inline-flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'PRICING_TIERS'
-                ? 'border-indigo-600 text-indigo-700'
+                ? 'border-blue-600 text-blue-700'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -340,25 +338,25 @@ export const SurchargeSeasonalityModal: React.FC<SurchargeSeasonalityModalProps>
             <div className="space-y-5 animate-in fade-in duration-150">
               
               {/* Seasonality Chart Container */}
-              <div className="p-4 sm:p-5 rounded-3xl bg-linear-to-b from-slate-900 via-indigo-950 to-slate-900 text-white shadow-md relative overflow-hidden">
+              <div className="p-4 sm:p-5 rounded-3xl bg-[#0B1324] border border-white/10 text-white shadow-md relative overflow-hidden">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                   <div>
                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-indigo-400" />
+                      <TrendingUp className="w-4 h-4 text-blue-400" />
                       <span>Đường Cong Biến Động Chỉ Số Mùa Vụ (Seasonality Index Curve)</span>
                     </h3>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Đo lường mức tăng/giảm nhu cầu & cước của phụ phí <strong className="text-indigo-300 font-mono">{surcharge.code}</strong> qua 12 tháng
+                      Đo lường mức tăng/giảm nhu cầu & cước của phụ phí <strong className="text-blue-300 font-mono">{surcharge.code}</strong> qua 12 tháng
                     </p>
                   </div>
 
                   <div className="flex items-center gap-3 text-xs font-mono">
                     <span className="flex items-center gap-1.5 text-slate-300">
-                      <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 inline-block" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-blue-400 inline-block" />
                       <span>Mức bình quân (100)</span>
                     </span>
                     <span className="flex items-center gap-1.5 text-amber-300">
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block animate-ping" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" />
                       <span>Tháng hiện tại (Th{analysis.currentSeasonality.currentMonth})</span>
                     </span>
                   </div>
@@ -372,12 +370,12 @@ export const SurchargeSeasonalityModal: React.FC<SurchargeSeasonalityModalProps>
                   >
                     <defs>
                       <linearGradient id="seasonAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#818cf8" stopOpacity="0.45" />
-                        <stop offset="100%" stopColor="#818cf8" stopOpacity="0.0" />
+                        <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.4" />
+                        <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.0" />
                       </linearGradient>
                       <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#38bdf8" />
-                        <stop offset="50%" stopColor="#818cf8" />
+                        <stop offset="0%" stopColor="#0D9488" />
+                        <stop offset="50%" stopColor="#3B82F6" />
                         <stop offset="100%" stopColor="#f59e0b" />
                       </linearGradient>
                     </defs>
@@ -431,16 +429,15 @@ export const SurchargeSeasonalityModal: React.FC<SurchargeSeasonalityModalProps>
                               cx={pt.x} 
                               cy={pt.y} 
                               r="10" 
-                              fill="rgba(245, 158, 11, 0.25)" 
-                              className="animate-pulse" 
+                              fill="rgba(245, 158, 11, 0.22)" 
                             />
                           )}
                           <circle 
                             cx={pt.x} 
                             cy={pt.y} 
                             r={isCurrent ? "5" : "3.5"} 
-                            fill={isCurrent ? "#f59e0b" : "#c7d2fe"} 
-                            stroke="#0f172a" 
+                            fill={isCurrent ? "#f59e0b" : "#93C5FD"} 
+                            stroke="#0B1324" 
                             strokeWidth="2" 
                           />
                           {/* Value above point */}
@@ -491,7 +488,7 @@ export const SurchargeSeasonalityModal: React.FC<SurchargeSeasonalityModalProps>
               {/* 4-Quarter Seasonality Breakdown Table */}
               <div className="space-y-2.5">
                 <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                  <Calendar className="w-3.5 h-3.5 text-blue-600" />
                   <span>Diễn Biến Theo 4 Quý Trong Năm</span>
                 </h4>
 
@@ -505,7 +502,7 @@ export const SurchargeSeasonalityModal: React.FC<SurchargeSeasonalityModalProps>
                     <div key={item.q} className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-1.5 flex flex-col justify-between">
                       <div>
                         <div className="flex items-center justify-between text-[11px] font-bold">
-                          <span className="text-indigo-950 font-mono">{item.q}</span>
+                          <span className="text-slate-900 font-mono">{item.q}</span>
                           <span className={`px-1.5 py-0.2 rounded text-[10px] ${
                             item.color === 'rose' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
                             item.color === 'emerald' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
@@ -534,13 +531,13 @@ export const SurchargeSeasonalityModal: React.FC<SurchargeSeasonalityModalProps>
             <div className="space-y-4 animate-in fade-in duration-150">
               
               {/* Corridor Summary Box */}
-              <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div className="space-y-0.5">
-                  <div className="font-bold text-indigo-950 text-sm flex items-center gap-1.5">
-                    <BarChart3 className="w-4 h-4 text-indigo-600" />
+                  <div className="font-bold text-blue-950 text-sm flex items-center gap-1.5">
+                    <BarChart3 className="w-4 h-4 text-blue-600" />
                     <span>Hành Lang Chi Phí Lịch Sử: ${analysis.marketCorridor.minPriceUsd} ➔ ${analysis.marketCorridor.maxPriceUsd} USD</span>
                   </div>
-                  <p className="text-indigo-800/80 text-[11px]">
+                  <p className="text-blue-800/80 text-[11px]">
                     Điểm ngọt bình quân thị trường: <strong>${analysis.marketCorridor.recommendedSweetSpotUsd} USD</strong> ({formatVND(analysis.marketCorridor.recommendedSweetSpotVnd)})
                   </p>
                 </div>
@@ -576,7 +573,7 @@ export const SurchargeSeasonalityModal: React.FC<SurchargeSeasonalityModalProps>
                   <tbody className="divide-y divide-slate-100 bg-white">
                     {analysis.historicalQuotePoints.map((item) => (
                       <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="p-3 font-mono font-bold text-indigo-900">
+                        <td className="p-3 font-mono font-bold text-blue-900">
                           {item.quoteNumber}
                         </td>
                         <td className="p-3 font-mono text-slate-600">
@@ -642,7 +639,7 @@ export const SurchargeSeasonalityModal: React.FC<SurchargeSeasonalityModalProps>
                       key={tier.id}
                       className={`p-4 rounded-3xl border transition-all flex flex-col justify-between shadow-2xs hover:shadow-xs relative bg-white ${
                         isCurrent 
-                          ? 'border-indigo-600 ring-2 ring-indigo-500/20' 
+                          ? 'border-blue-600 ring-2 ring-blue-500/20' 
                           : 'border-slate-200 hover:border-slate-300'
                       }`}
                     >
@@ -651,7 +648,7 @@ export const SurchargeSeasonalityModal: React.FC<SurchargeSeasonalityModalProps>
                           <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
                             tier.badgeColor === 'emerald' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
                             tier.badgeColor === 'blue' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
-                            'bg-purple-50 text-purple-700 border border-purple-200'
+                            'bg-teal-50 text-teal-700 border border-teal-200'
                           }`}>
                             {tier.badge}
                           </span>
@@ -691,7 +688,7 @@ export const SurchargeSeasonalityModal: React.FC<SurchargeSeasonalityModalProps>
                         <button
                           type="button"
                           onClick={() => handleApplyStrategyTier(tier.priceUsd, tier.priceVnd, tier.title)}
-                          className="w-full py-1.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                          className="w-full py-1.5 px-3 rounded-xl bg-[#0B1324] hover:bg-[#16233F] text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                         >
                           <Check className="w-3.5 h-3.5 text-emerald-400" />
                           <span>Áp Dụng Vào Danh Mục</span>
@@ -758,7 +755,7 @@ export const SurchargeSeasonalityModal: React.FC<SurchargeSeasonalityModalProps>
                     type="button"
                     onClick={handleSaveCustomPriceToCatalog}
                     disabled={!hasPriceChanged}
-                    className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs transition-colors cursor-pointer disabled:cursor-not-allowed shadow-2xs"
+                    className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs transition-colors cursor-pointer disabled:cursor-not-allowed shadow-2xs"
                   >
                     Lưu Giá Mới
                   </button>

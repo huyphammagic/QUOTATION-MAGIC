@@ -105,7 +105,7 @@ export const SupplierCarrierTab: React.FC<SupplierCarrierTabProps> = ({
             onClick={() => setSubTab('SUPPLIERS')}
             className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 ${
               subTab === 'SUPPLIERS'
-                ? 'bg-purple-600 text-white shadow-xs'
+                ? 'bg-teal-600 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
@@ -124,7 +124,7 @@ export const SupplierCarrierTab: React.FC<SupplierCarrierTabProps> = ({
           ) : (
             <button
               onClick={handleOpenCreateSupplier}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold shadow-xs"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-semibold shadow-xs"
             >
               <Plus className="w-3.5 h-3.5" /> Thêm Nhà Cung Cấp
             </button>
@@ -194,7 +194,7 @@ export const SupplierCarrierTab: React.FC<SupplierCarrierTabProps> = ({
             <div key={s.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-mono font-bold text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded">
+                  <span className="font-mono font-bold text-xs bg-teal-50 text-teal-700 px-2 py-0.5 rounded">
                     {s.code || 'VENDOR'}
                   </span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
@@ -225,7 +225,7 @@ export const SupplierCarrierTab: React.FC<SupplierCarrierTabProps> = ({
                     setEditingSupplier(s);
                     setIsSupplierModalOpen(true);
                   }}
-                  className="p-1 text-slate-500 hover:text-purple-600 rounded"
+                  className="p-1 text-slate-500 hover:text-teal-600 rounded"
                 >
                   <Edit className="w-4 h-4" />
                 </button>
@@ -243,7 +243,7 @@ export const SupplierCarrierTab: React.FC<SupplierCarrierTabProps> = ({
 
       {/* Modal: Carrier */}
       {isCarrierModalOpen && editingCarrier && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-[#0B1324]/75 backdrop-blur-xs">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-5 border border-slate-200">
             <h3 className="text-base font-bold text-slate-800 mb-3">
               {editingCarrier.name ? 'Cập Nhật Hãng Vận Chuyển' : 'Thêm Hãng Vận Chuyển Mới'}
@@ -347,7 +347,7 @@ export const SupplierCarrierTab: React.FC<SupplierCarrierTabProps> = ({
 
       {/* Modal: Supplier */}
       {isSupplierModalOpen && editingSupplier && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-[#0B1324]/75 backdrop-blur-xs">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-5 border border-slate-200">
             <h3 className="text-base font-bold text-slate-800 mb-3">
               {editingSupplier.name ? 'Cập Nhật Nhà Cung Cấp' : 'Thêm Nhà Cung Cấp Mới'}
@@ -432,7 +432,7 @@ export const SupplierCarrierTab: React.FC<SupplierCarrierTabProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg"
+                  className="px-4 py-1.5 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-lg"
                 >
                   Lưu Nhà Cung Cấp
                 </button>

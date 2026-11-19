@@ -334,7 +334,7 @@ export const CATEGORY_CONFIGS: Record<OperationalCategory, CategoryPillMeta> = {
     activeRing: 'ring-rose-400/40',
     lightBg: 'bg-rose-50 text-rose-800 border-rose-200',
     lightText: 'text-rose-700',
-    badgeStyle: 'bg-rose-100 text-rose-800 border-rose-200 animate-pulse',
+    badgeStyle: 'bg-rose-100 text-rose-800 border-rose-200',
     pillSelectedClass: 'bg-rose-50 text-rose-900 border-rose-300 ring-1 ring-rose-200/80 shadow-2xs font-bold',
     pillUnselectedClass: 'bg-white/80 text-slate-500 border-slate-200 hover:border-rose-200 hover:text-slate-800 hover:bg-rose-50/40',
   },
@@ -362,9 +362,9 @@ const FILTER_CONFIGS: SurchargeFilterMeta[] = [
     shortLabel: 'Tất Cả',
     description: 'Toàn bộ gợi ý phụ phí theo tuyến & mùa vận tải',
     icon: Sparkles,
-    activeBg: 'bg-indigo-600',
+    activeBg: 'bg-blue-600',
     activeText: 'text-white',
-    activeBorder: 'border-indigo-600',
+    activeBorder: 'border-blue-600',
     badgeActiveBg: 'bg-white/25',
     badgeActiveText: 'text-white',
   },
@@ -424,7 +424,7 @@ export const LOGISTICS_GUIDANCE: Record<SurchargeOperationalType, LogisticsGuida
     typicalItems: 'B/L, THC, BAF/LSS, CIC, AMS/ENS, PSS, WRS',
     operationalTip: 'Nên kiểm tra đối chiếu kỹ với booking note của hãng tàu/hãng bay để không bỏ sót các phụ phí bắt buộc.',
     badgeText: 'Toàn cảnh',
-    badgeStyle: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+    badgeStyle: 'bg-blue-100 text-blue-800 border-blue-200',
   },
   FIXED: {
     title: 'Phí Cố Định (Administrative & Regulatory Charges)',
@@ -451,7 +451,7 @@ export const LOGISTICS_GUIDANCE: Record<SurchargeOperationalType, LogisticsGuida
     typicalItems: 'Phụ phí rủi ro chiến tranh (WRS), Phụ phí mùa cao điểm (PSS), Phụ phí tắc nghẽn cảng (CGS), Phụ phí khẩn cấp (EBS)',
     operationalTip: 'Các khoản phụ phí này có thể được áp dụng hoặc tăng đột ngột bởi hãng tàu với thời gian báo trước rất ngắn. Khuyến nghị gửi cảnh báo cho khách hàng trước khi ký hợp đồng.',
     badgeText: 'Rủi ro biến động',
-    badgeStyle: 'bg-rose-100 text-rose-800 border-rose-200 animate-pulse',
+    badgeStyle: 'bg-rose-100 text-rose-800 border-rose-200',
   },
 };
 
@@ -1405,7 +1405,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
       typicalItems: typicalList,
       operationalTip: 'Kiểm tra kỹ thời điểm hiệu lực và các điều khoản ghi chú bổ sung trong hợp đồng để tránh tranh chấp.',
       badgeText: `Lọc ${selectedCategories.size} nhóm`,
-      badgeStyle: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+      badgeStyle: 'bg-blue-100 text-blue-800 border-blue-200',
     };
   }, [selectedCategories, isAllSelected, isNoneSelected]);
 
@@ -1454,7 +1454,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
       case 'PEAK_SEASON': return <Calendar className="w-3.5 h-3.5 text-rose-500" />;
       case 'SECURITY': return <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />;
       case 'WAR_RISK': return <AlertCircle className="w-3.5 h-3.5 text-red-500" />;
-      default: return <Zap className="w-3.5 h-3.5 text-indigo-500" />;
+      default: return <Zap className="w-3.5 h-3.5 text-blue-500" />;
     }
   };
 
@@ -1476,7 +1476,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
         );
       case 'EMERGENCY':
         return (
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200/90 px-1.5 py-0.5 rounded-md animate-pulse">
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200/90 px-1.5 py-0.5 rounded-md">
             <AlertCircle className="w-2.5 h-2.5 text-rose-600" />
             <span>Phí khẩn cấp</span>
           </span>
@@ -1488,13 +1488,13 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
   const isVnd = quote.quoteCurrency === 'VND';
 
   return (
-    <div className="w-full bg-gradient-to-r from-indigo-50/90 via-sky-50/70 to-slate-50 border border-indigo-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs transition-all mb-4">
+    <div className="w-full bg-gradient-to-r from-blue-50/90 via-sky-50/60 to-slate-50 border border-blue-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs transition-all mb-4">
       
       {/* Top Banner Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-            <Sparkles className="w-4 h-4 animate-pulse" />
+          <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <Sparkles className="w-4 h-4" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -1502,7 +1502,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                 Smart Surcharge Engine
               </span>
               <span className="text-slate-300">·</span>
-              <span className="inline-flex items-center gap-1 text-[11px] font-mono text-indigo-700 bg-indigo-100/80 px-2 py-0.5 rounded-md font-semibold">
+              <span className="inline-flex items-center gap-1 text-[11px] font-mono text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded-md font-semibold">
                 {modeIcon()}
                 <span>{quote.shipment.mode}</span>
               </span>
@@ -1513,7 +1513,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
             </div>
             
             <p className="text-[11px] text-slate-600 mt-0.5">
-              Phát hiện <strong className="font-bold text-indigo-900 font-mono">{activeSuggestions.length} phụ phí</strong>:{' '}
+              Phát hiện <strong className="font-bold text-blue-900 font-mono">{activeSuggestions.length} phụ phí</strong>:{' '}
               <span className="text-rose-600 font-bold">
                 {categorizedSuggestions.required.length} bắt buộc (Required)
               </span>{' '}
@@ -1543,7 +1543,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
             <button
               type="button"
               onClick={() => onApplyAllSuggestions(displayedSuggestions)}
-              className="press-physics inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-xs transition-colors cursor-pointer"
+              className="press-physics inline-flex items-center gap-1.5 bg-[#0B1324] hover:bg-[#16233F] text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-xs transition-colors cursor-pointer"
               title={`Áp dụng toàn bộ ${displayedSuggestions.length} phụ phí thuộc các nhóm đã chọn`}
             >
               <CheckCheck className="w-3.5 h-3.5 text-emerald-400" />
@@ -1554,7 +1554,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
           <button
             type="button"
             onClick={() => onApplyAllSuggestions(activeSuggestions)}
-            className="press-physics inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-xs transition-colors cursor-pointer"
+            className="press-physics inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-xs transition-colors cursor-pointer"
             title="Tự động thêm toàn bộ các phụ phí được khuyến nghị vào bảng chi phí"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -1589,10 +1589,10 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
 
       {/* Smart Filter Bar & Suggestions Grid */}
       {isExpanded && (
-        <div className="mt-4 pt-3.5 border-t border-indigo-200/60 space-y-3.5">
+        <div className="mt-4 pt-3.5 border-t border-blue-200/60 space-y-3.5">
           
           {/* Smart Filter Dropdown & Sleek Multi-Select Pill Bar */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white/85 backdrop-blur-md p-2.5 sm:p-3 rounded-2xl border border-indigo-100/90 shadow-2xs">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white/85 backdrop-blur-md p-2.5 sm:p-3 rounded-2xl border border-blue-100/90 shadow-2xs">
             
             <div className="flex items-center gap-2.5 flex-wrap">
               
@@ -1605,17 +1605,17 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                   aria-expanded={isDropdownOpen}
                   className={`press-physics-subtle inline-flex items-center justify-between gap-2.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border shadow-2xs ${
                     isDropdownOpen 
-                      ? 'bg-white border-indigo-400 ring-2 ring-indigo-100 shadow-xs'
+                      ? 'bg-white border-blue-400 ring-2 ring-blue-100 shadow-xs'
                       : isAllSelected
-                      ? 'bg-white hover:bg-slate-50 border-indigo-200 text-slate-800 hover:border-indigo-300'
+                      ? 'bg-white hover:bg-slate-50 border-blue-200 text-slate-800 hover:border-blue-300'
                       : isNoneSelected
                       ? 'bg-amber-50 hover:bg-amber-100/80 border-amber-300 text-amber-900'
-                      : 'bg-indigo-50/70 hover:bg-indigo-100/80 border-indigo-300 text-indigo-950'
+                      : 'bg-blue-50/70 hover:bg-blue-100/80 border-blue-300 text-blue-950'
                   }`}
                   title="Mở menu thả xuống để tùy chỉnh lọc nhiều nhóm phụ phí cùng lúc"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                    <span className="w-5 h-5 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
                       <SlidersHorizontal className="w-3 h-3" />
                     </span>
                     <span className="font-bold text-slate-900">
@@ -1625,7 +1625,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                     {/* Inline Active Multi-Select Pills Preview */}
                     <div className="flex items-center gap-1 ml-0.5">
                       {isAllSelected && exitingCategories.size === 0 ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-100/80 px-2 py-0.5 rounded-full">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded-full">
                           Tất cả (3 nhóm)
                         </span>
                       ) : isNoneSelected && exitingCategories.size === 0 ? (
@@ -1676,10 +1676,10 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                   </div>
 
                   <div className="flex items-center gap-1.5 pl-1.5 border-l border-slate-200/90 ml-1">
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-md font-mono font-bold bg-slate-900 text-white shadow-2xs">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-md font-mono font-bold bg-[#0B1324] text-white shadow-2xs">
                       {displayedSuggestions.length} phí
                     </span>
-                    <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180 text-indigo-600' : ''}`} />
+                    <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
                   </div>
                 </button>
 
@@ -1687,13 +1687,13 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                 {isDropdownOpen && (
                   <div
                     role="listbox"
-                    className="absolute left-0 mt-2 w-80 sm:w-96 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-indigo-100 py-2.5 px-3 z-40 animate-in fade-in-0 zoom-in-95 duration-150 ring-1 ring-black/5 divide-y divide-slate-100"
+                    className="absolute left-0 mt-2 w-80 sm:w-96 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-blue-100 py-2.5 px-3 z-40 animate-in fade-in-0 zoom-in-95 duration-150 ring-1 ring-black/5 divide-y divide-slate-100"
                   >
                     {/* Dropdown Header with Quick Pill Actions */}
                     <div className="pb-2 flex items-center justify-between gap-2">
                       <div>
                         <div className="text-[11px] font-bold text-slate-900 flex items-center gap-1.5 uppercase tracking-wider">
-                          <Filter className="w-3.5 h-3.5 text-indigo-600" />
+                          <Filter className="w-3.5 h-3.5 text-blue-600" />
                           <span>Lọc Đa Chiều (Multi-Select)</span>
                         </div>
                         <p className="text-[10px] text-slate-500 mt-0.5">
@@ -1705,7 +1705,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                         <button
                           type="button"
                           onClick={selectAllCategories}
-                          className="text-[11px] font-bold text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100/90 border border-indigo-200/80 px-2 py-0.5 rounded-lg transition-colors cursor-pointer"
+                          className="text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100/90 border border-blue-200/80 px-2 py-0.5 rounded-lg transition-colors cursor-pointer"
                           title="Chọn toàn bộ 3 nhóm phụ phí"
                         >
                           Tất cả
@@ -1754,7 +1754,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                                 isSelected 
                                   ? `${cfg.activeBg} text-white shadow-2xs` 
                                   : isEmergency 
-                                  ? 'bg-rose-100 text-rose-600 animate-pulse' 
+                                  ? 'bg-rose-100 text-rose-600' 
                                   : 'bg-slate-100 text-slate-600'
                               }`}>
                                 <IconComp className="w-3.5 h-3.5" />
@@ -1778,7 +1778,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                             <div className="flex items-center gap-1.5 shrink-0">
                               <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
                                 isSelected
-                                  ? 'bg-slate-900 text-white'
+                                  ? 'bg-[#0B1324] text-white'
                                   : 'bg-slate-100 text-slate-600'
                               }`}>
                                 {count} phí
@@ -1791,7 +1791,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                                   e.stopPropagation();
                                   selectOnlyCategory(catKey);
                                 }}
-                                className="opacity-0 group-hover:opacity-100 text-[10px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline px-1 py-0.5 rounded transition-opacity"
+                                className="opacity-0 group-hover:opacity-100 text-[10px] font-bold text-blue-600 hover:text-blue-800 hover:underline px-1 py-0.5 rounded transition-opacity"
                                 title={`Chỉ lọc duy nhất ${cfg.label}`}
                               >
                                 Chỉ chọn
@@ -1822,7 +1822,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                   onClick={selectAllCategories}
                   className={`press-physics-subtle inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                     isAllSelected
-                      ? 'bg-indigo-600 text-white shadow-xs font-bold'
+                      ? 'bg-blue-600 text-white shadow-xs font-bold'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-white/90'
                   }`}
                   title="Chọn hiển thị toàn bộ tất cả phụ phí gợi ý"
@@ -1873,7 +1873,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
 
                       <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
                         isSelected
-                          ? isEmergency ? 'bg-rose-600 text-white animate-pulse' : 'bg-slate-900 text-white'
+                          ? isEmergency ? 'bg-rose-600 text-white' : 'bg-[#0B1324] text-white'
                           : count > 0 ? 'bg-slate-200/80 text-slate-700' : 'bg-transparent text-slate-400'
                       }`}>
                         {count}
@@ -1906,7 +1906,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                 <strong className="font-bold text-slate-900">{displayedSuggestions.length}</strong>
                 <span>/ {activeSuggestions.length} phí</span>
                 <span className="text-slate-300">·</span>
-                <span className="text-[11px] font-mono font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-md">
+                <span className="text-[11px] font-mono font-semibold text-blue-700 bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded-md">
                   {selectedCategories.size}/3 nhóm
                 </span>
               </div>
@@ -1915,7 +1915,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                 <button
                   type="button"
                   onClick={selectAllCategories}
-                  className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100/80 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                  className="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100/80 px-2 py-1 rounded-lg transition-colors cursor-pointer"
                   title="Chọn lại tất cả các nhóm phụ phí"
                 >
                   Đặt lại (Tất cả)
@@ -1925,10 +1925,10 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
           </div>
 
           {/* Requirement Mode Filter Bar: All Groups vs Required vs Optional */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5 bg-gradient-to-r from-slate-100/90 via-indigo-50/40 to-slate-100/90 p-1.5 rounded-xl border border-indigo-100/80 shadow-2xs">
+          <div className="flex flex-wrap items-center justify-between gap-2.5 bg-gradient-to-r from-slate-100/90 via-blue-50/40 to-slate-100/90 p-1.5 rounded-xl border border-blue-100/80 shadow-2xs">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider px-2 flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                <Layers className="w-3.5 h-3.5 text-blue-600" />
                 <span>Nhóm Phụ Phí:</span>
               </span>
 
@@ -1938,7 +1938,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                 onClick={() => setRequirementFilter('ALL')}
                 className={`press-physics-subtle inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   requirementFilter === 'ALL'
-                    ? 'bg-slate-900 text-white shadow-xs'
+                    ? 'bg-[#0B1324] text-white shadow-xs'
                     : 'bg-white/80 hover:bg-white text-slate-700 border border-slate-200'
                 }`}
                 title="Hiển thị theo 2 nhóm phân tách: Bắt buộc & Tùy chọn"
@@ -2014,9 +2014,9 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
 
             {/* Sort Control Group */}
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1 bg-white/95 p-1 rounded-lg border border-indigo-100 shadow-2xs">
+              <div className="flex items-center gap-1 bg-white/95 p-1 rounded-lg border border-blue-100 shadow-2xs">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-1.5 flex items-center gap-1 shrink-0">
-                  <ArrowUpDown className="w-3 h-3 text-indigo-600" />
+                  <ArrowUpDown className="w-3 h-3 text-blue-600" />
                   <span className="hidden sm:inline">Sắp xếp:</span>
                 </span>
 
@@ -2025,7 +2025,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                   onClick={() => setSortOrder('FREQUENCY')}
                   className={`press-physics-subtle px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                     sortOrder === 'FREQUENCY'
-                      ? 'bg-indigo-600 text-white shadow-2xs'
+                      ? 'bg-blue-600 text-white shadow-2xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                   title="Sắp xếp theo mức độ phổ biến & tần suất sử dụng thực tế (THC, BAF, SEAL, AMS...)"
@@ -2039,7 +2039,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                   onClick={() => setSortOrder('PRICE_DESC')}
                   className={`press-physics-subtle px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                     sortOrder === 'PRICE_DESC'
-                      ? 'bg-indigo-600 text-white shadow-2xs ring-1 ring-indigo-400'
+                      ? 'bg-blue-600 text-white shadow-2xs ring-1 ring-blue-400'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                   title="Sắp xếp theo đơn giá cao đến thấp (ưu tiên chi phí trọng yếu lớn nhất)"
@@ -2053,7 +2053,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                   onClick={() => setSortOrder('PRICE_ASC')}
                   className={`press-physics-subtle px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                     sortOrder === 'PRICE_ASC'
-                      ? 'bg-indigo-600 text-white shadow-2xs ring-1 ring-indigo-400'
+                      ? 'bg-blue-600 text-white shadow-2xs ring-1 ring-blue-400'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                   title="Sắp xếp theo đơn giá thấp đến cao (tiện rà soát phụ phí nhỏ)"
@@ -2064,7 +2064,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
               </div>
 
               <div className="text-[11px] text-slate-500 px-1 hidden md:block">
-                Tuyến: <strong className="text-indigo-900 font-semibold">{quote.shipment.mode}</strong>
+                Tuyến: <strong className="text-blue-900 font-semibold">{quote.shipment.mode}</strong>
               </div>
             </div>
           </div>
@@ -2073,7 +2073,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
           <div className="bg-white/90 border border-slate-200/90 rounded-xl p-2.5 shadow-2xs space-y-2">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <div ref={searchContainerRef} className="relative flex-1 group">
-                <Search className="w-4 h-4 text-slate-400 group-focus-within:text-indigo-600 absolute left-3 top-1/2 -translate-y-1/2 transition-colors pointer-events-none" />
+                <Search className="w-4 h-4 text-slate-400 group-focus-within:text-blue-600 absolute left-3 top-1/2 -translate-y-1/2 transition-colors pointer-events-none" />
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -2084,7 +2084,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                   }}
                   onKeyDown={handleSearchInputKeyDown}
                   placeholder="Tìm kiếm phụ phí hoặc gõ tên mới để thêm nhanh (Enter)..."
-                  className="w-full pl-9 pr-8 py-2 text-xs text-slate-900 placeholder:text-slate-400 bg-slate-50/70 hover:bg-slate-50 focus:bg-white border border-slate-200 focus:border-indigo-400 rounded-lg outline-none focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
+                  className="w-full pl-9 pr-8 py-2 text-xs text-slate-900 placeholder:text-slate-400 bg-slate-50/70 hover:bg-slate-50 focus:bg-white border border-slate-200 focus:border-blue-400 rounded-lg outline-none focus:ring-2 focus:ring-blue-100 transition-all font-medium"
                 />
                 {searchQuery && (
                   <button
@@ -2105,7 +2105,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                 {isSearchDropdownOpen && searchQuery.trim() && (
                   <div
                     role="listbox"
-                    className="absolute left-0 right-0 top-full mt-1.5 bg-white/95 backdrop-blur-xl border border-indigo-200/90 rounded-2xl shadow-2xl z-50 overflow-hidden divide-y divide-slate-100 animate-in fade-in-0 zoom-in-95 duration-150 ring-1 ring-black/5"
+                    className="absolute left-0 right-0 top-full mt-1.5 bg-white/95 backdrop-blur-xl border border-blue-200/90 rounded-2xl shadow-2xl z-50 overflow-hidden divide-y divide-slate-100 animate-in fade-in-0 zoom-in-95 duration-150 ring-1 ring-black/5"
                   >
                     {/* Dropdown Header Info */}
                     <div className="px-3 py-1.5 bg-slate-50/90 flex items-center justify-between text-[10px] text-slate-500">
@@ -2131,13 +2131,13 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                               onClick={() => handleApplyExistingSuggestion(item)}
                               className={`px-3 py-2 rounded-xl flex items-center justify-between gap-2.5 cursor-pointer transition-all ${
                                 isHighlighted
-                                  ? 'bg-indigo-50 text-indigo-950 ring-1 ring-indigo-300 shadow-2xs'
+                                  ? 'bg-blue-50 text-blue-950 ring-1 ring-blue-300 shadow-2xs'
                                   : 'hover:bg-slate-50 text-slate-800'
                               }`}
                             >
                               <div className="min-w-0 flex items-center gap-2">
                                 <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md shrink-0 ${
-                                  isHighlighted ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                  isHighlighted ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700 border border-slate-200'
                                 }`}>
                                   {item.code}
                                 </span>
@@ -2153,11 +2153,11 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
 
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {isHighlighted && (
-                                  <span className="text-[10px] text-indigo-600 font-semibold hidden sm:inline">
+                                  <span className="text-[10px] text-blue-600 font-semibold hidden sm:inline">
                                     Enter ↵
                                   </span>
                                 )}
-                                <span className="text-xs font-bold text-indigo-600 bg-white hover:bg-indigo-100 border border-indigo-200 px-2 py-1 rounded-lg">
+                                <span className="text-xs font-bold text-blue-600 bg-white hover:bg-blue-100 border border-blue-200 px-2 py-1 rounded-lg">
                                   + Thêm
                                 </span>
                               </div>
@@ -2169,7 +2169,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
 
                     {/* 2. 'Add New' Option (Automatically highlighted when 0 matches) */}
                     {showAddNewOption && (
-                      <div className="p-1.5 bg-gradient-to-b from-indigo-50/40 to-indigo-50/80">
+                      <div className="p-1.5 bg-gradient-to-b from-blue-50/40 to-blue-50/80">
                         <div
                           role="option"
                           aria-selected={isAddNewHighlighted}
@@ -2177,13 +2177,13 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                           onClick={() => handleAddNewSurcharge(searchQuery.trim())}
                           className={`p-2.5 rounded-xl flex items-center justify-between gap-2.5 cursor-pointer transition-all duration-150 ${
                             isAddNewHighlighted
-                              ? 'bg-gradient-to-r from-indigo-600 via-indigo-600 to-indigo-700 text-white shadow-md ring-2 ring-indigo-400 scale-[1.01]'
-                              : 'bg-white hover:bg-indigo-50/90 border border-indigo-200 text-slate-800 shadow-2xs'
+                              ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400 scale-[1.01]'
+                              : 'bg-white hover:bg-blue-50/90 border border-blue-200 text-slate-800 shadow-2xs'
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-2xs ${
-                              isAddNewHighlighted ? 'bg-white/20 text-white' : 'bg-indigo-600 text-white'
+                              isAddNewHighlighted ? 'bg-white/20 text-white' : 'bg-blue-600 text-white'
                             }`}>
                               <Plus className="w-4 h-4 stroke-[2.5]" />
                             </div>
@@ -2194,13 +2194,13 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                                   Thêm mới phụ phí:
                                 </span>
                                 <span className={`text-xs font-bold truncate px-1.5 py-0.2 rounded-md ${
-                                  isAddNewHighlighted ? 'bg-white/25 text-white' : 'bg-indigo-100 text-indigo-800'
+                                  isAddNewHighlighted ? 'bg-white/25 text-white' : 'bg-blue-100 text-blue-800'
                                 }`}>
                                   "{searchQuery.trim()}"
                                 </span>
                               </div>
                               <p className={`text-[10px] mt-0.5 truncate ${
-                                isAddNewHighlighted ? 'text-indigo-100' : 'text-slate-500'
+                                isAddNewHighlighted ? 'text-blue-100' : 'text-slate-500'
                               }`}>
                                 {hasNoMatches 
                                   ? 'Không trùng với phí mẫu nào. Tạo mới và thêm ngay vào báo giá.'
@@ -2212,8 +2212,8 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                           <div className="flex items-center gap-1.5 shrink-0">
                             <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
                               isAddNewHighlighted
-                                ? 'bg-white text-indigo-700 border-white shadow-xs font-mono animate-pulse'
-                                : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                ? 'bg-white text-blue-700 border-white shadow-xs font-mono'
+                                : 'bg-blue-50 text-blue-700 border-blue-200'
                             }`}>
                               {isAddNewHighlighted ? 'Nhấn Enter để thêm nhanh ↵' : 'Thêm mới ↵'}
                             </span>
@@ -2285,7 +2285,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                     }}
                     className={`px-2 py-0.5 rounded-md font-mono transition-all cursor-pointer border ${
                       isActive
-                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs font-bold'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-2xs font-bold'
                         : 'bg-slate-100/80 hover:bg-slate-200/90 text-slate-700 border-slate-200/80 hover:border-slate-300'
                     }`}
                     title={isActive ? `Bỏ lọc "${tag}"` : `Lọc nhanh theo "${tag}"`}
@@ -2299,9 +2299,9 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
 
           {/* Logistics Guidance Callout for Active Categories */}
           {showLogisticsTip && (
-            <div className="p-3 rounded-xl bg-white/70 border border-indigo-100/80 shadow-2xs transition-all flex items-start justify-between gap-3">
+            <div className="p-3 rounded-xl bg-white/70 border border-blue-100/80 shadow-2xs transition-all flex items-start justify-between gap-3">
               <div className="flex items-start gap-2.5 min-w-0">
-                <div className="w-6 h-6 rounded-lg bg-indigo-50 border border-indigo-200/60 text-indigo-700 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-6 h-6 rounded-lg bg-blue-50 border border-blue-200/60 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
                   <HelpCircle className="w-3.5 h-3.5" />
                 </div>
                 <div className="min-w-0">
@@ -2321,7 +2321,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                       <strong className="text-slate-700">Phụ phí tiêu biểu:</strong> {currentGuidanceInfo.typicalItems}
                     </div>
                     <span className="text-slate-300 hidden md:inline">·</span>
-                    <div className="text-indigo-900">
+                    <div className="text-blue-900">
                       <strong>Lưu ý:</strong> {currentGuidanceInfo.operationalTip}
                     </div>
                   </div>
@@ -2341,9 +2341,9 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
 
           {/* Empty State when filter or search has 0 items */}
           {totalDisplayedCount === 0 ? (
-            <div className="p-6 rounded-xl bg-white/80 border border-dashed border-indigo-200 text-center space-y-3 animate-in fade-in duration-150">
+            <div className="p-6 rounded-xl bg-white/80 border border-dashed border-blue-200 text-center space-y-3 animate-in fade-in duration-150">
               <div className={`w-11 h-11 rounded-full flex items-center justify-center mx-auto ${
-                searchQuery.trim() ? 'bg-amber-50 text-amber-600' : 'bg-indigo-50 text-indigo-600'
+                searchQuery.trim() ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'
               }`}>
                 {searchQuery.trim() ? <Search className="w-5 h-5" /> : <Info className="w-5 h-5" />}
               </div>
@@ -2390,9 +2390,9 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                     setRequirementFilter('ALL');
                     setSortOrder('FREQUENCY');
                   }}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-indigo-800 bg-slate-100 hover:bg-indigo-50 border border-slate-200 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-blue-800 bg-slate-100 hover:bg-blue-50 border border-slate-200 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
                 >
-                  <RotateCcw className="w-3.5 h-3.5 text-indigo-600" />
+                  <RotateCcw className="w-3.5 h-3.5 text-blue-600" />
                   <span>Đặt lại tất cả bộ lọc ({activeSuggestions.length} phí)</span>
                 </button>
               </div>
@@ -2476,7 +2476,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
 
                                 <div className="flex items-center gap-1.5 shrink-0">
                                   <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                                     {isMandatory ? 'Luật định' : 'Chuẩn hãng'}
                                   </span>
 
@@ -2551,7 +2551,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
               {(requirementFilter === 'ALL' || requirementFilter === 'OPTIONAL') && (
                 <div className="space-y-2.5">
                   {/* Optional Group Header Banner */}
-                  <div className="rounded-xl border border-sky-200/90 bg-gradient-to-r from-sky-50/90 via-indigo-50/40 to-white p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs">
+                  <div className="rounded-xl border border-sky-200/90 bg-gradient-to-r from-sky-50/90 via-blue-50/40 to-white p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs">
                     <div className="flex items-center gap-2.5">
                       <div className="w-7 h-7 rounded-lg bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
                         <Sparkles className="w-4 h-4" />
@@ -2578,7 +2578,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                       <button
                         type="button"
                         onClick={() => onApplyAllSuggestions(displayedOptionalSuggestions)}
-                        className="press-physics-subtle inline-flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer self-start sm:self-auto shrink-0"
+                        className="press-physics-subtle inline-flex items-center justify-center gap-1.5 bg-[#0B1324] hover:bg-[#16233F] text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer self-start sm:self-auto shrink-0"
                         title={`Thêm toàn bộ ${displayedOptionalSuggestions.length} phụ phí tùy chọn vào báo giá`}
                       >
                         <Plus className="w-3.5 h-3.5" />
@@ -2622,7 +2622,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                                 </div>
 
                                 <div className="flex items-center gap-1.5 shrink-0">
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600">
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                     {suggestion.confidence === 'HIGH' ? 'Ưu tiên' : 'Khuyến nghị'}
                                   </span>
@@ -2669,7 +2669,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                               <button
                                 type="button"
                                 onClick={() => handleApplyWithPopOut(suggestion)}
-                                className="press-physics-subtle inline-flex items-center gap-1 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shadow-2xs hover:shadow-xs"
+                                className="press-physics-subtle inline-flex items-center gap-1 bg-[#0B1324] hover:bg-[#16233F] text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shadow-2xs hover:shadow-xs"
                                 title={`Thêm ${suggestion.code} vào bảng báo giá`}
                               >
                                 <Plus className="w-3 h-3" />
@@ -2738,7 +2738,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                           ? 'bg-rose-600 text-white'
                           : pred.probabilityPercent >= 75
                           ? 'bg-amber-600 text-white'
-                          : 'bg-indigo-600 text-white';
+                          : 'bg-blue-600 text-white';
 
                         return (
                           <div
@@ -2779,7 +2779,7 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                                   <Clock className="w-3 h-3 text-amber-600 shrink-0" />
                                   <span className="truncate">{pred.timeHorizonVi}</span>
                                 </div>
-                                <div className="mt-0.5 text-[11px] font-mono font-bold text-indigo-700">
+                                <div className="mt-0.5 text-[11px] font-mono font-bold text-blue-700">
                                   Mức ảnh hưởng: {pred.expectedPriceImpactVi}
                                 </div>
                               </div>
@@ -2796,12 +2796,12 @@ export const SmartSurchargeRecommendationBanner: React.FC<SmartSurchargeRecommen
                               </div>
 
                               {/* Proactive Cost Management Advice Box */}
-                              <div className="p-2.5 rounded-xl bg-indigo-50/80 border border-indigo-200/70 text-[11px] text-indigo-950 space-y-1">
-                                <div className="flex items-center gap-1 font-bold text-indigo-900 text-[10px] uppercase tracking-wider">
-                                  <Target className="w-3 h-3 text-indigo-700" />
+                              <div className="p-2.5 rounded-xl bg-blue-50/80 border border-blue-200/70 text-[11px] text-blue-950 space-y-1">
+                                <div className="flex items-center gap-1 font-bold text-blue-900 text-[10px] uppercase tracking-wider">
+                                  <Target className="w-3 h-3 text-blue-700" />
                                   <span>Khuyến Nghị Quản Trị Chi Phí:</span>
                                 </div>
-                                <p className="leading-relaxed text-[11px] text-indigo-900/90">
+                                <p className="leading-relaxed text-[11px] text-blue-900/90">
                                   {pred.proactiveAdviceVi}
                                 </p>
                               </div>

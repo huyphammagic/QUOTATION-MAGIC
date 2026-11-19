@@ -127,7 +127,7 @@ export const CompanySwitcher: React.FC<CompanySwitcherProps> = ({
           className="absolute left-0 mt-1.5 w-72 sm:w-80 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150"
         >
           {/* Header */}
-          <div className="p-3 bg-slate-900 text-white flex items-center justify-between">
+          <div className="p-3 bg-[#0B1324] text-white flex items-center justify-between">
             <div>
               <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider block">
                 Multi-Entity Logistics
@@ -136,7 +136,7 @@ export const CompanySwitcher: React.FC<CompanySwitcherProps> = ({
                 Chọn Pháp Nhân Báo Giá
               </h3>
             </div>
-            <span className="text-[10px] font-mono bg-slate-800 px-2 py-0.5 rounded text-slate-300 border border-slate-700">
+            <span className="text-[10px] font-mono bg-[#111C33] px-2 py-0.5 rounded text-slate-300 border border-white/10">
               {companyMetadataList.length} Công ty
             </span>
           </div>

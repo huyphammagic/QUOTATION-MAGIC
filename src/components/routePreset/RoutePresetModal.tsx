@@ -213,16 +213,16 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/70 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-[#0B1324]/75 backdrop-blur-xs animate-in fade-in duration-200">
       <div 
         className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden text-slate-800"
         role="dialog"
         aria-modal="true"
       >
         {/* Modal Header */}
-        <div className="px-6 py-4.5 bg-linear-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between shrink-0">
+        <div className="px-6 py-4.5 bg-[#0B1324] border-b border-white/10 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-3.5">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-amber-400 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-[#16233F] border border-white/10 flex items-center justify-center text-amber-400 shadow-inner">
               <Zap className="w-5 h-5 fill-amber-400" />
             </div>
             <div>
@@ -230,7 +230,7 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
                 <h2 className="text-lg font-bold tracking-tight">
                   Bộ Mẫu Báo Giá Trọn Gói Theo Tuyến
                 </h2>
-                <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
+                <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-400/30">
                   1-Click Presets
                 </span>
               </div>
@@ -280,7 +280,7 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
                 placeholder="Tìm theo cảng POL, POD, tên tuyến, hãng tàu, phụ phí..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
+                className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition"
               />
               {searchQuery && (
                 <button
@@ -309,7 +309,7 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
                   onClick={() => setSelectedMode(mode.id)}
                   className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center space-x-1 ${
                     selectedMode === mode.id
-                      ? 'bg-indigo-600 text-white shadow-xs'
+                      ? 'bg-blue-600 text-white shadow-xs'
                       : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
                   }`}
                 >
@@ -339,7 +339,7 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
                 onClick={() => setSelectedTradeLane(tab.id as any)}
                 className={`px-3 py-1.5 rounded-xl whitespace-nowrap font-medium transition cursor-pointer ${
                   selectedTradeLane === tab.id
-                    ? 'bg-slate-900 text-white shadow-2xs font-semibold'
+                    ? 'bg-[#0B1324] text-white shadow-2xs font-semibold'
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
@@ -353,7 +353,7 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
         <div className="flex-1 overflow-y-auto p-5 bg-slate-100/60">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-              <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+              <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
               <p className="text-xs font-medium">Đang tải danh mục gói mẫu tuyến...</p>
             </div>
           ) : filteredPresets.length === 0 ? (
@@ -368,7 +368,7 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
               <button
                 type="button"
                 onClick={() => { setSearchQuery(''); setSelectedTradeLane('ALL'); setSelectedMode('ALL'); }}
-                className="mt-4 px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-xs font-semibold rounded-lg transition"
+                className="mt-4 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-semibold rounded-lg transition"
               >
                 Đặt lại bộ lọc
               </button>
@@ -385,7 +385,7 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
                   <div
                     key={preset.id}
                     className={`bg-white rounded-2xl border transition-all duration-200 flex flex-col justify-between overflow-hidden ${
-                      preset.isFavorite ? 'border-amber-300 ring-1 ring-amber-200/60 shadow-xs' : 'border-slate-200 shadow-2xs hover:shadow-md hover:border-indigo-300'
+                      preset.isFavorite ? 'border-amber-300 ring-1 ring-amber-200/60 shadow-xs' : 'border-slate-200 shadow-2xs hover:shadow-md hover:border-blue-300'
                     }`}
                   >
                     {/* Card Header & Badges */}
@@ -395,10 +395,10 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
                           {/* Service Mode Tag */}
                           <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded-md text-[11px] font-bold ${
                             isAir 
-                              ? 'bg-purple-100 text-purple-700 border border-purple-200' 
+                              ? 'bg-sky-100 text-sky-700 border border-sky-200' 
                               : isLcl 
                               ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                              : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
+                              : 'bg-blue-100 text-blue-700 border border-blue-200'
                           }`}>
                             {isAir ? <Plane className="w-3 h-3" /> : isLcl ? <Boxes className="w-3 h-3" /> : <Ship className="w-3 h-3" />}
                             <span>{preset.serviceMode.replace('_', ' ')}</span>
@@ -464,7 +464,7 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
                           </div>
                         </div>
 
-                        <div className="px-3 flex flex-col items-center text-indigo-600">
+                        <div className="px-3 flex flex-col items-center text-blue-600">
                           {isAir ? <Plane className="w-4 h-4" /> : <Ship className="w-4 h-4" />}
                           <span className="text-[10px] font-medium text-slate-400 mt-0.5 whitespace-nowrap">
                             {preset.transitTime.split('(')[0].trim()}
@@ -495,7 +495,7 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
                       </div>
 
                       {/* Estimated Financial Summary Box */}
-                      <div className="p-3 bg-linear-to-r from-indigo-50/60 via-slate-50 to-emerald-50/60 rounded-xl border border-indigo-100 flex items-center justify-between">
+                      <div className="p-3 bg-linear-to-r from-blue-50/60 via-slate-50 to-emerald-50/60 rounded-xl border border-blue-100 flex items-center justify-between">
                         <div>
                           <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
                             Dự toán chi phí trọn gói ({preset.items.length} mục phí)
@@ -530,7 +530,7 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
                         <button
                           type="button"
                           onClick={() => setExpandedPresetId(isExpanded ? null : preset.id)}
-                          className="w-full py-1 text-xs text-slate-500 hover:text-indigo-600 flex items-center justify-center space-x-1 transition cursor-pointer"
+                          className="w-full py-1 text-xs text-slate-500 hover:text-blue-600 flex items-center justify-center space-x-1 transition cursor-pointer"
                         >
                           <span>{isExpanded ? 'Thu gọn chi tiết các khoản phí' : `Xem chi tiết ${preset.items.length} khoản phí trong gói`}</span>
                           {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -597,7 +597,7 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
                       <button
                         type="button"
                         onClick={() => handleApply(preset, 'NEW_QUOTE')}
-                        className="w-full sm:w-auto px-4 py-1.5 text-xs font-bold text-white bg-linear-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 rounded-lg shadow-xs hover:shadow transition flex items-center justify-center space-x-1.5 cursor-pointer"
+                        className="w-full sm:w-auto px-4 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-xs hover:shadow transition flex items-center justify-center space-x-1.5 cursor-pointer"
                         title="Tạo mới một bản báo giá sạch với mã số mới từ gói mẫu này"
                       >
                         <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
@@ -614,7 +614,7 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
         {/* Modal Footer */}
         <div className="px-6 py-3 bg-white border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 shrink-0">
           <div className="flex items-center space-x-2">
-            <Info className="w-4 h-4 text-indigo-500 shrink-0" />
+            <Info className="w-4 h-4 text-blue-600 shrink-0" />
             <span>
               Mẹo: Bạn có thể chỉnh sửa cước phí của báo giá hiện tại và nhấn <strong>"Lưu Báo Giá Này Thành Gói Mẫu"</strong> để tái sử dụng cho toàn đội ngũ Sales!
             </span>
@@ -632,9 +632,9 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
 
       {/* SUB-MODAL: Save Current Quote As Route Preset */}
       {isSaveModalOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-2xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-[#0B1324]/75 backdrop-blur-2xs animate-in fade-in duration-150">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden text-slate-800">
-            <div className="px-5 py-4 bg-slate-900 text-white flex items-center justify-between">
+            <div className="px-5 py-4 bg-[#0B1324] border-b border-white/10 text-white flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Bookmark className="w-4 h-4 text-emerald-400" />
                 <h3 className="text-sm font-bold">Lưu Báo Giá Hiện Tại Thành Gói Mẫu Tuyến</h3>
@@ -659,7 +659,7 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
                   value={customForm.name}
                   onChange={e => setCustomForm({ ...customForm, name: e.target.value })}
                   placeholder="Ví dụ: FCL Cát Lái đi Los Angeles (Dệt May)"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                 />
               </div>
 
@@ -671,7 +671,7 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
                     value={customForm.shortName}
                     onChange={e => setCustomForm({ ...customForm, shortName: e.target.value })}
                     placeholder="Ví dụ: FCL LAX Direct"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   />
                 </div>
                 <div>
@@ -679,7 +679,7 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
                   <select
                     value={customForm.tradeLane}
                     onChange={e => setCustomForm({ ...customForm, tradeLane: e.target.value as TradeLane })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 bg-white"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-white"
                   >
                     <option value="TRANSPACIFIC_US">Bắc Mỹ (Hoa Kỳ / Canada)</option>
                     <option value="EUROPE">Châu Âu (EU)</option>
@@ -699,7 +699,7 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
                     value={customForm.carrier}
                     onChange={e => setCustomForm({ ...customForm, carrier: e.target.value })}
                     placeholder="Ví dụ: Maersk / ONE"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   />
                 </div>
                 <div>
@@ -709,7 +709,7 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
                     value={customForm.badge}
                     onChange={e => setCustomForm({ ...customForm, badge: e.target.value })}
                     placeholder="Ví dụ: Khách VIP • Ưu Tiên"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   />
                 </div>
               </div>
@@ -721,7 +721,7 @@ export const RoutePresetModal: React.FC<RoutePresetModalProps> = ({
                   value={customForm.description}
                   onChange={e => setCustomForm({ ...customForm, description: e.target.value })}
                   placeholder="Ghi chú về lịch tàu, thời gian vận chuyển hoặc quy cách hàng..."
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                 />
               </div>
 

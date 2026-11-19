@@ -181,20 +181,20 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto bg-slate-900/80 backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto bg-[#0B1324]/80 backdrop-blur-sm animate-fadeIn">
       <div 
         className="relative w-full max-w-6xl max-h-[92vh] flex flex-col bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#0B1324] text-white">
           <div className="flex items-center space-x-3">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/25 ring-2 ring-white/10">
+            <div className="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/25 ring-2 ring-white/10">
               <BarChart3 className="w-6 h-6 text-white" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="px-2 py-0.5 text-xs font-bold bg-blue-500/30 text-blue-300 rounded-full border border-blue-400/30">
+                <span className="px-2 py-0.5 text-xs font-bold bg-blue-500/20 text-blue-300 rounded-full border border-blue-400/30">
                   Phase 72
                 </span>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-medium">
@@ -220,13 +220,13 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
         </div>
 
         {/* Global Freight Indices Bar */}
-        <div className="bg-slate-950 border-b border-slate-800 px-6 py-2.5 overflow-x-auto text-xs flex items-center space-x-6 text-slate-300 scrollbar-none">
-          <div className="flex items-center space-x-1.5 font-bold text-indigo-400 whitespace-nowrap">
-            <Zap className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+        <div className="bg-[#111C33] border-b border-white/10 px-6 py-2.5 overflow-x-auto text-xs flex items-center space-x-6 text-slate-300 scrollbar-none">
+          <div className="flex items-center space-x-1.5 font-bold text-blue-400 whitespace-nowrap">
+            <Zap className="w-3.5 h-3.5 text-amber-400" />
             <span>CHỈ SỐ TOÀN CẦU:</span>
           </div>
           {GLOBAL_FREIGHT_MARKET_INDICES.map(idx => (
-            <div key={idx.code} className="flex items-center space-x-2 whitespace-nowrap bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800">
+            <div key={idx.code} className="flex items-center space-x-2 whitespace-nowrap bg-[#16233F] px-2.5 py-1 rounded-lg border border-white/10">
               <span className="font-semibold text-slate-200">{idx.code}:</span>
               <span className="font-bold text-white">{idx.latestValue.toLocaleString()} {idx.unit}</span>
               <span className={`flex items-center font-bold ${idx.changeRateWoW >= 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
@@ -265,7 +265,7 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
             {/* Lane Market Intelligence Tags */}
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
                 <span>Xu hướng: <strong>{auditResult.lane.marketTrend === 'surging' ? 'Tăng nhiệt (+3.5%)' : 'Ổn định'}</strong></span>
               </div>
               <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-xs font-medium">
@@ -347,10 +347,10 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
                       className="absolute -top-10 -translate-x-1/2 flex flex-col items-center z-10 transition-all duration-300"
                       style={{ left: `${clampedPercent}%` }}
                     >
-                      <div className="bg-indigo-600 text-white font-extrabold text-xs px-2.5 py-1 rounded-lg shadow-lg flex items-center space-x-1 border border-indigo-400">
+                      <div className="bg-blue-600 text-white font-extrabold text-xs px-2.5 py-1 rounded-lg shadow-lg flex items-center space-x-1 border border-blue-400">
                         <span>Giá Chào: ${auditResult.currentQuoteSellingRate}</span>
                       </div>
-                      <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-indigo-600" />
+                      <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-blue-600" />
                     </div>
                   );
                 })()}
@@ -414,7 +414,7 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
               <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
                 <span className="text-xs text-slate-500 font-medium block">Lợi Nhuận Kỳ Vọng:</span>
                 <div className="flex items-baseline space-x-1.5 mt-0.5">
-                  <span className="text-lg font-black text-indigo-600">${auditResult.currentExpectedProfit}</span>
+                  <span className="text-lg font-black text-blue-600">${auditResult.currentExpectedProfit}</span>
                   <span className="text-xs text-slate-400">/ cont</span>
                 </div>
                 <span className="text-[11px] text-slate-500">Expected Value (Win% * Margin)</span>
@@ -502,7 +502,7 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
 
               {/* 2. BALANCED (AI SWEET SPOT - RECOMMENDED) */}
               <div className="bg-white rounded-2xl border-2 border-blue-500 hover:border-blue-600 p-5 shadow-lg relative flex flex-col justify-between ring-4 ring-blue-500/10">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black text-[11px] px-3.5 py-0.5 rounded-full shadow-md uppercase tracking-wide flex items-center space-x-1">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white font-black text-[11px] px-3.5 py-0.5 rounded-full shadow-md uppercase tracking-wide flex items-center space-x-1">
                   <Award className="w-3.5 h-3.5" />
                   <span>AI Đề Xuất (Sweet Spot)</span>
                 </div>
@@ -553,7 +553,7 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
 
                 <button
                   onClick={() => handleApplyStrategy(auditResult.strategies.balanced)}
-                  className="w-full py-2.5 px-4 rounded-xl font-black text-xs bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 transition flex items-center justify-center space-x-1.5"
+                  className="w-full py-2.5 px-4 rounded-xl font-black text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 transition flex items-center justify-center space-x-1.5"
                 >
                   <Sparkles className="w-4 h-4 text-amber-300" />
                   <span>Áp Dụng Khuyến Nghị Này (AI)</span>
@@ -561,10 +561,10 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
               </div>
 
               {/* 3. PREMIUM STRATEGY */}
-              <div className="bg-white rounded-2xl border-2 border-purple-200 hover:border-purple-400 p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+              <div className="bg-white rounded-2xl border-2 border-teal-200 hover:border-teal-400 p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800">
+                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-teal-100 text-teal-800">
                       💎 VIP & Cam Kết Chỗ
                     </span>
                     <span className="text-xs font-bold text-slate-400">P75 Trần</span>
@@ -576,10 +576,10 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
                     {auditResult.strategies.premium.taglineVi}
                   </p>
 
-                  <div className="bg-purple-50/60 p-3 rounded-xl border border-purple-100 space-y-1.5 mb-4">
+                  <div className="bg-teal-50/60 p-3 rounded-xl border border-teal-100 space-y-1.5 mb-4">
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-slate-600">Giá chào đề xuất:</span>
-                      <span className="text-base font-black text-purple-700">${auditResult.strategies.premium.proposedSellingPrice}</span>
+                      <span className="text-base font-black text-teal-700">${auditResult.strategies.premium.proposedSellingPrice}</span>
                     </div>
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-slate-600">Lãi gộp (Margin):</span>
@@ -587,9 +587,9 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
                     </div>
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-slate-600">Xác suất thắng thầu:</span>
-                      <span className="font-extrabold text-purple-600">{auditResult.strategies.premium.winProbabilityPercent}%</span>
+                      <span className="font-extrabold text-teal-600">{auditResult.strategies.premium.winProbabilityPercent}%</span>
                     </div>
-                    <div className="flex justify-between items-center text-xs pt-1 border-t border-purple-200">
+                    <div className="flex justify-between items-center text-xs pt-1 border-t border-teal-200">
                       <span className="text-slate-600 font-medium">Lợi nhuận kỳ vọng:</span>
                       <span className="font-black text-slate-900">${auditResult.strategies.premium.expectedGrossMargin} / cont</span>
                     </div>
@@ -599,7 +599,7 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
                     <span className="text-[11px] font-bold text-slate-700 uppercase block">Ưu thế tác chiến:</span>
                     {auditResult.strategies.premium.tacticalAdvantageVi.map((adv, idx) => (
                       <div key={idx} className="flex items-start space-x-1.5 text-xs text-slate-600">
-                        <Check className="w-3.5 h-3.5 text-purple-600 shrink-0 mt-0.5" />
+                        <Check className="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5" />
                         <span>{adv}</span>
                       </div>
                     ))}
@@ -608,7 +608,7 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
 
                 <button
                   onClick={() => handleApplyStrategy(auditResult.strategies.premium)}
-                  className="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-600/20 transition flex items-center justify-center space-x-1.5"
+                  className="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-teal-600 hover:bg-teal-700 text-white shadow-md shadow-teal-600/20 transition flex items-center justify-center space-x-1.5"
                 >
                   <span>Áp Dụng Chiến Lược Này</span>
                   <ArrowRight className="w-4 h-4" />
@@ -623,7 +623,7 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
-                  <Calculator className="w-5 h-5 text-indigo-600" />
+                  <Calculator className="w-5 h-5 text-blue-600" />
                   <span>Bộ Mô Phỏng Giá Bán & Lợi Nhuận Kỳ Vọng (What-If Simulator)</span>
                 </h3>
                 <p className="text-xs text-slate-500">
@@ -650,7 +650,7 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
               <div className="flex justify-between items-center">
                 <span className="text-xs font-bold text-slate-700">Giá chào bán mô phỏng:</span>
                 <div className="flex items-center space-x-2">
-                  <span className="text-2xl font-black text-indigo-700">${simulatedPrice}</span>
+                  <span className="text-2xl font-black text-blue-700">${simulatedPrice}</span>
                   <span className="text-xs text-slate-500">USD/{auditResult.lane.equipmentType}</span>
                 </div>
               </div>
@@ -662,20 +662,20 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
                 step={10}
                 value={simulatedPrice}
                 onChange={(e) => setSimulatedPrice(Number(e.target.value))}
-                className="w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                className="w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
               />
 
               <div className="flex justify-between text-[11px] text-slate-400 font-semibold">
                 <span>Min: ${Math.round(auditResult.lane.lowSpotRate * 0.9)}</span>
                 <span className="text-emerald-600">Sàn P10: ${auditResult.lane.lowSpotRate}</span>
                 <span className="text-blue-600 font-bold">Trung bình P50: ${auditResult.lane.marketMedianRate}</span>
-                <span className="text-purple-600">Trần P90: ${auditResult.lane.highSpotRate}</span>
+                <span className="text-teal-600">Trần P90: ${auditResult.lane.highSpotRate}</span>
                 <span>Max: ${Math.round(auditResult.lane.highSpotRate * 1.15)}</span>
               </div>
             </div>
 
             {/* Live Reaction Card */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
               <div>
                 <span className="text-[11px] text-slate-500 block">Tỷ lệ chốt đơn (Win Rate):</span>
                 <span className={`text-xl font-black ${
@@ -696,7 +696,7 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
 
               <div>
                 <span className="text-[11px] text-slate-500 block">Tổng lãi đơn hàng ({volumeConts} cont):</span>
-                <span className="text-xl font-black text-indigo-900">
+                <span className="text-xl font-black text-slate-900">
                   ${(simMarginAmount * volumeConts).toLocaleString()}
                 </span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">Nếu trúng thầu 100%</span>
@@ -704,7 +704,7 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
 
               <div>
                 <span className="text-[11px] text-slate-500 block">Tổng Lợi Nhuận Kỳ Vọng:</span>
-                <span className="text-xl font-black text-indigo-700">
+                <span className="text-xl font-black text-blue-700">
                   ${simTotalExpectedProfit.toLocaleString()}
                 </span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">Win% * Tổng lãi</span>
@@ -714,7 +714,7 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
             <div className="flex justify-end">
               <button
                 onClick={handleApplySimulatedRate}
-                className="py-2 px-4 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition flex items-center space-x-1.5 shadow"
+                className="py-2 px-4 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition flex items-center space-x-1.5 shadow"
               >
                 <span>Áp Dụng Mức Giá Mô Phỏng Này (${simulatedPrice})</span>
                 <ArrowRight className="w-4 h-4" />
@@ -845,27 +845,27 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
           </div>
 
           {/* SECTION 5: AI Strategic Market Insights (Gemini Powered) */}
-          <div className="bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 text-white p-5 rounded-2xl shadow-xl space-y-4 border border-indigo-800/50">
-            <div className="flex items-center justify-between border-b border-indigo-800/60 pb-3">
+          <div className="bg-[#0B1324] text-white p-5 rounded-2xl shadow-xl space-y-4 border border-white/10">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center space-x-2.5">
-                <div className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-400/30">
+                <div className="p-1.5 rounded-lg bg-[#16233F] text-blue-400 border border-white/10">
                   <Sparkles className="w-5 h-5 text-amber-300" />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-white flex items-center space-x-2">
                     <span>Phân Tích Chiến Lược Thị Trường AI (Gemini Flash Intelligence)</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-300 border border-indigo-400/30">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30">
                       Độ tin cậy: {aiAnalysis?.confidenceScore || 94}%
                     </span>
                   </h3>
-                  <p className="text-xs text-indigo-200/80">
+                  <p className="text-xs text-slate-300">
                     Chiến thuật đấu thầu, xử lý từ chối và vũ khí chốt đơn cho đội ngũ Sales
                   </p>
                 </div>
               </div>
 
               {isAiLoading && (
-                <div className="flex items-center space-x-2 text-xs text-indigo-300">
+                <div className="flex items-center space-x-2 text-xs text-blue-300">
                   <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
                   <span>AI đang phân tích...</span>
                 </div>
@@ -875,23 +875,23 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
             {aiAnalysis ? (
               <div className="space-y-4 text-xs">
                 {/* Macro Summary */}
-                <div className="bg-white/5 p-3.5 rounded-xl border border-white/10">
-                  <span className="font-bold text-indigo-300 uppercase tracking-wider block mb-1">
+                <div className="bg-[#111C33] p-3.5 rounded-xl border border-white/10">
+                  <span className="font-bold text-blue-300 uppercase tracking-wider block mb-1">
                     Bức tranh vĩ mô & Chu kỳ biến động:
                   </span>
-                  <p className="text-indigo-100 leading-relaxed">
+                  <p className="text-slate-200 leading-relaxed">
                     {aiAnalysis.macroMarketSummaryVi}
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Space & DEM/DET */}
-                  <div className="bg-white/5 p-3.5 rounded-xl border border-white/10 space-y-2">
+                  <div className="bg-[#111C33] p-3.5 rounded-xl border border-white/10 space-y-2">
                     <div>
                       <span className="font-bold text-amber-300 block mb-0.5">
                         Khuyến nghị giữ chỗ hãng tàu (Space):
                       </span>
-                      <p className="text-indigo-100">
+                      <p className="text-slate-200">
                         {aiAnalysis.carrierSpaceAdviceVi}
                       </p>
                     </div>
@@ -900,20 +900,20 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
                       <span className="font-bold text-emerald-300 block mb-0.5">
                         Đòn bẩy thời gian Free DEM/DET:
                       </span>
-                      <p className="text-indigo-100">
+                      <p className="text-slate-200">
                         {aiAnalysis.demDetNegotiationAdviceVi}
                       </p>
                     </div>
                   </div>
 
                   {/* Sales Battlecards */}
-                  <div className="bg-white/5 p-3.5 rounded-xl border border-white/10 space-y-2">
+                  <div className="bg-[#111C33] p-3.5 rounded-xl border border-white/10 space-y-2">
                     <span className="font-bold text-amber-300 block">
                       3 Luận Điểm Vàng Giúp Sales Bảo Vệ Giá Chào:
                     </span>
                     <div className="space-y-1.5">
                       {aiAnalysis.salesPitchTalkingPointsVi.map((pt, i) => (
-                        <div key={i} className="flex items-start space-x-2 text-indigo-100">
+                        <div key={i} className="flex items-start space-x-2 text-slate-200">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                           <span className="italic">{pt}</span>
                         </div>
@@ -923,13 +923,13 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
                 </div>
 
                 {/* Competitor Countermeasures */}
-                <div className="bg-white/5 p-3.5 rounded-xl border border-white/10">
+                <div className="bg-[#111C33] p-3.5 rounded-xl border border-white/10">
                   <span className="font-bold text-rose-300 uppercase tracking-wider block mb-1.5">
                     Chiến thuật khắc chế đối thủ trực diện:
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     {aiAnalysis.competitorCountermeasuresVi.map((cm, idx) => (
-                      <div key={idx} className="bg-slate-900/60 p-2.5 rounded-lg border border-white/10 text-slate-200">
+                      <div key={idx} className="bg-[#16233F] p-2.5 rounded-lg border border-white/10 text-slate-200">
                         {cm}
                       </div>
                     ))}
@@ -981,7 +981,7 @@ export const FreightRateBenchmarkingModal: React.FC<FreightRateBenchmarkingModal
 
             <button
               onClick={handleApplySimulatedRate}
-              className="flex-1 sm:flex-none px-5 py-2.5 text-xs font-black text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl shadow-lg shadow-blue-500/25 transition flex items-center justify-center space-x-2"
+              className="flex-1 sm:flex-none px-5 py-2.5 text-xs font-black text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg shadow-blue-500/25 transition flex items-center justify-center space-x-2"
             >
               <Check className="w-4 h-4" />
               <span>Áp Dụng Vào Báo Giá (${simulatedPrice})</span>

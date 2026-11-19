@@ -71,16 +71,16 @@ export const HistoricalRateAdvisorModal: React.FC<HistoricalRateAdvisorModalProp
   const podShort = pod.split(',')[0].trim() || 'Cảng POD';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/70 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-[#0B1324]/75 backdrop-blur-xs animate-in fade-in duration-200">
       <div 
         className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden text-slate-800"
         role="dialog"
         aria-modal="true"
       >
         {/* Header */}
-        <div className="px-6 py-4.5 bg-linear-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between shrink-0">
+        <div className="px-6 py-4.5 bg-[#0B1324] border-b border-white/10 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-3.5">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-amber-400 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-[#16233F] border border-white/10 flex items-center justify-center text-amber-400 shadow-inner">
               <History className="w-5 h-5 text-amber-400" />
             </div>
             <div>
@@ -114,7 +114,7 @@ export const HistoricalRateAdvisorModal: React.FC<HistoricalRateAdvisorModalProp
           {!analysis.hasMatches ? (
             /* Empty State */
             <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center max-w-lg mx-auto my-6">
-              <div className="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3">
                 <History className="w-6 h-6" />
               </div>
               <h3 className="text-sm font-bold text-slate-800">
@@ -169,7 +169,7 @@ export const HistoricalRateAdvisorModal: React.FC<HistoricalRateAdvisorModalProp
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     Giá Báo Gần Nhất
                   </div>
-                  <div className="text-lg font-extrabold text-indigo-700 font-mono mt-0.5">
+                  <div className="text-lg font-extrabold text-blue-700 font-mono mt-0.5">
                     {formatUSD(analysis.latestRate)}
                   </div>
                   <div className="text-[10px] text-slate-500 mt-0.5">
@@ -181,7 +181,7 @@ export const HistoricalRateAdvisorModal: React.FC<HistoricalRateAdvisorModalProp
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     Biên Lãi TB Lịch Sử
                   </div>
-                  <div className="text-lg font-extrabold text-purple-700 font-mono mt-0.5">
+                  <div className="text-lg font-extrabold text-teal-700 font-mono mt-0.5">
                     {analysis.avgMarginPercent}%
                   </div>
                   <div className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1">
@@ -223,10 +223,10 @@ export const HistoricalRateAdvisorModal: React.FC<HistoricalRateAdvisorModalProp
                         key={tier.id}
                         className={`bg-white rounded-2xl border p-4.5 flex flex-col justify-between transition-all duration-200 hover:shadow-md ${
                           isBalanced
-                            ? 'border-indigo-400 ring-2 ring-indigo-300/40 shadow-xs'
+                            ? 'border-blue-500 ring-2 ring-blue-500/15 shadow-xs'
                             : isAggressive
                             ? 'border-emerald-300 hover:border-emerald-400'
-                            : 'border-purple-300 hover:border-purple-400'
+                            : 'border-teal-300 hover:border-teal-400'
                         }`}
                       >
                         <div>
@@ -237,13 +237,13 @@ export const HistoricalRateAdvisorModal: React.FC<HistoricalRateAdvisorModalProp
                                 ? 'bg-blue-100 text-blue-800 border border-blue-200'
                                 : isAggressive
                                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                : 'bg-purple-100 text-purple-800 border border-purple-200'
+                                : 'bg-teal-100 text-teal-800 border border-teal-200'
                             }`}>
                               {tier.badge}
                             </span>
                             {tier.savingsVsAvgPercent !== 0 && (
                               <span className={`text-[10px] font-semibold font-mono ${
-                                tier.savingsVsAvgPercent < 0 ? 'text-emerald-600' : 'text-purple-600'
+                                tier.savingsVsAvgPercent < 0 ? 'text-emerald-600' : 'text-teal-600'
                               }`}>
                                 {tier.savingsVsAvgPercent > 0 ? `+${tier.savingsVsAvgPercent}%` : `${tier.savingsVsAvgPercent}%`} vs TB
                               </span>
@@ -285,10 +285,10 @@ export const HistoricalRateAdvisorModal: React.FC<HistoricalRateAdvisorModalProp
                           onClick={() => handleApplyTier(tier.rate, tier.currency, tier.title)}
                           className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs ${
                             isBalanced
-                              ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                              ? 'bg-blue-600 hover:bg-blue-700 text-white'
                               : isAggressive
                               ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                              : 'bg-purple-600 hover:bg-purple-700 text-white'
+                              : 'bg-teal-600 hover:bg-teal-700 text-white'
                           }`}
                         >
                           <Zap className="w-3.5 h-3.5 fill-current" />
@@ -385,7 +385,7 @@ export const HistoricalRateAdvisorModal: React.FC<HistoricalRateAdvisorModalProp
                                   item.freightItem.currency, 
                                   `Lấy theo đơn ${item.quoteNumber}`
                                 )}
-                                className="px-2 py-1 text-[11px] font-semibold text-indigo-700 hover:text-indigo-900 hover:bg-indigo-50 rounded-md transition cursor-pointer"
+                                className="px-2 py-1 text-[11px] font-semibold text-blue-700 hover:text-blue-900 hover:bg-blue-50 rounded-md transition cursor-pointer"
                                 title="Áp dụng giá cước của báo giá này"
                               >
                                 Lấy Giá Này
@@ -405,7 +405,7 @@ export const HistoricalRateAdvisorModal: React.FC<HistoricalRateAdvisorModalProp
         {/* Modal Footer */}
         <div className="px-6 py-3 bg-white border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 shrink-0">
           <div className="flex items-center space-x-2">
-            <Info className="w-4 h-4 text-indigo-500 shrink-0" />
+            <Info className="w-4 h-4 text-blue-500 shrink-0" />
             <span>
               Thuật toán tự động đối soát cảng bốc/dỡ và quy cách thiết bị để đưa ra mức giá tăng tỷ lệ chốt đơn cao nhất.
             </span>

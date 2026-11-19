@@ -177,8 +177,8 @@ export const SmartRateAssistantModal: React.FC<SmartRateAssistantModalProps> = (
         );
       case 'CONTRACT_MATCH':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-600 text-white shadow-2xs">
-            <FileCheck className="w-3 h-3" /> Hợp Đồng Ưu Đãi (Special Contract)
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-[#111C33] text-white shadow-2xs">
+            <FileCheck className="w-3 h-3 text-teal-300" /> Hợp Đồng Ưu Đãi (Special Contract)
           </span>
         );
       case 'EXACT_MATCH':
@@ -209,16 +209,16 @@ export const SmartRateAssistantModal: React.FC<SmartRateAssistantModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1324]/80 backdrop-blur-xs">
       <div 
         className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150"
         id="smart-rate-assistant-modal"
       >
         {/* Header Bar */}
-        <div className="px-6 py-4 bg-gradient-to-r from-blue-900 via-indigo-800 to-slate-900 text-white flex items-center justify-between">
+        <div className="px-6 py-4 bg-[#0B1324] border-b border-white/10 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-blue-500/20 rounded-xl border border-blue-400/30">
-              <Sparkles className="w-6 h-6 text-yellow-300 animate-pulse" />
+            <div className="p-2.5 bg-blue-600/20 rounded-xl border border-blue-500/30">
+              <Sparkles className="w-6 h-6 text-blue-300" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -253,7 +253,7 @@ export const SmartRateAssistantModal: React.FC<SmartRateAssistantModalProps> = (
                 {shipment.pol || 'N/A'} → {shipment.pod || 'N/A'}
               </span>
               {shipment.containerType && (
-                <span className="font-semibold text-purple-800 px-2 py-0.5 rounded bg-purple-100 border border-purple-200">
+                <span className="font-semibold text-teal-800 px-2 py-0.5 rounded bg-teal-50 border border-teal-200">
                   {shipment.containerType} (x{shipment.quantity || 1})
                 </span>
               )}
@@ -440,7 +440,7 @@ export const SmartRateAssistantModal: React.FC<SmartRateAssistantModalProps> = (
                                   )}
 
                                   {rate.containerType && (
-                                    <span className="text-xs font-semibold text-purple-800 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                                    <span className="text-xs font-semibold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
                                       Cont {rate.containerType}
                                     </span>
                                   )}

@@ -120,12 +120,12 @@ export const STAGES_CONFIG: StageDefinition[] = [
     winProbability: 35,
     icon: FileSearch,
     accentColor: {
-      bg: 'bg-cyan-50 dark:bg-cyan-950/40',
-      border: 'border-cyan-300 dark:border-cyan-700',
-      text: 'text-cyan-700 dark:text-cyan-300',
-      badge: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/60 dark:text-cyan-200',
-      glow: 'shadow-cyan-500/20',
-      bar: 'bg-cyan-500',
+      bg: 'bg-sky-50 dark:bg-sky-950/40',
+      border: 'border-sky-300 dark:border-sky-700',
+      text: 'text-sky-700 dark:text-sky-300',
+      badge: 'bg-sky-100 text-sky-800 dark:bg-sky-900/60 dark:text-sky-200',
+      glow: '',
+      bar: 'bg-sky-600',
     },
     checklist: [
       {
@@ -157,12 +157,12 @@ export const STAGES_CONFIG: StageDefinition[] = [
     winProbability: 60,
     icon: Calculator,
     accentColor: {
-      bg: 'bg-indigo-50 dark:bg-indigo-950/40',
-      border: 'border-indigo-300 dark:border-indigo-700',
-      text: 'text-indigo-700 dark:text-indigo-300',
-      badge: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200',
-      glow: 'shadow-indigo-500/20',
-      bar: 'bg-indigo-500',
+      bg: 'bg-blue-50 dark:bg-blue-950/40',
+      border: 'border-blue-300 dark:border-blue-700',
+      text: 'text-blue-700 dark:text-blue-300',
+      badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200',
+      glow: '',
+      bar: 'bg-blue-600',
     },
     checklist: [
       {
@@ -347,7 +347,7 @@ export const SmartSalesRoadmap: React.FC<SmartSalesRoadmapProps> = ({
       {/* Top Bar: Title, Win Probability Meter & Collapsible Toggle */}
       <div className="p-3 sm:px-5 sm:py-3.5 border-b border-slate-100 dark:border-slate-800/80 bg-gradient-to-r from-slate-50/80 via-white to-blue-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-xs shadow-blue-500/20">
+          <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
             <TrendingUp className="w-4 h-4" />
           </div>
           <div>
@@ -355,7 +355,7 @@ export const SmartSalesRoadmap: React.FC<SmartSalesRoadmapProps> = ({
               <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">
                 Smart Sales Roadmap (Lộ Trình Bán Hàng 5 Giai Đoạn)
               </h3>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                 Xác suất thắng: {activeStageConfig.winProbability}%
               </span>
             </div>
@@ -371,7 +371,7 @@ export const SmartSalesRoadmap: React.FC<SmartSalesRoadmapProps> = ({
             <button
               type="button"
               onClick={handleAdvanceNext}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
               title={`Chuyển nhanh sang giai đoạn tiếp theo: ${nextStageConfig.titleVi}`}
             >
               <span>Tiến tới: {nextStageConfig.titleVi}</span>
@@ -465,7 +465,7 @@ export const SmartSalesRoadmap: React.FC<SmartSalesRoadmapProps> = ({
 
                   {isActive && (
                     <span className="inline-flex items-center gap-1 text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-tight">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
                       Hiện Tại
                     </span>
                   )}
@@ -567,9 +567,9 @@ export const SmartSalesRoadmap: React.FC<SmartSalesRoadmapProps> = ({
             </div>
 
             {/* Right 5 Columns: AI Sales Coaching & Quick Context Action */}
-            <div className="lg:col-span-5 p-3.5 rounded-xl bg-gradient-to-br from-amber-50/70 via-white to-indigo-50/40 dark:from-slate-800/60 dark:via-slate-800/40 dark:to-indigo-950/20 border border-amber-200/80 dark:border-amber-900/40 flex flex-col justify-between space-y-3">
+            <div className="lg:col-span-5 p-3.5 rounded-xl bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col justify-between space-y-3">
               <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-bold text-xs">
+                <div className="flex items-center gap-1.5 text-slate-900 dark:text-amber-300 font-bold text-xs">
                   <Lightbulb className="w-4 h-4 text-amber-500" />
                   <span>AI Sales Coaching (Bí Quyết Thực Chiến):</span>
                 </div>
@@ -579,7 +579,7 @@ export const SmartSalesRoadmap: React.FC<SmartSalesRoadmapProps> = ({
               </div>
 
               {/* Primary Action Button for this Stage */}
-              <div className="pt-2 border-t border-amber-200/50 dark:border-slate-700/60 flex items-center justify-between">
+              <div className="pt-2 border-t border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between">
                 <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
                   Công cụ hỗ trợ giai đoạn:
                 </span>
@@ -587,7 +587,7 @@ export const SmartSalesRoadmap: React.FC<SmartSalesRoadmapProps> = ({
                 <button
                   type="button"
                   onClick={() => handleTriggerAction(activeStageConfig.actionKey)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 text-xs font-bold transition shadow-xs cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0B1324] hover:bg-[#111C33] text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 text-xs font-bold transition shadow-xs cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-amber-400 dark:text-amber-600" />
                   <span>{activeStageConfig.primaryActionLabelVi}</span>

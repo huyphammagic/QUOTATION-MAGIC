@@ -87,10 +87,10 @@ export const RateCsvImportModal: React.FC<RateCsvImportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-[#0B1324]/80 backdrop-blur-xs overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95">
         {/* Header */}
-        <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <div className="px-6 py-4 bg-[#0B1324] border-b border-white/10 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/10 rounded-xl">
               <FileSpreadsheet className="w-6 h-6 text-emerald-400" />
@@ -197,7 +197,7 @@ export const RateCsvImportModal: React.FC<RateCsvImportModalProps> = ({
                             </div>
                           </td>
                           <td className="p-2.5 font-mono">
-                            <div className="text-purple-700 font-medium">Buy: {row.parsedRate.costAmount} {row.parsedRate.costCurrency}</div>
+                            <div className="text-amber-700 font-medium">Buy: {row.parsedRate.costAmount} {row.parsedRate.costCurrency}</div>
                             <div className="text-blue-700 font-bold">Sell: {row.parsedRate.sellingAmount} {row.parsedRate.sellingCurrency}</div>
                           </td>
                           <td className="p-2.5 font-mono text-[11px] text-slate-600">

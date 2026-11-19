@@ -447,17 +447,17 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-start justify-center pt-12 sm:pt-20 px-3 bg-slate-950/70 backdrop-blur-sm transition-all"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-12 sm:pt-20 px-3 bg-[#0B1324]/75 backdrop-blur-sm transition-all"
       onClick={onClose}
     >
       <div 
-        className="w-full max-w-2xl spotlight-glass rounded-2xl border border-cyan-500/30 overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-150 text-white"
+        className="w-full max-w-2xl spotlight-glass rounded-2xl border border-white/15 overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-150 text-white"
         onClick={e => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
         {/* Search Input Bar */}
-        <div className="relative flex items-center px-4 py-3.5 border-b border-slate-800/80 bg-slate-950/60">
-          <Search className="w-5 h-5 text-cyan-400 shrink-0 mr-3" />
+        <div className="relative flex items-center px-4 py-3.5 border-b border-white/[0.08] bg-[#0B1324]">
+          <Search className="w-5 h-5 text-blue-400 shrink-0 mr-3" />
           <input
             ref={inputRef}
             type="text"
@@ -469,25 +469,25 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           {query ? (
             <button
               onClick={() => setQuery('')}
-              className="p-1 text-slate-400 hover:text-white rounded-md hover:bg-slate-800 transition-colors"
+              className="p-1 text-slate-400 hover:text-white rounded-md hover:bg-white/[0.08] transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
           ) : (
-            <kbd className="hidden sm:inline-flex items-center gap-0.5 px-2 py-0.5 text-[11px] font-mono font-medium text-cyan-300 bg-slate-800/80 border border-slate-700 rounded shadow-2xs">
+            <kbd className="hidden sm:inline-flex items-center gap-0.5 px-2 py-0.5 text-[11px] font-mono font-medium text-blue-300 bg-[#111C33] border border-white/10 rounded">
               ESC
             </kbd>
           )}
         </div>
 
         {/* Tab Filters Header */}
-        <div className="flex items-center gap-1.5 px-4 py-2 bg-slate-950/80 border-b border-slate-800/80 overflow-x-auto text-xs text-slate-300">
+        <div className="flex items-center gap-1.5 px-4 py-2 bg-[#0F182D] border-b border-white/[0.08] overflow-x-auto text-xs text-slate-300">
           <button
             onClick={() => setActiveTab('ALL')}
             className={`px-2.5 py-1 rounded-md font-medium transition-all shrink-0 cursor-pointer ${
               activeTab === 'ALL' 
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs' 
-                : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                ? 'bg-blue-600/25 text-blue-300 border border-blue-500/40' 
+                : 'text-slate-400 hover:bg-white/[0.06] hover:text-white'
             }`}
           >
             Tất cả
@@ -496,8 +496,8 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
             onClick={() => setActiveTab('PORTS')}
             className={`px-2.5 py-1 rounded-md font-medium transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'PORTS' 
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs' 
-                : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                ? 'bg-blue-600/25 text-blue-300 border border-blue-500/40' 
+                : 'text-slate-400 hover:bg-white/[0.06] hover:text-white'
             }`}
           >
             <Ship className="w-3.5 h-3.5" />
@@ -510,8 +510,8 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
             onClick={() => setActiveTab('CHARGES')}
             className={`px-2.5 py-1 rounded-md font-medium transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'CHARGES' 
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs' 
-                : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                ? 'bg-blue-600/25 text-blue-300 border border-blue-500/40' 
+                : 'text-slate-400 hover:bg-white/[0.06] hover:text-white'
             }`}
           >
             <Tag className="w-3.5 h-3.5" />
@@ -524,8 +524,8 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
             onClick={() => setActiveTab('CUSTOMERS')}
             className={`px-2.5 py-1 rounded-md font-medium transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'CUSTOMERS' 
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs' 
-                : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                ? 'bg-blue-600/25 text-blue-300 border border-blue-500/40' 
+                : 'text-slate-400 hover:bg-white/[0.06] hover:text-white'
             }`}
           >
             <Users className="w-3.5 h-3.5" />
@@ -538,8 +538,8 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
             onClick={() => setActiveTab('ACTIONS')}
             className={`px-2.5 py-1 rounded-md font-medium transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'ACTIONS' 
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs' 
-                : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                ? 'bg-blue-600/25 text-blue-300 border border-blue-500/40' 
+                : 'text-slate-400 hover:bg-white/[0.06] hover:text-white'
             }`}
           >
             <Command className="w-3.5 h-3.5" />
@@ -563,7 +563,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
               {filteredResults.actions.length > 0 && (
                 <div className="space-y-1">
                   <div className="px-3 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Command className="w-3.5 h-3.5 text-indigo-500" />
+                    <Command className="w-3.5 h-3.5 text-blue-400" />
                     Lệnh Thao Tác Nhanh
                   </div>
                   {filteredResults.actions.map(action => {
@@ -576,11 +576,11 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                         onClick={action.run}
                         onMouseEnter={() => setSelectedIndex(itemIndex)}
                         className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-                          isSelected ? 'bg-indigo-950/80 border border-cyan-500/50 text-white' : 'hover:bg-slate-800/50 text-slate-200'
+                          isSelected ? 'bg-blue-600/20 border border-blue-500/45 text-white' : 'hover:bg-white/[0.05] text-slate-200 border border-transparent'
                         }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className={`p-2 rounded-md ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-300'}`}>
+                          <div className={`p-2 rounded-md ${isSelected ? 'bg-blue-600 text-white' : 'bg-[#111C33] text-slate-300'}`}>
                             <ActionIcon className="w-4 h-4" />
                           </div>
                           <div className="min-w-0">
@@ -590,7 +590,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                         </div>
                         {action.shortcut && (
                           <div className="flex items-center gap-1 shrink-0 ml-3">
-                            <kbd className="px-2 py-0.5 text-[10px] font-mono font-medium text-cyan-300 bg-slate-800 border border-slate-700 rounded">
+                            <kbd className="px-2 py-0.5 text-[10px] font-mono font-medium text-blue-300 bg-[#111C33] border border-white/10 rounded">
                               {action.shortcut}
                             </kbd>
                           </div>
@@ -606,7 +606,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                 <div className="space-y-1">
                   <div className="px-3 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
-                      <Ship className="w-3.5 h-3.5 text-blue-500" />
+                      <Ship className="w-3.5 h-3.5 text-blue-400" />
                       Cảng Biển & Sân Bay Quốc Tế
                     </span>
                     <span className="text-[10px] lowercase text-slate-400">Chọn POL (Đi) hoặc POD (Đến)</span>
@@ -623,18 +623,18 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                         key={port.code}
                         onMouseEnter={() => setSelectedIndex(itemIndex)}
                         className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
-                          isSelected ? 'bg-slate-800/90 border border-cyan-500/50 text-white' : 'hover:bg-slate-800/40 text-slate-200'
+                          isSelected ? 'bg-[#111C33] border border-blue-500/45 text-white' : 'hover:bg-white/[0.04] text-slate-200 border border-transparent'
                         }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <div className={`p-2 rounded-md shrink-0 ${
-                            isAir ? 'bg-amber-900/40 text-amber-300' : 'bg-cyan-900/40 text-cyan-300'
+                            isAir ? 'bg-amber-900/40 text-amber-300' : 'bg-blue-900/40 text-blue-300'
                           }`}>
                             <PortIcon className="w-4 h-4" />
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="font-mono font-bold text-xs px-1.5 py-0.2 bg-slate-800 text-cyan-300 rounded border border-slate-700">
+                              <span className="font-mono font-bold text-xs px-1.5 py-0.2 bg-[#111C33] text-blue-300 rounded border border-white/10">
                                 {port.code}
                               </span>
                               <p className="text-sm font-semibold text-white truncate">
@@ -760,7 +760,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                 <div className="space-y-1">
                   <div className="px-3 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5 text-violet-500" />
+                      <Users className="w-3.5 h-3.5 text-sky-400" />
                       Khách Hàng Thân Thiết (CRM)
                     </span>
                     <span className="text-[10px] lowercase text-slate-400">Gán nhanh vào báo giá</span>
@@ -774,11 +774,11 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                         key={cust.id}
                         onMouseEnter={() => setSelectedIndex(itemIndex)}
                         className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
-                          isSelected ? 'bg-slate-800/90 border border-purple-500/50 text-white' : 'hover:bg-slate-800/40 text-slate-200'
+                          isSelected ? 'bg-[#111C33] border border-blue-500/45 text-white' : 'hover:bg-white/[0.04] text-slate-200 border border-transparent'
                         }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="p-2 rounded-md bg-purple-900/40 text-purple-300 shrink-0">
+                          <div className="p-2 rounded-md bg-blue-900/40 text-blue-300 shrink-0">
                             <Users className="w-4 h-4" />
                           </div>
                           <div className="min-w-0">
@@ -799,7 +799,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                             onSelectCustomer(cust);
                             onClose();
                           }}
-                          className="px-2.5 py-1 text-xs font-semibold rounded bg-violet-600 hover:bg-violet-700 text-white transition-colors cursor-pointer shrink-0 ml-2 shadow-2xs"
+                          className="px-2.5 py-1 text-xs font-semibold rounded bg-blue-600 hover:bg-blue-500 text-white transition-colors cursor-pointer shrink-0 ml-2 shadow-2xs"
                         >
                           Chọn KH
                         </button>
@@ -813,18 +813,18 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         </div>
 
         {/* Footer Hotkey Guide */}
-        <div className="px-4 py-2.5 bg-slate-950/90 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-[11px] text-slate-400">
+        <div className="px-4 py-2.5 bg-[#0B1324] border-t border-white/[0.08] flex flex-wrap items-center justify-between text-[11px] text-slate-400">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded font-mono font-medium text-cyan-300 shadow-2xs">↑↓</kbd>
+              <kbd className="px-1.5 py-0.5 bg-[#111C33] border border-white/10 rounded font-mono font-medium text-blue-300">↑↓</kbd>
               <span>Điều hướng</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded font-mono font-medium text-cyan-300 shadow-2xs">↵</kbd>
+              <kbd className="px-1.5 py-0.5 bg-[#111C33] border border-white/10 rounded font-mono font-medium text-blue-300">↵</kbd>
               <span>Chọn</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded font-mono font-medium text-cyan-300 shadow-2xs">ESC</kbd>
+              <kbd className="px-1.5 py-0.5 bg-[#111C33] border border-white/10 rounded font-mono font-medium text-blue-300">ESC</kbd>
               <span>Đóng</span>
             </span>
           </div>
@@ -835,7 +835,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
               onClose();
               onOpenShortcutsHelp();
             }}
-            className="flex items-center gap-1 text-slate-400 hover:text-cyan-300 font-medium transition-colors cursor-pointer"
+            className="flex items-center gap-1 text-slate-400 hover:text-blue-300 font-medium transition-colors cursor-pointer"
           >
             <HelpCircle className="w-3.5 h-3.5" />
             <span>Toàn bộ phím tắt (?)</span>

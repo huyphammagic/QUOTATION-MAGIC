@@ -139,7 +139,7 @@ export const RateApprovalTab: React.FC<RateApprovalTabProps> = ({
                     <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                       v{appr.version}
                     </span>
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-teal-800 border border-teal-200">
                       {appr.rateType}
                     </span>
                     {appr.status === 'PENDING' ? (
@@ -196,8 +196,8 @@ export const RateApprovalTab: React.FC<RateApprovalTabProps> = ({
                 {/* Center: Financials */}
                 <div className="flex items-center gap-6 border-y md:border-y-0 md:border-x border-slate-100 py-2 md:py-0 px-0 md:px-6">
                   <div>
-                    <div className="text-[10px] text-purple-700 font-bold uppercase">Giá Vốn (Buy)</div>
-                    <div className="text-sm font-mono font-bold text-purple-900">
+                    <div className="text-[10px] text-amber-700 font-bold uppercase">Giá Vốn (Buy)</div>
+                    <div className="text-sm font-mono font-bold text-amber-900">
                       {appr.costCurrency === 'USD' ? formatUSD(appr.costAmount) : formatVND(appr.costAmount)}
                     </div>
                   </div>
@@ -247,7 +247,7 @@ export const RateApprovalTab: React.FC<RateApprovalTabProps> = ({
 
       {/* Reject Reason Modal */}
       {rejectingApproval && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-[#0B1324]/75 backdrop-blur-xs">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-5 border border-slate-200">
             <h3 className="text-base font-bold text-slate-800 mb-1 flex items-center gap-2">
               <ShieldAlert className="w-5 h-5 text-rose-600" /> Từ Chối Bảng Giá Cước

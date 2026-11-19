@@ -75,16 +75,16 @@ export const RateSearchModal: React.FC<RateSearchModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1324]/75 backdrop-blur-xs">
       <div 
         className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150"
         id="rate-search-modal-container"
       >
         {/* Header */}
-        <div className="px-6 py-4 bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-800 text-white flex items-center justify-between">
+        <div className="px-6 py-4 bg-[#0B1324] border-b border-white/10 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/10 rounded-xl">
-              <Sparkles className="w-6 h-6 text-yellow-300" />
+            <div className="p-2 bg-blue-600/20 border border-blue-500/30 rounded-xl">
+              <Sparkles className="w-6 h-6 text-blue-300" />
             </div>
             <div>
               <h2 className="text-lg font-bold">Tra Cứu & Áp Dụng Bảng Giá Master (Rate Search Engine)</h2>
@@ -276,7 +276,7 @@ export const RateSearchModal: React.FC<RateSearchModalProps> = ({
                         {rate.transportMode}
                       </span>
                       {rate.containerType && (
-                        <span className="text-xs font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                        <span className="text-xs font-semibold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
                           Cont {rate.containerType}
                         </span>
                       )}

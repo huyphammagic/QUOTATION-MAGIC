@@ -270,8 +270,8 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
   return (
     <div 
       className={effectiveFullscreen
-        ? "fixed inset-0 z-50 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden bg-slate-950"
-        : "fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-200"
+        ? "fixed inset-0 z-50 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden bg-[#0B1324]"
+        : "fixed inset-0 z-50 bg-[#0B1324]/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-200"
       }
     >
       <div 
@@ -294,17 +294,17 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
         />
         
         {/* Modal Header */}
-        <div className="px-6 py-3.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+        <div className="px-6 py-3.5 bg-[#0B1324] text-white flex items-center justify-between border-b border-white/10 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center shadow-inner">
-              <Sparkles className="w-5 h-5 text-indigo-300" />
+            <div className="w-10 h-10 rounded-xl bg-[#16233F] border border-white/10 flex items-center justify-center shadow-inner">
+              <Sparkles className="w-5 h-5 text-blue-400" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-white tracking-tight">
                   Báo Giá Đa Phương Án So Sánh (Good - Better - Best)
                 </h2>
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/20 text-blue-200 border border-blue-400/30">
                   {pkg.packageCode}
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/30">
@@ -345,11 +345,11 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
               onClick={() => setActiveTab('matrix')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                 activeTab === 'matrix'
-                  ? 'bg-white text-indigo-900 shadow-xs'
+                  ? 'bg-white text-blue-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Layers className="w-3.5 h-3.5 text-indigo-600" />
+              <Layers className="w-3.5 h-3.5 text-blue-600" />
               <span>1. Ma Trận So Sánh (3 Options)</span>
             </button>
             <button
@@ -357,11 +357,11 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
               onClick={() => setActiveTab('customizer')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                 activeTab === 'customizer'
-                  ? 'bg-white text-indigo-900 shadow-xs'
+                  ? 'bg-white text-blue-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Sliders className="w-3.5 h-3.5 text-indigo-600" />
+              <Sliders className="w-3.5 h-3.5 text-blue-600" />
               <span>2. Tùy Biến Cước & Dịch Vụ Từng Gói</span>
             </button>
             <button
@@ -369,11 +369,11 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
               onClick={() => setActiveTab('client_sim')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                 activeTab === 'client_sim'
-                  ? 'bg-white text-indigo-900 shadow-xs'
+                  ? 'bg-white text-blue-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Eye className="w-3.5 h-3.5 text-indigo-600" />
+              <Eye className="w-3.5 h-3.5 text-blue-600" />
               <span>3. Góc Nhìn Khách & Kịch Bản Chốt Sales</span>
             </button>
             <button
@@ -381,11 +381,11 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
               onClick={() => setActiveTab('export_print')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                 activeTab === 'export_print'
-                  ? 'bg-white text-indigo-900 shadow-xs'
+                  ? 'bg-white text-blue-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Printer className="w-3.5 h-3.5 text-indigo-600" />
+              <Printer className="w-3.5 h-3.5 text-blue-600" />
               <span>4. Xuất Báo Giá PDF & Excel</span>
             </button>
           </div>
@@ -401,7 +401,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
               type="button"
               onClick={handleExportPdf}
               disabled={isExportingPdf}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-lg shadow-2xs transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg shadow-2xs transition-colors cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>{isExportingPdf ? 'Đang tạo...' : 'Tải PDF Ma Trận A4'}</span>
@@ -425,18 +425,18 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
           {activeTab === 'matrix' && (
             <div className="space-y-6">
               {/* Intro Banner */}
-              <div className="p-4 bg-gradient-to-r from-indigo-900/90 to-blue-900 rounded-xl text-white shadow-xs flex items-center justify-between">
+              <div className="p-4 bg-[#111C33] border border-white/10 rounded-xl text-white shadow-xs flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-sm text-indigo-100 flex items-center gap-2">
+                  <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
                     <Award className="w-4 h-4 text-amber-300" />
                     Chiến Lược Chốt Đơn Hiệu Quả Nhất Ngành Forwarding
                   </h3>
-                  <p className="text-xs text-indigo-200 mt-1 max-w-3xl leading-relaxed">
+                  <p className="text-xs text-slate-300 mt-1 max-w-3xl leading-relaxed">
                     Thay vì gửi 1 báo giá đơn lẻ khiến khách hàng đi so sánh giá với đối thủ bên ngoài, hãy trao cho khách <strong>3 phương án có chủ đích</strong> (Tiết Kiệm - Tối Ưu - Siêu Tốc). Khách hàng sẽ tập trung so sánh nội bộ giữa các gói của bạn và tự tin chọn gói <strong>Tối Ưu / Cân Bằng</strong> với tỷ lệ chuyển đổi cao gấp 2.4 lần!
                   </p>
                 </div>
                 <div className="hidden md:flex flex-col items-end gap-1 text-right">
-                  <span className="text-[11px] text-indigo-300">Phương án được khách chọn hiện tại:</span>
+                  <span className="text-[11px] text-slate-300">Phương án được khách chọn hiện tại:</span>
                   <span className="px-3 py-1 rounded-lg text-xs font-black bg-amber-400 text-slate-900 shadow-xs">
                     {currentOption?.tierNameVi || 'Chưa chọn'}
                   </span>
@@ -457,9 +457,9 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                     borderCls = isSelected ? 'border-emerald-500 ring-2 ring-emerald-400 bg-white' : 'border-slate-200 bg-white';
                     headerBadgeCls = 'bg-emerald-50 text-emerald-800 border-emerald-300';
                   } else if (option.tier === 'BALANCED') {
-                    borderCls = isSelected ? 'border-indigo-600 ring-2 ring-indigo-500 bg-white shadow-lg' : 'border-indigo-300 bg-white shadow-md';
-                    headerBadgeCls = 'bg-indigo-100 text-indigo-900 border-indigo-400';
-                    bannerColor = 'bg-indigo-600 text-white';
+                    borderCls = isSelected ? 'border-blue-600 ring-2 ring-blue-500 bg-white shadow-lg' : 'border-blue-300 bg-white shadow-md';
+                    headerBadgeCls = 'bg-blue-100 text-blue-900 border-blue-400';
+                    bannerColor = 'bg-blue-600 text-white';
                   } else if (option.tier === 'PREMIUM') {
                     borderCls = isSelected ? 'border-amber-500 ring-2 ring-amber-400 bg-white' : 'border-amber-200 bg-white';
                     headerBadgeCls = 'bg-amber-50 text-amber-900 border-amber-300';
@@ -473,8 +473,8 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                     >
                       {/* Top Ribbon for Recommended */}
                       {isRec && (
-                        <div className="bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 text-white py-1.5 px-4 text-center text-xs font-black tracking-wide uppercase shadow-xs flex items-center justify-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+                        <div className="bg-blue-600 text-white py-1.5 px-4 text-center text-xs font-black tracking-wide uppercase shadow-xs flex items-center justify-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                           <span>★ ĐỀ XUẤT CHÍNH (KHUYÊN CHỌN) ★</span>
                         </div>
                       )}
@@ -553,7 +553,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                             <span className="text-slate-500 flex items-center gap-1.5">
                               <ShieldCheck className="w-3.5 h-3.5 text-slate-400" /> Miễn phí lưu vỏ/bãi:
                             </span>
-                            <span className="font-bold text-indigo-600">{option.freeTimeDemDet}</span>
+                            <span className="font-bold text-teal-600">{option.freeTimeDemDet}</span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-slate-500">Cam kết chỗ & cont:</span>
@@ -586,7 +586,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                             <span className="text-slate-500">Độ tin cậy & Chỗ:</span>
                             <div className="flex items-center gap-1.5">
                               <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                <div className="h-full bg-indigo-500" style={{ width: `${(option.rating?.reliabilityScore || 9) * 10}%` }} />
+                                <div className="h-full bg-teal-600" style={{ width: `${(option.rating?.reliabilityScore || 9) * 10}%` }} />
                               </div>
                               <span className="font-bold text-slate-700">{option.rating?.reliabilityScore || 9}/10</span>
                             </div>
@@ -625,7 +625,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                             onClick={() => handleSelectOption(option.id)}
                             className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                               isSelected
-                                ? 'bg-indigo-600 text-white shadow-xs'
+                                ? 'bg-blue-600 text-white shadow-xs'
                                 : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                             }`}
                           >
@@ -645,7 +645,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                             className="w-full py-1.5 px-3 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition flex items-center justify-center gap-1.5 cursor-pointer"
                             title="Đẩy chi phí của phương án này vào báo giá đang mở để xuất chứng từ"
                           >
-                            <ArrowRight className="w-3.5 h-3.5 text-indigo-500" />
+                            <ArrowRight className="w-3.5 h-3.5 text-blue-600" />
                             <span>Đưa vào Báo Giá Hiện Tại</span>
                           </button>
                         </div>
@@ -660,7 +660,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
               <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
                 <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-2">
-                    <PhoneCall className="w-4 h-4 text-indigo-600" />
+                    <PhoneCall className="w-4 h-4 text-blue-600" />
                     <h4 className="text-sm font-bold text-slate-900">
                       Gợi Ý Lời Thoại Telesales & Chốt Đơn Đa Phương Án
                     </h4>
@@ -673,8 +673,8 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
-                        <MessageSquare className="w-3.5 h-3.5 text-indigo-600" />
+                      <span className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                        <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
                         Mẫu Tin Nhắn Zalo / Email (Đa Lựa Chọn)
                       </span>
                       <button
@@ -694,7 +694,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                        <PhoneCall className="w-3.5 h-3.5 text-indigo-600" />
+                        <PhoneCall className="w-3.5 h-3.5 text-blue-600" />
                         Kịch Bản Gọi Điện (Chốt Gói Tối Ưu)
                       </span>
                       <button
@@ -756,7 +756,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                         type="text"
                         value={currentOption.tierNameVi}
                         onChange={(e) => handleUpdateOptionField(currentOption.id, 'tierNameVi', e.target.value)}
-                        className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                     <div>
@@ -767,7 +767,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                         type="text"
                         value={currentOption.carrier}
                         onChange={(e) => handleUpdateOptionField(currentOption.id, 'carrier', e.target.value)}
-                        className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                     <div>
@@ -778,7 +778,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                         type="text"
                         value={currentOption.transitTimeText}
                         onChange={(e) => handleUpdateOptionField(currentOption.id, 'transitTimeText', e.target.value)}
-                        className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                     <div>
@@ -789,7 +789,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                         type="text"
                         value={currentOption.freeTimeDemDet}
                         onChange={(e) => handleUpdateOptionField(currentOption.id, 'freeTimeDemDet', e.target.value)}
-                        className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        className="w-full text-xs font-semibold px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                   </div>
@@ -803,7 +803,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                         type="text"
                         value={currentOption.departureSchedule}
                         onChange={(e) => handleUpdateOptionField(currentOption.id, 'departureSchedule', e.target.value)}
-                        className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                     <div>
@@ -814,7 +814,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                         type="text"
                         value={currentOption.closingCutoff}
                         onChange={(e) => handleUpdateOptionField(currentOption.id, 'closingCutoff', e.target.value)}
-                        className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                     <div>
@@ -825,7 +825,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                         type="text"
                         value={currentOption.spaceGuarantee}
                         onChange={(e) => handleUpdateOptionField(currentOption.id, 'spaceGuarantee', e.target.value)}
-                        className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                   </div>
@@ -839,7 +839,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                       <button
                         type="button"
                         onClick={() => handleAddOptionExtraItem(currentOption.id)}
-                        className="px-2.5 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Thêm Phí / Dịch Vụ Mới</span>
@@ -898,7 +898,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                         <tfoot className="bg-slate-50 font-bold text-slate-900 border-t border-slate-200">
                           <tr>
                             <td colSpan={5} className="p-3 text-right">Tổng cộng gói:</td>
-                            <td className="p-3 text-right font-mono text-sm text-indigo-700">
+                            <td className="p-3 text-right font-mono text-sm text-blue-700">
                               {formatUSD(currentOption.totalConvertedUsd)}
                               {currentOption.totalConvertedVnd > 0 && ` + ${formatVND(currentOption.totalConvertedVnd)}`}
                             </td>
@@ -916,12 +916,12 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
           {/* TAB 3: GÓC NHÌN KHÁCH HÀNG & BỘ CÔNG CỤ CHỐT SALES */}
           {activeTab === 'client_sim' && (
             <div className="space-y-6">
-              <div className="p-4 bg-gradient-to-r from-emerald-900 to-teal-900 rounded-xl text-white shadow-xs">
-                <h3 className="font-bold text-sm text-emerald-100 flex items-center gap-2">
-                  <Eye className="w-4 h-4 text-emerald-300" />
+              <div className="p-4 bg-[#111C33] border border-white/10 rounded-xl text-white shadow-xs">
+                <h3 className="font-bold text-sm text-teal-300 flex items-center gap-2">
+                  <Eye className="w-4 h-4 text-teal-400" />
                   Mô Phỏng Giao Diện Khách Hàng (Customer Decision Portal)
                 </h3>
-                <p className="text-xs text-emerald-200 mt-1">
+                <p className="text-xs text-slate-300 mt-1">
                   Đây là cách khách hàng nhìn thấy bảng so sánh trực quan và bấm chọn chốt đơn. Việc để khách tự bấm nút chọn gói tạo cảm giác "chủ động quyết định" thay vì "bị bán hàng".
                 </p>
               </div>
@@ -946,7 +946,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                         onClick={() => handleSelectOption(opt.id)}
                         className={`p-5 rounded-2xl border-2 transition-all cursor-pointer relative flex flex-col justify-between ${
                           isPicked
-                            ? 'border-indigo-600 bg-indigo-50/40 shadow-md ring-2 ring-indigo-400'
+                            ? 'border-blue-600 bg-blue-50/40 shadow-md ring-2 ring-blue-400'
                             : 'border-slate-200 hover:border-slate-300 bg-white'
                         }`}
                       >
@@ -967,7 +967,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                             Hãng tàu: <strong className="text-slate-900">{opt.carrier}</strong>
                           </div>
                           <div className="text-xs text-slate-600 mt-0.5">
-                            Thời gian: <strong className="text-indigo-600">{opt.transitTimeText}</strong>
+                            Thời gian: <strong className="text-blue-600">{opt.transitTimeText}</strong>
                           </div>
                           <div className="text-xs text-slate-600 mt-0.5">
                             Free Time: <strong className="text-emerald-600">{opt.freeTimeDemDet}</strong>
@@ -987,7 +987,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                           type="button"
                           className={`w-full py-2 rounded-xl text-xs font-black transition mt-4 ${
                             isPicked
-                              ? 'bg-indigo-600 text-white shadow-xs'
+                              ? 'bg-blue-600 text-white shadow-xs'
                               : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                           }`}
                         >
@@ -1001,12 +1001,12 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                 {/* Booking confirmation simulation */}
                 <div className="mt-8 p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
                       <ThumbsUp className="w-5 h-5" />
                     </div>
                     <div>
                       <div className="text-xs font-bold text-slate-800">
-                        Phương án chốt hiện tại: <span className="text-indigo-600 font-black">{currentOption.tierNameVi} ({currentOption.carrier})</span>
+                        Phương án chốt hiện tại: <span className="text-blue-600 font-black">{currentOption.tierNameVi} ({currentOption.carrier})</span>
                       </div>
                       <div className="text-[11px] text-slate-500">
                         Tổng chi phí: {formatUSD(currentOption.totalConvertedUsd)} • Cam kết giao trước hạn • Miễn phí DEM/DET {currentOption.freeTimeDemDet}
@@ -1035,7 +1035,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
               <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
                 <div>
                   <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                    <Printer className="w-4 h-4 text-indigo-600" />
+                    <Printer className="w-4 h-4 text-blue-600" />
                     Xuất Bản So Sánh Đa Phương Án Chuẩn Khổ Ngang (A4 Landscape)
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
@@ -1048,7 +1048,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                     type="button"
                     onClick={handleExportPdf}
                     disabled={isExportingPdf}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl shadow-xs cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl shadow-xs cursor-pointer"
                   >
                     <Download className="w-4 h-4" />
                     <span>{isExportingPdf ? 'Đang xuất PDF...' : 'Tải File PDF (A4 Ngang)'}</span>
@@ -1079,7 +1079,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                       </p>
                     </div>
                     <div className="text-right">
-                      <div className="text-xs font-bold text-indigo-700 uppercase">
+                      <div className="text-xs font-bold text-blue-700 uppercase">
                         BẢNG SO SÁNH ĐA PHƯƠNG ÁN VẬN CHUYỂN
                       </div>
                       <div className="text-xs font-mono font-bold text-slate-800">
@@ -1112,7 +1112,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
                     {pkg.options.map(opt => (
                       <div key={opt.id} className="border border-slate-300 rounded-xl p-3.5 bg-white flex flex-col justify-between">
                         <div>
-                          <div className="text-[11px] font-black uppercase text-indigo-700 border-b border-slate-100 pb-1">
+                          <div className="text-[11px] font-black uppercase text-blue-700 border-b border-slate-100 pb-1">
                             {opt.tierNameVi}
                           </div>
                           <div className="text-base font-black text-slate-900 my-1">
@@ -1153,7 +1153,7 @@ export const MultiOptionQuoteModal: React.FC<MultiOptionQuoteModalProps> = ({
         {/* Modal Footer */}
         <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
           <div className="text-slate-500 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
             <span>Đang kích hoạt gói: <strong className="text-slate-800">{currentOption?.tierNameVi}</strong> ({formatUSD(currentOption?.totalConvertedUsd || 0)})</span>
           </div>
 

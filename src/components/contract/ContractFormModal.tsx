@@ -242,16 +242,16 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-[#0B1324]/80 backdrop-blur-xs overflow-y-auto">
       <div 
         className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150 my-8"
         id="contract-form-modal"
       >
         {/* Modal Header */}
-        <div className="px-6 py-4 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex items-center justify-between">
+        <div className="px-6 py-4 bg-[#0B1324] border-b border-white/10 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-500/20 border border-indigo-400/30 rounded-lg">
-              <FileText className="w-5 h-5 text-indigo-400" />
+            <div className="p-2 bg-blue-600/20 border border-blue-500/30 rounded-lg">
+              <FileText className="w-5 h-5 text-blue-400" />
             </div>
             <div>
               <h3 className="text-base font-bold">
@@ -264,7 +264,7 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
           </div>
           <button 
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-white hover:bg-[#16233F] rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -497,7 +497,7 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
           {/* Section: Volume Commitment */}
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
             <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-              <Layers className="w-4 h-4 text-indigo-600" /> Cam Kết Sản Lượng (Volume Commitment)
+              <Layers className="w-4 h-4 text-blue-600" /> Cam Kết Sản Lượng (Volume Commitment)
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">

@@ -158,7 +158,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
               >
                 <Flame className="w-3 h-3 text-rose-600 fill-rose-500 shrink-0 group-hover:scale-110 transition-transform" />
                 <span>{stats.activeGoldenLeads.length} Khách Giờ Vàng</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
               </button>
             </>
           )}
@@ -173,9 +173,9 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
               title="Mở nhanh Dashboard BI (Phím tắt: Ctrl + D)"
               className="press-physics-subtle inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200/90 px-3 py-1.5 rounded-xl transition-all cursor-pointer shadow-2xs"
             >
-              <LayoutDashboard className="w-3.5 h-3.5 text-indigo-600" />
+              <LayoutDashboard className="w-3.5 h-3.5 text-blue-600" />
               <span>Báo Cáo & BI Dashboard</span>
-              <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.2 text-[10px] font-mono font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200/80 rounded">
+              <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.2 text-[10px] font-mono font-semibold text-blue-700 bg-blue-50 border border-blue-200/80 rounded">
                 Ctrl+D
               </kbd>
             </button>
@@ -200,15 +200,17 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
           {/* Card 1: Khung Giờ Vàng & Hot Leads */}
           <div 
             onClick={onOpenGoldenHourRadar}
-            className="press-physics-subtle p-3.5 rounded-xl bg-gradient-to-br from-rose-50/60 via-white to-white border border-rose-200/80 hover:border-rose-300 hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between"
+            className="press-physics-subtle p-3.5 rounded-xl bg-white border border-slate-200/90 hover:border-rose-300 hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between"
           >
             <div>
               <div className="flex items-center justify-between text-slate-500">
-                <span className="font-semibold uppercase tracking-wider text-[11px] flex items-center gap-1.5 text-rose-800">
-                  <Flame className="w-3.5 h-3.5 text-rose-600 fill-rose-500" />
-                  Radar Giờ Vàng (Hot Leads)
+                <span className="font-semibold uppercase tracking-wider text-[11px] flex items-center gap-1.5 text-rose-700">
+                  <span className="w-6 h-6 rounded-lg bg-rose-50 flex items-center justify-center shrink-0">
+                    <Flame className="w-3.5 h-3.5 text-rose-600 fill-rose-500" />
+                  </span>
+                  Radar Giờ Vàng
                 </span>
-                <span className="text-[10px] font-mono font-bold bg-rose-100 text-rose-700 px-1.5 py-0.2 rounded">
+                <span className="text-[10px] font-mono font-bold bg-rose-50 text-rose-700 border border-rose-200/80 px-1.5 py-0.2 rounded">
                   {stats.activeGoldenLeads.length} online
                 </span>
               </div>
@@ -232,7 +234,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
                 </div>
               </div>
             </div>
-            <div className="mt-2.5 pt-2 border-t border-rose-100 flex items-center justify-between text-[11px] text-rose-700 font-bold">
+            <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-rose-700 font-bold">
               <span>Mở Radar & Kịch Bản Chốt</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </div>
@@ -241,15 +243,17 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
           {/* Card 2: Tỷ Lệ Chốt Thắng & Tốc Độ */}
           <div 
             onClick={onOpenAnalytics}
-            className="press-physics-subtle p-3.5 rounded-xl bg-gradient-to-br from-emerald-50/60 via-white to-white border border-emerald-200/80 hover:border-emerald-300 hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between"
+            className="press-physics-subtle p-3.5 rounded-xl bg-white border border-slate-200/90 hover:border-emerald-300 hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between"
           >
             <div>
               <div className="flex items-center justify-between text-slate-500">
-                <span className="font-semibold uppercase tracking-wider text-[11px] flex items-center gap-1.5 text-emerald-800">
-                  <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="font-semibold uppercase tracking-wider text-[11px] flex items-center gap-1.5 text-emerald-700">
+                  <span className="w-6 h-6 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                    <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  </span>
                   Tỷ Lệ Thắng (Win-Rate)
                 </span>
-                <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded">
+                <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.2 rounded">
                   {stats.winRatePercent >= 35 ? 'Mục tiêu đạt' : 'Cần tăng tốc'}
                 </span>
               </div>
@@ -265,7 +269,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
                 Doanh số đã chốt: <strong className="text-slate-800 font-mono">${Math.round(stats.wonUsd).toLocaleString()}</strong>
               </div>
             </div>
-            <div className="mt-2.5 pt-2 border-t border-emerald-100 flex items-center justify-between text-[11px] text-emerald-700 font-bold">
+            <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-emerald-700 font-bold">
               <span>Xem Báo Cáo Chuyển Đổi</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </div>
@@ -274,15 +278,17 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
           {/* Card 3: Tiến Độ Chỉ Tiêu & Pipeline Dự Phóng */}
           <div 
             onClick={onOpenAnalytics}
-            className="press-physics-subtle p-3.5 rounded-xl bg-gradient-to-br from-indigo-50/60 via-white to-white border border-indigo-200/80 hover:border-indigo-300 hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between"
+            className="press-physics-subtle p-3.5 rounded-xl bg-white border border-slate-200/90 hover:border-blue-300 hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between"
           >
             <div>
               <div className="flex items-center justify-between text-slate-500">
-                <span className="font-semibold uppercase tracking-wider text-[11px] flex items-center gap-1.5 text-indigo-800">
-                  <Target className="w-3.5 h-3.5 text-indigo-600" />
+                <span className="font-semibold uppercase tracking-wider text-[11px] flex items-center gap-1.5 text-blue-700">
+                  <span className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                    <Target className="w-3.5 h-3.5 text-blue-600" />
+                  </span>
                   Tiến Độ Doanh Số Tháng
                 </span>
-                <span className="text-[10px] font-mono font-bold text-indigo-700 bg-indigo-100 px-1.5 py-0.2 rounded">
+                <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200/80 px-1.5 py-0.2 rounded">
                   {stats.quotaAchievementPercent}%
                 </span>
               </div>
@@ -298,7 +304,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
                 {/* Progress track */}
                 <div className="w-full h-1.5 bg-slate-100 rounded-full mt-2 overflow-hidden">
                   <div 
-                    className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full transition-all duration-500"
+                    className="h-full bg-blue-600 rounded-full transition-all duration-500"
                     style={{ width: `${stats.quotaAchievementPercent}%` }}
                   />
                 </div>
@@ -307,7 +313,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
                 Dự phóng (Weighted): <strong className="text-slate-800 font-mono">${Math.round(stats.weightedForecastUsd).toLocaleString()}</strong>
               </div>
             </div>
-            <div className="mt-2.5 pt-2 border-t border-indigo-100 flex items-center justify-between text-[11px] text-indigo-700 font-bold">
+            <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-blue-700 font-bold">
               <span>Mô Phỏng Kịch Bản (What-If)</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </div>
@@ -316,16 +322,18 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
           {/* Card 4: Cơ Cấu Tuyến & Cảnh Báo Khẩn Cấp */}
           <div 
             onClick={onOpenAnalytics}
-            className="press-physics-subtle p-3.5 rounded-xl bg-gradient-to-br from-amber-50/60 via-white to-white border border-amber-200/80 hover:border-amber-300 hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between"
+            className="press-physics-subtle p-3.5 rounded-xl bg-white border border-slate-200/90 hover:border-amber-300 hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between"
           >
             <div>
               <div className="flex items-center justify-between text-slate-500">
                 <span className="font-semibold uppercase tracking-wider text-[11px] flex items-center gap-1.5 text-amber-800">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                  Cảnh Báo Hết Hạn & Phương Thức
+                  <span className="w-6 h-6 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                  </span>
+                  Hết Hạn & Phương Thức
                 </span>
                 {stats.expiringQuotes.length > 0 && (
-                  <span className="text-[10px] font-mono font-bold text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded animate-pulse">
+                  <span className="text-[10px] font-mono font-bold text-amber-800 bg-amber-50 border border-amber-200/80 px-1.5 py-0.2 rounded">
                     {stats.expiringQuotes.length} cần gia hạn
                   </span>
                 )}
@@ -345,7 +353,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
                 </div>
               </div>
             </div>
-            <div className="mt-2.5 pt-2 border-t border-amber-100 flex items-center justify-between text-[11px] text-amber-800 font-bold">
+            <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-amber-800 font-bold">
               <span>Kiểm Tra Toàn Bộ Tuyến Hàng</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </div>

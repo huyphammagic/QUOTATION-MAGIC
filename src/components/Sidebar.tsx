@@ -1192,37 +1192,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const getWorkflowGroupStyles = (groupKey: string, hasActiveChild: boolean) => {
+    const activeBadge = 'bg-blue-500/20 text-blue-300 border-blue-400/35';
+    const inactiveBadge = 'bg-white/[0.04] text-slate-400 border-white/[0.08]';
+    const activeContainer = 'bg-[#121D36] border-blue-500/35';
+    const inactiveContainer = 'bg-[#0F182D]/70 border-white/[0.06] hover:border-white/[0.12]';
+
     switch (groupKey) {
       case 'commercial':
         return {
-          badge: hasActiveChild ? 'bg-indigo-500/25 text-indigo-300 border-indigo-400/40 shadow-[0_0_10px_rgba(99,102,241,0.25)]' : 'bg-slate-800 text-slate-400 border-slate-700/60',
-          icon: hasActiveChild ? 'text-indigo-400 drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]' : 'text-indigo-400/70',
-          container: hasActiveChild ? 'bg-gradient-to-r from-indigo-950/45 via-slate-900/80 to-slate-900/60 border-indigo-500/40 shadow-[0_4px_20px_rgba(99,102,241,0.12)]' : 'bg-slate-900/40 border-slate-800/60 hover:border-indigo-500/30'
+          badge: hasActiveChild ? activeBadge : inactiveBadge,
+          icon: hasActiveChild ? 'text-blue-400' : 'text-slate-400',
+          container: hasActiveChild ? activeContainer : inactiveContainer
         };
       case 'pricing':
         return {
-          badge: hasActiveChild ? 'bg-cyan-500/25 text-cyan-300 border-cyan-400/40 shadow-[0_0_10px_rgba(6,182,212,0.25)]' : 'bg-slate-800 text-slate-400 border-slate-700/60',
-          icon: hasActiveChild ? 'text-cyan-400 drop-shadow-[0_0_6px_rgba(6,182,212,0.8)]' : 'text-cyan-400/70',
-          container: hasActiveChild ? 'bg-gradient-to-r from-cyan-950/45 via-slate-900/80 to-slate-900/60 border-cyan-500/40 shadow-[0_4px_20px_rgba(6,182,212,0.12)]' : 'bg-slate-900/40 border-slate-800/60 hover:border-cyan-500/30'
+          badge: hasActiveChild ? activeBadge : inactiveBadge,
+          icon: hasActiveChild ? 'text-sky-400' : 'text-slate-400',
+          container: hasActiveChild ? activeContainer : inactiveContainer
         };
       case 'operations':
         return {
-          badge: hasActiveChild ? 'bg-emerald-500/25 text-emerald-300 border-emerald-400/40 shadow-[0_0_10px_rgba(16,185,129,0.25)]' : 'bg-slate-800 text-slate-400 border-slate-700/60',
-          icon: hasActiveChild ? 'text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.8)]' : 'text-emerald-400/70',
-          container: hasActiveChild ? 'bg-gradient-to-r from-emerald-950/45 via-slate-900/80 to-slate-900/60 border-emerald-500/40 shadow-[0_4px_20px_rgba(16,185,129,0.12)]' : 'bg-slate-900/40 border-slate-800/60 hover:border-emerald-500/30'
+          badge: hasActiveChild ? activeBadge : inactiveBadge,
+          icon: hasActiveChild ? 'text-teal-400' : 'text-slate-400',
+          container: hasActiveChild ? activeContainer : inactiveContainer
         };
       case 'crm':
         return {
-          badge: hasActiveChild ? 'bg-amber-500/25 text-amber-300 border-amber-400/40 shadow-[0_0_10px_rgba(245,158,11,0.25)]' : 'bg-slate-800 text-slate-400 border-slate-700/60',
-          icon: hasActiveChild ? 'text-amber-400 drop-shadow-[0_0_6px_rgba(245,158,11,0.8)]' : 'text-amber-400/70',
-          container: hasActiveChild ? 'bg-gradient-to-r from-amber-950/45 via-slate-900/80 to-slate-900/60 border-amber-500/40 shadow-[0_4px_20px_rgba(245,158,11,0.12)]' : 'bg-slate-900/40 border-slate-800/60 hover:border-amber-500/30'
+          badge: hasActiveChild ? activeBadge : inactiveBadge,
+          icon: hasActiveChild ? 'text-amber-400' : 'text-slate-400',
+          container: hasActiveChild ? activeContainer : inactiveContainer
         };
       case 'system':
       default:
         return {
-          badge: hasActiveChild ? 'bg-fuchsia-500/25 text-fuchsia-300 border-fuchsia-400/40 shadow-[0_0_10px_rgba(217,70,239,0.25)]' : 'bg-slate-800 text-slate-400 border-slate-700/60',
-          icon: hasActiveChild ? 'text-fuchsia-400 drop-shadow-[0_0_6px_rgba(217,70,239,0.8)]' : 'text-fuchsia-400/70',
-          container: hasActiveChild ? 'bg-gradient-to-r from-fuchsia-950/45 via-slate-900/80 to-slate-900/60 border-fuchsia-500/40 shadow-[0_4px_20px_rgba(217,70,239,0.12)]' : 'bg-slate-900/40 border-slate-800/60 hover:border-fuchsia-500/30'
+          badge: hasActiveChild ? activeBadge : inactiveBadge,
+          icon: hasActiveChild ? 'text-blue-300' : 'text-slate-400',
+          container: hasActiveChild ? activeContainer : inactiveContainer
         };
     }
   };
@@ -1329,28 +1334,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div
         key={item.id}
         data-nav-id={item.id}
-        className={`relative w-full rounded-xl transition-all duration-200 group overflow-hidden press-physics-subtle cosmic-card-sheen ${
+        className={`relative w-full rounded-xl transition-all duration-150 group overflow-hidden press-physics-subtle ${
           isActive 
-            ? 'bg-gradient-to-r from-indigo-950/85 via-slate-900/90 to-slate-900/50 border border-indigo-500/40 text-cyan-200 font-semibold shadow-[0_0_15px_rgba(99,102,241,0.25)]' 
-            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80 border border-transparent hover:border-cyan-500/30 hover:shadow-[0_0_12px_rgba(56,189,248,0.12)]'
+            ? 'bg-blue-600/18 border border-blue-500/35 text-white font-semibold' 
+            : 'text-slate-400 hover:text-slate-100 hover:bg-white/[0.04] border border-transparent hover:border-white/[0.08]'
         } ${item.restricted ? 'opacity-60' : ''}`}
       >
-        {/* 1. Magnetic Laser Rail (Left Edge) */}
+        {/* Crisp Left Active Rail */}
         <span 
-          className={`absolute left-0 top-1.5 bottom-1.5 rounded-r-full transition-all duration-200 pointer-events-none ${
+          className={`absolute left-0 top-1.5 bottom-1.5 rounded-r-full transition-all duration-150 pointer-events-none ${
             isActive
-              ? 'w-1 cosmic-laser-rail shadow-[0_0_10px_rgba(56,189,248,0.9)]'
-              : 'w-0 group-hover:w-1 group-hover:bg-gradient-to-b group-hover:from-cyan-400 group-hover:to-indigo-500 group-hover:shadow-[0_0_8px_rgba(56,189,248,0.7)]'
+              ? 'w-[3px] bg-blue-500'
+              : 'w-0 group-hover:w-[2px] group-hover:bg-blue-400/60'
           }`} 
           aria-hidden="true" 
-        >
-          {isActive && (
-            <>
-              <span className="absolute -top-0.5 left-0 w-1.5 h-1.5 rounded-full bg-cyan-300 shadow-[0_0_6px_#38bdf8]" />
-              <span className="absolute -bottom-0.5 left-0 w-1.5 h-1.5 rounded-full bg-violet-400 shadow-[0_0_6px_#c084fc]" />
-            </>
-          )}
-        </span>
+        />
 
         <div className="flex items-center justify-between px-2.5 py-1.5">
           <button
@@ -1365,33 +1363,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }}
             className="flex-1 flex items-center space-x-2.5 min-w-0 text-left cursor-pointer pl-0.5 focus-ring-physics rounded-md py-0.5"
           >
-            {/* 2. Phosphor Icon with Spring Shift */}
-            <Icon className={`w-3.5 h-3.5 shrink-0 transition-all duration-200 ease-out group-hover:translate-x-1 ${
+            {/* Icon */}
+            <Icon className={`w-3.5 h-3.5 shrink-0 transition-transform duration-150 ease-out group-hover:translate-x-0.5 ${
               isActive 
-                ? 'text-cyan-300 icon-active-glow drop-shadow-[0_0_6px_rgba(56,189,248,0.7)]' 
-                : 'text-slate-400 group-hover:text-cyan-300 group-hover:drop-shadow-[0_0_6px_rgba(56,189,248,0.6)]'
+                ? 'text-blue-400' 
+                : 'text-slate-400 group-hover:text-blue-300'
             }`} />
 
-            {/* 3. Title + Smooth Inline Telemetry Drawer */}
+            {/* Title + Inline Telemetry Drawer */}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <span className={`text-xs truncate transition-colors duration-150 ${
-                  isActive ? 'font-semibold text-cyan-200' : 'text-slate-300 group-hover:text-white'
+                  isActive ? 'font-semibold text-white' : 'text-slate-300 group-hover:text-white'
                 }`}>
                   {item.label}
                 </span>
-                {/* 5. Sonar Ping Ripple for real-time live tags */}
                 {telemetry.liveTag && (
-                  <span className="relative flex h-1.5 w-1.5 shrink-0" title={telemetry.liveTag}>
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-400 shadow-[0_0_4px_#38bdf8]"></span>
-                  </span>
+                  <span className="inline-flex rounded-full h-1.5 w-1.5 bg-teal-400 shrink-0" title={telemetry.liveTag} />
                 )}
               </div>
 
-              {/* Telemetry Subtitle: reveals cleanly on hover with zero jitter */}
-              <div className="max-h-0 overflow-hidden opacity-0 group-hover:max-h-4 group-hover:opacity-100 transition-all duration-200 ease-out">
-                <span className="text-[10px] text-cyan-300/80 font-normal truncate block leading-tight pt-0.5">
+              {/* Telemetry Subtitle: reveals cleanly on hover */}
+              <div className="max-h-0 overflow-hidden opacity-0 group-hover:max-h-4 group-hover:opacity-100 transition-all duration-150 ease-out">
+                <span className="text-[10px] text-slate-400 font-normal truncate block leading-tight pt-0.5">
                   {telemetry.hint}
                 </span>
               </div>
@@ -1406,19 +1400,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
 
             {item.badge && (
-              <span className="text-[10px] px-1.5 py-0.2 rounded font-mono font-medium border bg-slate-900/90 border-slate-700/60 text-slate-300 shadow-xs transition-colors group-hover:border-cyan-500/40 group-hover:text-cyan-200">
+              <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-medium border transition-colors ${
+                isActive
+                  ? 'bg-blue-500/20 border-blue-400/40 text-blue-200'
+                  : 'bg-[#0B1324]/80 border-white/[0.08] text-slate-300 group-hover:border-blue-500/30 group-hover:text-blue-200'
+              }`}>
                 {item.badge}
               </span>
             )}
 
-            {/* 4. Spring-Action Star Pin Reveal */}
+            {/* Star Pin Toggle */}
             <button
               type="button"
               onClick={(e) => togglePin(e, item.id)}
-              className={`p-0.5 rounded transition-all duration-200 cursor-pointer press-physics focus-ring-physics ${
+              className={`p-0.5 rounded transition-all duration-150 cursor-pointer press-physics focus-ring-physics ${
                 isPinned 
-                  ? 'text-amber-400 opacity-100 hover:scale-125' 
-                  : 'text-slate-500 opacity-0 -translate-x-1.5 group-hover:opacity-100 group-hover:translate-x-0 hover:text-amber-300 hover:scale-125 hover:drop-shadow-[0_0_6px_rgba(245,158,11,0.8)]'
+                  ? 'text-amber-400 opacity-100 hover:scale-110' 
+                  : 'text-slate-500 opacity-0 group-hover:opacity-100 hover:text-amber-300 hover:scale-110'
               }`}
               title={isPinned ? (activeLang === 'vi' ? 'Bỏ ghim' : 'Unpin') : (activeLang === 'vi' ? 'Ghim yêu thích' : 'Pin to top')}
             >
@@ -1436,14 +1434,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {isOpenMobile && (
         <div 
           onClick={onCloseMobile}
-          className="fixed inset-0 bg-slate-950/80 z-40 lg:hidden backdrop-blur-sm transition-opacity"
+          className="fixed inset-0 bg-[#0B1324]/75 z-40 lg:hidden backdrop-blur-sm transition-opacity"
           aria-hidden="true"
         />
       )}
 
-      {/* Main Sidebar Column with Cyber Glassmorphism & Ambient Aurora Mesh */}
+      {/* Main Sidebar Column - Architectural Deep Maritime Navy */}
       <aside 
-        className={`fixed top-0 bottom-0 left-0 z-40 bg-slate-950/92 backdrop-blur-2xl text-slate-300 flex flex-col border-r border-slate-800/80 transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto shrink-0 select-none shadow-[0_0_40px_rgba(0,0,0,0.8)] relative ${
+        className={`fixed top-0 bottom-0 left-0 z-40 bg-[#0B1324] text-slate-300 flex flex-col border-r border-white/[0.08] transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto shrink-0 select-none shadow-xl relative ${
           isCollapsed ? 'overflow-visible' : 'overflow-hidden'
         } ${
           isCollapsed ? 'w-16' : 'w-72'
@@ -1451,41 +1449,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
         role="navigation"
         aria-label="Sidebar Navigation"
       >
-        {/* Ambient Cyber Aurora Orbs */}
-        <div className="absolute -top-24 -left-20 w-72 h-72 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none aurora-mesh-orb-1" aria-hidden="true" />
-        <div className="absolute top-1/2 -right-24 w-64 h-64 rounded-full bg-indigo-600/10 blur-3xl pointer-events-none aurora-mesh-orb-2" aria-hidden="true" />
-        <div className="absolute -bottom-20 -left-12 w-60 h-60 rounded-full bg-fuchsia-600/8 blur-3xl pointer-events-none" aria-hidden="true" />
-
-        {/* Top Header & Branding with Holographic Prism & Live Radar Heartbeat */}
-        <div className="h-14 px-3.5 border-b border-slate-800/80 flex items-center justify-between shrink-0 bg-slate-950/80 backdrop-blur-xl relative z-10">
+        {/* Top Header & Branding */}
+        <div className="h-14 px-3.5 border-b border-white/[0.08] flex items-center justify-between shrink-0 bg-[#0B1324] relative z-10">
           <div className="flex items-center space-x-2.5 min-w-0">
-            {/* Holographic Logo Prism Frame */}
-            <div className="p-0.5 rounded-xl bg-gradient-to-tr from-cyan-400 via-indigo-500 to-fuchsia-500 shadow-[0_0_12px_rgba(99,102,241,0.35)] shrink-0 group">
-              <div className="w-7.5 h-7.5 rounded-[10px] overflow-hidden flex items-center justify-center bg-slate-950 p-1">
-                <img 
-                  src="/logo.png" 
-                  alt="LogiQuote Logo" 
-                  className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
-                />
-              </div>
+            {/* Crisp Maritime Logo Frame */}
+            <div className="w-8 h-8 rounded-xl bg-white/95 border border-white/15 shadow-xs flex items-center justify-center p-1 shrink-0">
+              <img 
+                src="/logo.png" 
+                alt="LogiQuote Logo" 
+                className="w-full h-full object-contain"
+              />
             </div>
             
             {!isCollapsed && (
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-xs bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent tracking-tight truncate">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-xs text-white tracking-tight truncate">
                     LogiQuote Studio
                   </span>
-                  {/* PRO Badge + Live Radar Heartbeat */}
-                  <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 shadow-[0_0_8px_rgba(99,102,241,0.25)]">
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400 shadow-[0_0_4px_#34d399]"></span>
-                    </span>
-                    <span>PRO</span>
+                  <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                    PRO
                   </span>
                 </div>
-                <span className="text-[11px] text-slate-400/90 font-normal truncate block">
+                <span className="text-[11px] text-slate-400 font-normal truncate block">
                   {company.shortName || company.name || 'TMS Logistics'}
                 </span>
               </div>
@@ -1496,12 +1482,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={() => toggleSidebarCollapse()}
-            className="hidden lg:flex p-1.5 text-slate-400 hover:text-cyan-300 hover:bg-slate-800/80 rounded-xl transition-all cursor-pointer border border-transparent hover:border-slate-700/60 hover:shadow-[0_0_10px_rgba(56,189,248,0.15)]"
+            className="hidden lg:flex p-1.5 text-slate-400 hover:text-white hover:bg-white/[0.06] rounded-lg transition-colors cursor-pointer"
             title={isCollapsed ? 'Mở rộng sidebar' : 'Thu gọn sidebar'}
             aria-label={isCollapsed ? 'Mở rộng' : 'Thu gọn'}
           >
             {isCollapsed ? (
-              <PanelLeftOpen className="w-4 h-4 text-cyan-400" />
+              <PanelLeftOpen className="w-4 h-4 text-blue-400" />
             ) : (
               <PanelLeftClose className="w-4 h-4" />
             )}
@@ -1511,40 +1497,40 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={onCloseMobile}
-            className="lg:hidden p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl cursor-pointer"
+            className="lg:hidden p-1.5 text-slate-400 hover:text-white hover:bg-white/[0.06] rounded-lg cursor-pointer"
             aria-label="Đóng menu"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Primary Action Button: Tạo Báo Giá Mới (Super-Nova Hero CTA with Shimmer & Spring) */}
+        {/* Primary Action Button: Tạo Báo Giá Mới (Solid Royal Cobalt) */}
         <div className="p-2.5 pb-2 shrink-0 relative z-10">
           <button
             type="button"
             onClick={() => handleAction(onNewQuote)}
             className={`w-full flex items-center ${
               isCollapsed ? 'justify-center p-2.5' : 'justify-between px-3.5 py-2'
-            } rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-500 hover:via-indigo-500 hover:to-violet-500 text-white font-semibold shadow-[0_4px_20px_rgba(79,70,229,0.4)] hover:shadow-[0_4px_25px_rgba(79,70,229,0.55)] border border-white/20 supernova-sweep-shine press-physics focus-ring-physics cursor-pointer relative overflow-hidden group transition-all`}
+            } rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-sm border border-blue-400/30 press-physics focus-ring-physics cursor-pointer group transition-all`}
             title={isCollapsed ? (activeLang === 'vi' ? 'Tạo Báo Giá Mới (Ctrl+N)' : 'Create Quotation (Ctrl+N)') : undefined}
           >
-            <div className="flex items-center space-x-2 min-w-0 relative z-10">
-              <Plus className="w-4 h-4 text-white shrink-0 group-hover:rotate-90 group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_4px_rgba(255,255,255,0.6)]" />
+            <div className="flex items-center space-x-2 min-w-0">
+              <Plus className="w-4 h-4 text-white shrink-0 group-hover:rotate-90 transition-transform duration-200" />
               {!isCollapsed && (
-                <span className="text-xs font-bold tracking-tight truncate drop-shadow-sm">
+                <span className="text-xs font-bold tracking-tight truncate">
                   {activeLang === 'vi' ? 'Tạo Báo Giá Mới' : 'Create Quotation'}
                 </span>
               )}
             </div>
             {!isCollapsed && (
-              <span className="relative z-10 text-[10px] text-indigo-100 font-mono px-1.5 py-0.5 rounded-md bg-black/25 backdrop-blur-xs border border-white/20 shadow-inner">
+              <span className="text-[10px] text-blue-100 font-mono px-1.5 py-0.5 rounded bg-black/20 border border-white/15">
                 Ctrl+N
               </span>
             )}
           </button>
         </div>
 
-        {/* Quick Search & Minimalist View Mode Switch (Glassmorphism) */}
+        {/* Quick Search & Minimalist View Mode Switch */}
         {!isCollapsed && (
           <div className="px-2.5 pb-2 shrink-0 flex items-center gap-1.5 relative z-10">
             <div className="relative flex-1">
@@ -1555,7 +1541,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={activeLang === 'vi' ? 'Tìm nhanh (Ctrl+K)...' : 'Search (Ctrl+K)...'}
-                className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus-ring-physics focus:bg-slate-900 focus:border-cyan-500/50 focus:shadow-[0_0_12px_rgba(6,182,212,0.15)] transition-all"
+                className="w-full pl-8 pr-7 py-1.5 text-xs bg-[#111C33] border border-white/[0.08] rounded-xl text-slate-100 placeholder-slate-500 focus-ring-physics focus:border-blue-500/60 transition-colors"
               />
               {searchQuery && (
                 <button
@@ -1572,22 +1558,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               type="button"
               onClick={toggleMinimalMode}
-              className={`h-7.5 px-2.5 rounded-xl border flex items-center gap-1 text-[11px] font-medium transition-all cursor-pointer shrink-0 press-physics focus-ring-physics ${
+              className={`h-7.5 px-2.5 rounded-xl border flex items-center gap-1 text-[11px] font-medium transition-colors cursor-pointer shrink-0 press-physics focus-ring-physics ${
                 isMinimalMode
-                  ? 'bg-indigo-950/70 text-indigo-300 border-indigo-700/60 hover:bg-indigo-900/70 shadow-[0_0_10px_rgba(99,102,241,0.2)]'
-                  : 'bg-slate-900/80 backdrop-blur-md text-slate-400 border-slate-800 hover:text-slate-200 hover:bg-slate-800'
+                  ? 'bg-blue-600/20 text-blue-300 border-blue-500/40 hover:bg-blue-600/30'
+                  : 'bg-[#111C33] text-slate-400 border-white/[0.08] hover:text-slate-200 hover:bg-[#16233F]'
               }`}
               title={isMinimalMode ? (activeLang === 'vi' ? 'Đang bật Chế độ Tối giản (Click để xem đầy đủ)' : 'Minimal mode ON (Click to show full)') : (activeLang === 'vi' ? 'Đang xem Đầy đủ (Click để bật tối giản)' : 'Full mode (Click to switch to minimal)')}
             >
-              {isMinimalMode ? <Eye className="w-3.5 h-3.5 text-indigo-400" /> : <EyeOff className="w-3.5 h-3.5 text-slate-400" />}
+              {isMinimalMode ? <Eye className="w-3.5 h-3.5 text-blue-400" /> : <EyeOff className="w-3.5 h-3.5 text-slate-400" />}
               <span className="hidden sm:inline">{isMinimalMode ? (activeLang === 'vi' ? 'Tối giản' : 'Minimal') : (activeLang === 'vi' ? 'Đầy đủ' : 'Full')}</span>
             </button>
           </div>
         )}
 
-        {/* Pinned Favorites Quick Strip (When Expanded & not searching) */}
+        {/* Pinned Favorites Quick Strip */}
         {!isCollapsed && !searchQuery && pinnedItems.length > 0 && (
-          <div className="px-2.5 py-1.5 border-b border-slate-800/60 shrink-0 bg-slate-900/40 backdrop-blur-sm relative z-10">
+          <div className="px-2.5 py-1.5 border-b border-white/[0.07] shrink-0 bg-[#0F182D]/60 relative z-10">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] font-medium text-slate-400 flex items-center gap-1.5">
                 <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
@@ -1601,10 +1587,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 return (
                   <div
                     key={`pinned-${item.id}`}
-                    className={`inline-flex items-center rounded-lg text-[11px] border transition-all press-physics-subtle ${
+                    className={`inline-flex items-center rounded-lg text-[11px] border transition-colors press-physics-subtle ${
                       isActive 
-                        ? 'bg-gradient-to-r from-indigo-900/80 to-purple-900/60 text-cyan-200 border-indigo-500/50 shadow-[0_0_10px_rgba(99,102,241,0.3)] font-semibold' 
-                        : 'bg-slate-900/80 backdrop-blur-xs hover:bg-slate-800/90 text-slate-300 hover:text-white border-slate-800 hover:border-slate-700'
+                        ? 'bg-blue-600/20 text-white border-blue-500/45 font-semibold' 
+                        : 'bg-[#111C33] hover:bg-[#16233F] text-slate-300 hover:text-white border-white/[0.08]'
                     }`}
                   >
                     <button
@@ -1613,7 +1599,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       className="flex items-center gap-1.5 px-2 py-0.5 cursor-pointer focus-ring-physics rounded-l-md"
                       title={item.label}
                     >
-                      <Icon className={`w-3 h-3 shrink-0 ${isActive ? 'text-cyan-300 icon-active-glow drop-shadow-[0_0_4px_rgba(56,189,248,0.8)]' : 'text-slate-400'}`} />
+                      <Icon className={`w-3 h-3 shrink-0 ${isActive ? 'text-blue-400' : 'text-slate-400'}`} />
                       <span className="truncate max-w-[110px]">{item.label}</span>
                     </button>
                     <button
@@ -1631,11 +1617,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
 
-        {/* Navigation Items Area with Smooth Momentum Scrolling Physics & Dynamic Shadow Hints */}
+        {/* Navigation Items Area */}
         <div className="relative flex-1 min-h-0 flex flex-col">
-          {/* Top Edge Shadow Hint (revealed when scrolled down) */}
+          {/* Top Edge Shadow Hint */}
           <div 
-            className={`absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-[#0b1120] to-transparent pointer-events-none z-10 transition-opacity duration-200 ${
+            className={`absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-[#0B1324] to-transparent pointer-events-none z-10 transition-opacity duration-200 ${
               canScrollUp ? 'opacity-100' : 'opacity-0'
             }`} 
             aria-hidden="true"
@@ -1661,7 +1647,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 )}
               </div>
             ) : isCollapsed ? (
-              /* COLLAPSED ICON RAIL: Show only the top 10 curated core/pinned tools with Floating HUD Flyout */
+              /* COLLAPSED ICON RAIL */
               <div className="space-y-1.5 py-1">
                 {collapsedNavItems.map((item) => {
                   const Icon = item.icon;
@@ -1680,38 +1666,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         }}
                         className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all cursor-pointer press-physics focus-ring-physics ${
                           isActive 
-                            ? 'bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-600 text-white font-medium shadow-[0_0_15px_rgba(99,102,241,0.5)] ring-2 ring-cyan-400/60' 
-                            : 'text-slate-400 hover:text-cyan-300 hover:bg-slate-800/80 hover:shadow-[0_0_10px_rgba(56,189,248,0.2)] hover:border hover:border-cyan-500/30'
+                            ? 'bg-blue-600 text-white font-medium shadow-sm ring-1 ring-blue-400/50' 
+                            : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
                         } ${item.restricted ? 'opacity-50' : ''}`}
                         aria-label={item.label}
                       >
-                        <Icon className={`w-4 h-4 shrink-0 transition-transform duration-200 group-hover/tooltip:scale-110 group-hover/tooltip:rotate-3 ${isActive ? 'text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.8)]' : ''}`} />
+                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : ''}`} />
                       </button>
 
-                      {/* Floating HUD Flyout Card in Collapsed Mode */}
-                      <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 hidden group-hover/tooltip:flex flex-col gap-1.5 p-2.5 bg-slate-950/95 backdrop-blur-2xl text-white text-xs font-medium rounded-xl shadow-[0_10px_35px_rgba(0,0,0,0.8),0_0_20px_rgba(56,189,248,0.2)] border border-slate-700/80 whitespace-nowrap z-50 pointer-events-none min-w-[190px] max-w-[280px]">
-                        <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-1">
+                      {/* Floating Flyout Card in Collapsed Mode */}
+                      <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 hidden group-hover/tooltip:flex flex-col gap-1.5 p-2.5 bg-[#0B1324] text-white text-xs font-medium rounded-xl shadow-2xl border border-white/15 whitespace-nowrap z-50 pointer-events-none min-w-[190px] max-w-[280px]">
+                        <div className="flex items-center justify-between gap-2 border-b border-white/[0.08] pb-1">
                           <span className="font-semibold text-slate-100 flex items-center gap-1.5">
-                            <Icon className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                            <Icon className="w-3.5 h-3.5 text-blue-400 shrink-0" />
                             <span className="truncate">{item.label}</span>
                           </span>
                           {item.badge && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-cyan-950/80 text-cyan-300 border border-cyan-800/60">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-blue-500/20 text-blue-300 border border-blue-400/30">
                               {item.badge}
                             </span>
                           )}
                         </div>
                         <div className="text-[10px] text-slate-400 truncate flex items-center gap-1">
                           {telemetry.liveTag && (
-                            <span className="relative flex h-1.5 w-1.5 shrink-0">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-400"></span>
-                            </span>
+                            <span className="inline-flex rounded-full h-1.5 w-1.5 bg-teal-400 shrink-0" />
                           )}
                           <span className="truncate">{telemetry.hint}</span>
                         </div>
                         {item.restricted && (
-                          <div className="text-[9px] text-rose-300 font-mono flex items-center gap-1 pt-0.5 border-t border-slate-800/60">
+                          <div className="text-[9px] text-rose-300 font-mono flex items-center gap-1 pt-0.5 border-t border-white/[0.08]">
                             <Lock className="w-2.5 h-2.5 text-rose-400 shrink-0" />
                             <span className="truncate">{item.requiredRoleDesc}</span>
                           </div>
@@ -1746,10 +1729,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   type="button"
                   onClick={toggleMinimalMode}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800/80 text-slate-400 hover:text-slate-200 transition-all text-left cursor-pointer group press-physics focus-ring-physics"
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-[#111C33] hover:bg-[#16233F] border border-white/[0.08] text-slate-400 hover:text-slate-200 transition-colors text-left cursor-pointer group press-physics focus-ring-physics"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-blue-400 shrink-0" />
                     <div>
                       <div className="text-[11px] font-semibold text-slate-300 group-hover:text-white">
                         {activeLang === 'vi' ? 'Xem tất cả tính năng' : 'Show All Modules'}
@@ -1764,22 +1747,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             </div>
           ) : (
-            /* FULL WORKSPACE: 5 Workflow-Centric Desks (Commercial -> Pricing -> Operations -> CRM -> System) */
+            /* FULL WORKSPACE: 5 Workflow-Centric Desks */
             <>
               {/* Top View Controls Header */}
               <div className="flex items-center justify-between gap-1.5 pb-2 px-0.5">
                 <button
                   type="button"
                   onClick={toggleMinimalMode}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-indigo-950/40 hover:bg-indigo-900/50 border border-indigo-800/50 text-indigo-300 text-[11px] font-medium transition-colors cursor-pointer press-physics focus-ring-physics"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-blue-600/15 hover:bg-blue-600/25 border border-blue-500/30 text-blue-300 text-[11px] font-medium transition-colors cursor-pointer press-physics focus-ring-physics"
                 >
-                  <Eye className="w-3 h-3 text-indigo-400" />
+                  <Eye className="w-3 h-3 text-blue-400" />
                   <span>{activeLang === 'vi' ? 'Bật chế độ tối giản' : 'Switch to Minimalist View'}</span>
                 </button>
                 <button
                   type="button"
                   onClick={toggleAllWorkflows}
-                  className="px-2 py-1.5 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-slate-200 text-[10px] font-medium transition-colors cursor-pointer shrink-0 press-physics focus-ring-physics"
+                  className="px-2 py-1.5 rounded-lg bg-[#111C33] hover:bg-[#16233F] border border-white/[0.08] text-slate-400 hover:text-slate-200 text-[10px] font-medium transition-colors cursor-pointer shrink-0 press-physics focus-ring-physics"
                   title={areAllWorkflowsExpanded ? 'Thu gọn tất cả luồng' : 'Mở rộng tất cả luồng'}
                 >
                   {areAllWorkflowsExpanded 
@@ -1788,7 +1771,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               </div>
 
-              {/* 5 Enterprise Workflow Groups with Semantic Colors */}
+              {/* 5 Enterprise Workflow Groups */}
               <div className="space-y-2">
                 {workflowGroups.map((group) => {
                   const groupItems = allNavItems.filter(item => item.group === group.key);
@@ -1802,7 +1785,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   return (
                     <div 
                       key={group.key} 
-                      className={`rounded-xl border backdrop-blur-md transition-all ${groupStyles.container}`}
+                      className={`rounded-xl border transition-all ${groupStyles.container}`}
                     >
                       {/* Workflow Desk Header */}
                       <button
@@ -1811,7 +1794,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         className={`w-full flex items-center justify-between px-2.5 py-2 text-left cursor-pointer transition-colors rounded-xl select-none press-physics-subtle focus-ring-physics ${
                           hasActiveChild 
                             ? 'text-white' 
-                            : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
+                            : 'text-slate-300 hover:text-white hover:bg-white/[0.04]'
                         }`}
                         aria-expanded={isExpanded}
                       >
@@ -1819,7 +1802,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md border shrink-0 transition-all ${groupStyles.badge}`}>
                             0{group.index}
                           </span>
-                          <GroupIcon className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${groupStyles.icon}`} />
+                          <GroupIcon className={`w-3.5 h-3.5 shrink-0 ${groupStyles.icon}`} />
                           <span className="text-[11px] font-semibold tracking-tight truncate">
                             {group.title}
                           </span>
@@ -1827,7 +1810,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                         <div className="flex items-center gap-1.5 shrink-0 ml-1.5">
                           {group.quickCount && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded font-mono text-slate-400 bg-slate-950/80 border border-slate-800">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded font-mono text-slate-400 bg-[#0B1324]/70 border border-white/[0.07]">
                               {group.quickCount}
                             </span>
                           )}
@@ -1837,7 +1820,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                       {/* Workflow Module List */}
                       {isExpanded && (
-                        <div className="px-1.5 pb-1.5 pt-0.5 space-y-0.5 border-t border-slate-800/60">
+                        <div className="px-1.5 pb-1.5 pt-0.5 space-y-0.5 border-t border-white/[0.06]">
                           {groupItems.map((item) => renderModuleItem(item))}
                         </div>
                       )}
@@ -1850,9 +1833,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           </div>
 
-          {/* Bottom Edge Shadow Hint (revealed when more content is below) */}
+          {/* Bottom Edge Shadow Hint */}
           <div 
-            className={`absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-[#0b1120] to-transparent pointer-events-none z-10 transition-opacity duration-200 ${
+            className={`absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-[#0B1324] to-transparent pointer-events-none z-10 transition-opacity duration-200 ${
               canScrollDown ? 'opacity-100' : 'opacity-0'
             }`} 
             aria-hidden="true"
@@ -1863,38 +1846,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               type="button"
               onClick={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="absolute bottom-2.5 right-3 z-20 p-1.5 rounded-lg bg-slate-900/95 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 shadow-xl press-physics focus-ring-physics cursor-pointer transition-all flex items-center justify-center backdrop-blur-xs"
+              className="absolute bottom-2.5 right-3 z-20 p-1.5 rounded-lg bg-[#111C33] hover:bg-[#16233F] text-slate-300 hover:text-white border border-white/15 shadow-lg press-physics focus-ring-physics cursor-pointer transition-all flex items-center justify-center"
               title={activeLang === 'vi' ? 'Cuộn lên đầu danh mục' : 'Scroll to top'}
               aria-label="Scroll to top"
             >
-              <ArrowUp className="w-3.5 h-3.5 text-indigo-400" />
+              <ArrowUp className="w-3.5 h-3.5 text-blue-400" />
             </button>
           )}
         </div>
 
         {/* Sidebar Bottom Footer: User, Role & Sync Telemetry HUD */}
-        <div className="p-2.5 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800/80 text-slate-400 flex flex-col gap-2 shrink-0 relative z-10">
+        <div className="p-2.5 bg-[#0B1324] border-t border-white/[0.08] text-slate-400 flex flex-col gap-2 shrink-0 relative z-10">
           
           {!isCollapsed ? (
             <div className="relative">
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-800/80 hover:border-slate-700/80 transition-all shadow-sm">
+              <div className="flex items-center justify-between p-2 rounded-xl bg-[#111C33] border border-white/[0.07] hover:border-white/[0.14] transition-colors">
                 <div 
                   className="flex items-center space-x-2.5 min-w-0 cursor-pointer press-physics-subtle rounded-lg p-0.5"
                   onClick={() => onOpenAuthModal && onOpenAuthModal()}
                   title="Quản lý tài khoản"
                 >
-                  {/* Holographic Avatar with Live Status Dot */}
+                  {/* Clean User Avatar */}
                   <div className="relative shrink-0">
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 via-indigo-600 to-violet-600 p-0.5 shadow-[0_0_10px_rgba(99,102,241,0.3)]">
-                      <div className="w-full h-full rounded-[10px] bg-slate-950 flex items-center justify-center text-white text-xs font-bold">
-                        {company.salesRepName ? company.salesRepName.charAt(0).toUpperCase() : 'U'}
-                      </div>
+                    <div className="w-8 h-8 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-white text-xs font-bold">
+                      {company.salesRepName ? company.salesRepName.charAt(0).toUpperCase() : 'U'}
                     </div>
-                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-950 shadow-[0_0_4px_#34d399]" />
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#0B1324]" />
                   </div>
 
                   <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-100 truncate hover:text-cyan-300 transition-colors">
+                    <div className="text-xs font-semibold text-slate-100 truncate hover:text-blue-300 transition-colors">
                       {company.salesRepName || 'Chuyên viên Logistics'}
                     </div>
                     {Boolean((import.meta as any).env?.DEV) ? (
@@ -1923,18 +1904,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   type="button"
                   onClick={handleLanguageToggle}
-                  className="px-2 py-1 bg-slate-800/90 hover:bg-slate-700/90 text-slate-300 hover:text-white rounded-lg text-[10px] font-semibold border border-slate-700/80 transition-all cursor-pointer press-physics focus-ring-physics shadow-xs"
+                  className="px-2 py-1 bg-[#16233F] hover:bg-[#1D2D50] text-slate-300 hover:text-white rounded-lg text-[10px] font-semibold border border-white/10 transition-colors cursor-pointer press-physics focus-ring-physics"
                   title="Chuyển ngôn ngữ / Switch language"
                 >
-                  <span className={activeLang === 'vi' ? 'text-cyan-300 font-bold' : 'text-slate-500'}>VI</span>
+                  <span className={activeLang === 'vi' ? 'text-blue-300 font-bold' : 'text-slate-500'}>VI</span>
                   <span className="mx-0.5 text-slate-600">/</span>
-                  <span className={activeLang === 'en' ? 'text-cyan-300 font-bold' : 'text-slate-500'}>EN</span>
+                  <span className={activeLang === 'en' ? 'text-blue-300 font-bold' : 'text-slate-500'}>EN</span>
                 </button>
               </div>
 
               {/* RBAC Role Selector Dropdown (DEV MODE ONLY) */}
               {showRoleSelector && Boolean((import.meta as any).env?.DEV) && (
-                <div className="absolute bottom-full left-0 right-0 mb-1.5 p-1.5 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 space-y-1 backdrop-blur-xl">
+                <div className="absolute bottom-full left-0 right-0 mb-1.5 p-1.5 bg-[#111C33] border border-white/15 rounded-xl shadow-2xl z-50 space-y-1">
                   <div className="px-2 py-1 text-[10px] font-semibold uppercase text-amber-400 tracking-wider">
                     Chuyển vai trò (DEV TEST)
                   </div>
@@ -1945,8 +1926,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       onClick={() => handleRoleSwitch(r)}
                       className={`w-full text-left px-2 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer press-physics-subtle focus-ring-physics ${
                         activeRole === r 
-                          ? 'bg-slate-800 text-white font-semibold' 
-                          : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                          ? 'bg-blue-600/20 text-white font-semibold' 
+                          : 'text-slate-400 hover:bg-white/[0.06] hover:text-white'
                       }`}
                     >
                       <span>
@@ -1968,36 +1949,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 type="button"
                 onClick={handleLanguageToggle}
-                className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 text-[10px] font-semibold text-slate-300 flex items-center justify-center hover:bg-slate-800 cursor-pointer press-physics focus-ring-physics"
+                className="w-8 h-8 rounded-lg bg-[#111C33] border border-white/[0.08] text-[10px] font-semibold text-slate-300 flex items-center justify-center hover:bg-[#16233F] cursor-pointer press-physics focus-ring-physics"
                 title="VI / EN"
               >
                 {activeLang.toUpperCase()}
               </button>
               <div 
-                className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 via-indigo-600 to-violet-600 p-0.5 cursor-pointer shadow-[0_0_10px_rgba(99,102,241,0.3)]"
+                className="w-8 h-8 rounded-xl bg-blue-600/20 border border-blue-500/40 cursor-pointer flex items-center justify-center text-white text-xs font-semibold"
                 onClick={() => onOpenAuthModal && onOpenAuthModal()}
                 title={`${company.salesRepName || 'User'} (${activeRole})`}
               >
-                <div className="w-full h-full rounded-[10px] bg-slate-950 text-white flex items-center justify-center text-xs font-semibold">
-                  {company.salesRepName ? company.salesRepName.charAt(0).toUpperCase() : 'U'}
-                </div>
+                {company.salesRepName ? company.salesRepName.charAt(0).toUpperCase() : 'U'}
               </div>
             </div>
           )}
 
-          {/* Real-time Cloud Auto-Save & Rate status Telemetry */}
+          {/* Real-time Cloud Auto-Save & Rate status */}
           {!isCollapsed && (
-            <div className="pt-1.5 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400">
+            <div className="pt-1.5 border-t border-white/[0.07] flex items-center justify-between text-[10px] text-slate-400">
               <span className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${isAutoSaving ? 'bg-amber-400 animate-ping' : 'bg-emerald-400 shadow-[0_0_6px_#34d399]'}`} />
+                <span className={`w-2 h-2 rounded-full ${isAutoSaving ? 'bg-amber-400' : 'bg-emerald-400'}`} />
                 <span className="text-slate-400">{isAutoSaving ? 'Đang lưu Cloud...' : 'Đã đồng bộ'}:</span>
-                <span className="font-mono text-slate-300 font-medium">
+                <span className="font-mono text-slate-300 font-medium tabular-nums">
                   {lastAutoSaveTime || 'Sẵn sàng'}
                 </span>
               </span>
 
-              <span className="font-mono text-cyan-300 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-800/40 shadow-[0_0_6px_rgba(6,182,212,0.15)] flex items-center gap-1">
-                <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse" />
+              <span className="font-mono text-blue-300 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-400/20 tabular-nums">
                 1 USD = {exchangeRate.toLocaleString()}₫
               </span>
             </div>

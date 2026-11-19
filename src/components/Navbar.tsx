@@ -81,7 +81,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
 
   return (
-    <header className="h-14 bg-white border-b border-slate-200/80 sticky top-0 z-30 flex items-center justify-between px-3 sm:px-6 lg:px-8">
+    <header className="h-14 bg-white/95 backdrop-blur-md border-b border-slate-200/90 sticky top-0 z-30 flex items-center justify-between px-3 sm:px-6 lg:px-8">
       
       {/* Zone 1: Brand Wordmark + Company Switcher */}
       <div className="flex items-center space-x-3 min-w-0">
@@ -106,7 +106,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
           <span className="text-sm font-bold tracking-tight text-slate-900 flex items-center gap-1.5">
             LogiQuote
-            <span className="text-[10px] uppercase font-extrabold px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">TMS</span>
+            <span className="text-[10px] uppercase font-extrabold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200/80">TMS</span>
           </span>
         </div>
 
@@ -211,7 +211,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onNewQuote}
-            className="flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs px-3.5 py-1.5 rounded-lg shadow-sm hover:shadow transition-all cursor-pointer press-physics focus-ring-physics-light whitespace-nowrap shrink-0"
+            className="flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg shadow-xs transition-all cursor-pointer press-physics focus-ring-physics-light whitespace-nowrap shrink-0"
             title="Tạo báo giá mới sạch"
           >
             <Plus className="w-3.5 h-3.5" />

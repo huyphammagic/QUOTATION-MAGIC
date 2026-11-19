@@ -152,7 +152,7 @@ export const ContractListTab: React.FC<ContractListTabProps> = ({
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Tổng Hợp Đồng</span>
             <span className="text-xl font-black text-slate-900">{contracts.length}</span>
           </div>
-          <div className="p-2.5 bg-indigo-50 border border-indigo-100 rounded-lg text-indigo-600">
+          <div className="p-2.5 bg-blue-50 border border-blue-100 rounded-lg text-blue-600">
             <FileText className="w-5 h-5" />
           </div>
         </div>
@@ -312,7 +312,7 @@ export const ContractListTab: React.FC<ContractListTabProps> = ({
                       setSelectedContract(c);
                       setIsDetailModalOpen(true);
                     }}
-                    className="hover:bg-indigo-50/40 cursor-pointer transition-colors"
+                    className="hover:bg-blue-50/40 cursor-pointer transition-colors"
                   >
                     <td className="py-3 px-4">
                       <div className="font-mono font-bold text-slate-900 text-[13px] flex items-center gap-1.5">
@@ -375,7 +375,7 @@ export const ContractListTab: React.FC<ContractListTabProps> = ({
                             setSelectedContract(c);
                             setIsDetailModalOpen(true);
                           }}
-                          className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded"
+                          className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded"
                           title="Xem chi tiết"
                         >
                           <Eye className="w-4 h-4" />

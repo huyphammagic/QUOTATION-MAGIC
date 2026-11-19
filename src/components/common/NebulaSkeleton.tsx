@@ -51,7 +51,7 @@ export const NebulaSkeletonCard: React.FC<{ className?: string; theme?: 'light' 
 }) => {
   const isDark = theme === 'dark';
   return (
-    <div className={`p-4 rounded-xl border ${isDark ? 'bg-[#0B1120] border-slate-800' : 'bg-white border-slate-200/80'} shadow-xs space-y-3 ${className}`}>
+    <div className={`p-4 rounded-xl border ${isDark ? 'bg-[#0B1324] border-white/10' : 'bg-white border-slate-200/80'} shadow-xs space-y-3 ${className}`}>
       <div className="flex items-center justify-between">
         <NebulaSkeleton theme={theme} className="h-4 w-28" />
         <NebulaSkeleton theme={theme} variant="circle" className="h-7 w-7" />
@@ -72,9 +72,9 @@ export const NebulaSkeletonTable: React.FC<{ rows?: number; cols?: number; theme
 }) => {
   const isDark = theme === 'dark';
   return (
-    <div className={`w-full rounded-xl border ${isDark ? 'bg-[#0B1120] border-slate-800' : 'bg-white border-slate-200/80'} overflow-hidden shadow-xs`}>
+    <div className={`w-full rounded-xl border ${isDark ? 'bg-[#0B1324] border-white/10' : 'bg-white border-slate-200/80'} overflow-hidden shadow-xs`}>
       {/* Header */}
-      <div className={`p-3 border-b ${isDark ? 'border-slate-800 bg-slate-900/60' : 'border-slate-100 bg-slate-50/70'} flex items-center justify-between`}>
+      <div className={`p-3 border-b ${isDark ? 'border-white/10 bg-[#111C33]' : 'border-slate-100 bg-slate-50/70'} flex items-center justify-between`}>
         <div className="flex items-center space-x-2">
           <NebulaSkeleton theme={theme} className="h-4 w-32" />
         </div>

@@ -430,21 +430,21 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
   const currentStepIdx = STEPS.findIndex(s => s.id === currentStep);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden bg-slate-950">
+    <div className="fixed inset-0 z-50 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden bg-[#0B1324]">
       <div className="relative w-screen h-screen max-w-none max-h-none bg-white rounded-none border-0 overflow-hidden flex flex-col">
         
         {/* ================================================================= */}
         {/* WORKSPACE HEADER                                                  */}
         {/* ================================================================= */}
-        <div className="px-6 py-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white border-b border-indigo-900/50 flex flex-wrap items-center justify-between gap-4 shrink-0">
+        <div className="px-6 py-4 bg-[#0B1324] text-white border-b border-white/10 flex flex-wrap items-center justify-between gap-4 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-indigo-400">
-              <Sparkles className="w-5 h-5 animate-pulse" />
+            <div className="w-10 h-10 rounded-xl bg-[#16233F] border border-white/10 flex items-center justify-center text-blue-400">
+              <Sparkles className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold tracking-tight text-white">Smart Quotation Workspace</h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 uppercase">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/15 text-blue-300 border border-blue-400/30 uppercase">
                   Phase 20
                 </span>
                 {quote.priceLocked && (
@@ -465,10 +465,10 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
 
           <div className="flex items-center gap-3">
             {/* Autosave Status Pill */}
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-slate-800/80 border-slate-700">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-[#16233F] border-white/10">
               {autosaveStatus === 'SAVING' && (
                 <>
-                  <div className="w-2 h-2 rounded-full bg-blue-400 animate-ping" />
+                  <div className="w-2 h-2 rounded-full bg-blue-400" />
                   <span className="text-blue-300">Đang lưu Firestore...</span>
                 </>
               )}
@@ -494,7 +494,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
 
             <button
               onClick={onClose}
-              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-[#1D2D50] transition-colors"
               title="Đóng Workspace"
             >
               <X className="w-5 h-5" />
@@ -515,14 +515,14 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                 onClick={() => setCurrentStep(s.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                   isCurrent 
-                    ? 'bg-indigo-600 text-white shadow-xs' 
+                    ? 'bg-blue-600 text-white shadow-xs' 
                     : isPassed 
                     ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200' 
                     : 'text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  isCurrent ? 'bg-white text-indigo-700' : isPassed ? 'bg-emerald-600 text-white' : 'bg-slate-300 text-slate-700'
+                  isCurrent ? 'bg-white text-blue-700' : isPassed ? 'bg-emerald-600 text-white' : 'bg-slate-300 text-slate-700'
                 }`}>
                   {isPassed ? <Check className="w-2.5 h-2.5" /> : s.stepNumber}
                 </span>
@@ -553,7 +553,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                     handleRunRateMatching();
                     setCurrentStep('MATCHING');
                   }}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm flex items-center gap-2"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm flex items-center gap-2"
                 >
                   Tiếp Tục: Khớp Cước Thông Minh <ChevronRight className="w-4 h-4" />
                 </button>
@@ -562,7 +562,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
               {/* Customer Selector with Debounced Search */}
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                 <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                  <Building2 className="w-4 h-4 text-indigo-600" /> Chọn Khách Hàng (Tìm kiếm từ Firestore)
+                  <Building2 className="w-4 h-4 text-blue-600" /> Chọn Khách Hàng (Tìm kiếm từ Firestore)
                 </label>
                 <div className="relative">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -571,7 +571,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                     value={customerSearchQuery}
                     onChange={(e) => setCustomerSearchQuery(e.target.value)}
                     placeholder="Gõ tên khách hàng, công ty hoặc mã số thuế để tìm..."
-                    className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                    className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                   />
                   {isSearchingCustomers && (
                     <span className="absolute right-3 top-2.5 text-[10px] text-slate-400">Đang tìm...</span>
@@ -588,13 +588,13 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                           setCustomerSearchQuery(c.companyName || c.customerName);
                           setCustomerOptions([]);
                         }}
-                        className="p-2.5 text-xs hover:bg-indigo-50 cursor-pointer flex items-center justify-between"
+                        className="p-2.5 text-xs hover:bg-blue-50 cursor-pointer flex items-center justify-between"
                       >
                         <div>
                           <strong className="text-slate-800">{c.companyName || c.customerName}</strong>
                           <span className="text-slate-500 ml-2">MST: {c.taxId || 'N/A'}</span>
                         </div>
-                        <span className="text-[10px] text-indigo-600 font-bold">Chọn</span>
+                        <span className="text-[10px] text-blue-600 font-bold">Chọn</span>
                       </div>
                     ))}
                   </div>
@@ -605,9 +605,9 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                 )}
 
                 {quote.customer.companyName && (
-                  <div className="p-3 bg-indigo-50/50 border border-indigo-100 rounded-lg flex items-center justify-between text-xs">
+                  <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-lg flex items-center justify-between text-xs">
                     <div>
-                      <span className="text-slate-500">Đã chọn:</span> <strong className="text-indigo-900">{quote.customer.companyName}</strong>
+                      <span className="text-slate-500">Đã chọn:</span> <strong className="text-blue-900">{quote.customer.companyName}</strong>
                       {quote.customer.address && <span className="text-slate-600 ml-2">({quote.customer.address})</span>}
                     </div>
                     <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">Đã gán</span>
@@ -625,7 +625,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                       ...prev,
                       shipment: { ...prev.shipment, mode: e.target.value as TransportMode }
                     }))}
-                    className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="SEA_FCL">Đường biển nguyên container (SEA FCL)</option>
                     <option value="SEA_LCL">Đường biển hàng lẻ (SEA LCL)</option>
@@ -751,7 +751,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-indigo-600" />
+                    <Sparkles className="w-5 h-5 text-blue-600" />
                     Bước 2: Kết Quả Khớp Cước Thông Minh (100% Real Firebase)
                   </h3>
                   <p className="text-xs text-slate-500">
@@ -771,7 +771,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                   <button
                     type="button"
                     onClick={() => setCurrentStep('COSTING')}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2"
                   >
                     Tiếp Tục: Phân Tích Giá Vốn <ChevronRight className="w-4 h-4" />
                   </button>
@@ -781,7 +781,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
               {/* Loading State */}
               {isMatchingRates && (
                 <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                  <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                  <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
                   <p className="text-xs font-semibold text-slate-700">Đang truy vấn biểu cước thực tế từ Firebase Firestore...</p>
                 </div>
               )}
@@ -817,7 +817,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                           key={c.id} 
                           className={`p-4 rounded-xl border transition-all ${
                             isSelected 
-                              ? 'bg-indigo-50/40 border-indigo-300 shadow-xs' 
+                              ? 'bg-blue-50/40 border-blue-300 shadow-xs' 
                               : 'bg-white border-slate-200 opacity-75'
                           }`}
                         >
@@ -826,7 +826,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                               <div className="flex items-center gap-2">
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                                   c.sourceType === 'CUSTOMER_CONTRACT' 
-                                    ? 'bg-purple-100 text-purple-800' 
+                                    ? 'bg-teal-100 text-teal-800' 
                                     : c.sourceType === 'CARRIER' 
                                     ? 'bg-blue-100 text-blue-800' 
                                     : 'bg-slate-100 text-slate-800'
@@ -844,7 +844,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                               type="button"
                               onClick={() => handleToggleCandidate(c)}
                               className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 ${
-                                isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                               }`}
                             >
                               {isSelected ? <Check className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
@@ -861,7 +861,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                             </div>
                             <div>
                               <span className="text-slate-500">Giá Bán Tham Chiếu:</span>
-                              <strong className="block text-indigo-700 text-sm font-mono">
+                              <strong className="block text-blue-700 text-sm font-mono">
                                 {c.currency === 'USD' ? formatUSD(c.sellRate) : formatVND(c.sellRate)} / {c.unit}
                               </strong>
                             </div>
@@ -869,7 +869,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
 
                           {/* Plain Factual Rate Explanation */}
                           <div className="mt-3 p-2 bg-slate-50 rounded-lg text-[11px] text-slate-600 flex items-start gap-1.5">
-                            <Info className="w-3.5 h-3.5 text-indigo-600 shrink-0 mt-0.5" />
+                            <Info className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
                             <span>{c.explanation}</span>
                           </div>
                         </div>
@@ -907,7 +907,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                           <button
                             type="button"
                             onClick={() => handleToggleCandidate(alt)}
-                            className="px-2 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded text-[11px] font-bold"
+                            className="px-2 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-600 rounded text-[11px] font-bold"
                           >
                             Áp Dụng Thay Thế
                           </button>
@@ -959,7 +959,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                 <button
                   type="button"
                   onClick={() => setCurrentStep('SELLING')}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2"
                 >
                   Tiếp Tục: Xác Định Giá Bán <ChevronRight className="w-4 h-4" />
                 </button>
@@ -971,7 +971,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                   <button
                     type="button"
                     onClick={() => setCurrentStep('MATCHING')}
-                    className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg"
+                    className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg"
                   >
                     Quay lại Bước 2: Khớp Cước
                   </button>
@@ -1017,7 +1017,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                     <tfoot className="bg-slate-50 border-t-2 border-slate-300 font-bold text-slate-800 text-xs">
                       <tr>
                         <td colSpan={5} className="p-3 text-right">Tổng Chi Phí Mua Vào (Total Buy Cost):</td>
-                        <td className="p-3 text-right text-indigo-900 font-mono font-extrabold">
+                        <td className="p-3 text-right text-blue-900 font-mono font-extrabold">
                           {formatUSD(costingSummary.totalBuyUsd)}
                         </td>
                         <td className="p-3 text-right text-slate-700 font-mono">
@@ -1044,7 +1044,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                 <button
                   type="button"
                   onClick={() => setCurrentStep('PROFIT')}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2"
                 >
                   Tiếp Tục: Xem Lợi Nhuận <ChevronRight className="w-4 h-4" />
                 </button>
@@ -1058,10 +1058,10 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                     type="button"
                     onClick={() => handleApplySellingMethod('TARGET_MARGIN', globalTargetMargin, globalMarkupPercent)}
                     className={`p-3 rounded-xl border text-left text-xs transition-all ${
-                      sellingMethod === 'TARGET_MARGIN' ? 'bg-indigo-50 border-indigo-400 shadow-xs' : 'bg-white border-slate-200 hover:bg-slate-100'
+                      sellingMethod === 'TARGET_MARGIN' ? 'bg-blue-50 border-blue-400 shadow-xs' : 'bg-white border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    <strong className="block text-indigo-900 font-bold">Biên Lãi Mục Tiêu (%)</strong>
+                    <strong className="block text-blue-900 font-bold">Biên Lãi Mục Tiêu (%)</strong>
                     <span className="text-[11px] text-slate-500">Target Margin = {globalTargetMargin}%</span>
                   </button>
 
@@ -1069,10 +1069,10 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                     type="button"
                     onClick={() => handleApplySellingMethod('COST_PLUS', globalTargetMargin, globalMarkupPercent)}
                     className={`p-3 rounded-xl border text-left text-xs transition-all ${
-                      sellingMethod === 'COST_PLUS' ? 'bg-indigo-50 border-indigo-400 shadow-xs' : 'bg-white border-slate-200 hover:bg-slate-100'
+                      sellingMethod === 'COST_PLUS' ? 'bg-blue-50 border-blue-400 shadow-xs' : 'bg-white border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    <strong className="block text-indigo-900 font-bold">Giá Vốn + % Markup</strong>
+                    <strong className="block text-blue-900 font-bold">Giá Vốn + % Markup</strong>
                     <span className="text-[11px] text-slate-500">Markup = {globalMarkupPercent}%</span>
                   </button>
 
@@ -1080,10 +1080,10 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                     type="button"
                     onClick={() => handleApplySellingMethod('POLICY_RULE', globalTargetMargin, globalMarkupPercent, activePolicy)}
                     className={`p-3 rounded-xl border text-left text-xs transition-all ${
-                      sellingMethod === 'POLICY_RULE' ? 'bg-indigo-50 border-indigo-400 shadow-xs' : 'bg-white border-slate-200 hover:bg-slate-100'
+                      sellingMethod === 'POLICY_RULE' ? 'bg-blue-50 border-blue-400 shadow-xs' : 'bg-white border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    <strong className="block text-indigo-900 font-bold">Chính Sách Giá (Policy)</strong>
+                    <strong className="block text-blue-900 font-bold">Chính Sách Giá (Policy)</strong>
                     <span className="text-[11px] text-slate-500">{activePolicy ? activePolicy.policyName : 'Không có chính sách'}</span>
                   </button>
 
@@ -1091,10 +1091,10 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                     type="button"
                     onClick={() => setSellingMethod('MANUAL')}
                     className={`p-3 rounded-xl border text-left text-xs transition-all ${
-                      sellingMethod === 'MANUAL' ? 'bg-indigo-50 border-indigo-400 shadow-xs' : 'bg-white border-slate-200 hover:bg-slate-100'
+                      sellingMethod === 'MANUAL' ? 'bg-blue-50 border-blue-400 shadow-xs' : 'bg-white border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    <strong className="block text-indigo-900 font-bold">Điều Chỉnh Thủ Công</strong>
+                    <strong className="block text-blue-900 font-bold">Điều Chỉnh Thủ Công</strong>
                     <span className="text-[11px] text-slate-500">Theo quyền Sales/Pricing</span>
                   </button>
                 </div>
@@ -1109,9 +1109,9 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                       max="40"
                       value={globalTargetMargin}
                       onChange={(e) => handleApplySellingMethod('TARGET_MARGIN', Number(e.target.value), globalMarkupPercent)}
-                      className="w-48 accent-indigo-600"
+                      className="w-48 accent-blue-600"
                     />
-                    <strong className="text-xs font-mono text-indigo-700 bg-white px-2 py-1 border rounded">{globalTargetMargin}%</strong>
+                    <strong className="text-xs font-mono text-blue-700 bg-white px-2 py-1 border rounded">{globalTargetMargin}%</strong>
                   </div>
                 )}
               </div>
@@ -1144,7 +1144,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                         <td className="p-3 text-right font-mono text-slate-600">
                           {formatUSD(item.buyRate)}
                         </td>
-                        <td className="p-3 text-right font-mono font-bold text-indigo-700">
+                        <td className="p-3 text-right font-mono font-bold text-blue-700">
                           {formatUSD(item.sellRate)}
                         </td>
                         <td className="p-3 text-right font-mono font-bold text-slate-900">
@@ -1164,7 +1164,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                           <button
                             type="button"
                             onClick={() => handleOpenOverrideModal(item)}
-                            className="px-2 py-1 bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 rounded text-[11px] font-medium"
+                            className="px-2 py-1 bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-600 rounded text-[11px] font-medium"
                           >
                             Chỉnh Giá
                           </button>
@@ -1190,7 +1190,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                 <button
                   type="button"
                   onClick={() => setCurrentStep('VALIDATION')}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2"
                 >
                   Tiếp Tục: Kiểm Tra Cảnh Báo <ChevronRight className="w-4 h-4" />
                 </button>
@@ -1208,12 +1208,12 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                   </span>
                 </div>
 
-                <div className="p-4 bg-indigo-50/50 border border-indigo-200 rounded-xl">
-                  <span className="text-xs text-indigo-700 block">Tổng Doanh Thu Bán (Selling)</span>
-                  <strong className="text-lg font-bold text-indigo-950 font-mono mt-1 block">
+                <div className="p-4 bg-blue-50/50 border border-blue-200 rounded-xl">
+                  <span className="text-xs text-blue-700 block">Tổng Doanh Thu Bán (Selling)</span>
+                  <strong className="text-lg font-bold text-blue-950 font-mono mt-1 block">
                     {formatUSD(costingSummary.totalSellUsd)}
                   </strong>
-                  <span className="text-[11px] text-indigo-700 font-mono mt-0.5 block">
+                  <span className="text-[11px] text-blue-700 font-mono mt-0.5 block">
                     {formatVND(costingSummary.totalSellVnd)}
                   </span>
                 </div>
@@ -1258,7 +1258,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                 <button
                   type="button"
                   onClick={() => setCurrentStep('REVIEW')}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2"
                 >
                   Tiếp Tục: Xem Lại Báo Giá <ChevronRight className="w-4 h-4" />
                 </button>
@@ -1308,7 +1308,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                 <button
                   type="button"
                   onClick={() => setCurrentStep('SAVE')}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2"
                 >
                   Tiếp Tục: Lưu & Tạo Snapshot <ChevronRight className="w-4 h-4" />
                 </button>
@@ -1336,7 +1336,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
 
                 <div className="flex items-center justify-between pt-2">
                   <span className="text-xs text-slate-600">Tổng cộng thanh toán (Grand Total):</span>
-                  <strong className="text-base text-indigo-900 font-mono font-extrabold">
+                  <strong className="text-base text-blue-900 font-mono font-extrabold">
                     {formatUSD(costingSummary.grandTotalUsd)} ({formatVND(costingSummary.grandTotalVnd)})
                   </strong>
                 </div>
@@ -1357,19 +1357,19 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                 <button
                   type="button"
                   onClick={() => setCurrentStep('APPROVAL')}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2"
                 >
                   Tiếp Tục: Phê Duyệt & Khóa Giá <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="p-6 bg-indigo-50/50 border border-indigo-200 rounded-xl space-y-4 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center mx-auto shadow-md">
+              <div className="p-6 bg-blue-50/50 border border-blue-200 rounded-xl space-y-4 text-center">
+                <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center mx-auto shadow-md">
                   <Save className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-indigo-950">Lưu Dữ Liệu Báo Giá Lên Firestore</h4>
-                  <p className="text-xs text-indigo-700 mt-1 max-w-lg mx-auto">
+                  <h4 className="text-sm font-bold text-blue-950">Lưu Dữ Liệu Báo Giá Lên Firestore</h4>
+                  <p className="text-xs text-blue-700 mt-1 max-w-lg mx-auto">
                     Hệ thống sẽ lưu trữ toàn bộ các dòng phí, cơ sở tính, liên kết hợp đồng và đóng băng một bản sao Snapshot định giá độc lập.
                   </p>
                 </div>
@@ -1379,7 +1379,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                     type="button"
                     onClick={handleSaveQuotation}
                     disabled={autosaveStatus === 'SAVING'}
-                    className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md flex items-center gap-2"
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md flex items-center gap-2"
                   >
                     {autosaveStatus === 'SAVING' ? (
                       <>
@@ -1396,7 +1396,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                 </div>
 
                 {quote.pricingSnapshot && (
-                  <div className="mt-4 p-3 bg-white border border-indigo-200 rounded-lg text-left text-xs space-y-1">
+                  <div className="mt-4 p-3 bg-white border border-blue-200 rounded-lg text-left text-xs space-y-1">
                     <span className="font-bold text-slate-800 block">Snapshot Hiện Có:</span>
                     <span className="text-slate-600 block">Mã Snapshot: <strong className="font-mono">{quote.pricingSnapshot.snapshotId}</strong></span>
                     <span className="text-slate-600 block">Tạo lúc: {quote.pricingSnapshot.createdAt} &bull; Số lượng mục giá: {quote.pricingSnapshot.items?.length || 0}</span>
@@ -1419,10 +1419,10 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                   <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-indigo-600" /> Trạng Thái Phê Duyệt & Khóa Giá
+                    <ShieldCheck className="w-4 h-4 text-blue-600" /> Trạng Thái Phê Duyệt & Khóa Giá
                   </h4>
                   <p className="text-xs text-slate-600">
-                    Trạng thái hiện tại: <strong className="uppercase font-bold text-indigo-700">{quote.status}</strong>
+                    Trạng thái hiện tại: <strong className="uppercase font-bold text-blue-700">{quote.status}</strong>
                     {quote.priceLocked ? ' (ĐÃ KHÓA GIÁ)' : ' (ĐANG MỞ)'}
                   </p>
                   
@@ -1442,7 +1442,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
 
                 <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                   <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <RotateCcw className="w-4 h-4 text-purple-600" /> Tạo Bản Sửa Đổi (Create Revision)
+                    <RotateCcw className="w-4 h-4 text-teal-600" /> Tạo Bản Sửa Đổi (Create Revision)
                   </h4>
                   <p className="text-xs text-slate-600">
                     Nếu báo giá đã duyệt cần thay đổi theo thỏa thuận mới, hãy tạo một phiên bản sửa đổi (Revision) để giữ nguyên lịch sử báo giá cũ.
@@ -1451,7 +1451,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                     <button
                       type="button"
                       onClick={handleCreateRevision}
-                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold flex items-center gap-2"
+                      className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold flex items-center gap-2"
                     >
                       <Copy className="w-4 h-4" /> Tạo Bản Sửa Đổi Mới ({quote.quoteNumber}-R{(quote.version || 1)})
                     </button>
@@ -1484,7 +1484,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
             <button
               type="button"
               onClick={handleSaveQuotation}
-              className="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold flex items-center gap-1.5"
+              className="px-4 py-1.5 bg-[#0B1324] hover:bg-[#16233F] text-white rounded-lg text-xs font-bold flex items-center gap-1.5"
             >
               <Save className="w-3.5 h-3.5" /> Lưu Thay Đổi
             </button>
@@ -1493,7 +1493,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
               <button
                 type="button"
                 onClick={() => setCurrentStep(STEPS[currentStepIdx + 1].id)}
-                className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5"
+                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5"
               >
                 Tiếp Theo <ChevronRight className="w-4 h-4" />
               </button>
@@ -1513,16 +1513,16 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
 
       {/* Manual Price Override Modal */}
       {overrideItem && (
-        <div className="fixed inset-0 z-60 bg-slate-900/60 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-60 bg-[#0B1324]/75 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full p-5 space-y-4">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-              <Edit3 className="w-4 h-4 text-indigo-600" />
+              <Edit3 className="w-4 h-4 text-blue-600" />
               Điều Chỉnh Giá Bán Thủ Công (Price Override)
             </h4>
             <div className="text-xs text-slate-600 space-y-1">
               <p>Hạng mục: <strong className="text-slate-900">{overrideItem.description}</strong></p>
               <p>Đơn giá vốn: <strong className="font-mono">{formatUSD(overrideItem.buyRate)}</strong></p>
-              <p>Đơn giá bán hiện tại: <strong className="font-mono text-indigo-700">{formatUSD(overrideItem.sellRate)}</strong></p>
+              <p>Đơn giá bán hiện tại: <strong className="font-mono text-blue-700">{formatUSD(overrideItem.sellRate)}</strong></p>
             </div>
 
             <div>
@@ -1531,7 +1531,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                 type="number"
                 value={overrideNewPrice}
                 onChange={(e) => setOverrideNewPrice(Number(e.target.value) || 0)}
-                className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono"
+                className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-blue-500 font-mono"
               />
             </div>
 
@@ -1541,7 +1541,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                 value={overrideReason}
                 onChange={(e) => setOverrideReason(e.target.value)}
                 placeholder="VD: Giảm giá cạnh tranh theo phê duyệt của Trưởng phòng..."
-                className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500 h-20"
+                className="w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-blue-500 h-20"
               />
             </div>
 
@@ -1557,7 +1557,7 @@ export const SmartQuotationWorkspace: React.FC<SmartQuotationWorkspaceProps> = (
                 type="button"
                 onClick={handleApplyOverride}
                 disabled={!overrideReason.trim()}
-                className="px-4 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50"
+                className="px-4 py-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50"
               >
                 Lưu Điều Chỉnh
               </button>

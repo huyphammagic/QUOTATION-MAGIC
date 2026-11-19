@@ -480,12 +480,12 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
   const canViewBuyCost = userRole === 'admin' || userRole === 'manager' || userRole === 'pricing';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/80 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-[#0B1324]/80 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="relative w-full max-w-7xl h-[94vh] max-h-[960px] bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden">
         
         {/* Toast Notification */}
         {toastMessage && (
-          <div className="absolute top-4 right-8 z-50 bg-slate-900 text-white font-semibold text-xs px-4 py-3 rounded-2xl shadow-2xl border border-indigo-500/80 flex items-center space-x-2 animate-bounce">
+          <div className="absolute top-4 right-8 z-50 bg-[#0B1324] text-white font-semibold text-xs px-4 py-3 rounded-2xl shadow-2xl border border-blue-500/80 flex items-center space-x-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             <span>{toastMessage}</span>
           </div>
@@ -494,7 +494,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
         {/* 1. Header & Context Summary Bar */}
         <div className="px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-500 text-white flex items-center justify-center shadow-md shadow-indigo-500/20">
+            <div className="w-11 h-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
               <SlidersHorizontal className="w-6 h-6" />
             </div>
             <div>
@@ -502,7 +502,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                 <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                   {t.workspaceTitle}
                 </h2>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
                   Phase 47
                 </span>
               </div>
@@ -586,7 +586,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
             onClick={() => setActiveTab('OVERVIEW')}
             className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center space-x-2 transition-colors whitespace-nowrap ${
               activeTab === 'OVERVIEW'
-                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-900 rounded-t-xl'
+                ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 rounded-t-xl'
                 : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
@@ -598,7 +598,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
             onClick={() => setActiveTab('SCENARIO')}
             className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center space-x-2 transition-colors whitespace-nowrap ${
               activeTab === 'SCENARIO'
-                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-900 rounded-t-xl'
+                ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 rounded-t-xl'
                 : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
@@ -613,7 +613,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
             onClick={() => setActiveTab('RISKS')}
             className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center space-x-2 transition-colors whitespace-nowrap ${
               activeTab === 'RISKS'
-                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-900 rounded-t-xl'
+                ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 rounded-t-xl'
                 : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
@@ -625,7 +625,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
             onClick={() => setActiveTab('ACTIONS')}
             className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center space-x-2 transition-colors whitespace-nowrap ${
               activeTab === 'ACTIONS'
-                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-900 rounded-t-xl'
+                ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 rounded-t-xl'
                 : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
@@ -640,14 +640,14 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
             }}
             className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center space-x-2 transition-colors whitespace-nowrap ${
               activeTab === 'SAVED'
-                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-900 rounded-t-xl'
+                ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 rounded-t-xl'
                 : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
-            <Save className="w-4 h-4 text-indigo-500" />
+            <Save className="w-4 h-4 text-blue-500" />
             <span>5. {t.tabSavedScenarios}</span>
             {savedScenarios.length > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full text-2xs bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-extrabold">
+              <span className="px-1.5 py-0.5 rounded-full text-2xs bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-extrabold">
                 {savedScenarios.length}
               </span>
             )}
@@ -665,7 +665,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
               <div className="bg-white dark:bg-slate-800/80 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-2">
-                    <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                       Chi Tiết Yêu Cầu Báo Giá (RFQ Specification)
                     </h3>
@@ -687,7 +687,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                           customerCode: target?.code
                         }));
                       }}
-                      className="mt-1 w-full text-xs font-semibold px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                      className="mt-1 w-full text-xs font-semibold px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                     >
                       {customers.map(c => (
                         <option key={c.id} value={c.id}>
@@ -702,7 +702,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                     <select
                       value={rfq.mode}
                       onChange={(e) => setRfq(prev => ({ ...prev, mode: e.target.value as TransportMode }))}
-                      className="mt-1 w-full text-xs font-semibold px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                      className="mt-1 w-full text-xs font-semibold px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="SEA_FCL">Đường biển nguyên container (SEA FCL)</option>
                       <option value="SEA_LCL">Đường biển hàng lẻ (SEA LCL)</option>
@@ -797,7 +797,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                       <span className={`px-2.5 py-0.5 rounded-full text-2xs font-bold ${
                         customerContext.status === 'ACTIVE' 
                           ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
-                          : 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
+                          : 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300'
                       }`}>
                         {customerContext.status === 'ACTIVE' ? 'ĐANG GIAO DỊCH' : 'TIỀM NĂNG'}
                       </span>
@@ -820,7 +820,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
 
                       <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800">
                         <div className="text-2xs text-slate-400">Hợp đồng hiệu lực</div>
-                        <div className="text-base font-extrabold text-indigo-600 dark:text-indigo-400 mt-1">
+                        <div className="text-base font-extrabold text-blue-600 dark:text-blue-400 mt-1">
                           {customerContext.activeContractsCount}
                         </div>
                       </div>
@@ -874,7 +874,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                       <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                         Phân Tích Tuyến Đường (Lane Context)
                       </h4>
-                      <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                      <span className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
                         {laneContext.laneKey}
                       </span>
                     </div>
@@ -889,7 +889,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
 
                       <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800">
                         <div className="text-2xs text-slate-400">Tỷ lệ chốt đơn (Win Rate)</div>
-                        <div className="text-base font-extrabold text-indigo-600 dark:text-indigo-400 mt-1">
+                        <div className="text-base font-extrabold text-blue-600 dark:text-blue-400 mt-1">
                           {laneContext.winRatePercent}%
                         </div>
                       </div>
@@ -950,7 +950,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                   {onOpenRateHub && (
                     <button
                       onClick={onOpenRateHub}
-                      className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center space-x-1"
+                      className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center space-x-1"
                     >
                       <span>Tra cứu Master Rate Hub</span>
                       <ExternalLink className="w-3.5 h-3.5" />
@@ -979,7 +979,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                           <tr key={cr.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50">
                             <td className="py-2.5 px-3">
                               <span className={`px-2 py-0.5 rounded-full text-2xs font-extrabold ${
-                                cr.tier === 1 ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'
+                                cr.tier === 1 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
                               }`}>
                                 Tier {cr.tier}
                               </span>
@@ -1011,7 +1011,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                                   setActiveTab('SCENARIO');
                                   showToast(`Đã chuyển sang mô phỏng kịch bản từ ${cr.carrier || 'biểu cước'}`);
                                 }}
-                                className="px-2.5 py-1 text-2xs font-bold text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 rounded-lg transition-colors"
+                                className="px-2.5 py-1 text-2xs font-bold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded-lg transition-colors"
                               >
                                 Đưa vào Kịch bản
                               </button>
@@ -1041,16 +1041,16 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
             <div className="space-y-6">
               
               {/* Introduction bar */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/40 dark:to-blue-950/40 border border-indigo-200/70 dark:border-indigo-800/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-sky-50/70 dark:from-blue-950/40 dark:to-slate-900/40 border border-blue-200/70 dark:border-blue-800/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                  <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
                     <Sparkles className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-xs sm:text-sm font-bold text-indigo-950 dark:text-indigo-200">
+                    <h3 className="text-xs sm:text-sm font-bold text-blue-950 dark:text-blue-200">
                       What-If Scenario Simulator (Mô Phỏng Phương Án Cước)
                     </h3>
-                    <p className="text-2xs text-indigo-700 dark:text-indigo-400 mt-0.5">
+                    <p className="text-2xs text-blue-700 dark:text-blue-400 mt-0.5">
                       Thử nghiệm các phương án cước hãng tàu, điều chỉnh giá bán và tỷ lệ chiết khấu mà KHÔNG ghi đè dữ liệu báo giá thật.
                     </p>
                   </div>
@@ -1073,7 +1073,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                       setSelectedScenarioId(newId);
                       showToast(`Đã tạo thêm Kịch bản ${letter}`);
                     }}
-                    className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 transition-colors flex items-center space-x-1 shadow-2xs"
+                    className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-800 text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 transition-colors flex items-center space-x-1 shadow-2xs"
                   >
                     <PlusCircle className="w-3.5 h-3.5" />
                     <span>Thêm Kịch Bản</span>
@@ -1101,7 +1101,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                       onClick={() => setSelectedScenarioId(sc.id)}
                       className={`relative rounded-2xl p-5 border transition-all cursor-pointer flex flex-col justify-between ${
                         isSelected 
-                          ? 'bg-white dark:bg-slate-800 border-indigo-600 dark:border-indigo-500 shadow-xl ring-2 ring-indigo-500/20' 
+                          ? 'bg-white dark:bg-slate-800 border-blue-600 dark:border-blue-500 shadow-xl ring-2 ring-blue-500/20' 
                           : 'bg-white/80 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-slate-300'
                       }`}
                     >
@@ -1112,7 +1112,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                             <span>{sc.name}</span>
                           </span>
                           {isSelected && (
-                            <span className="px-2 py-0.5 rounded-full text-2xs font-extrabold bg-indigo-600 text-white flex items-center space-x-1">
+                            <span className="px-2 py-0.5 rounded-full text-2xs font-extrabold bg-blue-600 text-white flex items-center space-x-1">
                               <Check className="w-3 h-3" />
                               <span>Được chọn</span>
                             </span>
@@ -1130,7 +1130,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                                   : tag === 'HIGHER_MARGIN'
                                   ? 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300'
                                   : tag === 'CUSTOMER_CONTRACT'
-                                  ? 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300'
+                                  ? 'bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300'
                                   : tag === 'EXPIRING_SOON'
                                   ? 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'
                                   : 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300'
@@ -1184,7 +1184,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                                 value={sc.sellingPrice}
                                 onClick={(e) => e.stopPropagation()}
                                 onChange={(e) => handleUpdateScenario(sc.id, 'sellingPrice', Number(e.target.value))}
-                                className="w-full text-xs font-bold px-2.5 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200"
+                                className="w-full text-xs font-bold px-2.5 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-200"
                               />
                             </div>
 
@@ -1245,8 +1245,8 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                             }}
                             className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-colors ${
                               isSelected
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-950'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-950'
                             }`}
                           >
                             {isSelected ? 'Đang Áp Dụng' : 'Chọn Kịch Bản Này'}
@@ -1303,7 +1303,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                             {r.reason}
                           </p>
                           <div className="text-2xs font-medium text-slate-500 dark:text-slate-400 flex items-center space-x-1 mt-1">
-                            <span className="font-semibold text-indigo-600 dark:text-indigo-400">Đề xuất xử lý:</span>
+                            <span className="font-semibold text-blue-600 dark:text-blue-400">Đề xuất xử lý:</span>
                             <span>{r.suggestedReview}</span>
                           </div>
                         </div>
@@ -1339,7 +1339,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className="text-xs font-extrabold text-indigo-600 dark:text-indigo-400">
+                    <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400">
                       {completenessReport.completionScore}% hoàn tất
                     </span>
                   </div>
@@ -1348,7 +1348,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                 {/* Progress bar */}
                 <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden mb-4">
                   <div 
-                    className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-300"
+                    className="h-full bg-gradient-to-r from-blue-600 to-emerald-500 transition-all duration-300"
                     style={{ width: `${completenessReport.completionScore}%` }}
                   />
                 </div>
@@ -1401,9 +1401,9 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
             <div className="space-y-6">
               
               {/* Executive Summary Card */}
-              <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-950 text-white rounded-3xl p-6 shadow-2xl border border-indigo-500/30">
+              <div className="bg-[#0B1324] text-white rounded-3xl p-6 shadow-2xl border border-white/10">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="px-3 py-1 rounded-full text-2xs font-bold uppercase tracking-wider bg-indigo-500/30 text-indigo-300 border border-indigo-400/30">
+                  <span className="px-3 py-1 rounded-full text-2xs font-bold uppercase tracking-wider bg-blue-500/15 text-blue-300 border border-blue-400/30">
                     Decision Summary Card
                   </span>
                   <span className="text-2xs text-slate-400">Quyết định bởi người dùng</span>
@@ -1411,7 +1411,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-2">
                   <div>
-                    <div className="text-2xs text-indigo-300 uppercase">Khách Hàng & Tuyến Vận Chuyển</div>
+                    <div className="text-2xs text-blue-300 uppercase">Khách Hàng & Tuyến Vận Chuyển</div>
                     <div className="text-base font-bold text-white mt-1">{rfq.customerName}</div>
                     <div className="text-xs text-slate-300 font-mono mt-0.5">
                       {rfq.origin} ➔ {rfq.destination} ({rfq.mode})
@@ -1419,7 +1419,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                   </div>
 
                   <div>
-                    <div className="text-2xs text-indigo-300 uppercase">Kịch Bản Đã Chọn (Selected Scenario)</div>
+                    <div className="text-2xs text-blue-300 uppercase">Kịch Bản Đã Chọn (Selected Scenario)</div>
                     <div className="text-base font-bold text-emerald-400 mt-1">
                       {selectedScenario?.name}
                     </div>
@@ -1429,7 +1429,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                   </div>
 
                   <div>
-                    <div className="text-2xs text-indigo-300 uppercase">Giá Bán & Tỷ Suất Lợi Nhuận</div>
+                    <div className="text-2xs text-blue-300 uppercase">Giá Bán & Tỷ Suất Lợi Nhuận</div>
                     <div className="text-base font-extrabold text-white mt-1">
                       {selectedScenario?.totalSellingPrice.toLocaleString()} {selectedScenario?.currency}
                     </div>
@@ -1450,10 +1450,10 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                 </div>
 
                 {/* Phase 48: Scenario Execution Action Plan Button */}
-                <div className="mt-4 p-4 rounded-xl bg-indigo-950/60 border border-indigo-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="mt-4 p-4 rounded-xl bg-[#111C33] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                   <div>
                     <span className="font-extrabold text-white flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-indigo-400" />
+                      <Sparkles className="w-4 h-4 text-blue-400" />
                       Kế Hoạch Thực Thi Kịch Bản (Execution Workspace)
                     </span>
                     <span className="text-slate-300 text-2xs mt-0.5 block">
@@ -1470,7 +1470,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                     <button
                       onClick={handleExecuteScenarioToActions}
                       disabled={actionCreatingId === 'SCENARIO_PLAN'}
-                      className="px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 active:scale-95 text-white font-bold transition-all flex items-center gap-1.5 shadow-md self-end sm:self-center"
+                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold transition-all flex items-center gap-1.5 shadow-md self-end sm:self-center"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
                       <span>{actionCreatingId === 'SCENARIO_PLAN' ? 'Đang khởi tạo...' : 'Tạo Action Plan'}</span>
@@ -1514,7 +1514,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                           <button
                             onClick={() => handleCreateBusinessActionFromSuggested(action)}
                             disabled={actionCreatingId === action.id}
-                            className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 text-xs font-bold transition-all flex items-center gap-1"
+                            className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 hover:bg-blue-100 text-xs font-bold transition-all flex items-center gap-1"
                           >
                             <Sparkles className="w-3.5 h-3.5" />
                             <span>{actionCreatingId === action.id ? 'Đang tạo...' : 'Tạo Action'}</span>
@@ -1544,7 +1544,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                         {action.actionType === 'FILL_MISSING_DATA' && (
                           <button
                             onClick={() => setActiveTab('OVERVIEW')}
-                            className="px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold hover:bg-indigo-100 transition-colors"
+                            className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-bold hover:bg-blue-100 transition-colors"
                           >
                             Bổ Sung Dữ Liệu
                           </button>
@@ -1599,7 +1599,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                       <div>
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-sm text-slate-900 dark:text-white">{saved.scenarioName}</span>
-                          <span className="text-2xs font-semibold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400">
+                          <span className="text-2xs font-semibold px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
                             {saved.sourceEntityType} v{saved.sourceVersion}
                           </span>
                         </div>
@@ -1617,7 +1617,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                           </div>
                           <div>
                             <div className="text-2xs text-slate-400">{t.marginPercent}</div>
-                            <div className="font-bold text-indigo-600">{saved.scenario?.marginPercent}%</div>
+                            <div className="font-bold text-blue-600">{saved.scenario?.marginPercent}%</div>
                           </div>
                         </div>
                         <div className="mt-2 text-2xs text-slate-400">
@@ -1636,7 +1636,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => handleLoadSavedScenarioIntoWorkspace(saved)}
-                            className="px-3 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-lg transition"
+                            className="px-3 py-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-lg transition"
                           >
                             {lang === 'vi' ? 'Nạp vào Workspace' : 'Load into Workspace'}
                           </button>
@@ -1679,7 +1679,7 @@ export const DecisionWorkspaceModal: React.FC<DecisionWorkspaceModalProps> = ({
 
             <button
               onClick={handleCreateDraftQuote}
-              className="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white text-xs font-bold shadow-md shadow-indigo-600/20 hover:opacity-95 transition-all flex items-center space-x-1.5"
+              className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all flex items-center space-x-1.5"
             >
               <FileText className="w-4 h-4" />
               <span>Khởi Tạo Bản Nháp Báo Giá (Draft)</span>

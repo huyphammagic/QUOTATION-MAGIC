@@ -153,7 +153,7 @@ export const RateComparisonTab: React.FC<RateComparisonTabProps> = ({
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
               <GitCompare className="w-5 h-5" />
             </div>
             <div>
@@ -186,7 +186,7 @@ export const RateComparisonTab: React.FC<RateComparisonTabProps> = ({
             <button
               onClick={() => setSelectedMode('AIR_FREIGHT')}
               className={`px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 ${
-                selectedMode === 'AIR_FREIGHT' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-800'
+                selectedMode === 'AIR_FREIGHT' ? 'bg-white text-sky-700 shadow-xs' : 'text-slate-600 hover:text-slate-800'
               }`}
             >
               <Plane className="w-3.5 h-3.5" />
@@ -299,8 +299,8 @@ export const RateComparisonTab: React.FC<RateComparisonTabProps> = ({
               <span className="flex items-center gap-1 text-blue-700 font-medium">
                 <span className="w-2 h-2 rounded-full bg-blue-500"></span> 🚀 Giá bán cạnh tranh
               </span>
-              <span className="flex items-center gap-1 text-purple-700 font-medium">
-                <span className="w-2 h-2 rounded-full bg-purple-500"></span> 💎 Lợi nhuận cao nhất
+              <span className="flex items-center gap-1 text-teal-700 font-medium">
+                <span className="w-2 h-2 rounded-full bg-teal-500"></span> Lợi nhuận cao nhất
               </span>
             </div>
           </div>
@@ -314,7 +314,7 @@ export const RateComparisonTab: React.FC<RateComparisonTabProps> = ({
                   key={item.id} 
                   className={`bg-white rounded-2xl border transition hover:shadow-md p-5 flex flex-col justify-between ${
                     item.isHighestMargin 
-                      ? 'border-purple-300 ring-1 ring-purple-100' 
+                      ? 'border-teal-300 ring-1 ring-teal-100' 
                       : item.isBestCost 
                       ? 'border-emerald-300 ring-1 ring-emerald-100' 
                       : 'border-slate-200'
@@ -348,8 +348,8 @@ export const RateComparisonTab: React.FC<RateComparisonTabProps> = ({
                           </span>
                         )}
                         {item.isHighestMargin && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200 flex items-center gap-1">
-                            💎 Max Margin
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 text-teal-800 border border-teal-200 flex items-center gap-1">
+                            Max Margin
                           </span>
                         )}
                       </div>
@@ -386,16 +386,16 @@ export const RateComparisonTab: React.FC<RateComparisonTabProps> = ({
                     </div>
 
                     {/* Margin & Profit Bar */}
-                    <div className="p-3 bg-purple-50/40 rounded-xl border border-purple-100 text-xs flex items-center justify-between">
+                    <div className="p-3 bg-teal-50/50 rounded-xl border border-teal-200/70 text-xs flex items-center justify-between">
                       <div>
-                        <div className="text-[10px] text-purple-700 font-medium">Lợi nhuận gộp (Profit)</div>
-                        <div className="font-bold font-mono text-purple-900">
+                        <div className="text-[10px] text-teal-700 font-medium">Lợi nhuận gộp (Profit)</div>
+                        <div className="font-bold font-mono text-teal-900">
                           +{item.grossProfit.toLocaleString()} {item.sellingCurrency}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-[10px] text-purple-700 font-medium">Biên lợi nhuận (Margin)</div>
-                        <div className="font-bold text-sm text-purple-900">
+                        <div className="text-[10px] text-teal-700 font-medium">Biên lợi nhuận (Margin)</div>
+                        <div className="font-bold text-sm text-teal-900">
                           {item.marginPercent.toFixed(1)}%
                         </div>
                       </div>

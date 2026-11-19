@@ -148,9 +148,9 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
     switch (category) {
       case 'FREIGHT': return 'bg-blue-100 text-blue-900 border-blue-200';
       case 'LOCAL_CHARGE': return 'bg-slate-100 text-slate-800 border-slate-200';
-      case 'SURCHARGE': return 'bg-purple-100 text-purple-900 border-purple-200';
+      case 'SURCHARGE': return 'bg-amber-100 text-amber-900 border-amber-200';
       case 'CUSTOMS': return 'bg-emerald-100 text-emerald-900 border-emerald-200';
-      case 'TRUCKING': return 'bg-amber-100 text-amber-900 border-amber-200';
+      case 'TRUCKING': return 'bg-sky-100 text-sky-900 border-sky-200';
       default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
@@ -159,7 +159,7 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
     switch (loc) {
       case 'POL': return 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold';
       case 'FREIGHT': return 'bg-blue-100 text-blue-900 border-blue-300 font-bold';
-      case 'POD': return 'bg-purple-100 text-purple-900 border-purple-300 font-bold';
+      case 'POD': return 'bg-teal-100 text-teal-900 border-teal-300 font-bold';
       case 'OTHER': return 'bg-slate-100 text-slate-800 border-slate-300 font-semibold';
       default: return 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold';
     }
@@ -170,9 +170,9 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
       case 'SEA_FCL':
         return { label: 'Đường biển FCL', icon: Ship, className: 'bg-blue-100 text-blue-900 border-blue-200' };
       case 'SEA_LCL':
-        return { label: 'Đường biển LCL', icon: Ship, className: 'bg-indigo-100 text-indigo-900 border-indigo-200' };
+        return { label: 'Đường biển LCL', icon: Ship, className: 'bg-teal-100 text-teal-900 border-teal-200' };
       case 'AIR':
-        return { label: 'Hàng không (Air)', icon: Plane, className: 'bg-cyan-100 text-cyan-900 border-cyan-200' };
+        return { label: 'Hàng không (Air)', icon: Plane, className: 'bg-sky-100 text-sky-900 border-sky-200' };
       case 'ROAD':
         return { label: 'Đường bộ (Trucking)', icon: Truck, className: 'bg-amber-100 text-amber-900 border-amber-200' };
       case 'CUSTOMS':
@@ -185,8 +185,8 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
 
   return (
     <div className={effectiveFullscreen
-      ? "fixed inset-0 z-50 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden bg-slate-900"
-      : "fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-xs p-4 overflow-y-auto"
+      ? "fixed inset-0 z-50 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden bg-[#0B1324]"
+      : "fixed inset-0 z-50 flex items-center justify-center bg-[#0B1324]/80 backdrop-blur-xs p-4 overflow-y-auto"
     }>
       <div className={effectiveFullscreen
         ? "bg-white w-screen h-screen max-w-none max-h-none rounded-none flex flex-col overflow-hidden border-0"
@@ -268,10 +268,10 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
                   setSelectedSeasonalitySurcharge(filteredItems[0]);
                 }
               }}
-              className="flex items-center space-x-1.5 bg-linear-to-r from-indigo-50 to-sky-50 hover:from-indigo-100 hover:to-sky-100 text-indigo-900 border border-indigo-200/90 font-bold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
+              className="flex items-center space-x-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200/90 font-bold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer"
               title="Phân tích xu hướng mùa vụ & chi phí lịch sử để cố vấn độ cạnh tranh giá"
             >
-              <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
+              <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
               <span>Xu Hướng Mùa & Cố Vấn Giá</span>
             </button>
 
@@ -542,7 +542,7 @@ export const SurchargeCatalogModal: React.FC<SurchargeCatalogModalProps> = ({
                           <button
                             type="button"
                             onClick={() => setSelectedSeasonalitySurcharge(item)}
-                            className="p-1 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded transition-colors cursor-pointer"
+                            className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors cursor-pointer"
                             title="Phân tích xu hướng mùa vụ & chi phí lịch sử (Seasonality & Cost Advisor)"
                           >
                             <TrendingUp className="w-4 h-4" />

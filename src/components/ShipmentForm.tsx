@@ -109,8 +109,8 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
       {/* Title Header */}
       <div className="px-4 py-3.5 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-700 shrink-0">
-            <Navigation className="w-4 h-4 text-indigo-700" />
+          <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center text-blue-700 shrink-0">
+            <Navigation className="w-4 h-4 text-blue-700" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -131,13 +131,13 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
             <button
               type="button"
               onClick={onOpenSmartSurcharges}
-              className="press-physics-subtle inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/90 px-3 py-1.5 rounded-lg transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
+              className="press-physics-subtle inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200/90 px-3 py-1.5 rounded-lg transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
               title="Phân tích và gợi ý phụ phí thông minh cho tuyến này"
             >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
               <span>Gợi ý phụ phí AI</span>
               {smartSurchargesCount > 0 && (
-                <span className="font-mono text-indigo-950 bg-indigo-200/80 px-1.5 py-0.2 rounded-full text-[10px] font-bold">
+                <span className="font-mono text-blue-950 bg-blue-200/80 px-1.5 py-0.2 rounded-full text-[10px] font-bold">
                   {smartSurchargesCount}
                 </span>
               )}
@@ -162,7 +162,7 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
                 onClick={() => handleModeChange(mode)}
                 className={`py-2 px-2.5 rounded-lg text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
                   isActive
-                    ? 'bg-white text-indigo-950 shadow-2xs font-bold ring-1 ring-slate-200'
+                    ? 'bg-white text-blue-950 shadow-2xs font-bold ring-1 ring-blue-200'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 font-medium'
                 }`}
               >
@@ -213,7 +213,7 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
               className={`w-full px-3 py-2 rounded-lg border font-semibold text-xs transition-all ${
                 errors?.pol
                   ? 'border-rose-400 bg-rose-50/60 text-rose-950 ring-2 ring-rose-200 focus:border-rose-500 focus:ring-rose-400 ' + (isShaking ? 'animate-field-shake' : '')
-                  : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900'
+                  : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600'
               }`}
               placeholder="Cát Lái, Hải Phòng..."
             />
@@ -254,7 +254,7 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
               className={`w-full px-3 py-1.5 rounded-lg border font-semibold text-xs transition-all ${
                 errors?.pod
                   ? 'border-rose-400 bg-rose-50/60 text-rose-950 ring-2 ring-rose-200 focus:border-rose-500 focus:ring-rose-400 ' + (isShaking ? 'animate-field-shake' : '')
-                  : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900'
+                  : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600'
               }`}
               placeholder="Los Angeles, Hamburg..."
             />
@@ -292,7 +292,7 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
               className={`w-full px-3 py-2 rounded-lg border text-xs transition-all ${
                 errors?.commodity
                   ? 'border-rose-400 bg-rose-50/60 text-rose-950 ring-2 ring-rose-200 focus:border-rose-500 focus:ring-rose-400 ' + (isShaking ? 'animate-field-shake' : '')
-                  : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900'
+                  : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600'
               }`}
               placeholder="May mặc, nông sản, thủy sản..."
             />
@@ -300,40 +300,35 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
 
         </div>
 
-        {/* Dynamic Maritime Route Laser Beam & Radar Track - Generous Full Width */}
+        {/* Dynamic Maritime Route Track - Maritime Navy */}
         {shipment.pol && shipment.pod && (
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-3 text-white border border-cyan-500/30 shadow-xs">
-            {/* Ambient cyber grid effect */}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-900/20 via-transparent to-transparent pointer-events-none" />
-            
+          <div className="relative overflow-hidden rounded-xl bg-[#0B1324] p-3 text-white border border-white/10 shadow-xs">
             <div className="relative z-10 flex items-center justify-between gap-4 text-xs">
               {/* Origin Point */}
               <div className="flex items-center gap-2 min-w-0">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 ring-4 ring-emerald-400/20 animate-pulse shrink-0" />
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 ring-4 ring-emerald-400/20 shrink-0" />
                 <div className="min-w-0">
                   <span className="text-[10px] uppercase tracking-wider text-slate-400 font-medium block whitespace-nowrap">Xuất phát (POL)</span>
                   <span className="font-bold text-white text-xs whitespace-nowrap">{shipment.pol}</span>
                 </div>
               </div>
 
-              {/* Dynamic Laser Route Track */}
+              {/* Dynamic Maritime Route Track */}
               <div className="flex-1 px-3 relative flex flex-col items-center">
                 <div className="w-full relative py-1">
-                  {/* Laser track beam */}
-                  <div className="h-[2px] w-full rounded-full laser-route-rail opacity-80" />
-                  {/* Running photon particle */}
-                  <div className="photon-pulse-node top-1/2 -translate-y-1/2" />
-                  {/* Floating vessel icon */}
-                  <div className="absolute left-1/2 -top-2.5 -translate-x-1/2 maritime-ship-float flex items-center gap-1.5 bg-slate-900/95 border border-cyan-400/40 px-2 py-0.5 rounded-full shadow-xs whitespace-nowrap">
-                    <Ship className="w-3.5 h-3.5 text-cyan-400" />
-                    <span className="text-[10px] font-mono text-cyan-300 font-semibold">
+                  {/* Track beam */}
+                  <div className="h-[2px] w-full rounded-full laser-route-rail opacity-85" />
+                  {/* Vessel badge */}
+                  <div className="absolute left-1/2 -top-2.5 -translate-x-1/2 maritime-ship-float flex items-center gap-1.5 bg-[#111C33] border border-blue-400/35 px-2.5 py-0.5 rounded-full shadow-xs whitespace-nowrap">
+                    <Ship className="w-3.5 h-3.5 text-blue-400" />
+                    <span className="text-[10px] font-mono text-blue-200 font-semibold">
                       {shipment.transitTime ? `${shipment.transitTime} ngày` : 'Hải trình'}
                     </span>
                   </div>
                 </div>
-                <div className="text-[10px] text-cyan-300/80 font-mono tracking-tight mt-1 flex items-center gap-1.5 whitespace-nowrap">
-                  <span>Hải trình động</span>
-                  {shipment.transitTime && <span className="text-slate-400">• Dự kiến {shipment.transitTime} ngày</span>}
+                <div className="text-[10px] text-slate-400 font-mono tracking-tight mt-1 flex items-center gap-1.5 whitespace-nowrap">
+                  <span>Hải trình vận chuyển</span>
+                  {shipment.transitTime && <span className="text-blue-300">• Dự kiến {shipment.transitTime} ngày</span>}
                 </div>
               </div>
 
@@ -341,9 +336,9 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
               <div className="flex items-center gap-2 min-w-0 text-right">
                 <div className="min-w-0">
                   <span className="text-[10px] uppercase tracking-wider text-slate-400 font-medium block whitespace-nowrap">Cập cảng (POD)</span>
-                  <span className="font-bold text-cyan-300 text-xs whitespace-nowrap">{shipment.pod}</span>
+                  <span className="font-bold text-teal-300 text-xs whitespace-nowrap">{shipment.pod}</span>
                 </div>
-                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 ring-4 ring-cyan-400/20 shrink-0" />
+                <span className="w-2.5 h-2.5 rounded-full bg-teal-400 ring-4 ring-teal-400/20 shrink-0" />
               </div>
             </div>
           </div>
@@ -391,7 +386,7 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
               className={`w-full px-3 py-2 rounded-lg border font-medium text-xs cursor-pointer transition-all ${
                 errors?.containerType
                   ? 'border-rose-400 bg-rose-50/60 text-rose-950 ring-2 ring-rose-200 focus:border-rose-500 focus:ring-rose-400 ' + (isShaking ? 'animate-field-shake' : '')
-                  : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900'
+                  : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600'
               }`}
             >
               <option value="20'GP">Cont 20'GP (Tiêu chuẩn)</option>
@@ -435,7 +430,7 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
               className={`w-full px-3 py-2 rounded-lg border font-mono font-bold text-xs text-center transition-all ${
                 errors?.quantity
                   ? 'border-rose-400 bg-rose-50/60 text-rose-950 ring-2 ring-rose-200 focus:border-rose-500 focus:ring-rose-400 ' + (isShaking ? 'animate-field-shake' : '')
-                  : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900'
+                  : 'border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600'
               }`}
             />
           </div>
@@ -448,7 +443,7 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
               type="number"
               value={shipment.grossWeightKg || ''}
               onChange={(e) => handleWeightOrCbmChange('grossWeightKg', Number(e.target.value) || 0)}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-slate-900 font-mono bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs text-right"
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-slate-900 font-mono bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 text-xs text-right"
               placeholder="24500"
             />
           </div>
@@ -462,7 +457,7 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
               step="0.01"
               value={shipment.volumeCbm || ''}
               onChange={(e) => handleWeightOrCbmChange('volumeCbm', Number(e.target.value) || 0)}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-slate-900 font-mono bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs text-right"
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-slate-900 font-mono bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 text-xs text-right"
               placeholder="68.5"
             />
           </div>
@@ -514,7 +509,7 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
                   type="text"
                   value={shipment.carrier || ''}
                   onChange={(e) => onChangeShipment({ carrier: e.target.value })}
-                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs transition-colors"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 text-xs transition-colors"
                   placeholder="Maersk, ONE, Cosco, Vietnam Airlines..."
                 />
               </div>
@@ -527,7 +522,7 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
                   type="text"
                   value={(shipment as any).vesselVoyage || ''}
                   onChange={(e) => onChangeShipment({ ...shipment, vesselVoyage: e.target.value } as any)}
-                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs transition-colors"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 text-xs transition-colors"
                   placeholder="Ví dụ: CMA CGM RACINE / 012E"
                 />
               </div>
@@ -543,7 +538,7 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
                   type="date"
                   value={shipment.etd || ''}
                   onChange={(e) => onChangeShipment({ etd: e.target.value })}
-                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs font-mono transition-colors"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 text-xs font-mono transition-colors"
                 />
               </div>
 
@@ -555,7 +550,7 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
                   type="date"
                   value={shipment.eta || ''}
                   onChange={(e) => onChangeShipment({ eta: e.target.value })}
-                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs font-mono transition-colors"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 text-xs font-mono transition-colors"
                 />
               </div>
             </div>
@@ -570,7 +565,7 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
                   type="text"
                   value={shipment.transitTime || ''}
                   onChange={(e) => onChangeShipment({ transitTime: e.target.value })}
-                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs transition-colors"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 text-xs transition-colors"
                   placeholder="Ví dụ: 18 - 22 ngày"
                 />
               </div>
@@ -583,7 +578,7 @@ export const ShipmentForm: React.FC<ShipmentFormProps> = ({
                   type="text"
                   value={shipment.freeTime || ''}
                   onChange={(e) => onChangeShipment({ freeTime: e.target.value })}
-                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 text-xs transition-colors"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-slate-900 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 text-xs transition-colors"
                   placeholder="Ví dụ: 14 ngày kết hợp tại POD"
                 />
               </div>

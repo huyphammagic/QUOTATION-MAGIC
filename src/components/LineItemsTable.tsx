@@ -950,7 +950,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
         <td className="py-2 px-1 text-center align-middle w-16 text-slate-400 select-none relative">
           {/* Laser vertical luminescence accent bar when row is updated */}
           {isRowDiffGlowing && (
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 via-emerald-400 to-indigo-600 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse rounded-r" />
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-600 to-teal-500 rounded-r" />
           )}
           <div className="flex items-center justify-center gap-0.5">
             {/* Drag Handle */}
@@ -1028,14 +1028,14 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
               />
 
               {isRowDiffGlowing && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-gradient-to-r from-emerald-100 to-teal-100 border border-emerald-300 px-2 py-0.5 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.35)] animate-pulse shrink-0">
-                  <Zap className="w-2.5 h-2.5 text-emerald-600 fill-emerald-500 animate-bounce" />
-                  <span>⚡ Tự Động Cập Nhật</span>
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full shrink-0">
+                  <Zap className="w-2.5 h-2.5 text-emerald-600 fill-emerald-500" />
+                  <span>Tự Động Cập Nhật</span>
                 </span>
               )}
 
               {item.priceSource === 'CUSTOMER_CONTRACT' && (
-                <span className="shrink-0 text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded" title="Giá chuẩn từ Hợp Đồng Khách Hàng">
+                <span className="shrink-0 text-[10px] font-bold text-teal-800 bg-teal-50 border border-teal-200 px-1.5 py-0.5 rounded" title="Giá chuẩn từ Hợp Đồng Khách Hàng">
                   HĐ KH
                 </span>
               )}
@@ -1061,7 +1061,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                   : itemLocation === 'FREIGHT'
                   ? 'bg-blue-50 text-blue-800 border-blue-200'
                   : itemLocation === 'POD'
-                  ? 'bg-purple-50 text-purple-800 border-purple-200'
+                  ? 'bg-teal-50 text-teal-800 border-teal-200'
                   : 'bg-amber-50 text-amber-800 border-amber-200'
               }`}
             >
@@ -1362,7 +1362,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                 </>
               ) : (
                 <>
-                  <EyeOff className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                  <EyeOff className="w-3.5 h-3.5 text-amber-600" />
                   <span className="hidden sm:inline">Chế Độ Trình Chiếu Khách (Ẩn Vốn)</span>
                   <span className="sm:hidden">Ẩn Vốn</span>
                 </>
@@ -1399,7 +1399,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
               <button
                 type="button"
                 onClick={onOpenRoutePresets}
-                className="inline-flex items-center gap-1.5 bg-linear-to-r from-indigo-50 to-indigo-100/90 hover:from-indigo-100 hover:to-indigo-200 text-indigo-900 border border-indigo-300 font-bold text-xs px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                className="inline-flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 font-bold text-xs px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shadow-2xs"
                 title="Áp dụng gói mẫu cước & trọn bộ phụ phí theo tuyến (1-Click Route & Service Presets)"
               >
                 <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
@@ -1471,14 +1471,14 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                             setIsQuickCopyOpen(false);
                           }
                         }}
-                        className="w-full text-left px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg flex items-center justify-between transition cursor-pointer group"
+                        className="w-full text-left px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:text-blue-700 hover:bg-blue-50 rounded-lg flex items-center justify-between transition cursor-pointer group"
                         title="Nhân bản ngay dòng phí cuối cùng trong danh sách"
                       >
                         <div className="flex items-center gap-2 truncate">
-                          <Layers className="w-3.5 h-3.5 text-indigo-600 group-hover:scale-110 transition-transform shrink-0" />
+                          <Layers className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform shrink-0" />
                           <span className="truncate">Nhân bản dòng phí cuối: {items[items.length - 1].code || items[items.length - 1].description}</span>
                         </div>
-                        <span className="text-[10px] text-indigo-600 font-mono font-bold shrink-0">+1 dòng</span>
+                        <span className="text-[10px] text-blue-600 font-mono font-bold shrink-0">+1 dòng</span>
                       </button>
                     </div>
                   )}
@@ -1510,7 +1510,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                                 preset.location === 'POL' 
                                   ? 'bg-slate-100 text-slate-700' 
                                   : preset.location === 'POD' 
-                                  ? 'bg-purple-50 text-purple-700' 
+                                  ? 'bg-teal-50 text-teal-800' 
                                   : 'bg-blue-50 text-blue-700'
                               }`}>
                                 {preset.location}
@@ -1544,7 +1544,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                         handleBatchInsertPopularSet();
                         setIsQuickCopyOpen(false);
                       }}
-                      className="w-full py-1.5 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                      className="w-full py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Chèn Bộ 4 Phí Chuẩn (THC, B/L, Seal, Telex)</span>
@@ -1599,22 +1599,22 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             </div>
 
             {/* Add Line Item Primary Split Button */}
-            <div className="inline-flex items-center rounded-lg bg-slate-900 text-white overflow-hidden shadow-xs border border-slate-900">
+            <div className="inline-flex items-center rounded-lg bg-[#0B1324] text-white overflow-hidden shadow-xs border border-[#0B1324]">
               <button
                 type="button"
                 onClick={() => handleOpenAddFeeModal('LOCAL_CHARGE', activeLegFilter !== 'ALL' ? activeLegFilter : 'POL')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 font-bold text-xs hover:bg-slate-800 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 font-bold text-xs hover:bg-[#111C33] transition-colors cursor-pointer"
                 title="Mở hộp thoại tìm kiếm và thêm phí / Local charge mới"
                 id="btn-open-add-fee-modal"
               >
                 <Plus className="w-3.5 h-3.5 text-emerald-400" />
                 <span>+ Thêm Phí</span>
               </button>
-              <div className="w-[1px] h-4 bg-slate-700" />
+              <div className="w-[1px] h-4 bg-white/15" />
               <button
                 type="button"
                 onClick={() => handleOpenAddFeeModal('FREIGHT', 'FREIGHT')}
-                className="px-2.5 py-1.5 text-xs font-semibold text-blue-300 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
+                className="px-2.5 py-1.5 text-xs font-semibold text-blue-300 hover:bg-[#111C33] hover:text-white transition-colors cursor-pointer"
                 title="+ Thêm Cước Biển / Cước Bay Quốc Tế (FREIGHT)"
               >
                 + Cước Chặng Chính
@@ -1636,14 +1636,14 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
               <button
                 type="button"
                 onClick={onOpenSmartSurcharge}
-                className="press-physics-subtle inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-50 to-sky-50 hover:from-indigo-100 hover:to-sky-100 text-indigo-900 border border-indigo-300/80 font-bold text-xs px-2.5 py-1 rounded-md transition-colors cursor-pointer shadow-2xs"
+                className="press-physics-subtle inline-flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-bold text-xs px-2.5 py-1 rounded-md transition-colors cursor-pointer shadow-2xs"
                 title="Gợi ý phụ phí thông minh theo tuyến & mùa vận tải (Smart Surcharges)"
                 id="btn-open-smart-surcharges"
               >
-                <Sparkles className="w-3.5 h-3.5 text-indigo-600 fill-indigo-200 animate-pulse" />
+                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
                 <span>Smart Surcharges</span>
                 {smartSurchargesCount > 0 && (
-                  <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] font-mono font-bold flex items-center justify-center">
+                  <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] font-mono font-bold flex items-center justify-center">
                     {smartSurchargesCount}
                   </span>
                 )}
@@ -1694,11 +1694,11 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
               <button
                 type="button"
                 onClick={onOpenCompetitorRadar}
-                className="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 font-semibold text-xs px-2.5 py-1 rounded-md transition-colors cursor-pointer shadow-2xs"
+                className="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 font-semibold text-xs px-2.5 py-1 rounded-md transition-colors cursor-pointer shadow-2xs"
                 title="Quản lý đối thủ forwarder, phân tích SWOT và kịch bản chốt đơn"
                 id="btn-open-competitor-radar"
               >
-                <Swords className="w-3.5 h-3.5 text-indigo-600" />
+                <Swords className="w-3.5 h-3.5 text-blue-600" />
                 <span>Đối Thủ & SWOT FWD</span>
               </button>
             )}
@@ -1747,11 +1747,11 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             <button
               type="button"
               onClick={triggerLuminescenceDemo}
-              className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-50 via-teal-50 to-emerald-50 hover:from-blue-100 hover:to-emerald-100 text-emerald-800 hover:text-emerald-950 border border-emerald-300/80 font-bold text-xs px-2.5 py-1 rounded-md transition-all cursor-pointer shadow-2xs hover:shadow-xs group"
-              title="Thử nghiệm hiệu ứng sóng ánh quang nhấp nháy gradient (Luminescence Ripple) trên các dòng báo giá"
+              className="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 hover:text-emerald-950 border border-emerald-200 font-bold text-xs px-2.5 py-1 rounded-md transition-all cursor-pointer shadow-2xs group"
+              title="Thử nghiệm hiệu ứng sóng ánh quang trên các dòng báo giá"
               id="btn-test-luminescence-ripple"
             >
-              <Zap className="w-3.5 h-3.5 text-emerald-600 group-hover:scale-110 group-hover:rotate-12 transition-transform fill-emerald-500/20" />
+              <Zap className="w-3.5 h-3.5 text-emerald-600 group-hover:scale-110 transition-transform" />
               <span>Ánh Quang Cập Nhật Giá</span>
             </button>
 
@@ -1763,7 +1763,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
               className={`inline-flex items-center gap-1.5 font-bold text-xs px-2.5 py-1 rounded-md transition-all cursor-pointer shadow-2xs group ${
                 isBusy 
                   ? 'bg-blue-100 text-blue-800 border border-blue-300' 
-                  : 'bg-gradient-to-r from-sky-50 via-blue-50 to-indigo-50 hover:from-sky-100 hover:to-indigo-100 text-blue-900 border border-blue-200/90 hover:shadow-xs'
+                  : 'bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200'
               }`}
               title="Kích hoạt mô phỏng tái tính toán cước với hiệu ứng Shimmer Skeleton mượt mà không chặn thao tác người dùng"
               id="btn-test-shimmer-skeleton"
@@ -1908,17 +1908,17 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
           onClick={() => setActiveLegFilter(activeLegFilter === 'POD' ? 'ALL' : 'POD')}
           className={`text-left rounded-xl p-2.5 border transition-all cursor-pointer ${
             activeLegFilter === 'POD'
-              ? 'bg-purple-900 text-white border-purple-900 shadow-sm'
-              : 'bg-purple-50/50 hover:bg-purple-50/80 border-purple-200/90 text-purple-950'
+              ? 'bg-teal-900 text-white border-teal-900 shadow-sm'
+              : 'bg-teal-50/50 hover:bg-teal-50/80 border-teal-200/90 text-teal-950'
           }`}
         >
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-1.5">
-              <MapPin className={`w-3.5 h-3.5 ${activeLegFilter === 'POD' ? 'text-purple-300' : 'text-purple-600'}`} />
+              <MapPin className={`w-3.5 h-3.5 ${activeLegFilter === 'POD' ? 'text-teal-300' : 'text-teal-600'}`} />
               <span className="font-bold text-[11px]">3. Đầu Nhập (POD)</span>
             </div>
             <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
-              activeLegFilter === 'POD' ? 'bg-purple-800 text-purple-200' : 'bg-purple-200/80 text-purple-800 font-bold'
+              activeLegFilter === 'POD' ? 'bg-teal-800 text-teal-200' : 'bg-teal-100 text-teal-800 font-bold'
             }`}>
               {podItems.length} mục
             </span>
@@ -2120,10 +2120,10 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                   const locBg = loc === 'POL'
                     ? 'bg-slate-100/90 text-slate-800'
                     : loc === 'FREIGHT'
-                    ? 'bg-blue-100/70 text-blue-900'
+                    ? 'bg-blue-50 text-blue-900'
                     : loc === 'POD'
-                    ? 'bg-purple-100/70 text-purple-900'
-                    : 'bg-amber-100/70 text-amber-900';
+                    ? 'bg-teal-50 text-teal-900'
+                    : 'bg-amber-50 text-amber-900';
 
                   const subtotalUsd = sumLocationUsd(groupItems);
                   const subtotalVnd = sumLocationVnd(groupItems);
@@ -2282,7 +2282,7 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
             <span className="w-2 h-2 rounded-full bg-slate-500 inline-block" /> Phí xuất (POL)
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> Phí nhập (POD)
+            <span className="w-2 h-2 rounded-full bg-teal-500 inline-block" /> Phí nhập (POD)
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> Khác (OTHER)

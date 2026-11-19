@@ -183,11 +183,11 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
   const getRateTypeBadge = (type: RateType) => {
     switch (type) {
       case 'BUY':
-        return <span className="px-1.5 py-0.5 rounded text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-200">BUY (Giá mua)</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">BUY (Giá mua)</span>;
       case 'SELL':
         return <span className="px-1.5 py-0.5 rounded text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200">SELL (Giá bán)</span>;
       case 'CONTRACT':
-        return <span className="px-1.5 py-0.5 rounded text-[11px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">CONTRACT (Hợp đồng)</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[11px] font-bold bg-teal-100 text-teal-800 border border-teal-200">CONTRACT (Hợp đồng)</span>;
       default:
         return <span className="px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">REF (Tham khảo)</span>;
     }
@@ -203,7 +203,7 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
       case 'INLAND_TRUCKING':
         return <Truck className="w-4 h-4 text-amber-600" />;
       case 'CUSTOMS_CLEARANCE':
-        return <FileText className="w-4 h-4 text-indigo-600" />;
+        return <FileText className="w-4 h-4 text-teal-600" />;
       default:
         return <Layers className="w-4 h-4 text-slate-600" />;
     }
@@ -442,7 +442,7 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
                           </div>
                         )}
                         {rate.contractNo && (
-                          <div className="text-[10px] text-indigo-600 font-mono">
+                          <div className="text-[10px] text-teal-700 font-mono">
                             HĐ: {rate.contractNo}
                           </div>
                         )}
@@ -450,7 +450,7 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
 
                       {/* Cost */}
                       <td className="p-3 text-right">
-                        <div className="font-mono font-semibold text-purple-700">
+                        <div className="font-mono font-semibold text-amber-700">
                           {rate.costCurrency === 'USD' ? formatUSD(rate.costAmount || 0) : formatVND(rate.costAmount || 0)}
                         </div>
                         <div className="text-[10px] text-slate-400">/{rate.unit}</div>
@@ -492,7 +492,7 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
                           {onCompareRate && (
                             <button
                               onClick={() => onCompareRate(rate)}
-                              className="p-1 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded"
+                              className="p-1 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded"
                               title="So sánh giá tuyến này (Compare Matrix)"
                             >
                               <GitCompare className="w-4 h-4" />
@@ -518,7 +518,7 @@ export const RateTableTab: React.FC<RateTableTabProps> = ({
                           </button>
                           <button
                             onClick={() => onNewVersion(rate)}
-                            className="p-1 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded"
+                            className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
                             title="Tạo phiên bản mới (New Version)"
                             id={`btn-version-${rate.id}`}
                           >

@@ -3062,7 +3062,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 font-sans flex flex-col">
+    <div className="min-h-screen bg-[#F4F6FA] text-slate-900 font-sans flex flex-col">
       
       <div className="flex flex-1">
         
@@ -3237,7 +3237,7 @@ export default function App() {
             
             {/* Toast Alert */}
             {toastMessage && (
-              <div className="fixed bottom-4 right-4 sm:bottom-10 sm:right-8 z-50 max-w-[calc(100vw-2rem)] bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md text-white font-medium text-xs px-4 py-3 rounded-2xl shadow-2xl border border-slate-700/80 flex items-center space-x-2.5 animate-in fade-in slide-in-from-bottom-4 duration-200">
+              <div className="fixed bottom-4 right-4 sm:bottom-10 sm:right-8 z-50 max-w-[calc(100vw-2rem)] bg-[#0B1324]/95 backdrop-blur-md text-white font-medium text-xs px-4 py-3 rounded-2xl shadow-2xl border border-white/15 flex items-center space-x-2.5 animate-in fade-in slide-in-from-bottom-4 duration-200">
                 <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
                   <Check className="w-3 h-3" />
                 </div>
@@ -3337,7 +3337,7 @@ export default function App() {
                               onClick={() => setMasterFormTab('ALL')}
                               className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
                                 masterFormTab === 'ALL'
-                                  ? 'bg-white text-indigo-950 font-bold shadow-2xs'
+                                  ? 'bg-white text-blue-950 font-bold shadow-2xs'
                                   : 'text-slate-500 hover:text-slate-900'
                               }`}
                             >
@@ -3348,7 +3348,7 @@ export default function App() {
                               onClick={() => setMasterFormTab('CUSTOMER')}
                               className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
                                 masterFormTab === 'CUSTOMER'
-                                  ? 'bg-white text-indigo-950 font-bold shadow-2xs'
+                                  ? 'bg-white text-blue-950 font-bold shadow-2xs'
                                   : 'text-slate-500 hover:text-slate-900'
                               }`}
                             >
@@ -3359,7 +3359,7 @@ export default function App() {
                               onClick={() => setMasterFormTab('SHIPMENT')}
                               className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
                                 masterFormTab === 'SHIPMENT'
-                                  ? 'bg-white text-indigo-950 font-bold shadow-2xs'
+                                  ? 'bg-white text-blue-950 font-bold shadow-2xs'
                                   : 'text-slate-500 hover:text-slate-900'
                               }`}
                             >
@@ -3372,11 +3372,11 @@ export default function App() {
                         {masterFormTab === 'SHIPMENT' && (
                           <div 
                             onClick={() => setMasterFormTab('CUSTOMER')}
-                            className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/80 hover:bg-indigo-50/50 hover:border-indigo-200 transition-all cursor-pointer text-xs group"
+                            className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/80 hover:bg-blue-50/60 hover:border-blue-200 transition-all cursor-pointer text-xs group"
                             title="Bấm để chuyển sang chỉnh sửa thông tin khách hàng"
                           >
                             <div className="flex items-center gap-2 min-w-0">
-                              <Building className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                              <Building className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                               <div className="truncate">
                                 <span className="font-bold text-slate-800 block truncate">
                                   {quote.customer?.companyName || quote.customer?.customerName || 'Chưa định danh khách hàng'}
@@ -3386,7 +3386,7 @@ export default function App() {
                                 </span>
                               </div>
                             </div>
-                            <span className="text-[10px] font-semibold text-indigo-600 group-hover:underline shrink-0">
+                            <span className="text-[10px] font-semibold text-blue-600 group-hover:underline shrink-0">
                               Sửa ▾
                             </span>
                           </div>
@@ -3395,11 +3395,11 @@ export default function App() {
                         {masterFormTab === 'CUSTOMER' && (
                           <div 
                             onClick={() => setMasterFormTab('SHIPMENT')}
-                            className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/80 hover:bg-indigo-50/50 hover:border-indigo-200 transition-all cursor-pointer text-xs group"
+                            className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/80 hover:bg-blue-50/60 hover:border-blue-200 transition-all cursor-pointer text-xs group"
                             title="Bấm để chuyển sang chỉnh sửa tuyến đường & hàng hóa"
                           >
                             <div className="flex items-center gap-2 min-w-0">
-                              <Navigation className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                              <Navigation className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                               <div className="truncate">
                                 <span className="font-bold text-slate-800 block truncate">
                                   {quote.shipment?.pol || 'Cảng đi'} ➔ {quote.shipment?.pod || 'Cảng đến'}
@@ -3409,7 +3409,7 @@ export default function App() {
                                 </span>
                               </div>
                             </div>
-                            <span className="text-[10px] font-semibold text-indigo-600 group-hover:underline shrink-0">
+                            <span className="text-[10px] font-semibold text-blue-600 group-hover:underline shrink-0">
                               Sửa ▾
                             </span>
                           </div>
@@ -4026,7 +4026,7 @@ export default function App() {
       {/* Customer Online Secure Quote Portal */}
       {viewingSecureToken && (
         <RouteErrorBoundary routeName="Cổng Tra Cứu Báo Giá Trực Tuyến" onReset={handleModalClose} onNavigateHome={handleModalClose}>
-          <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/90 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-[#0B1324]/85 backdrop-blur-xs">
             <CustomerSecureQuotePage
               token={viewingSecureToken}
               onBackToApp={handleModalClose}
@@ -4060,7 +4060,7 @@ export default function App() {
       {/* Phase 46: Business Opportunity Radar & Customer Growth Intelligence */}
       {isOpportunityRadarOpen && (
         <RouteErrorBoundary routeName="Business Opportunity Radar" onReset={handleModalClose} onNavigateHome={handleModalClose}>
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-900/80 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-[#0B1324]/85 backdrop-blur-xs animate-in fade-in duration-200">
             <div className="w-full max-w-7xl max-h-[96vh] overflow-hidden rounded-3xl shadow-2xl">
               <BusinessOpportunityRadarWorkspace
                 companyId={activeCompanyId || 'company_profile'}
@@ -4320,7 +4320,7 @@ export default function App() {
       {/* Phase 41: Smart Shipment & Logistics Operational Workspace */}
       {isShipmentWorkspaceOpen && (
         <RouteErrorBoundary routeName="Không Gian Điều Hành Lô Hàng (Shipments)" onReset={handleModalClose} onNavigateHome={handleModalClose}>
-          <div className="fixed inset-0 z-50 bg-slate-900 flex flex-col w-screen h-screen overflow-hidden">
+          <div className="fixed inset-0 z-50 bg-[#0B1324] flex flex-col w-screen h-screen overflow-hidden">
             <FolderFullscreenHeader
               folderName="Thư Mục Điều Hành & Lô Hàng (Shipments)"
               folderCategory="Vận Hành & Lô Hàng"
@@ -4332,7 +4332,7 @@ export default function App() {
               onClose={handleModalClose}
               onNavigateToFolder={handleOpenTableDirectly}
             />
-            <div className="flex-1 overflow-y-auto bg-slate-100 dark:bg-slate-950 p-3 sm:p-6 w-full">
+            <div className="flex-1 overflow-y-auto bg-[#F4F6FA] dark:bg-[#0B1324] p-3 sm:p-6 w-full">
               <ShipmentOperationalWorkspace
                 companyId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'company_profile'}
                 customers={customers}
@@ -4363,7 +4363,7 @@ export default function App() {
       {/* Phase 42: Logistics Control Tower & Exception Surveillance */}
       {isControlTowerOpen && (
         <RouteErrorBoundary routeName="Tháp Điều Hành Logistics (Control Tower)" onReset={handleModalClose} onNavigateHome={handleModalClose}>
-          <div className="fixed inset-0 z-50 bg-slate-900 flex flex-col w-screen h-screen overflow-hidden">
+          <div className="fixed inset-0 z-50 bg-[#0B1324] flex flex-col w-screen h-screen overflow-hidden">
             <FolderFullscreenHeader
               folderName="Tháp Điều Hành Logistics (Control Tower)"
               folderCategory="Vận Hành & Lô Hàng"
@@ -4375,7 +4375,7 @@ export default function App() {
               onClose={handleModalClose}
               onNavigateToFolder={handleOpenTableDirectly}
             />
-            <div className="flex-1 overflow-y-auto bg-slate-100 dark:bg-slate-950 p-3 sm:p-6 w-full">
+            <div className="flex-1 overflow-y-auto bg-[#F4F6FA] dark:bg-[#0B1324] p-3 sm:p-6 w-full">
               <ControlTowerWorkspace
                 companyId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'company_profile'}
                 onOpenShipmentDetail={(shipmentId) => {
@@ -4401,7 +4401,7 @@ export default function App() {
       {/* Phase 44: Smart Logistics Deadline & Action Intelligence Engine */}
       {isActionCenterOpen && (
         <RouteErrorBoundary routeName="Trung Tâm Hạn Chót & Hành Động (Action Center)" onReset={handleModalClose} onNavigateHome={handleModalClose}>
-          <div className="fixed inset-0 z-50 bg-slate-900 flex flex-col w-screen h-screen overflow-hidden">
+          <div className="fixed inset-0 z-50 bg-[#0B1324] flex flex-col w-screen h-screen overflow-hidden">
             <FolderFullscreenHeader
               folderName="Hạn Chót & Hành Động (Action Center)"
               folderCategory="Vận Hành & Lô Hàng"
@@ -4413,7 +4413,7 @@ export default function App() {
               onClose={handleModalClose}
               onNavigateToFolder={handleOpenTableDirectly}
             />
-            <div className="flex-1 overflow-y-auto bg-slate-100 dark:bg-slate-950 p-3 sm:p-6 w-full">
+            <div className="flex-1 overflow-y-auto bg-[#F4F6FA] dark:bg-[#0B1324] p-3 sm:p-6 w-full">
               <SmartDeadlineWorkspace
                 companyId={activeCompanyId || activeCompanyRecord?.companyId || company.companyId || 'company_profile'}
                 companyName={company.name || 'Logistics Company'}

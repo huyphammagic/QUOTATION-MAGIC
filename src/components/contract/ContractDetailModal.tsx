@@ -292,23 +292,23 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-[#0B1324]/80 backdrop-blur-xs overflow-y-auto">
       <div 
         className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden border border-slate-200 flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-150"
         id="contract-detail-modal"
       >
         {/* Top Header */}
-        <div className="px-6 py-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between shrink-0">
+        <div className="px-6 py-4 bg-[#0B1324] border-b border-white/10 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
-            <div className="p-2.5 bg-indigo-500/20 border border-indigo-400/30 rounded-xl">
-              <FileText className="w-6 h-6 text-indigo-400" />
+            <div className="p-2.5 bg-blue-600/20 border border-blue-500/30 rounded-xl">
+              <FileText className="w-6 h-6 text-blue-400" />
             </div>
             <div>
               <div className="flex items-center gap-2.5">
-                <span className="font-mono text-base font-black tracking-wide text-indigo-300">
+                <span className="font-mono text-base font-black tracking-wide text-blue-300">
                   {contract.contractNumber}
                 </span>
-                <span className="px-2 py-0.5 text-[11px] font-extrabold bg-indigo-500/30 text-indigo-200 rounded border border-indigo-400/30">
+                <span className="px-2 py-0.5 text-[11px] font-extrabold bg-teal-500/20 text-teal-200 rounded border border-teal-400/30">
                   Version {contract.currentVersion}
                 </span>
                 <span className={`px-2 py-0.5 text-[11px] font-bold rounded border ${
@@ -331,7 +331,7 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
                 </span>
               </div>
               <h2 className="text-sm font-bold text-white mt-0.5">
-                {contract.contractName} &bull; <span className="text-indigo-200">{contract.partyName}</span>
+                {contract.contractName} &bull; <span className="text-slate-300">{contract.partyName}</span>
               </h2>
             </div>
           </div>
@@ -339,7 +339,7 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={onOpenEditContractModal}
-              className="px-3 py-1.5 text-xs font-semibold text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg flex items-center gap-1.5 transition-colors"
+              className="px-3 py-1.5 text-xs font-semibold text-slate-200 hover:text-white bg-[#16233F] hover:bg-[#1D2D50] border border-white/10 rounded-lg flex items-center gap-1.5 transition-colors"
             >
               <Edit3 className="w-3.5 h-3.5" /> Sửa Thông Tin
             </button>
@@ -349,13 +349,13 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
                 setNewVersionExpiry(new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10));
                 setIsNewVersionModalOpen(true);
               }}
-              className="px-3 py-1.5 text-xs font-bold text-indigo-200 hover:text-white bg-indigo-900/60 hover:bg-indigo-800 border border-indigo-700/50 rounded-lg flex items-center gap-1.5 transition-colors"
+              className="px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 border border-blue-500/40 rounded-lg flex items-center gap-1.5 transition-colors"
             >
               <History className="w-3.5 h-3.5" /> Tạo Phiên Bản Mới
             </button>
             <button 
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors ml-2"
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-[#16233F] rounded-lg transition-colors ml-2"
             >
               <X className="w-5 h-5" />
             </button>
@@ -446,7 +446,7 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
             onClick={() => setActiveTab('OVERVIEW')}
             className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
               activeTab === 'OVERVIEW' 
-                ? 'border-indigo-600 text-indigo-700' 
+                ? 'border-blue-600 text-blue-700' 
                 : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -456,7 +456,7 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
             onClick={() => setActiveTab('RATES')}
             className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
               activeTab === 'RATES' 
-                ? 'border-indigo-600 text-indigo-700' 
+                ? 'border-blue-600 text-blue-700' 
                 : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -466,7 +466,7 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
             onClick={() => setActiveTab('VERSIONS')}
             className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
               activeTab === 'VERSIONS' 
-                ? 'border-indigo-600 text-indigo-700' 
+                ? 'border-blue-600 text-blue-700' 
                 : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -476,7 +476,7 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
             onClick={() => setActiveTab('DOCUMENTS')}
             className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
               activeTab === 'DOCUMENTS' 
-                ? 'border-indigo-600 text-indigo-700' 
+                ? 'border-blue-600 text-blue-700' 
                 : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -486,7 +486,7 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
             onClick={() => setActiveTab('AUDIT')}
             className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
               activeTab === 'AUDIT' 
-                ? 'border-indigo-600 text-indigo-700' 
+                ? 'border-blue-600 text-blue-700' 
                 : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -537,7 +537,7 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
                     {contract.totalRatesCount || 0} <span className="text-xs font-normal text-slate-500">tuyến cước</span>
                   </div>
                   <div className="text-xs text-slate-500">
-                    Đồng tiền cơ sở: <span className="font-bold text-indigo-700">{contract.currency}</span>
+                    Đồng tiền cơ sở: <span className="font-bold text-blue-700">{contract.currency}</span>
                   </div>
                 </div>
               </div>
@@ -577,7 +577,7 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
               {/* Volume Commitment */}
               <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-4">
                 <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-indigo-600" /> Cam Kết Sản Lượng (Volume Commitment)
+                  <Layers className="w-4 h-4 text-blue-600" /> Cam Kết Sản Lượng (Volume Commitment)
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
                   <div className="p-3 bg-slate-50 rounded-lg">
@@ -674,7 +674,7 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
                         <tr key={rate.id} className="hover:bg-slate-50/80 transition-colors">
                           <td className="py-2.5 px-3">
                             <span className="font-mono font-bold text-slate-800 block text-[11px]">{rate.rateCode}</span>
-                            <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+                            <span className="text-[10px] font-semibold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded">
                               {rate.serviceMode}
                             </span>
                           </td>
@@ -749,7 +749,7 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
                     {versions.map(v => (
                       <div key={v.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
                         <div className="flex items-center gap-3">
-                          <span className="font-mono font-bold text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">
+                          <span className="font-mono font-bold text-xs bg-teal-100 text-teal-800 px-2 py-1 rounded">
                             Version {v.versionNumber}
                           </span>
                           <div>
@@ -779,7 +779,7 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
                 </span>
                 <button
                   onClick={() => setIsUploadDocModalOpen(true)}
-                  className="px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg flex items-center gap-1.5 shadow-xs"
+                  className="px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-1.5 shadow-xs"
                 >
                   <UploadCloud className="w-3.5 h-3.5" /> Đính Kèm Tài Liệu
                 </button>
@@ -794,10 +794,10 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {documents.map(doc => (
-                    <div key={doc.id} className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-start justify-between text-xs hover:border-indigo-300 transition-colors">
+                    <div key={doc.id} className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-start justify-between text-xs hover:border-blue-300 transition-colors">
                       <div className="flex items-start gap-3 min-w-0">
-                        <div className="p-2 bg-indigo-50 border border-indigo-200 rounded-lg mt-0.5 shrink-0">
-                          <FileText className="w-4 h-4 text-indigo-600" />
+                        <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg mt-0.5 shrink-0">
+                          <FileText className="w-4 h-4 text-blue-600" />
                         </div>
                         <div className="min-w-0">
                           <span className="font-bold text-slate-900 block truncate" title={doc.fileName}>{doc.fileName}</span>
@@ -818,7 +818,7 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
                             target="_blank"
                             rel="noopener noreferrer"
                             download={doc.fileName}
-                            className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                             title="Tải về / Mở tài liệu"
                           >
                             <Download className="w-4 h-4" />
@@ -875,7 +875,7 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
 
         {/* New Version Sub-modal */}
         {isNewVersionModalOpen && (
-          <div className="fixed inset-0 z-80 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="fixed inset-0 z-80 flex items-center justify-center p-4 bg-[#0B1324]/75 backdrop-blur-xs">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-5 border border-slate-200">
               <h3 className="text-sm font-bold text-slate-900 mb-1">
                 Tạo Phiên Bản Mới (Version {contract.currentVersion + 1})
@@ -925,7 +925,7 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
                   <button
                     type="submit"
                     disabled={isCreatingVersion}
-                    className="px-4 py-1.5 font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50"
+                    className="px-4 py-1.5 font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50"
                   >
                     {isCreatingVersion ? 'Đang tạo...' : 'Tạo Phiên Bản Mới'}
                   </button>
@@ -937,7 +937,7 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
 
         {/* Upload Document Sub-modal */}
         {isUploadDocModalOpen && (
-          <div className="fixed inset-0 z-80 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="fixed inset-0 z-80 flex items-center justify-center p-4 bg-[#0B1324]/75 backdrop-blur-xs">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-5 border border-slate-200">
               <h3 className="text-sm font-bold text-slate-900 mb-1">Đính Kèm Tài Liệu Hợp Đồng</h3>
               <p className="text-xs text-slate-500 mb-4">Lưu trữ file hợp đồng đã ký hoặc bảng phụ lục giá</p>
@@ -958,7 +958,7 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
                         }
                       }
                     }}
-                    className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                    className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                   />
                   {selectedDocFile && (
                     <p className="text-[11px] text-emerald-600 font-medium mt-1">
@@ -1028,7 +1028,7 @@ export const ContractDetailModal: React.FC<ContractDetailModalProps> = ({
                   <button
                     type="submit"
                     disabled={isUploadingDoc || !docFileName.trim()}
-                    className="px-4 py-1.5 font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50 flex items-center gap-1.5"
+                    className="px-4 py-1.5 font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 flex items-center gap-1.5"
                   >
                     {isUploadingDoc ? 'Đang Tải Lên Firebase...' : 'Lưu Tài Liệu'}
                   </button>

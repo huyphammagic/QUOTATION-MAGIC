@@ -322,8 +322,8 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
 
   return (
     <div className={effectiveFullscreen
-      ? "fixed inset-0 z-50 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden bg-slate-900"
-      : "fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/80 backdrop-blur-xs overflow-hidden"
+      ? "fixed inset-0 z-50 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden bg-[#0B1324]"
+      : "fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-[#0B1324]/80 backdrop-blur-xs overflow-hidden"
     }>
       <div 
         className={effectiveFullscreen
@@ -348,7 +348,7 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
               <button
                 type="button"
                 onClick={handleExportCsv}
-                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-colors cursor-pointer"
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 bg-[#16233F] hover:bg-[#1D2D50] text-slate-200 text-xs font-medium rounded-lg border border-white/10 transition-colors cursor-pointer"
                 title="Xuất bảng giá ra file CSV chuẩn UTF-8"
                 id="btn-header-export-csv"
               >
@@ -370,13 +370,13 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
         />
 
         {/* Navigation Tabs Bar */}
-        <div className="px-6 bg-slate-900 border-b border-slate-700 flex items-center justify-between overflow-x-auto">
+        <div className="px-6 bg-[#0B1324] border-b border-white/10 flex items-center justify-between overflow-x-auto">
           <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={() => setActiveTab('RATES')}
-              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
+              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 cursor-pointer ${
                 activeTab === 'RATES'
-                  ? 'border-blue-500 text-white bg-slate-800/80'
+                  ? 'border-blue-500 text-white bg-[#111C33]'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
               id="tab-btn-rates"
@@ -387,35 +387,35 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
 
             <button
               onClick={() => setActiveTab('COMPARISON')}
-              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
+              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 cursor-pointer ${
                 activeTab === 'COMPARISON'
-                  ? 'border-indigo-500 text-white bg-slate-800/80'
+                  ? 'border-blue-500 text-white bg-[#111C33]'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
               id="tab-btn-comparison"
             >
-              <GitCompare className="w-4 h-4 text-indigo-400" />
+              <GitCompare className="w-4 h-4 text-blue-400" />
               So Sánh & Phân Tích
             </button>
 
             <button
               onClick={() => setActiveTab('MATCHING')}
-              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
+              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 cursor-pointer ${
                 activeTab === 'MATCHING'
-                  ? 'border-purple-500 text-white bg-slate-800/80'
+                  ? 'border-teal-400 text-white bg-[#111C33]'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
               id="tab-btn-matching"
             >
-              <Sparkles className="w-4 h-4 text-purple-400" />
+              <Sparkles className="w-4 h-4 text-teal-400" />
               Rate Matching Engine
             </button>
 
             <button
               onClick={() => setActiveTab('EXPIRING')}
-              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
+              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 cursor-pointer ${
                 activeTab === 'EXPIRING'
-                  ? 'border-amber-500 text-white bg-slate-800/80'
+                  ? 'border-amber-500 text-white bg-[#111C33]'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
               id="tab-btn-expiring"
@@ -426,9 +426,9 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
 
             <button
               onClick={() => setActiveTab('APPROVALS')}
-              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 relative ${
+              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 relative cursor-pointer ${
                 activeTab === 'APPROVALS'
-                  ? 'border-emerald-500 text-white bg-slate-800/80'
+                  ? 'border-emerald-500 text-white bg-[#111C33]'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
               id="tab-btn-approvals"
@@ -444,9 +444,9 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
 
             <button
               onClick={() => setActiveTab('REQUESTS')}
-              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
+              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 cursor-pointer ${
                 activeTab === 'REQUESTS'
-                  ? 'border-sky-500 text-white bg-slate-800/80'
+                  ? 'border-sky-500 text-white bg-[#111C33]'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
               id="tab-btn-requests"
@@ -457,22 +457,22 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
 
             <button
               onClick={() => setActiveTab('ENTITIES')}
-              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
+              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 cursor-pointer ${
                 activeTab === 'ENTITIES'
-                  ? 'border-purple-400 text-white bg-slate-800/80'
+                  ? 'border-teal-400 text-white bg-[#111C33]'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
               id="tab-btn-entities"
             >
-              <Building className="w-4 h-4 text-purple-400" />
+              <Building className="w-4 h-4 text-teal-400" />
               Hãng Vận Chuyển & NCC
             </button>
 
             <button
               onClick={() => setActiveTab('CHARGES')}
-              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
+              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 cursor-pointer ${
                 activeTab === 'CHARGES'
-                  ? 'border-teal-500 text-white bg-slate-800/80'
+                  ? 'border-teal-500 text-white bg-[#111C33]'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
               id="tab-btn-charges"
@@ -483,9 +483,9 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
 
             <button
               onClick={() => setActiveTab('AUDIT')}
-              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
+              className={`px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 cursor-pointer ${
                 activeTab === 'AUDIT'
-                  ? 'border-slate-400 text-white bg-slate-800/80'
+                  ? 'border-slate-400 text-white bg-[#111C33]'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
               id="tab-btn-audit"
@@ -509,7 +509,7 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
         </div>
 
         {/* Tab Content Area */}
-        <div className="flex-1 overflow-y-auto bg-slate-100 p-6">
+        <div className="flex-1 overflow-y-auto bg-[#F4F6FA] p-6">
           {/* TAB 1: RATES */}
           {activeTab === 'RATES' && (
             <RateTableTab
@@ -680,9 +680,9 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                             hist.action === 'CREATE' ? 'bg-emerald-100 text-emerald-800' :
                             hist.action === 'UPDATE' ? 'bg-blue-100 text-blue-800' :
-                            hist.action === 'NEW_VERSION' ? 'bg-purple-100 text-purple-800' :
+                            hist.action === 'NEW_VERSION' ? 'bg-teal-100 text-teal-800' :
                             hist.action === 'APPROVE' ? 'bg-amber-100 text-amber-800' : 
-                            hist.action === 'RATE_IMPORTED' ? 'bg-indigo-100 text-indigo-800' : 'bg-rose-100 text-rose-800'
+                            hist.action === 'RATE_IMPORTED' ? 'bg-sky-100 text-sky-800' : 'bg-rose-100 text-rose-800'
                           }`}>
                             {hist.action}
                           </span>
@@ -727,7 +727,7 @@ export const MasterRateHubModal: React.FC<MasterRateHubModalProps> = ({
 
         {/* MODAL: CHARGE MASTER FORM */}
         {isChargeFormOpen && editingCharge && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-[#0B1324]/70 backdrop-blur-xs">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 border border-slate-200">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                 <h3 className="text-base font-bold text-slate-800">

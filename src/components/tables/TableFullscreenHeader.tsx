@@ -68,7 +68,7 @@ export const TableFullscreenHeader: React.FC<FolderFullscreenHeaderProps> = ({
   };
 
   return (
-    <div className="bg-slate-900 border-b border-slate-700/80 text-white px-4 sm:px-6 py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-md shrink-0 z-30 select-none">
+    <div className="bg-[#0B1324] border-b border-white/10 text-white px-4 sm:px-6 py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-md shrink-0 z-30 select-none">
       {/* Left: Breadcrumbs, Title & Direct URL Pill */}
       <div className="flex flex-wrap items-center gap-2.5">
         <div className="flex items-center space-x-1.5 text-xs text-slate-400 font-medium">
@@ -83,13 +83,13 @@ export const TableFullscreenHeader: React.FC<FolderFullscreenHeaderProps> = ({
           )}
         </div>
 
-        <div className="h-4 w-px bg-slate-700 hidden sm:block" />
+        <div className="h-4 w-px bg-white/15 hidden sm:block" />
 
         <div className="flex items-center space-x-2">
           <h2 className="text-sm sm:text-base font-bold text-white tracking-tight flex items-center gap-2">
             <span>{displayName}</span>
             {recordCount !== undefined && (
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-cyan-300">
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-600/20 border border-blue-500/35 text-blue-300">
                 {recordCount} bản ghi
               </span>
             )}
@@ -97,7 +97,7 @@ export const TableFullscreenHeader: React.FC<FolderFullscreenHeaderProps> = ({
         </div>
 
         {/* Dedicated URL Chip */}
-        <div className="flex items-center bg-slate-800/90 border border-slate-700 rounded-lg px-2 py-1 space-x-1.5 text-[11px] font-mono text-cyan-300">
+        <div className="flex items-center bg-[#111C33] border border-white/10 rounded-lg px-2 py-1 space-x-1.5 text-[11px] font-mono text-blue-300">
           <span className="text-slate-400 font-sans text-[10px]">URL:</span>
           <span className="truncate max-w-[140px] sm:max-w-[200px]" title={directUrl}>
             {displayHash}
@@ -128,10 +128,10 @@ export const TableFullscreenHeader: React.FC<FolderFullscreenHeaderProps> = ({
           <button
             type="button"
             onClick={() => setIsSwitcherOpen(!isSwitcherOpen)}
-            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 transition-colors cursor-pointer"
+            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-[#16233F] hover:bg-[#1D2D50] border border-white/10 text-xs text-slate-200 transition-colors cursor-pointer"
             title="Chuyển nhanh sang thư mục dữ liệu khác"
           >
-            <Folder className="w-3.5 h-3.5 text-indigo-400" />
+            <Folder className="w-3.5 h-3.5 text-blue-400" />
             <span className="hidden sm:inline">Chuyển Thư Mục</span>
             <span className="text-[10px] text-slate-400">▾</span>
           </button>
@@ -142,8 +142,8 @@ export const TableFullscreenHeader: React.FC<FolderFullscreenHeaderProps> = ({
                 className="fixed inset-0 z-40" 
                 onClick={() => setIsSwitcherOpen(false)} 
               />
-              <div className="absolute right-0 top-full mt-1.5 w-76 max-h-96 overflow-y-auto bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 p-1.5 space-y-0.5">
-                <div className="px-2.5 py-1.5 text-[10px] font-bold tracking-wider text-slate-400 uppercase border-b border-slate-800 flex items-center justify-between">
+              <div className="absolute right-0 top-full mt-1.5 w-76 max-h-96 overflow-y-auto bg-[#0B1324] border border-white/15 rounded-xl shadow-2xl z-50 p-1.5 space-y-0.5">
+                <div className="px-2.5 py-1.5 text-[10px] font-bold tracking-wider text-slate-400 uppercase border-b border-white/10 flex items-center justify-between">
                   <span>Chọn Thư Mục Toàn Màn Hình</span>
                   <span className="text-[9px] text-slate-500 font-mono">14 thư mục</span>
                 </div>
@@ -159,11 +159,11 @@ export const TableFullscreenHeader: React.FC<FolderFullscreenHeaderProps> = ({
                     }}
                     className={`w-full text-left px-2.5 py-2 rounded-lg text-xs flex items-center space-x-2 transition-colors cursor-pointer ${
                       f.id === activeId 
-                        ? 'bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-semibold' 
-                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                        ? 'bg-blue-600/20 border border-blue-500/40 text-blue-200 font-semibold' 
+                        : 'text-slate-300 hover:bg-[#16233F] hover:text-white'
                     }`}
                   >
-                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="truncate font-medium">{f.nameVi}</div>
                       <div className="text-[10px] text-slate-400 font-mono truncate">{f.hash}</div>
@@ -179,7 +179,7 @@ export const TableFullscreenHeader: React.FC<FolderFullscreenHeaderProps> = ({
         <button
           type="button"
           onClick={handleOpenNewTab}
-          className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 transition-colors cursor-pointer"
+          className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-[#16233F] hover:bg-[#1D2D50] border border-white/10 text-xs text-slate-200 transition-colors cursor-pointer"
           title="Mở thư mục này trong một tab trình duyệt riêng biệt hoàn chỉnh"
         >
           <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
@@ -192,19 +192,19 @@ export const TableFullscreenHeader: React.FC<FolderFullscreenHeaderProps> = ({
           onClick={onToggleFullscreen}
           className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
             isFullscreen
-              ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-xs'
-              : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+              ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
+              : 'bg-[#16233F] hover:bg-[#1D2D50] text-slate-200 border border-white/10'
           }`}
           title={isFullscreen ? 'Thu nhỏ lại chế độ cửa sổ' : 'Phóng to toàn màn hình không viền'}
         >
           {isFullscreen ? (
             <>
-              <Minimize2 className="w-3.5 h-3.5 text-cyan-200" />
+              <Minimize2 className="w-3.5 h-3.5 text-blue-100" />
               <span>Thu Nhỏ</span>
             </>
           ) : (
             <>
-              <Maximize2 className="w-3.5 h-3.5 text-cyan-400" />
+              <Maximize2 className="w-3.5 h-3.5 text-blue-400" />
               <span>Toàn Màn Hình</span>
             </>
           )}
@@ -214,7 +214,7 @@ export const TableFullscreenHeader: React.FC<FolderFullscreenHeaderProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors ml-1 cursor-pointer"
+          className="p-1.5 text-slate-400 hover:text-white hover:bg-[#16233F] rounded-lg transition-colors ml-1 cursor-pointer"
           title="Đóng thư mục và quay lại Bàn làm việc"
         >
           <X className="w-5 h-5" />

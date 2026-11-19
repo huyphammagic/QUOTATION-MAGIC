@@ -90,7 +90,7 @@ export const TermsForm: React.FC<TermsFormProps> = ({
 
                 <div className="bg-white p-2 rounded border border-slate-200 flex flex-col items-center text-center">
                   <div className="flex items-center space-x-1 text-[10px] text-slate-500 font-bold uppercase mb-1">
-                    <MapPin className="w-3 h-3 text-purple-600" />
+                    <MapPin className="w-3 h-3 text-teal-600" />
                     <span>Phí POD (Đầu Nhập)</span>
                   </div>
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
@@ -124,7 +124,7 @@ export const TermsForm: React.FC<TermsFormProps> = ({
         <div className="space-y-2 md:col-span-2 bg-slate-50 p-3.5 rounded-lg border border-slate-200">
           <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
             <span className="flex items-center space-x-1.5">
-              <Coins className="w-4 h-4 text-cyan-700" />
+              <Coins className="w-4 h-4 text-blue-600" />
               <span>Đồng Tiền Thể Hiện Chính Trên File Báo Giá (PDF & Excel) *</span>
             </span>
             <span className="text-[10px] font-normal text-slate-500 italic">
@@ -140,19 +140,19 @@ export const TermsForm: React.FC<TermsFormProps> = ({
               }}
               className={`p-3 rounded-xl border text-left flex items-start space-x-3 transition-all ${
                 currentCurrency === 'USD'
-                  ? 'bg-cyan-50/70 border-cyan-500 shadow-xs text-cyan-950 ring-1 ring-cyan-500'
+                  ? 'bg-blue-50/70 border-blue-600 shadow-xs text-blue-950 ring-1 ring-blue-600'
                   : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
               }`}
             >
               <div className={`w-5 h-5 rounded-full border flex items-center justify-center mt-0.5 shrink-0 ${
-                currentCurrency === 'USD' ? 'border-cyan-600 bg-cyan-600 text-white' : 'border-slate-400 bg-white'
+                currentCurrency === 'USD' ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-400 bg-white'
               }`}>
                 {currentCurrency === 'USD' && <div className="w-2 h-2 rounded-full bg-white" />}
               </div>
               <div className="space-y-0.5">
                 <div className="font-bold text-xs flex items-center space-x-1">
                   <span>Tiền Đô La Mỹ (USD - $)</span>
-                  <span className="px-1.5 py-0.2 bg-cyan-100 text-cyan-800 rounded text-[10px] font-mono font-bold">Standard</span>
+                  <span className="px-1.5 py-0.2 bg-blue-100 text-blue-800 rounded text-[10px] font-mono font-bold">Standard</span>
                 </div>
                 <p className="text-[11px] text-slate-500">
                   Thích hợp cho tuyến vận chuyển quốc tế (Ocean Freight/Air Freight) và khách hàng doanh nghiệp FDI.

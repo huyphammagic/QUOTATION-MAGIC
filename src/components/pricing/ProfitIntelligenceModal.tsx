@@ -349,15 +349,15 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#0B1324]/80 backdrop-blur-sm overflow-y-auto">
       <div 
         id="profit-intelligence-modal"
-        className="bg-slate-900 text-slate-100 w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-800 overflow-hidden flex flex-col max-h-[92vh]"
+        className="bg-[#111C33] text-slate-100 w-full max-w-5xl rounded-2xl shadow-2xl border border-white/10 overflow-hidden flex flex-col max-h-[92vh]"
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/60">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#0B1324]">
           <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+            <div className="p-2 rounded-xl bg-blue-500/15 border border-blue-400/30 text-blue-400">
               <TrendingUp className="w-5 h-5" />
             </div>
             <div>
@@ -365,7 +365,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                 <h2 className="text-base sm:text-lg font-bold text-white tracking-wide">
                   Profit & Margin Intelligence
                 </h2>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/15 text-blue-300 border border-blue-400/30">
                   SMART PRICING ENGINE
                 </span>
               </div>
@@ -377,12 +377,12 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
 
           <div className="flex items-center space-x-3">
             {/* Currency toggle */}
-            <div className="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+            <div className="flex items-center bg-[#16233F] p-1 rounded-lg border border-white/10 text-xs">
               <button
                 type="button"
                 onClick={() => setCurrency('USD')}
                 className={`px-2 py-0.5 rounded font-bold transition-all ${
-                  !isVnd ? 'bg-cyan-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                  !isVnd ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 USD
@@ -391,7 +391,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                 type="button"
                 onClick={() => setCurrency('VND')}
                 className={`px-2 py-0.5 rounded font-bold transition-all ${
-                  isVnd ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                  isVnd ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 VND
@@ -400,7 +400,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
 
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-[#1D2D50] rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -408,13 +408,13 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
         </div>
 
         {/* Modal Navigation Tabs */}
-        <div className="flex items-center px-6 border-b border-slate-800 bg-slate-950/40 text-xs font-bold gap-6">
+        <div className="flex items-center px-6 border-b border-white/10 bg-[#0B1324]/60 text-xs font-bold gap-6">
           <button
             type="button"
             onClick={() => setActiveTab('ANALYSIS')}
             className={`py-3 flex items-center space-x-2 border-b-2 transition-all ${
               activeTab === 'ANALYSIS'
-                ? 'border-cyan-400 text-cyan-300'
+                ? 'border-blue-400 text-blue-300'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -427,7 +427,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
             onClick={() => setActiveTab('WHAT_IF')}
             className={`py-3 flex items-center space-x-2 border-b-2 transition-all ${
               activeTab === 'WHAT_IF'
-                ? 'border-cyan-400 text-cyan-300'
+                ? 'border-blue-400 text-blue-300'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -440,7 +440,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
             onClick={() => setActiveTab('POLICIES')}
             className={`py-3 flex items-center space-x-2 border-b-2 transition-all ${
               activeTab === 'POLICIES'
-                ? 'border-cyan-400 text-cyan-300'
+                ? 'border-blue-400 text-blue-300'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -459,7 +459,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
               {/* Top KPI Metrics Matrix */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                 {/* 1. Buy Cost */}
-                <div className="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+                <div className="bg-[#0B1324]/80 p-3.5 rounded-xl border border-white/10">
                   <div className="flex items-center justify-between text-slate-400 text-[11px]">
                     <span>TỔNG GIÁ VỐN (BUY)</span>
                     <DollarSign className="w-3.5 h-3.5 text-amber-400" />
@@ -474,19 +474,19 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                 </div>
 
                 {/* 2. Total Sell */}
-                <div className="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+                <div className="bg-[#0B1324]/80 p-3.5 rounded-xl border border-white/10">
                   <div className="flex items-center justify-between text-slate-400 text-[11px]">
                     <span>DOANH THU (SELL)</span>
-                    <DollarSign className="w-3.5 h-3.5 text-cyan-400" />
+                    <DollarSign className="w-3.5 h-3.5 text-blue-400" />
                   </div>
-                  <div className="text-base sm:text-lg font-black font-mono text-cyan-300 mt-1">
+                  <div className="text-base sm:text-lg font-black font-mono text-blue-300 mt-1">
                     {formatMoney(currentSummary.totalSellUsd, currentSummary.totalSellVnd)}
                   </div>
                   <span className="text-[10px] text-slate-400 font-mono">Chưa gồm thuế VAT</span>
                 </div>
 
                 {/* 3. Gross Profit */}
-                <div className="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+                <div className="bg-[#0B1324]/80 p-3.5 rounded-xl border border-white/10">
                   <div className="flex items-center justify-between text-slate-400 text-[11px]">
                     <span>LỢI NHUẬN GỘP</span>
                     <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
@@ -501,10 +501,10 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                 </div>
 
                 {/* 4. Gross Margin % */}
-                <div className="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+                <div className="bg-[#0B1324]/80 p-3.5 rounded-xl border border-white/10">
                   <div className="flex items-center justify-between text-slate-400 text-[11px]">
                     <span>BIÊN LÃI (MARGIN)</span>
-                    <Percent className="w-3.5 h-3.5 text-cyan-400" />
+                    <Percent className="w-3.5 h-3.5 text-blue-400" />
                   </div>
                   <div className={`text-base sm:text-lg font-black font-mono mt-1 ${
                     currentSummary.grossMarginPercent >= activePolicy.targetMarginPercent
@@ -519,22 +519,22 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                 </div>
 
                 {/* 5. Markup % */}
-                <div className="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+                <div className="bg-[#0B1324]/80 p-3.5 rounded-xl border border-white/10">
                   <div className="flex items-center justify-between text-slate-400 text-[11px]">
                     <span>TỶ LỆ MARKUP</span>
-                    <Percent className="w-3.5 h-3.5 text-indigo-400" />
+                    <Percent className="w-3.5 h-3.5 text-teal-400" />
                   </div>
-                  <div className="text-base sm:text-lg font-black font-mono text-indigo-300 mt-1">
+                  <div className="text-base sm:text-lg font-black font-mono text-teal-300 mt-1">
                     {formatPercent(currentSummary.markupPercent, 2)}
                   </div>
                   <span className="text-[10px] text-slate-400 font-mono">Profit / Buy Cost × 100</span>
                 </div>
 
                 {/* 6. Target vs Floor */}
-                <div className="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+                <div className="bg-[#0B1324]/80 p-3.5 rounded-xl border border-white/10">
                   <div className="flex items-center justify-between text-slate-400 text-[11px]">
                     <span>TARGET / MIN MARGIN</span>
-                    <ShieldAlert className="w-3.5 h-3.5 text-cyan-400" />
+                    <ShieldAlert className="w-3.5 h-3.5 text-blue-400" />
                   </div>
                   <div className="text-xs font-bold font-mono text-slate-200 mt-1 space-y-0.5">
                     <div>Mục tiêu: <span className="text-emerald-400">{activePolicy.targetMarginPercent}%</span></div>
@@ -544,7 +544,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
               </div>
 
               {/* Status Explanation Banner */}
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+              <div className="p-4 rounded-xl bg-[#0B1324]/90 border border-white/10 space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center flex-wrap gap-2">
                     {renderStatusBadge(currentSummary)}
@@ -552,7 +552,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                     <span className="text-xs text-slate-400 font-medium">| Cấp độ duyệt:</span>
                     {renderApprovalLevelBadge(currentSummary.approvalLevel)}
                   </div>
-                  <div className="text-xs font-mono text-cyan-400">
+                  <div className="text-xs font-mono text-blue-400">
                     Chính sách: <span className="font-bold underline cursor-pointer" onClick={() => setActiveTab('POLICIES')}>{activePolicy.policyName} ({activePolicy.policyCode})</span>
                   </div>
                 </div>
@@ -568,7 +568,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
               {/* Price Recommendations & Thresholds Matrix */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {/* Recommended Price */}
-                <div className="p-4 rounded-xl bg-gradient-to-br from-slate-950 to-emerald-950/30 border border-emerald-800/40 space-y-1">
+                <div className="p-4 rounded-xl bg-[#0B1324]/90 border border-emerald-500/30 space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
                       GIÁ BÁN ĐỀ XUẤT (RECOMMENDED SELL)
@@ -584,7 +584,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                 </div>
 
                 {/* Minimum Sell Price (Price Floor) */}
-                <div className="p-4 rounded-xl bg-gradient-to-br from-slate-950 to-rose-950/30 border border-rose-800/40 space-y-1">
+                <div className="p-4 rounded-xl bg-[#0B1324]/90 border border-rose-500/30 space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-rose-400 uppercase tracking-wider">
                       GIÁ SÀN TỐI THIỂU (PRICE FLOOR)
@@ -600,20 +600,20 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                 </div>
 
                 {/* Maximum Discount */}
-                <div className="p-4 rounded-xl bg-gradient-to-br from-slate-950 to-cyan-950/30 border border-cyan-800/40 space-y-1">
+                <div className="p-4 rounded-xl bg-[#0B1324]/90 border border-blue-500/30 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
+                    <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">
                       CHIẾT KHẤU TỐI ĐA (MAX DISCOUNT)
                     </span>
-                    <Percent className="w-4 h-4 text-cyan-400" />
+                    <Percent className="w-4 h-4 text-blue-400" />
                   </div>
                   <div className="text-xl font-black font-mono text-white">
                     {formatMoney(currentSummary.maximumDiscountUsd, currentSummary.maximumDiscountUsd * exchangeRate)}
-                    <span className="text-xs font-bold text-cyan-400 ml-2">
+                    <span className="text-xs font-bold text-blue-400 ml-2">
                       ({formatPercent(currentSummary.maximumDiscountPercent, 1)})
                     </span>
                   </div>
-                  <p className="text-[11px] text-cyan-300/80">
+                  <p className="text-[11px] text-blue-300/80">
                     Mức giảm tối đa vẫn đảm bảo không vi phạm biên lãi sàn.
                   </p>
                 </div>
@@ -673,8 +673,8 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                             </p>
                           </div>
                           {warn.actionableSuggestionVi && (
-                            <div className="pt-2 border-t border-slate-800/80 flex items-start gap-1.5 text-[11px] text-slate-400">
-                              <span className="font-semibold text-cyan-300">Gợi ý:</span>
+                            <div className="pt-2 border-t border-white/10 flex items-start gap-1.5 text-[11px] text-slate-400">
+                              <span className="font-semibold text-blue-300">Gợi ý:</span>
                               <span>{warn.actionableSuggestionVi}</span>
                             </div>
                           )}
@@ -701,7 +701,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                     {currentSummary.pricingRecommendations.map((rec) => (
                       <div
                         key={rec.id}
-                        className="p-4 rounded-xl bg-slate-950/80 border border-emerald-900/40 hover:border-emerald-700/60 transition-all flex flex-col justify-between space-y-3"
+                        className="p-4 rounded-xl bg-[#0B1324]/80 border border-emerald-500/30 hover:border-emerald-400/50 transition-all flex flex-col justify-between space-y-3"
                       >
                         <div className="space-y-1.5">
                           <div className="flex items-center justify-between gap-2">
@@ -716,7 +716,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                           <p className="text-[11px] text-slate-300 leading-relaxed">
                             {rec.descriptionVi}
                           </p>
-                          <div className="p-2 rounded-lg bg-slate-900/90 border border-slate-800 text-[11px] space-y-1">
+                          <div className="p-2 rounded-lg bg-[#16233F] border border-white/10 text-[11px] space-y-1">
                             <div className="flex justify-between font-mono">
                               <span className="text-slate-400">Tác động tài chính:</span>
                               <span className="text-emerald-300 font-bold">{rec.impactSummaryVi}</span>
@@ -724,7 +724,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                             {rec.suggestedSellPriceUsd && (
                               <div className="flex justify-between font-mono">
                                 <span className="text-slate-400">Giá bán đề xuất:</span>
-                                <span className="text-cyan-300 font-bold">
+                                <span className="text-blue-300 font-bold">
                                   {formatMoney(rec.suggestedSellPriceUsd, rec.suggestedSellPriceUsd * exchangeRate)}
                                 </span>
                               </div>
@@ -760,16 +760,16 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-cyan-400" />
+                      <Clock className="w-4 h-4 text-blue-400" />
                       <span>Truy Xuất Nguồn Cước & Hạn Hiệu Lực ({currentSummary.rateSourceTraceability.length} Dòng)</span>
                     </h3>
                     <span className="text-[11px] text-slate-400">
                       Kiểm soát hợp đồng cung ứng và cảnh báo trượt giá vốn
                     </span>
                   </div>
-                  <div className="border border-slate-800 rounded-xl overflow-x-auto bg-slate-950/60">
+                  <div className="border border-white/10 rounded-xl overflow-x-auto bg-[#0B1324]/70">
                     <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800">
+                      <thead className="bg-[#0B1324] text-slate-400 font-semibold border-b border-white/10">
                         <tr>
                           <th className="p-2.5">Khoản Phí</th>
                           <th className="p-2.5">Nguồn Định Giá</th>
@@ -778,10 +778,10 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                           <th className="p-2.5 text-center">Trạng Thái Hạn</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-800/60">
+                      <tbody className="divide-y divide-white/10">
                         {currentSummary.rateSourceTraceability.map((trace) => {
                           return (
-                            <tr key={trace.itemId} className="hover:bg-slate-900/40">
+                            <tr key={trace.itemId} className="hover:bg-[#16233F]/70">
                               <td className="p-2.5 font-bold text-slate-200">
                                 {trace.itemDescription || trace.itemId}
                               </td>
@@ -827,7 +827,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                    <FileSpreadsheet className="w-4 h-4 text-cyan-400" />
+                    <FileSpreadsheet className="w-4 h-4 text-blue-400" />
                     <span>Chi Tiết Lợi Nhuận Từng Dòng Phí (Line-by-Line Breakdown)</span>
                   </h3>
                   <span className="text-[11px] text-slate-400">
@@ -835,9 +835,9 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                   </span>
                 </div>
 
-                <div className="border border-slate-800 rounded-xl overflow-x-auto bg-slate-950/60">
+                <div className="border border-white/10 rounded-xl overflow-x-auto bg-[#0B1324]/70">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800">
+                    <thead className="bg-[#0B1324] text-slate-400 font-semibold border-b border-white/10">
                       <tr>
                         <th className="p-2.5">Khoản Phí</th>
                         <th className="p-2.5 text-center">SL / ĐVT</th>
@@ -849,11 +849,11 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                         <th className="p-2.5">Nguồn Cước</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/60">
+                    <tbody className="divide-y divide-white/10">
                       {currentSummary.lineDetails.map((line) => {
                         const isLineProfitPositive = (isVnd ? line.profitVnd : line.profitUsd) >= 0;
                         return (
-                          <tr key={line.itemId} className="hover:bg-slate-900/40">
+                          <tr key={line.itemId} className="hover:bg-[#16233F]/70">
                             <td className="p-2.5">
                               <div className="font-bold text-slate-200">{line.code}</div>
                               <div className="text-[10px] text-slate-400 truncate max-w-[200px]">{line.description}</div>
@@ -867,7 +867,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                                 : '••••'
                               }
                             </td>
-                            <td className="p-2.5 text-right font-mono text-cyan-300 font-bold">
+                            <td className="p-2.5 text-right font-mono text-blue-300 font-bold">
                               {formatMoney(line.totalSellUsd, line.totalSellVnd)}
                             </td>
                             <td className={`p-2.5 text-right font-mono font-bold ${
@@ -889,7 +889,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                                 {formatPercent(line.marginPercent, 1)}
                               </span>
                             </td>
-                            <td className="p-2.5 text-right font-mono text-indigo-300 text-[11px]">
+                            <td className="p-2.5 text-right font-mono text-teal-300 text-[11px]">
                               {formatPercent(line.markupPercent, 1)}
                             </td>
                             <td className="p-2.5">
@@ -916,7 +916,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
           {activeTab === 'WHAT_IF' && (
             <div className="space-y-6">
               
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex items-start space-x-3">
+              <div className="p-4 rounded-xl bg-[#0B1324]/90 border border-white/10 flex items-start space-x-3">
                 <Sparkles className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                 <div className="space-y-1 text-xs">
                   <h4 className="font-bold text-white">What-If Pricing Calculator (Mô Phỏng Giá Tức Thì)</h4>
@@ -940,16 +940,16 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   {/* Scenario 1: Current Baseline */}
-                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col justify-between space-y-3">
+                  <div className="p-3.5 rounded-xl bg-[#0B1324]/90 border border-white/10 flex flex-col justify-between space-y-3">
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-slate-300 uppercase">1. HIỆN TẠI</span>
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400">Baseline</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#16233F] text-slate-400">Baseline</span>
                       </div>
                       <div className="text-base font-black font-mono text-white">
                         {formatMoney(multiScenarios.current.simulatedSummary.totalSellUsd, multiScenarios.current.simulatedSummary.totalSellVnd)}
                       </div>
-                      <div className="text-[11px] space-y-1 font-mono pt-1 text-slate-400 border-t border-slate-900">
+                      <div className="text-[11px] space-y-1 font-mono pt-1 text-slate-400 border-t border-white/10">
                         <div className="flex justify-between">
                           <span>Lãi gộp:</span>
                           <span className="text-emerald-400 font-bold">
@@ -958,19 +958,19 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                         </div>
                         <div className="flex justify-between">
                           <span>Margin:</span>
-                          <span className="text-cyan-400 font-bold">
+                          <span className="text-blue-400 font-bold">
                             {formatPercent(multiScenarios.current.simulatedSummary.grossMarginPercent, 1)}
                           </span>
                         </div>
                       </div>
                     </div>
-                    <div className="pt-2 border-t border-slate-900">
+                    <div className="pt-2 border-t border-white/10">
                       {renderStatusBadge(multiScenarios.current.simulatedSummary)}
                     </div>
                   </div>
 
                   {/* Scenario 2: Target Margin */}
-                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-emerald-900/50 hover:border-emerald-700/60 transition-all flex flex-col justify-between space-y-3">
+                  <div className="p-3.5 rounded-xl bg-[#0B1324]/90 border border-emerald-500/30 hover:border-emerald-400/50 transition-all flex flex-col justify-between space-y-3">
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-emerald-400 uppercase">2. MỤC TIÊU ({activePolicy.targetMarginPercent}%)</span>
@@ -979,7 +979,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                       <div className="text-base font-black font-mono text-white">
                         {formatMoney(multiScenarios.scenarioA.simulatedSummary.totalSellUsd, multiScenarios.scenarioA.simulatedSummary.totalSellVnd)}
                       </div>
-                      <div className="text-[11px] space-y-1 font-mono pt-1 text-slate-400 border-t border-slate-900">
+                      <div className="text-[11px] space-y-1 font-mono pt-1 text-slate-400 border-t border-white/10">
                         <div className="flex justify-between">
                           <span>Lãi gộp:</span>
                           <span className="text-emerald-400 font-bold">
@@ -1012,16 +1012,16 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                   </div>
 
                   {/* Scenario 3: Competitive Discount (-5%) */}
-                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-cyan-900/50 hover:border-cyan-700/60 transition-all flex flex-col justify-between space-y-3">
+                  <div className="p-3.5 rounded-xl bg-[#0B1324]/90 border border-blue-500/30 hover:border-blue-400/50 transition-all flex flex-col justify-between space-y-3">
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-cyan-400 uppercase">3. GIẢM GIÁ (-5%)</span>
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-cyan-950 text-cyan-300 border border-cyan-800">Cạnh Tranh</span>
+                        <span className="text-xs font-bold text-blue-400 uppercase">3. GIẢM GIÁ (-5%)</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-500/15 text-blue-300 border border-blue-400/30">Cạnh Tranh</span>
                       </div>
                       <div className="text-base font-black font-mono text-white">
                         {formatMoney(multiScenarios.scenarioB.simulatedSummary.totalSellUsd, multiScenarios.scenarioB.simulatedSummary.totalSellVnd)}
                       </div>
-                      <div className="text-[11px] space-y-1 font-mono pt-1 text-slate-400 border-t border-slate-900">
+                      <div className="text-[11px] space-y-1 font-mono pt-1 text-slate-400 border-t border-white/10">
                         <div className="flex justify-between">
                           <span>Lãi gộp:</span>
                           <span className="text-emerald-400 font-bold">
@@ -1030,7 +1030,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                         </div>
                         <div className="flex justify-between">
                           <span>Margin:</span>
-                          <span className="text-cyan-400 font-bold">
+                          <span className="text-blue-400 font-bold">
                             {formatPercent(multiScenarios.scenarioB.simulatedSummary.grossMarginPercent, 1)}
                           </span>
                         </div>
@@ -1046,7 +1046,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                     <button
                       type="button"
                       onClick={() => handleSelectScenario(multiScenarios.scenarioB)}
-                      className="w-full py-1.5 px-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold flex items-center justify-center gap-1 transition-all"
+                      className="w-full py-1.5 px-2 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 border border-blue-400/30 text-xs font-bold flex items-center justify-center gap-1 transition-all"
                     >
                       <span>Chọn Kịch Bản Này</span>
                       <ArrowRight className="w-3 h-3" />
@@ -1054,7 +1054,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                   </div>
 
                   {/* Scenario 4: Floor Margin */}
-                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-amber-900/50 hover:border-amber-700/60 transition-all flex flex-col justify-between space-y-3">
+                  <div className="p-3.5 rounded-xl bg-[#0B1324]/90 border border-amber-500/30 hover:border-amber-400/50 transition-all flex flex-col justify-between space-y-3">
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-amber-400 uppercase">4. SÀN MIN ({activePolicy.minimumMarginPercent}%)</span>
@@ -1063,7 +1063,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                       <div className="text-base font-black font-mono text-white">
                         {formatMoney(multiScenarios.scenarioC.simulatedSummary.totalSellUsd, multiScenarios.scenarioC.simulatedSummary.totalSellVnd)}
                       </div>
-                      <div className="text-[11px] space-y-1 font-mono pt-1 text-slate-400 border-t border-slate-900">
+                      <div className="text-[11px] space-y-1 font-mono pt-1 text-slate-400 border-t border-white/10">
                         <div className="flex justify-between">
                           <span>Lãi gộp:</span>
                           <span className="text-amber-400 font-bold">
@@ -1104,8 +1104,8 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                   onClick={() => setWhatIfMode('TARGET_MARGIN')}
                   className={`p-3 rounded-xl border text-left transition-all ${
                     whatIfMode === 'TARGET_MARGIN'
-                      ? 'bg-cyan-950/60 border-cyan-500 text-white shadow-md'
-                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                      ? 'bg-[#16233F] border-blue-500 text-white shadow-md'
+                      : 'bg-[#0B1324]/70 border-white/10 text-slate-400 hover:text-slate-200 hover:bg-[#16233F]/50'
                   }`}
                 >
                   <div className="font-bold text-xs">1. Theo Biên Lãi %</div>
@@ -1117,8 +1117,8 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                   onClick={() => setWhatIfMode('DISCOUNT_PERCENT')}
                   className={`p-3 rounded-xl border text-left transition-all ${
                     whatIfMode === 'DISCOUNT_PERCENT'
-                      ? 'bg-cyan-950/60 border-cyan-500 text-white shadow-md'
-                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                      ? 'bg-[#16233F] border-blue-500 text-white shadow-md'
+                      : 'bg-[#0B1324]/70 border-white/10 text-slate-400 hover:text-slate-200 hover:bg-[#16233F]/50'
                   }`}
                 >
                   <div className="font-bold text-xs">2. Theo Chiết Khấu %</div>
@@ -1130,8 +1130,8 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                   onClick={() => setWhatIfMode('DIRECT_SELL')}
                   className={`p-3 rounded-xl border text-left transition-all ${
                     whatIfMode === 'DIRECT_SELL'
-                      ? 'bg-cyan-950/60 border-cyan-500 text-white shadow-md'
-                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                      ? 'bg-[#16233F] border-blue-500 text-white shadow-md'
+                      : 'bg-[#0B1324]/70 border-white/10 text-slate-400 hover:text-slate-200 hover:bg-[#16233F]/50'
                   }`}
                 >
                   <div className="font-bold text-xs">3. Đặt Giá Bán Trực Tiếp</div>
@@ -1143,8 +1143,8 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                   onClick={() => setWhatIfMode('TARGET_PROFIT')}
                   className={`p-3 rounded-xl border text-left transition-all ${
                     whatIfMode === 'TARGET_PROFIT'
-                      ? 'bg-cyan-950/60 border-cyan-500 text-white shadow-md'
-                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                      ? 'bg-[#16233F] border-blue-500 text-white shadow-md'
+                      : 'bg-[#0B1324]/70 border-white/10 text-slate-400 hover:text-slate-200 hover:bg-[#16233F]/50'
                   }`}
                 >
                   <div className="font-bold text-xs">4. Theo Lợi Nhuận Gộp</div>
@@ -1153,12 +1153,12 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
               </div>
 
               {/* Interactive Controllers Box */}
-              <div className="p-5 rounded-xl bg-slate-950 border border-slate-800 space-y-4">
+              <div className="p-5 rounded-xl bg-[#0B1324]/90 border border-white/10 space-y-4">
                 {whatIfMode === 'TARGET_MARGIN' && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-bold text-slate-300">Biên Lợi Nhuận Mục Tiêu (Target Margin %):</span>
-                      <span className="text-base font-black font-mono text-cyan-400">{targetMarginInput}%</span>
+                      <span className="text-base font-black font-mono text-blue-400">{targetMarginInput}%</span>
                     </div>
                     <input
                       type="range"
@@ -1167,7 +1167,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                       step="0.5"
                       value={targetMarginInput}
                       onChange={(e) => setTargetMarginInput(Number(e.target.value))}
-                      className="w-full accent-cyan-400 h-2 bg-slate-800 rounded-lg cursor-pointer"
+                      className="w-full accent-blue-500 h-2 bg-[#16233F] rounded-lg cursor-pointer"
                     />
                     <div className="flex justify-between text-[10px] text-slate-400 font-mono">
                       <span>5% (Thấp)</span>
@@ -1211,7 +1211,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                         type="number"
                         value={targetSellInput}
                         onChange={(e) => setTargetSellInput(Number(e.target.value))}
-                        className="w-full bg-slate-900 text-white font-mono font-bold px-4 py-2.5 rounded-xl border border-slate-700 text-sm focus:outline-none focus:border-cyan-500"
+                        className="w-full bg-[#16233F] text-white font-mono font-bold px-4 py-2.5 rounded-xl border border-white/15 text-sm focus:outline-none focus:border-blue-500"
                         placeholder="Nhập giá bán mong muốn..."
                       />
                       <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-mono">
@@ -1231,7 +1231,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                         type="number"
                         value={targetProfitInput}
                         onChange={(e) => setTargetProfitInput(Number(e.target.value))}
-                        className="w-full bg-slate-900 text-white font-mono font-bold px-4 py-2.5 rounded-xl border border-slate-700 text-sm focus:outline-none focus:border-cyan-500"
+                        className="w-full bg-[#16233F] text-white font-mono font-bold px-4 py-2.5 rounded-xl border border-white/15 text-sm focus:outline-none focus:border-blue-500"
                         placeholder="Nhập mức lợi nhuận mong muốn..."
                       />
                       <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-mono">
@@ -1246,8 +1246,8 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
                 {/* BEFORE */}
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <div className="p-4 rounded-xl bg-[#0B1324]/90 border border-white/10 space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
                     <span className="text-xs font-bold text-slate-400 uppercase">HIỆN TẠI (BEFORE)</span>
                     {renderStatusBadge(whatIfResult.originalSummary)}
                   </div>
@@ -1264,7 +1264,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                         {formatMoney(whatIfResult.originalSummary.totalBuyCostUsd, whatIfResult.originalSummary.totalBuyCostVnd)}
                       </span>
                     </div>
-                    <div className="flex justify-between border-t border-slate-800/80 pt-1.5">
+                    <div className="flex justify-between border-t border-white/10 pt-1.5">
                       <span className="text-slate-300 font-medium">Lợi nhuận gộp:</span>
                       <span className="font-mono font-bold text-emerald-400">
                         +{formatMoney(whatIfResult.originalSummary.grossProfitUsd, whatIfResult.originalSummary.grossProfitVnd)}
@@ -1272,7 +1272,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-300 font-medium">Biên lãi (Margin):</span>
-                      <span className="font-mono font-bold text-cyan-400">
+                      <span className="font-mono font-bold text-blue-400">
                         {formatPercent(whatIfResult.originalSummary.grossMarginPercent, 2)}
                       </span>
                     </div>
@@ -1285,8 +1285,8 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                     ? 'bg-rose-950/20 border-rose-800/60'
                     : 'bg-emerald-950/20 border-emerald-800/60'
                 }`}>
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                    <span className="text-xs font-bold text-cyan-300 uppercase">MÔ PHỎNG (AFTER SIMULATION)</span>
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <span className="text-xs font-bold text-blue-300 uppercase">MÔ PHỎNG (AFTER SIMULATION)</span>
                     {renderStatusBadge(whatIfResult.simulatedSummary)}
                   </div>
                   <div className="space-y-1.5 text-xs">
@@ -1309,7 +1309,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                         {formatMoney(whatIfResult.simulatedSummary.totalBuyCostUsd, whatIfResult.simulatedSummary.totalBuyCostVnd)}
                       </span>
                     </div>
-                    <div className="flex justify-between border-t border-slate-800/80 pt-1.5">
+                    <div className="flex justify-between border-t border-white/10 pt-1.5">
                       <span className="text-slate-200 font-medium">Lợi nhuận gộp mới:</span>
                       <div className="text-right">
                         <span className="font-mono font-bold text-emerald-400">
@@ -1325,7 +1325,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                     <div className="flex justify-between">
                       <span className="text-slate-200 font-medium">Biên lãi mới:</span>
                       <div className="text-right">
-                        <span className="font-mono font-black text-cyan-300 text-sm">
+                        <span className="font-mono font-black text-blue-300 text-sm">
                           {formatPercent(whatIfResult.simulatedSummary.grossMarginPercent, 2)}
                         </span>
                         <span className={`text-[10px] font-mono ml-1.5 ${
@@ -1359,7 +1359,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                       <select
                         value={overrideReasonCategory}
                         onChange={(e) => setOverrideReasonCategory(e.target.value)}
-                        className="w-full bg-slate-900 text-slate-200 text-xs px-3 py-2 rounded-lg border border-rose-800 focus:outline-none"
+                        className="w-full bg-[#16233F] text-slate-200 text-xs px-3 py-2 rounded-lg border border-rose-800 focus:outline-none"
                       >
                         <option value="STRATEGIC_CUSTOMER">Khách hàng chiến lược (Strategic Account)</option>
                         <option value="MARKET_COMPETITION">Cạnh tranh gay gắt từ đối thủ (Market Competition)</option>
@@ -1378,7 +1378,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                         value={overrideReason}
                         onChange={(e) => setOverrideReason(e.target.value)}
                         placeholder="VD: Giảm giá để giữ khách hàng ký HĐ năm 2026..."
-                        className="w-full bg-slate-900 text-slate-200 text-xs px-3 py-2 rounded-lg border border-rose-800 focus:outline-none"
+                        className="w-full bg-[#16233F] text-slate-200 text-xs px-3 py-2 rounded-lg border border-rose-800 focus:outline-none"
                       />
                     </div>
                   </div>
@@ -1386,7 +1386,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
               )}
 
               {/* Allocation Strategy & Actions */}
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+              <div className="p-4 rounded-xl bg-[#0B1324]/90 border border-white/10 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center space-x-3 text-xs">
                   <span className="text-slate-400 font-medium">Phương thức phân bổ vào dòng cước:</span>
                   <label className="inline-flex items-center space-x-1.5 cursor-pointer">
@@ -1395,7 +1395,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                       name="strategy"
                       checked={allocationStrategy === 'PROPORTIONAL'}
                       onChange={() => setAllocationStrategy('PROPORTIONAL')}
-                      className="accent-cyan-400"
+                      className="accent-blue-500"
                     />
                     <span className="text-slate-200">Phân bổ tỷ lệ đều các mục</span>
                   </label>
@@ -1405,7 +1405,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                       name="strategy"
                       checked={allocationStrategy === 'FREIGHT_ONLY'}
                       onChange={() => setAllocationStrategy('FREIGHT_ONLY')}
-                      className="accent-cyan-400"
+                      className="accent-blue-500"
                     />
                     <span className="text-slate-200">Chỉ điều chỉnh cước chính (Freight)</span>
                   </label>
@@ -1420,7 +1420,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                       setTargetSellInput(isVnd ? currentSummary.totalSellVnd : currentSummary.totalSellUsd);
                       setTargetProfitInput(isVnd ? currentSummary.grossProfitVnd : currentSummary.grossProfitUsd);
                     }}
-                    className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-700 transition-colors flex items-center space-x-1"
+                    className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-[#16233F] hover:bg-[#1D2D50] border border-white/10 transition-colors flex items-center space-x-1"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                     <span>Khôi phục mặc định</span>
@@ -1430,7 +1430,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                     type="button"
                     onClick={handleApplyWhatIf}
                     disabled={!userPermissions.canApplyWhatIf || (whatIfResult.isPriceFloorViolated && !userPermissions.canOverrideMargin)}
-                    className="px-5 py-2 rounded-xl text-xs font-bold text-slate-950 bg-cyan-400 hover:bg-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all active:scale-[0.99] flex items-center space-x-2"
+                    className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all active:scale-[0.99] flex items-center space-x-2"
                   >
                     <Sparkles className="w-4 h-4" />
                     <span>Áp Dụng Vào Báo Giá (Apply to Quote)</span>
@@ -1456,7 +1456,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                 <button
                   type="button"
                   onClick={onOpenPolicyManagement}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold border border-slate-700 flex items-center space-x-1.5 transition-colors"
+                  className="px-3 py-1.5 rounded-xl bg-[#16233F] hover:bg-[#1D2D50] text-blue-300 text-xs font-semibold border border-white/10 flex items-center space-x-1.5 transition-colors"
                 >
                   <Layers className="w-3.5 h-3.5" />
                   <span>Quản Lý Danh Mục Chính Sách</span>
@@ -1464,10 +1464,10 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
               </div>
 
               {/* Active Policy Highlight */}
-              <div className="p-5 rounded-xl bg-slate-950 border border-cyan-500/40 space-y-4">
+              <div className="p-5 rounded-xl bg-[#0B1324]/90 border border-blue-500/40 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/15 text-blue-300 border border-blue-400/30">
                       ĐANG ÁP DỤNG CHO BÁO GIÁ
                     </span>
                     <h4 className="text-sm font-bold text-white">{activePolicy.policyName}</h4>
@@ -1479,37 +1479,37 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
 
                 {/* Policy Parameters Matrix */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                  <div className="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+                  <div className="bg-[#16233F]/80 p-3 rounded-lg border border-white/10">
                     <span className="text-slate-400 text-[11px] block">Biên Lãi Mục Tiêu:</span>
                     <span className="text-base font-black font-mono text-emerald-400 mt-0.5 block">
                       {activePolicy.targetMarginPercent}%
                     </span>
                   </div>
 
-                  <div className="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+                  <div className="bg-[#16233F]/80 p-3 rounded-lg border border-white/10">
                     <span className="text-slate-400 text-[11px] block">Biên Lãi Tối Thiểu (Sàn):</span>
                     <span className="text-base font-black font-mono text-rose-400 mt-0.5 block">
                       {activePolicy.minimumMarginPercent}%
                     </span>
                   </div>
 
-                  <div className="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+                  <div className="bg-[#16233F]/80 p-3 rounded-lg border border-white/10">
                     <span className="text-slate-400 text-[11px] block">Chiết Khấu Tối Đa:</span>
                     <span className="text-base font-black font-mono text-amber-400 mt-0.5 block">
                       {activePolicy.maximumDiscountPercent || 20}%
                     </span>
                   </div>
 
-                  <div className="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+                  <div className="bg-[#16233F]/80 p-3 rounded-lg border border-white/10">
                     <span className="text-slate-400 text-[11px] block">Phạm Vi Áp Dụng:</span>
-                    <span className="text-xs font-bold text-cyan-300 mt-1 block">
+                    <span className="text-xs font-bold text-blue-300 mt-1 block">
                       {activePolicy.scope}
                     </span>
                   </div>
                 </div>
 
                 {/* Approval Thresholds Matrix */}
-                <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                <div className="space-y-2 pt-2 border-t border-white/10">
                   <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
                     Ma Trận Phê Duyệt Tự Động (Approval Thresholds Matrix):
                   </span>
@@ -1559,8 +1559,8 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                         key={p.id}
                         className={`p-3.5 rounded-xl border flex items-center justify-between transition-all ${
                           isCurrent 
-                            ? 'bg-slate-900 border-cyan-500/80 shadow-xs' 
-                            : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+                            ? 'bg-[#16233F] border-blue-500/80 shadow-xs' 
+                            : 'bg-[#0B1324]/70 border-white/10 hover:border-white/25'
                         }`}
                       >
                         <div className="space-y-1">
@@ -1571,14 +1571,14 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
                         </div>
 
                         {isCurrent ? (
-                          <span className="text-xs font-bold text-cyan-400 flex items-center gap-1">
+                          <span className="text-xs font-bold text-blue-400 flex items-center gap-1">
                             <CheckCircle2 className="w-4 h-4" /> Đang chọn
                           </span>
                         ) : (
                           <button
                             type="button"
                             onClick={() => onSelectPolicy(p)}
-                            className="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors"
+                            className="px-3 py-1 rounded-lg text-xs font-semibold bg-[#16233F] hover:bg-[#1D2D50] text-slate-200 transition-colors"
                           >
                             Áp dụng
                           </button>
@@ -1595,7 +1595,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-3.5 border-t border-slate-800 bg-slate-950 flex items-center justify-between text-xs text-slate-400">
+        <div className="px-6 py-3.5 border-t border-white/10 bg-[#0B1324] flex items-center justify-between text-xs text-slate-400">
           <div className="flex items-center space-x-2">
             <Lock className="w-3.5 h-3.5 text-slate-400" />
             <span>Thuật toán tất định (Deterministic Pricing Engine) tuân thủ bảo mật RBAC.</span>
@@ -1603,7 +1603,7 @@ export const ProfitIntelligenceModal: React.FC<ProfitIntelligenceModalProps> = (
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold transition-colors"
+            className="px-4 py-2 rounded-xl bg-[#16233F] hover:bg-[#1D2D50] text-slate-200 font-semibold transition-colors"
           >
             Đóng
           </button>

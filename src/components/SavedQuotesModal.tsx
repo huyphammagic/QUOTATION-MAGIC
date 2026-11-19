@@ -178,8 +178,8 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
   return (
     <div 
       className={effectiveFullscreen 
-        ? "fixed inset-0 z-50 bg-slate-950 flex flex-col p-0 m-0 w-screen h-screen overflow-hidden"
-        : "fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5"
+        ? "fixed inset-0 z-50 bg-[#0B1324] flex flex-col p-0 m-0 w-screen h-screen overflow-hidden"
+        : "fixed inset-0 z-50 bg-[#0B1324]/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5"
       }
       onClick={(e) => {
         if (!effectiveFullscreen && e.target === e.currentTarget) {
@@ -214,7 +214,7 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                   type="button"
                   onClick={onLoadAllFromCloud}
                   disabled={isLoadingFromCloud}
-                  className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                  className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-[#16233F] hover:bg-[#1D2D50] border border-white/10 text-slate-100 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap"
                   title="Tải toàn bộ lịch sử báo giá từ Cloud Server"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isLoadingFromCloud ? 'animate-spin' : ''}`} />
@@ -223,13 +223,13 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
               )}
 
               {/* View Switcher: Dạng Thẻ Thư Mục vs Dạng Bảng */}
-              <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5 text-xs">
+              <div className="flex items-center bg-[#111C33] border border-white/10 rounded-lg p-0.5 text-xs">
                 <button
                   type="button"
                   onClick={() => setViewMode('CARDS')}
                   className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                     viewMode === 'CARDS'
-                      ? 'bg-indigo-600 text-white font-semibold shadow-xs'
+                      ? 'bg-blue-600 text-white font-semibold shadow-xs'
                       : 'text-slate-400 hover:text-white'
                   }`}
                   title="Xem ở chế độ Thẻ hồ sơ trực quan (Mặc định)"
@@ -242,7 +242,7 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                   onClick={() => setViewMode('TABLE')}
                   className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                     viewMode === 'TABLE'
-                      ? 'bg-indigo-600 text-white font-semibold shadow-xs'
+                      ? 'bg-blue-600 text-white font-semibold shadow-xs'
                       : 'text-slate-400 hover:text-white'
                   }`}
                   title="Chuyển sang chế độ xem Bảng dữ liệu chi tiết"
@@ -288,7 +288,7 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
             <div className="bg-white border border-slate-200/80 rounded-xl p-3.5 shadow-2xs">
               <div className="flex items-center justify-between text-slate-500">
                 <span className="text-[11px] font-semibold uppercase tracking-wider">Tỷ Lệ Thắng (Win)</span>
-                <TrendingUp className="w-3.5 h-3.5 text-indigo-500" />
+                <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
               </div>
               <div className="mt-2 flex items-baseline gap-2">
                 <span className="text-2xl font-bold font-mono text-slate-900 tracking-tight tabular-nums">{stats.winRate}%</span>
@@ -326,7 +326,7 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Tìm theo Mã báo giá, Doanh nghiệp, Cảng đi/đến..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+              className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 bg-white"
             />
           </div>
 
@@ -339,7 +339,7 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                 onClick={() => setStatusFilter(st)}
                 className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer text-xs ${
                   statusFilter === st
-                    ? 'bg-slate-900 text-white shadow-xs'
+                    ? 'bg-[#0B1324] text-white shadow-xs'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
@@ -364,7 +364,7 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
               {paginatedQuotes.map((quote) => (
                 <div 
                   key={quote.id} 
-                  className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs hover:shadow-md hover:border-indigo-400/60 transition-all flex flex-col justify-between group"
+                  className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs hover:shadow-md hover:border-blue-400/70 transition-all flex flex-col justify-between group"
                 >
                   {/* Card Header: Quote Number, Date & Status */}
                   <div>
@@ -373,7 +373,7 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                         <button
                           type="button"
                           onClick={() => handleSelectQuoteToEdit(quote)}
-                          className="font-mono font-bold text-indigo-900 hover:text-indigo-600 hover:underline text-sm tracking-tight block text-left cursor-pointer transition-colors"
+                          className="font-mono font-bold text-blue-950 hover:text-blue-600 hover:underline text-sm tracking-tight block text-left cursor-pointer transition-colors"
                           title="Nhấp để xem và chỉnh sửa báo giá"
                         >
                           {quote.quoteNumber}
@@ -435,7 +435,7 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                     <div className="pt-1 pb-3 flex items-baseline justify-between border-b border-slate-100">
                       <span className="text-xs text-slate-500 font-medium">Tổng cước:</span>
                       <div className="text-right">
-                        <div className="text-base font-bold font-mono text-indigo-700">
+                        <div className="text-base font-bold font-mono text-blue-700">
                           {formatUSD(quote.grandTotalUsd)}
                         </div>
                         <div className="text-[11px] font-mono text-slate-400">
@@ -450,7 +450,7 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleSelectQuoteToEdit(quote)}
-                      className="flex-1 py-1.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      className="flex-1 py-1.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>Xem & Sửa</span>
@@ -550,11 +550,11 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                 <tbody className="divide-y divide-slate-200">
                   {paginatedQuotes.map((quote) => (
                     <tr key={quote.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-3 font-mono font-bold text-indigo-900">
+                      <td className="p-3 font-mono font-bold text-blue-950">
                         <button
                           type="button"
                           onClick={() => handleSelectQuoteToEdit(quote)}
-                          className="hover:text-indigo-600 hover:underline text-left cursor-pointer font-bold font-mono transition-colors"
+                          className="hover:text-blue-600 hover:underline text-left cursor-pointer font-bold font-mono transition-colors"
                           title="Nhấp để xem và chỉnh sửa báo giá"
                         >
                           {quote.quoteNumber}
@@ -605,7 +605,7 @@ export const SavedQuotesModal: React.FC<SavedQuotesModalProps> = ({
                           <button
                             type="button"
                             onClick={() => handleSelectQuoteToEdit(quote)}
-                            className="p-1 rounded text-indigo-600 hover:bg-indigo-50 transition cursor-pointer"
+                            className="p-1 rounded text-blue-600 hover:bg-blue-50 transition cursor-pointer"
                             title="Xem & Sửa báo giá"
                           >
                             <Edit3 className="w-4 h-4" />

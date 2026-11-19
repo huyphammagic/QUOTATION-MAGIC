@@ -106,7 +106,7 @@ export const LineItemsTableSkeletonRows: React.FC<LineItemsTableSkeletonRowsProp
     const legs: { loc: ChargeLocation; title: string; bg: string; count: number }[] = [
       { loc: 'POL', title: '1. ĐẦU XUẤT (POL - Port of Loading)', bg: 'bg-slate-100/90 text-slate-800', count: 2 },
       { loc: 'FREIGHT', title: '2. CƯỚC CHẶNG CHÍNH (FREIGHT - Ocean / Air / Trucking)', bg: 'bg-blue-100/70 text-blue-900', count: 2 },
-      { loc: 'POD', title: '3. ĐẦU NHẬP (POD - Port of Discharge)', bg: 'bg-purple-100/70 text-purple-900', count: 1 },
+      { loc: 'POD', title: '3. ĐẦU NHẬP (POD - Port of Discharge)', bg: 'bg-teal-50 text-teal-900', count: 1 },
       { loc: 'OTHER', title: '4. DỊCH VỤ KHÁC (OTHER - Thủ Tục, Giám Định, Kho)', bg: 'bg-amber-100/70 text-amber-900', count: 1 },
     ];
 
@@ -175,12 +175,12 @@ export const LineItemsTableShimmerBanner: React.FC<LineItemsTableShimmerBannerPr
   onCancel,
 }) => {
   return (
-    <div className="relative overflow-hidden bg-gradient-to-r from-blue-50 via-indigo-50/70 to-emerald-50 border-b border-blue-200/80 px-4 py-2.5 flex items-center justify-between gap-3 text-xs shadow-2xs">
+    <div className="relative overflow-hidden bg-gradient-to-r from-blue-50 via-slate-50 to-teal-50 border-b border-blue-200/80 px-4 py-2.5 flex items-center justify-between gap-3 text-xs shadow-2xs">
       {/* Top micro progress sweep */}
       <div className="absolute top-0 left-0 right-0 h-[2px] bg-blue-100 overflow-hidden">
         {progressPercent !== undefined ? (
           <div 
-            className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-400 transition-all duration-300"
+            className="h-full bg-gradient-to-r from-blue-600 to-teal-500 transition-all duration-300"
             style={{ width: `${Math.min(100, Math.max(5, progressPercent))}%` }}
           />
         ) : (
@@ -196,7 +196,7 @@ export const LineItemsTableShimmerBanner: React.FC<LineItemsTableShimmerBannerPr
         <div className="flex items-center gap-2 truncate">
           <span className="font-semibold text-slate-800 truncate">{message}</span>
           <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-mono font-medium text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full border border-emerald-300/60 shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             Non-blocking
           </span>
         </div>

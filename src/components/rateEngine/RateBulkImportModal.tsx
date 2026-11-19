@@ -202,10 +202,10 @@ export const RateBulkImportModal: React.FC<RateBulkImportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-[#0B1324]/80 backdrop-blur-xs overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95">
         {/* Header */}
-        <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+        <div className="px-6 py-4 bg-[#0B1324] text-white flex items-center justify-between border-b border-white/10">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/30">
               <FileSpreadsheet className="w-6 h-6" />
@@ -563,9 +563,9 @@ export const RateBulkImportModal: React.FC<RateBulkImportModalProps> = ({
                   <div className="text-[11px] text-blue-700 font-medium">Đã ghi đè (Updated)</div>
                   <div className="text-xl font-bold text-blue-800">{importSummary.updated}</div>
                 </div>
-                <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-200">
-                  <div className="text-[11px] text-indigo-700 font-medium">Phiên bản mới (V+1)</div>
-                  <div className="text-xl font-bold text-indigo-800">{importSummary.newVersion}</div>
+                <div className="p-3 bg-teal-50 rounded-xl border border-teal-200">
+                  <div className="text-[11px] text-teal-700 font-medium">Phiên bản mới (V+1)</div>
+                  <div className="text-xl font-bold text-teal-800">{importSummary.newVersion}</div>
                 </div>
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
                   <div className="text-[11px] text-slate-600 font-medium">Bỏ qua (Skipped)</div>

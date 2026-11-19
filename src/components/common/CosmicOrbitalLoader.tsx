@@ -36,31 +36,31 @@ export const CosmicOrbitalLoader: React.FC<CosmicOrbitalLoaderProps> = ({
     switch (variant) {
       case 'emerald-cyan':
         return {
-          outerBorder: 'border-emerald-400/40 border-t-emerald-300',
-          innerBorder: 'border-cyan-400/40 border-b-cyan-300',
-          coreBg: 'bg-emerald-400',
-          particle1: 'bg-emerald-300 shadow-emerald-400/80',
-          particle2: 'bg-cyan-300 shadow-cyan-400/80',
-          glowColor: 'rgba(52, 211, 153, 0.5)',
+          outerBorder: 'border-emerald-500/35 border-t-emerald-500',
+          innerBorder: 'border-teal-500/35 border-b-teal-500',
+          coreBg: 'bg-emerald-500',
+          particle1: 'bg-emerald-400',
+          particle2: 'bg-teal-400',
+          glowColor: 'rgba(13, 148, 136, 0.4)',
         };
       case 'amber-rose':
         return {
-          outerBorder: 'border-amber-400/40 border-t-amber-300',
-          innerBorder: 'border-rose-400/40 border-b-rose-300',
-          coreBg: 'bg-amber-400',
-          particle1: 'bg-amber-300 shadow-amber-400/80',
-          particle2: 'bg-rose-300 shadow-rose-400/80',
-          glowColor: 'rgba(251, 191, 36, 0.5)',
+          outerBorder: 'border-amber-500/35 border-t-amber-500',
+          innerBorder: 'border-rose-500/35 border-b-rose-500',
+          coreBg: 'bg-amber-500',
+          particle1: 'bg-amber-400',
+          particle2: 'bg-rose-400',
+          glowColor: 'rgba(217, 119, 6, 0.4)',
         };
       case 'cyan-violet':
       default:
         return {
-          outerBorder: 'border-cyan-400/40 border-t-cyan-300',
-          innerBorder: 'border-indigo-400/40 border-b-violet-400',
-          coreBg: 'bg-cyan-300',
-          particle1: 'bg-cyan-200 shadow-cyan-400/90',
-          particle2: 'bg-violet-300 shadow-violet-400/90',
-          glowColor: 'rgba(56, 189, 248, 0.6)',
+          outerBorder: 'border-blue-500/35 border-t-blue-600',
+          innerBorder: 'border-teal-500/35 border-b-teal-500',
+          coreBg: 'bg-blue-500',
+          particle1: 'bg-blue-400',
+          particle2: 'bg-teal-400',
+          glowColor: 'rgba(37, 99, 235, 0.45)',
         };
     }
   };
@@ -99,8 +99,8 @@ export const CosmicOrbitalLoader: React.FC<CosmicOrbitalLoaderProps> = ({
 
   if (size === 'fullscreen') {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200">
-        <div className="p-8 rounded-2xl bg-[#090E17]/90 border border-slate-700/60 shadow-2xl flex flex-col items-center max-w-sm text-center">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0B1324]/75 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="p-8 rounded-2xl bg-[#111C33] border border-white/10 shadow-2xl flex flex-col items-center max-w-sm text-center">
           {spinnerContent}
           {label && (
             <h4 className="mt-5 text-sm font-bold tracking-tight text-white flex items-center gap-2">

@@ -470,7 +470,7 @@ export const AddFeeModal: React.FC<AddFeeModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-[#0B1324]/75 backdrop-blur-xs animate-in fade-in duration-150">
       <div 
         className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[96vh] sm:max-h-[94vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
         role="dialog"
@@ -478,9 +478,9 @@ export const AddFeeModal: React.FC<AddFeeModalProps> = ({
         aria-labelledby="modal-add-fee-title"
       >
         {/* Modal Header */}
-        <div className="px-4 py-3 sm:px-5 sm:py-4 bg-linear-to-r from-slate-900 via-slate-850 to-blue-950 text-white flex items-center justify-between shrink-0">
+        <div className="px-4 py-3 sm:px-5 sm:py-4 bg-[#0B1324] border-b border-white/10 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-blue-300 shrink-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-600/20 border border-blue-500/35 flex items-center justify-center text-blue-300 shrink-0">
               <Receipt className="w-5 h-5 text-blue-300" />
             </div>
             <div>
@@ -749,11 +749,11 @@ export const AddFeeModal: React.FC<AddFeeModalProps> = ({
                                     </span>
                                     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
                                       opt.location === 'POL' 
-                                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                         : opt.location === 'FREIGHT'
-                                        ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                        ? 'bg-blue-50 text-blue-700 border-blue-200'
                                         : opt.location === 'POD'
-                                        ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                        ? 'bg-teal-50 text-teal-700 border-teal-200'
                                         : 'bg-amber-50 text-amber-700 border-amber-200'
                                     }`}>
                                       {opt.location}

@@ -123,23 +123,23 @@ export const RateValiditySurchargeModal: React.FC<RateValiditySurchargeModalProp
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0B1324]/75 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         
         {/* Top Header */}
-        <div className="px-5 py-4 bg-gradient-to-r from-amber-600 via-orange-600 to-rose-700 text-white flex items-center justify-between shrink-0">
+        <div className="px-5 py-4 bg-[#0B1324] border-b border-white/10 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-md shadow-inner text-amber-100">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center shadow-inner text-amber-300">
               <Clock className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold tracking-tight">Smart Validity & Surcharge Volatility Alert Engine</h2>
-                <span className="px-2 py-0.5 text-[11px] font-semibold bg-white/25 text-white rounded-full uppercase">
+                <span className="px-2 py-0.5 text-[11px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-400/30 rounded-full uppercase">
                   Phase 59
                 </span>
               </div>
-              <p className="text-xs text-amber-100/90 mt-0.5">
+              <p className="text-xs text-slate-300 mt-0.5">
                 Radar Biến Động Phụ Phí (GRI/PSS/ETS), Đếm Ngược Hạn Báo Giá & Cập Nhật Giá 1-Click
               </p>
             </div>
@@ -272,7 +272,7 @@ export const RateValiditySurchargeModal: React.FC<RateValiditySurchargeModalProp
                         <div className="mt-2 text-xs text-slate-600 space-y-1">
                           <div className="flex items-center gap-1.5">
                             <span className="font-semibold text-slate-700">Hãng tàu:</span>
-                            <span className="text-indigo-700 font-bold">{alert.carrierName}</span>
+                            <span className="text-blue-700 font-bold">{alert.carrierName}</span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <span className="font-semibold text-slate-700">Tuyến áp dụng:</span>
@@ -381,7 +381,7 @@ export const RateValiditySurchargeModal: React.FC<RateValiditySurchargeModalProp
 
                             <td className="p-3">
                               <div className="font-medium text-slate-800">{quote.pol} ➔ {quote.pod}</div>
-                              <div className="text-[11px] text-indigo-700 font-semibold">{quote.carrier}</div>
+                              <div className="text-[11px] text-blue-700 font-semibold">{quote.carrier}</div>
                             </td>
 
                             <td className="p-3">
@@ -486,7 +486,7 @@ export const RateValiditySurchargeModal: React.FC<RateValiditySurchargeModalProp
                         <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex flex-col justify-between">
                           <div>
                             <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-xs font-bold text-indigo-700 flex items-center gap-1">
+                              <span className="text-xs font-bold text-blue-700 flex items-center gap-1">
                                 ✉️ Email Doanh Nghiệp (Official Notice)
                               </span>
                               <button
@@ -569,7 +569,7 @@ export const RateValiditySurchargeModal: React.FC<RateValiditySurchargeModalProp
                     type="button"
                     disabled={selectedQuoteIds.length === 0 || isProcessingBulk}
                     onClick={handleExecuteBulk}
-                    className="w-full py-2.5 px-4 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-lg text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <RefreshCw className={`w-4 h-4 ${isProcessingBulk ? 'animate-spin' : ''}`} />
                     <span>Áp Dụng Gia Hạn ({selectedQuoteIds.length} Báo Giá)</span>

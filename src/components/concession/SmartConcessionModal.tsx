@@ -92,23 +92,23 @@ export const SmartConcessionModal: React.FC<SmartConcessionModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0B1324]/75 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         
         {/* Top Header */}
-        <div className="px-5 py-4 bg-gradient-to-r from-emerald-700 via-teal-700 to-slate-900 text-white flex items-center justify-between shrink-0">
+        <div className="px-5 py-4 bg-[#0B1324] border-b border-white/10 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-md shadow-inner text-emerald-200">
+            <div className="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-400/30 flex items-center justify-center shadow-inner text-teal-300">
               <Scale className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold tracking-tight">Smart Concession & Margin Floor Guard</h2>
-                <span className="px-2 py-0.5 text-[11px] font-semibold bg-white/25 text-white rounded-full uppercase">
+                <span className="px-2 py-0.5 text-[11px] font-semibold bg-teal-500/15 text-teal-300 border border-teal-400/30 rounded-full uppercase">
                   Phase 62
                 </span>
               </div>
-              <p className="text-xs text-emerald-100/90 mt-0.5">
+              <p className="text-xs text-slate-300 mt-0.5">
                 Trợ Lý Đổi Trác Điều Khoản Win-Win & Phòng Thủ Sàn Biên Lợi Nhuận Khi Khách Đòi Giảm Giá
               </p>
             </div>
@@ -155,7 +155,7 @@ export const SmartConcessionModal: React.FC<SmartConcessionModalProps> = ({
                   step="0.5"
                   value={marginFloor}
                   onChange={e => setMarginFloor(Number(e.target.value))}
-                  className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-slate-50 font-bold text-indigo-700"
+                  className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-slate-50 font-bold text-blue-700"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">%</span>
               </div>
@@ -325,7 +325,7 @@ export const SmartConcessionModal: React.FC<SmartConcessionModalProps> = ({
               <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                    <FileText className="w-3.5 h-3.5 text-blue-600" />
                     <span>Lời Thoại Sales Đối Đáp Thuyết Phục (Nói Qua Điện Thoại Hoặc Nhắn Zalo)</span>
                   </span>
                   <button

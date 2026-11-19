@@ -59,16 +59,16 @@ export const RateComparisonModal: React.FC<RateComparisonModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1324]/80 backdrop-blur-xs">
       <div 
         className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150"
         id="rate-comparison-modal"
       >
         {/* Header */}
-        <div className="px-6 py-4 bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-800 text-white flex items-center justify-between">
+        <div className="px-6 py-4 bg-[#0B1324] border-b border-white/10 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/10 rounded-xl">
-              <RefreshCw className="w-5 h-5 text-cyan-300 animate-spin" />
+            <div className="p-2 bg-blue-600/20 border border-blue-500/30 rounded-xl">
+              <RefreshCw className="w-5 h-5 text-blue-300" />
             </div>
             <div>
               <h2 className="text-lg font-bold">Kiểm Tra & Cập Nhật Bảng Giá Mới (Rate Update Check)</h2>
